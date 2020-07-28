@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity >=0.6;
+pragma solidity ^0.6.0;
 
 import "./Address.sol";
 import "./RLPEncode.sol";

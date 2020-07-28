@@ -3,7 +3,7 @@
 /// @author Sam Mayo (sammayo888@gmail.com)
 /// @dev Library for rlp encoding arbitrary bytes or lists.
 
-pragma solidity >=0.6;
+pragma solidity ^0.6.0;
 
 library RLPEncode {
     uint8 constant STRING_SHORT_PREFIX = 0x80;
