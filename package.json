@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Aktionariat Smart Contracts",
   "main": "index.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\""
   },
