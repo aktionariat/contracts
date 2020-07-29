@@ -1,6 +1,6 @@
 {
   "name": "@aktionariat/contracts",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Aktionariat Smart Contracts",
   "main": "index.js",
   "publishConfig": {
