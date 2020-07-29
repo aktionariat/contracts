@@ -103,14 +103,17 @@ contract MultiSig {
   // Note: does not work with contract creation
   function calculateTransactionHash(uint sequence, bytes storage id, address to, uint value, bytes calldata data)
     private pure returns (bytes32){
-    bytes[] memory all = new bytes[](6);
+    bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
     all[2] = toBytes(21000); // gas limit
     all[3] = abi.encodePacked(to);
     all[4] = toBytes(value);
     all[5] = data;
-    for (uint i = 0; i<6; i++){
+    all[6] = toBytes(1);
+    all[7] = toBytes(0);
+    all[8] = toBytes(0);
+    for (uint i = 0; i<9; i++){
       all[i] = RLPEncode.encodeBytes(all[i]);
     }
     return keccak256(RLPEncode.encodeList(all));

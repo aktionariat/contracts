@@ -90,7 +90,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         uint256 migrationQuorumInBIPS_,
         uint256 acquisitionQuorum_,
         address currencyAddress
-    ) ERC20(0) public {
+    ) ERC20(0) {
         wrapped = IERC20(wrappedToken);
         licenseFeeRecipient = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         licenseFee = 5000 * (10**18);   // License fee charged when initiating an offer. Also ensures that the offer is serious.

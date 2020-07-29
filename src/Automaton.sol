@@ -55,7 +55,7 @@ contract Automaton is Ownable, Pausable {
 
     event Transaction(address who, int amount, address token, uint totPrice, uint fee, address base, uint price);
 
-    constructor(address baseCurrency, address shareToken) public {
+    constructor(address baseCurrency, address shareToken) {
         base = baseCurrency;
         token = shareToken;
         copyright = msg.sender;
