@@ -28,7 +28,7 @@ contract MultiSig {
     address[] signers // Addresses of the signers used to initiate the transaction
   );
 
-  constructor (address owner) public {
+  constructor (address owner) {
     // We use the gas price to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
     // same id, but it practically rules out that someone accidentally creates two
@@ -143,6 +143,7 @@ contract MultiSig {
   function setSigner(address signer, uint8 cosignaturesNeeded) public {
     require(address(this) == msg.sender || signers[msg.sender] == 1, "not authorized");
     _setSigner(signer, cosignaturesNeeded);
+    require(signerCount > 0);
   }
 
   function migrate(address destination) public {
