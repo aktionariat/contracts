@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.6;
+pragma solidity >=0.7;
 
 import "./SafeMath.sol";
 import "./ERC20Claimable.sol";
@@ -61,16 +61,14 @@ contract Shares is ERC20Claimable, Pausable {
 
     using SafeMath for uint256;
 
-    string public ticker;
-    string public name;
+    string public override name;
+    string public override symbol;
     string public terms;
-
-    uint8 public constant decimals = 0; // legally, shares are not divisible
 
     uint256 public totalShares = 0; // total number of shares, maybe not all tokenized
     uint256 public invalidTokens = 0;
 
-    address[] private subregisters;
+    address[] public subregisters;
 
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
@@ -78,21 +76,20 @@ contract Shares is ERC20Claimable, Pausable {
     event SubRegisterAdded(address contractAddress);
     event SubRegisterRemoved(address contractAddress);
 
-    constructor(string memory _ticker, string memory _name, string memory _terms) public {
-        ticker = _ticker;
-        name = _name;
+    constructor(string memory _symbol, string memory _name, string memory _terms) ERC20(0) {
+        setName(_symbol, _name);
         terms = _terms;
     }
 
-    function setName(string memory _ticker, string memory _name) public onlyOwner {
-        ticker = _ticker;
+    function setName(string memory _symbol, string memory _name) public onlyOwner {
+        symbol = _symbol;
         name = _name;
-        emit Announcement(string(abi.encodePacked("Name updated to: ", _name, " (", _ticker, ")")));
+        emit Announcement(string(abi.encodePacked("Name updated to: ", _name, " (", _symbol, ")")));
     }
 
     function setTerms(string memory _terms) public onlyOwner {
         terms = _terms;
-        emit Announcement(string(abi.encodePacked("New terms url: ", _terms)));
+        emit Announcement(string(abi.encodePacked("Terms updated: ", _terms)));
     }
 
     /**
@@ -108,10 +105,6 @@ contract Shares is ERC20Claimable, Pausable {
 
     function countSubregisters() public view returns (uint256){
         return subregisters.length;
-    }
-
-    function getSubregister(uint256 index) public view returns (address) {
-        return subregisters[index];
     }
 
     /**

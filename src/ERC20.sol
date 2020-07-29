@@ -5,7 +5,7 @@
 *
 * With modifications to support ERC-677
 */
-pragma solidity >=0.6;
+pragma solidity >=0.7;
 
 import "./IERC20.sol";
 import "./SafeMath.sol";
@@ -35,7 +35,8 @@ import "./IERC677Receiver.sol";
  * allowances. See `IERC20.approve`.
  */
 
-contract ERC20 is IERC20 {
+abstract contract ERC20 is IERC20 {
+
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -43,6 +44,12 @@ contract ERC20 is IERC20 {
     mapping (address => mapping (address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
+
+    uint8 public override decimals;
+
+    constructor(uint8 _decimals) {
+        decimals = _decimals;
+    }
 
     /**
      * @dev See `IERC20.totalSupply`.

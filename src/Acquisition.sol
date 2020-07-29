@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.6;
+pragma solidity >=0.7;
 
 import "./SafeMath.sol";
 import "./IERC20.sol";
@@ -59,7 +59,7 @@ contract Acquisition {
 
     event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
 
-    constructor (address payable buyer_, uint256 price_, uint256 quorum_) public {
+    constructor (address payable buyer_, uint256 price_, uint256 quorum_) {
         require(price_ > 0, "Price cannot be zero");
         parent = msg.sender;
         buyer = buyer_;

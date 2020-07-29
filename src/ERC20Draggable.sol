@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.6;
+pragma solidity >=0.7;
 
 import "./IERC20.sol";
 import "./SafeMath.sol";
@@ -90,7 +90,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         uint256 migrationQuorumInBIPS_,
         uint256 acquisitionQuorum_,
         address currencyAddress
-    ) public {
+    ) ERC20(0) public {
         wrapped = IERC20(wrappedToken);
         licenseFeeRecipient = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         licenseFee = 5000 * (10**18);   // License fee charged when initiating an offer. Also ensures that the offer is serious.
@@ -98,6 +98,14 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         acquisitionQuorum = acquisitionQuorum_;
         currency = IERC20(currencyAddress);
         IShares(wrappedToken).totalShares();
+    }
+
+    function name() public override view returns (string memory){
+        return string(abi.encodePacked("Draggable ", wrapped.name()));
+    }
+
+    function symbol() public override view returns (string memory){
+        return string(abi.encodePacked("D", wrapped.symbol()));
     }
 
     function getWrappedContract() public view returns (address) {

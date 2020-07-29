@@ -4,7 +4,7 @@
 * Copyright (c) 2016-2019 zOS Global Limited
 *
 */
-pragma solidity >=0.6;
+pragma solidity >=0.7;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
@@ -12,6 +12,14 @@ pragma solidity >=0.6;
  */
 
 interface IERC20 {
+
+    // Optional functions
+    function name() external view returns (string memory);
+
+    function symbol() external view returns (string memory);
+
+    function decimals() external view returns (uint8);
+
     /**
      * @dev Returns the amount of tokens in existence.
      */

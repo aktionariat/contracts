@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.6;
+pragma solidity >=0.7;
 
 import "./ERC20Claimable.sol";
 import "./ERC20Draggable.sol";
@@ -56,21 +56,17 @@ import "./ERC20Draggable.sol";
 
 contract DraggableShares is ERC20Claimable, ERC20Draggable {
 
-    string public ticker;
-    string public name;
-    string public terms;
+    using SafeMath for uint256;
 
-    uint8 public constant decimals = 0;                  // shares are not divisible
+    string public terms;
 
     /**
      * Designed to be used with the Crypto Franc as currency token. See also parent constructor.
      */
-    constructor(string memory _ticker, string memory _name, string memory _terms, address wrappedToken, address xchfAddress)
-        ERC20Draggable(wrappedToken, 7500, 7500, xchfAddress) public {
+    constructor(string memory _terms, address wrappedToken, address xchfAddress)
+        ERC20Draggable(wrappedToken, 7500, 7500, xchfAddress) {
         IClaimable(wrappedToken).setClaimable(false);
-        ticker = _ticker;
-        name = _name;
-        terms = _terms;
+        terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     }
 
     function _mint(address account, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {

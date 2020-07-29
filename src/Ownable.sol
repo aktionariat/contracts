@@ -6,7 +6,7 @@
 // - Replaced Context._msgSender() with msg.sender
 // - Added possibility to modify itself for multisig setup
 
-pragma solidity ^0.6.0;
+pragma solidity >=0.7;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -28,7 +28,7 @@ contract Ownable {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor () internal {
+    constructor () {
         address msgSender = msg.sender;
         _owner = msgSender;
         emit OwnershipTransferred(address(0), msgSender);

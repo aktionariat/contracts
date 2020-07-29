@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity >=0.6;
+pragma solidity >=0.7;
 
 import "./Address.sol";
 import "./RLPEncode.sol";
@@ -36,6 +36,12 @@ contract MultiSig {
     // replay-attacks.
     contractId = toBytes(uint32(address(this)));
     _setSigner(owner, 1); // start with the contract creator as owner
+  }
+
+  /**
+   * It should be possible to store ether on this address.
+   */
+  receive() external payable {
   }
 
   /**
