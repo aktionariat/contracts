@@ -1,77 +1,45 @@
+# Aktionariat Contracts
+
 The public repository for all smart contracts used by Aktionariat.
 
-# Drag-Along Contract - High-Level Description
+## Overview
 
-## 1. Overview and Motivation
+There are four notable smart contracts in this repository:
+1. Our custom [Multisignature Contract](doc/multisig.md), providing the basis for corporate accounts with multiple signers.
+2. The [ERC20Claimable Contract](doc/claimable.md), implementing our decentralized claim mechanism for lost tokens.
+3. The [ERC20Draggable Contract](doc/draggable.md), implementing the drag-along clause found in many shareholder agreements.
+4. The [Automaton Contract](doc/automaton.md), providing mechanisms for the selling and repurchasing of shares with automated price adjustments.
 
-Shareholder agreements are commonplace in Swiss limited companies, especially if an exit scenario is expected. Typical shareholder agreements contain 'drag-along' and 'tag-along' clauses. A drag-along clause allows a majority shareholder (defined by some quorum) to force the minority shareholders to participate in selling all company shares subject to the shareholder agreement, while the tag-along clause in turn guarantees the minority shareholders that they can always sell their shares as well if a majority shareholder sells theirs. Enforcing a drag-along clause in practice in a traditional setting can be very time consuming as all involved parties need to be contacted, need to sign an agreement and need to be paid. Facilitating this process is an ideal use case for an enhanced blockchain share.
+## Full User Control
 
-## 2. High-Level Objectives
+Generally, there are two approaches to add functionality to basic ERC20 tokens. A commonly used bad one and the better one we are trying to follow.
 
-The ERC20 contract `ERC20Draggable` solves some of the main problems surrounding the drag-along process.
+The first approach is what we call the "cat-in-the-bag" approach. This is followed by most issuers of non-trivial ERC20 tokens and allows them to arbitrarily change the functionality of the token at a later point in time. Under this approach, the users are only interacting with a thin interface that in the background redirects all request to other smart contracts configurable by the issuer. That way, the issuer can arbitrarily update the contract, freeze tokens or even take them into their possession. This not only goes against the spirit of decentralized finance, but also against the [recommendations of the Swiss Blockchain Federation](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf) and potentially also against the upcoming [legal requirements for security tokens](https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20190074).
 
-On a high-level, it offers the following functionality:
+We believe in a modular approach in which functionality is added by composition, thereby providing much stronger property rights to the token holders. Under the modular approach, a basic ERC20 token with minimal functionality is issued first. In our case, this base token is reflected by the smart contract simply named [Shares](../src/Shares.sol). It is designed to (hopefully) last for as long as the Ethereum network exists. New featues are added not by changing the base token, but by wrapping them into tokens with additional functionality. For example, all [ServiceHunter AG Shares (SHS)](https://etherscan.io/token/0xbc41f5259e10e36341ff0da77a5870abc698de56) in circulation have been wrapped by [Draggable ServiceHunter AG Shares (DSHS)](https://etherscan.io/token/0x414324b0aba49fb14cbfb37be40d8d78a2edf447) token before selling them. Once the drag-along clause get triggered in an acquisition of if the majority of token holders vote to terminate the shareholder agreement, holders of DSHS token can unwrap them to convert them back to SHS tokens, which then could be wrapped into a new contract representing a new shareholder agreement. Under the modular approach, updates of the functionality of a token require the consent of the token holders, thereby ensuring that they actually possess what they own.
 
-- Given an ERC20 share token, the drag-along contract 'wraps' the share token. This means that shares can be exchanged for draggable tokens. In this process, the drag-along contract holds the wrapped shares and instead issues an equal amount of new draggable tokens.
-- If a single shareholder or a small group of them have a sufficient number of draggable tokens, they should be able to take over control of all the shares held by the draggable contract.
-- While the majority shareholder gets the shares held in the draggable contract, the buyer must deposit an amount equal to the value of the remaining shareholder's draggable tokens in a currency such as for example Crypto Francs ([XCHF](https://www.swisscryptotokens.ch)).
-- At this point the minority shareholders can swap their draggable tokens for the corresponding currency amount.
+## Issuance
 
-#### Important Considerations:
+1. The ERC20 equity contract [Shares](../src/Shares.sol) is deployed with the desired parameters. This contract supports claims as it inherits from [ERC20Claimable](claimable.md). A currency token such as XCHF can be set as a custom collateral. The issuer is the owner of this contract.
+2. The ERC20 draggable contract [DraggableShares](../src/DraggableShares.sol) is deployed. This contract does not have an owner and could in principle be deployed by anyone. It is controlled by the token holders by majority vote.
+3. To issue basic shares, the 'mint' function can be calles on the shares contract. Holders can convert base shares at any time into draggable shares by sending them to the draggable contract or calling the 'wrap' function. Alternatively, it is also possible to directly mint wrapped shares with the 'mintAndCall' function, enabling the issuer to mint, wrap and transfer shares directly to the right owner in one transaction.
 
-- As we cannot always expect a single shareholder to posess a majority, we allow for a voting. It is assumed that in practice, a vote will only be called if it is clear that a positive result can be forced with a small number of votes by the largest shareholders.
-- We are aware that draggable tokens can be held by smart contracts and traded through smart contracts (e.g. [Uniswap](https://uniswap.io)) as well as decentralised and centralised exchanges. For this reason, swapping tokens for the corresponding currency amount after a successful drag-along procedure is a process that needs to be initiated by the user. This means that after the drag-along process the drag-along tokens can still be traded freely, however, at this point they do not legally represent a share anymore but a claim to the payout amount.
-- The draggable contract can be deployed entirely independently from the equity contract without any special permissions.
-- The focus of this project is to facilitate the drag-along/tag-along process for all involved parties. We explicitly <b>do not try to attempt to reflect or enforce all conditions </b> found in a typical shareholder agreement as the complexity grows very quickly and the benefits would be questionable at best. It is understood that all clauses of the agreement are valid and have to be followed even if they cannot be enforced on a smart contract level.
+## Shareholder Registry
 
-## 3. The ERC20Claimable Contract
+Companies that choose Aktionariat as tokenization provider get access to a corporate dashboard on which board members can issue multisignature transaction to configure their smart contract. Furthermore, they get access to an electronic shareholder registry that shows which shareholder holds how many shares and that is automatically updated to reflect all blockchain-based token transfers. All personal data is stored in our database and not on the blockchain. In order to become a registered shareholer, token holders must provide their name and address and prove ownership of their tokens, which can be done through a widget on the issuer's website or our app.
 
-It is important that share tokens (which legally represent the company's equity) don't get 'lost' if a shareholder loses the private key to their account. The standard claim process works as follows: Let us assume that Alice has lost the key to her address A. She picks a new address B and makes all calls from the new address.
+This approach reflects how paper certificates are handled, with the paper corresponding to the tokens. Owners of certificated shares are free to hand them over to anyone at any time, but to actually enjoy any shareholder rights, the new owner must register themselves with the company. This enables short-term trading of the token without registration, while at the same time provides a strong incentive for long-term shareholders to actually register themselves in the shareholder registry.
 
-1. Alice calls the function `prepareClaim`. As an argument she provides the hash of the concatenation of a user chosen nonce, her new address B and her lost address A.
-2. After waiting for 24 hours, she has a 24 hour window to call `declareLost`. This function accepts three parameters as input, the address of the collateral to be used (e.g. either token itself or XCHF), the lost address A and the nonce used in the previous step. If everything was correct, an event is emitted and the claim recorded.
-3. After waiting for 6 months (default value), Alice can call `resolveClaim` (providing her lost address as an argument A) to gain back her shares and the collateral.
+This approach corresponds to the [recommendations of the Swiss Blockchain Federation](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf)].
 
-- If the key is found again, or the claim was made maliciously, the rightful owner can call `clearClaim()` to delete the claim and seize the collateral posted.
-- Claims can be deleted by a special role (in this case the collateral is returned). There is a function `getClaimDeleter()` which we expect the subcontract to override that defines who can do this (typically the owner of the equity contract). The purpose of this is to protect shareholders in cases where they cannot act on their own for some reason.
+## Numbered Shares
 
-For this contract, the following adjustments have been made:
+As far as we know, we are the only share tokenization service that supports numbered shares. Many Swiss companies number their shares so they can be individually identified. When issuing numbered shares, the 'mintNumbered' function must be used, which lets the smart contract emit a public event to signal the numbers of the newly minted tokens. The numbers are not tracked on-chain, but by our server according to the FIFO (first in, first out) principle and automatically recflected in the shareholder registry.
 
-- The share or draggable token itself can now be used as a collateral. E.g. if you lost your key, get a friend to stake their shares for you.
-- A custom collateral (ERC20 token) can be set. Using e.g. XCHF has the advantage that during the waiting period the amount staked is not subject to the volatility of Ether.
-- As the draggable token does not have an owner, it obtains the claim parameters such as the currency used and the collateral rate from the share contract.
-- The equity contract now also allows the owner to declare certain share tokens invalid ('kraftlos'). This is to be used for example after a court ruling or if for some reason certain tokens cannot be recovered through the standard claim process (e.g. tokens sent erroneously to the draggable contract). This should only be used if it is certain that the the tokens in question can never be accessed again as invalid tokens are not excluded from executing standard operations.
+## Bug Bounty
 
-## 4. The ERC20Draggable Contract
+If you find a new security-relevant bug in our [MultiSig](../src/MultiSig.sol) contract and tell us, we will reward you with 1 Ether. For bugs that could lead to a loss of funds, the bounty is doubled. The bounty can only be claimed for bugs that have not been exploited yet and must be filed directly to bugs@aktionariat.com without opening a publicly visible issue.
 
-The `ERC20Draggable` contract contains all the functionality related to the drag-along clause. In the following we describe the standard process of issuing equity bound to a shareholder agreement followed by a drag-along at some point.
+## License
 
-### Issuance:
-
-1. The ERC20 equity contract `Shares` is deployed with the desired parameters. This contract supports claims as it inherits from `ERC20Claimable`. A currency token such as XCHF can be set as a custom collateral. The company is the owner of this contract.
-2. Share tokens are minted but not distributed to the shareholders.
-3. The ERC20 draggable contract `DraggableShares` is deployed. This contract does not have an owner and could in principle be deployed by anyone.
-4. Using the function `wrap` the share tokens are swapped for draggable shares. Now the draggable contract itself holds the actual shares.
-5. The newly created drag-along tokens are distributed to the shareholders.
-6. The share registry listens to the transfer events from both ERC20 contracts and by matching events with a mapping table of addresses and users generates the shareholder transactions for the registry.
-
-### Drag-Along:
-
-1. Any shareholder who owns at least 5% of the company can call `initiateAcquisition` to make an acquisition offer. As an argument, the user includes the price offered per share. After a variety of conditions have been verified (see test docs), a new offer is created (represented by an instance of the `Acquisition` contract). To make the offer, the buyer has to place a non-refundable one-time fee of 5kCHF. This is to prevent users from making offers if they don't mean it. The rest of the money for the acquisition does not have to be transferred at hits point but it is checked that the user's balance and allowance to the drag-along contract are sufficient. The tokens held on the owner's address are excluded from the calculation.
-2. Now the voting begins. Any token holder can vote 'yes' or 'no'.
-3. If the absolute quorum is reached before the voting period ends, or the relative quorum is reached at the end, the buyer can call `completeAcquisition` to complete the process. As a result, all the shares held by the drag-along contract are transfered to the buyer and the buyer deposits the total sum to be payed out to the other shareholders in return.
-4. The token holders can now swap their drag-along tokens for the defined currency amount.
-
-### Notes:
-
-- If the offer has expired or the offer is not well funded anymore (e.g. buyer sold some shares or moved away their XCHF), anyone can kill the current offer by calling `contestAcquisition`.
-- The person who made the offer can retract it at any point in time but loses the initial one time fee.
-- Counteroffers can be made, but the price needs to be at least 5% better than the previous offer. Reclaiming the offer fee for the initial offerer is an offline process through aktionariat.com .
-- A case can occur where shares need to be unwrapped from the drag-along contract. Think for example of a company buying back shares to destroy them. This is possible through the `burn` function, which burns the corresponding share token directly.
-
-## 5. Contract Structure
-
-We have the following dependencies:
-
-- `DraggableShares` is `ERC20Claimable` and `ERC20Draggable`
-- `Shares` is `ERC20Claimable` and `Pausable`
+All our smart contracts are open-source and can be used under a slightly modified [MIT License with Automated License Fee Payments](LICENSE). This means that you are free to use our contracts as long as you do not make any changes to circumvent the built-in license fee payments to our address [0x29Fe8914e76da5cE2d90De98a64d0055f199d06D](https://etherscan.io/address/0x29fe8914e76da5ce2d90de98a64d0055f199d06d), if there are any. Note that some of the source code you find in this repository stems from other sources with other licenses. These are marked accordingly.
