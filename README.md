@@ -38,7 +38,7 @@ As far as we know, we are the only share tokenization service that supports numb
 
 ## Bug Bounty
 
-If you find a new security-relevant bug in our [MultiSig](../src/MultiSig.sol) contract and tell us, we will reward you with 1 Ether. For bugs that could lead to a loss of funds, the bounty is doubled. The bounty can only be claimed for bugs that have not been exploited yet and must be filed directly to bugs@aktionariat.com without opening a publicly visible issue.
+If you find a new security-relevant bug in our contracts and tell us, we will reward you with 1 Ether. For bugs that could lead to a loss of funds, the bounty is tripled. The bounty can only be claimed for bugs that we are not aware of and that have not been exploited yet. They must be filed directly to bugs@aktionariat.com without opening a publicly visible issue.
 
 ## License
 
