@@ -15,14 +15,11 @@ library RLPEncode {
     /// @param self The bytes to be encoded
     /// @return The rlp encoded bytes
     function encodeBytes(bytes memory self) internal pure returns (bytes memory) {
-        bytes memory encoded;
         if(self.length == 1 && self[0] < 0x80) {
-            encoded = new bytes(1);
-            encoded = self;
+            return self;
         } else {
-            encoded = encode(self, STRING_SHORT_PREFIX, STRING_LONG_PREFIX);
+            return encode(self, STRING_SHORT_PREFIX, STRING_LONG_PREFIX);
         }
-        return encoded;
     }
     
     /// @dev Rlp encodes a bytes[]. Note that the items in the bytes[] will not automatically be rlp encoded.
@@ -30,8 +27,7 @@ library RLPEncode {
     /// @return The rlp encoded bytes[]
     function encodeList(bytes[] memory self) internal pure returns (bytes memory) {
         bytes memory list = flatten(self);
-        bytes memory encoded = encode(list, LIST_SHORT_PREFIX, LIST_LONG_PREFIX);
-        return encoded;
+        return encode(list, LIST_SHORT_PREFIX, LIST_LONG_PREFIX);
     }
 
     function encode(bytes memory self, uint8 prefix1, uint8 prefix2) private pure returns (bytes memory) {

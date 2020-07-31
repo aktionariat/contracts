@@ -112,10 +112,10 @@ contract MultiSig {
     all[5] = data;
     all[6] = toBytes(1);
     all[7] = toBytes(0);
-    all[8] = toBytes(0);
-    for (uint i = 0; i<9; i++){
+    for (uint i = 0; i<8; i++){
       all[i] = RLPEncode.encodeBytes(all[i]);
     }
+    all[8] = all[7];
     return keccak256(RLPEncode.encodeList(all));
   }
 
@@ -143,21 +143,27 @@ contract MultiSig {
   /**
    * Call this method through execute
    */
-  function setSigner(address signer, uint8 cosignaturesNeeded) public {
-    require(address(this) == msg.sender || signers[msg.sender] == 1, "not authorized");
+  function setSigner(address signer, uint8 cosignaturesNeeded) public authorized {
     _setSigner(signer, cosignaturesNeeded);
     require(signerCount > 0);
   }
 
   function migrate(address destination) public {
-    uint8 power = signers[msg.sender];
-    // calling the setters in this order ensures that you don't set your power to zero
-    // when destination == msg.sender :)
-    _setSigner(msg.sender, 0);
-    _setSigner(destination, power);
+    _migrate(msg.sender, destination);
   }
 
-  function _setSigner(address signer, uint8 cosignaturesNeeded) internal {
+  function migrate(address source, address destination) public authorized {
+    require(source == address(this));
+    _migrate(source, destination);
+  }
+
+  function _migrate(address source, address destination) private {
+    require(signers[destination] == 0); // do not overwrite existing signer!
+    _setSigner(destination, signers[source]);
+    _setSigner(source, 0);
+  }
+
+  function _setSigner(address signer, uint8 cosignaturesNeeded) private {
     require(!Address.isContract(signer), "signer cannot be a contract");
     uint8 prevValue = signers[signer];
     signers[signer] = cosignaturesNeeded;
@@ -167,6 +173,11 @@ contract MultiSig {
       signerCount++;
     }
     emit SignerChange(signer, cosignaturesNeeded);
+  }
+
+  modifier authorized() {
+    require(address(this) == msg.sender || signers[msg.sender] == 1, "not authorized");
+    _;
   }
 
 }
