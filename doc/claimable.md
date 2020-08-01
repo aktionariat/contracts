@@ -2,7 +2,7 @@
 
 TODO: improve, move too technical parts into source code as code comment and add nice screenshots of the app and the like.
 
-It is important that share tokens (which legally represent the company's equity) don't get 'lost' if a shareholder loses the private key to their account. While some token issuers address this by adding a back-door to the smart contract that gives them full control over all tokens, we prefer following a decentralized approach as recommended by the Swiss Blockchain Federation in their [Security Token Circular](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf). Our decentralized approach allows anyone to reclaim their shares without having to rely on a centralized authority. This document describes how it works in more detail.
+It is desirable that share tokens (which legally represent the company's equity) don't get 'lost' if a shareholder loses the private key to their account. While some token issuers address this by adding a back-door to the smart contract that gives them full control over all tokens, we prefer following a decentralized approach as recommended by the Swiss Blockchain Federation in their [Security Token Circular](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf). Our decentralized approach allows anyone to reclaim their shares without having to rely on a centralized authority. This document describes how it works in more detail.
 
 The standard claim process works as follows: Let us assume that Alice has lost the key to her address A. She picks a new address B and makes all calls from the new address.
 
