@@ -30,7 +30,7 @@ Companies that choose Aktionariat as tokenization provider get access to a corpo
 
 This approach reflects how paper certificates are handled, with the paper corresponding to the tokens. Owners of certificated shares are free to hand them over to anyone at any time, but to actually enjoy any shareholder rights, the new owner must register themselves with the company. This enables short-term trading of the token without registration, while at the same time provides a strong incentive for long-term shareholders to actually register themselves in the shareholder registry.
 
-This approach corresponds to the [recommendations of the Swiss Blockchain Federation](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf)].
+This approach corresponds to the [recommendations of the Swiss Blockchain Federation](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf).
 
 ## Numbered Shares
 

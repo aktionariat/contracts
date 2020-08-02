@@ -50,28 +50,18 @@ import "./IERC20.sol";
 abstract contract ERC20Claimable is ERC20 {
 
     using SafeMath for uint256;
-    using SafeMath for uint32;
 
     // A struct that represents a claim made
     struct Claim {
         address claimant; // the person who created the claim
         uint256 collateral; // the amount of collateral deposited
-        uint32 timestamp;  // the timestamp of the block in which the claim was made
+        uint256 timestamp;  // the timestamp of the block in which the claim was made
         address currencyUsed; // The currency (XCHF) can be updated, we record the currency used for every request
     }
 
-    // Every claim must be preceded by an obscured preclaim in order to prevent front-running
-    struct PreClaim {
-        bytes32 msghash; // the hash of nonce + address to be claimed
-        uint256 timestamp;  // the timestamp of the block in which the preclaim was made
-    }
-
     uint256 public claimPeriod = 180 days; // Default of 180 days;
-    uint256 public preClaimPeriod = 1 days; // One day. Minimum waiting period between preClaim and Claim;
-    uint256 public preClaimPeriodEnd = 2 days; // Two days. Maximum waiting period between preClaim and Claim;
 
     mapping(address => Claim) public claims; // there can be at most one claim per address, here address is claimed address
-    mapping(address => PreClaim) public preClaims; // there can be at most one preclaim per address, here address is claimer
     mapping(address => bool) public claimingDisabled; // disable claimability (e.g. for long term storage)
 
     // ERC-20 token that can be used as collateral or 0x0 if disabled
@@ -139,7 +129,6 @@ abstract contract ERC20Claimable is ERC20 {
     }
 
     event ClaimMade(address indexed lostAddress, address indexed claimant, uint256 balance);
-    event ClaimPrepared(address indexed claimer);
     event ClaimCleared(address indexed lostAddress, uint256 collateral);
     event ClaimDeleted(address indexed lostAddress, address indexed claimant, uint256 collateral);
     event ClaimResolved(address indexed lostAddress, address indexed claimant, uint256 collateral);
@@ -163,46 +152,25 @@ abstract contract ERC20Claimable is ERC20 {
     * To prevent frontrunning attacks, a claim can only be made if the information revealed when calling "declareLost"
     * was previously commited using the "prepareClaim" function.
     */
-    function prepareClaim(bytes32 hashedpackage) public {
-        preClaims[msg.sender] = PreClaim({
-            msghash: hashedpackage,
-            timestamp: block.timestamp
-        });
-        emit ClaimPrepared(msg.sender);
-    }
-
-    function validateClaim(address lostAddress, bytes32 nonce) private view {
-        PreClaim memory preClaim = preClaims[msg.sender];
-        require(preClaim.msghash != 0, "Message hash can't be zero");
-        require(preClaim.timestamp.add(preClaimPeriod) <= block.timestamp, "Preclaim period violated. Claimed too early");
-        require(preClaim.timestamp.add(preClaimPeriodEnd) >= block.timestamp, "Preclaim period end. Claimed too late");
-        require(preClaim.msghash == keccak256(abi.encodePacked(nonce, msg.sender, lostAddress)),"Package could not be validated");
-    }
-
-    function declareLost(address collateralType, address lostAddress, bytes32 nonce) public {
-        require(lostAddress != address(0), "Can't claim zero address");
+    function declareLost(address collateralType, address lostAddress) public {
         require(isClaimsEnabled(lostAddress), "Claims disabled for this address");
         uint256 collateralRate = getCollateralRate(collateralType);
-        require(collateralRate > 0, "Unsupported collateral type");
+        require(collateralRate > 0, "Unsupported collateral");
         address claimant = msg.sender;
         uint256 balance = balanceOf(lostAddress);
         uint256 collateral = balance.mul(collateralRate);
         IERC20 currency = IERC20(collateralType);
         require(balance > 0, "Claimed address holds no shares");
-        require(currency.allowance(claimant, address(this)) >= collateral, "Currency allowance insufficient");
-        require(currency.balanceOf(claimant) >= collateral, "Currency balance insufficient");
         require(claims[lostAddress].collateral == 0, "Address already claimed");
-        validateClaim(lostAddress, nonce);
         require(currency.transferFrom(claimant, address(this), collateral), "Collateral transfer failed");
 
         claims[lostAddress] = Claim({
             claimant: claimant,
             collateral: collateral,
-            timestamp: uint32(block.timestamp), // block timestamp is in seconds --> Should not overflow
+            timestamp: block.timestamp,
             currencyUsed: collateralType
         });
 
-        delete preClaims[claimant];
         emit ClaimMade(lostAddress, claimant, balance);
     }
 
@@ -220,14 +188,6 @@ abstract contract ERC20Claimable is ERC20 {
 
     function getTimeStamp(address lostAddress) public view returns (uint256) {
         return claims[lostAddress].timestamp;
-    }
-
-    function getPreClaimTimeStamp(address claimerAddress) public view returns (uint256) {
-        return preClaims[claimerAddress].timestamp;
-    }
-
-    function getMsgHash(address claimerAddress) public view returns (bytes32) {
-        return preClaims[claimerAddress].msghash;
     }
 
     function transfer(address recipient, uint256 amount) override virtual public returns (bool) {
@@ -260,7 +220,7 @@ abstract contract ERC20Claimable is ERC20 {
         IERC20 currency = IERC20(claim.currencyUsed);
         require(collateral != 0, "No claim found");
         require(claim.claimant == msg.sender, "Only claimant can resolve claim");
-        require(claim.timestamp.add(uint32(claimPeriod)) <= block.timestamp, "Claim period not over yet");
+        require(claim.timestamp.add(claimPeriod) <= block.timestamp, "Claim period not over yet");
         address claimant = claim.claimant;
         delete claims[lostAddress];
         require(currency.transfer(claimant, collateral), "Collateral transfer failed");
