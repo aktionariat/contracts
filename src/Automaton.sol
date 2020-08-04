@@ -113,7 +113,7 @@ contract Automaton is Ownable, Pausable {
         address[] memory path = new address[](2);
         path[0] = weth;
         path[1] = base;
-        uint256[] memory amounts = uniswap.swapETHForExactTokens(totPrice, path, address(this), block.number);
+        uint256[] memory amounts = uniswap.swapETHForExactTokens(totPrice, path, address(this), block.timestamp);
         assert(totPrice == amounts[1]);
         _buy(msg.sender, msg.sender, shares, amounts[1]);
         uint256 contractEtherBalance = address(this).balance;
