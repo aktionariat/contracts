@@ -82,7 +82,7 @@ contract DraggableShares is ERC20Claimable, ERC20Draggable {
     }
 
     function transfer(address to, uint256 value) override(ERC20Claimable, ERC20) public returns (bool) {
-        super.transfer(to, value);
+        return super.transfer(to, value);
     }
 
     function getClaimDeleter() public view override returns (address) {
