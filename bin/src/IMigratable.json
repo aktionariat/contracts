@@ -1,0 +1,133 @@
+{
+    "contractName": "IMigratable",
+    "abi": [
+        {
+            "inputs": [],
+            "name": "migrationToContract",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ],
+    "metadata": "{\"compiler\":{\"version\":\"0.7.0+commit.9e61f92b\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"migrationToContract\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"c:/Users/luziu/Documents/aktionariat/contracts/src/IMigratable.sol\":\"IMigratable\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"c:/Users/luziu/Documents/aktionariat/contracts/src/IMigratable.sol\":{\"keccak256\":\"0x5212714cd6ce722124bbb8c32282a4cd3b4a37fd9dd224e5ac54d99020c24c1b\",\"license\":\"LicenseRef-Aktionariat\",\"urls\":[\"bzz-raw://338eab542263cf438c99110de0f9b059b2de6894b3e44418e16d1051b4e0fb86\",\"dweb:/ipfs/Qmbs8VNthe4VLYBf3Bv9WFWC2HSNX9LyDLgG5VneXkzHnP\"]}},\"version\":1}",
+    "bytecode": "",
+    "deployedBytecode": "",
+    "sourceMap": "",
+    "deployedSourceMap": "",
+    "sourcePath": "c:/Users/luziu/Documents/aktionariat/contracts/src/IMigratable.sol",
+    "compiler": {
+        "name": "solc",
+        "version": "0.7.0+commit.9e61f92b"
+    },
+    "ast": {
+        "absolutePath": "c:/Users/luziu/Documents/aktionariat/contracts/src/IMigratable.sol",
+        "exportedSymbols": {
+            "IMigratable": [
+                3924
+            ]
+        },
+        "id": 3925,
+        "license": "LicenseRef-Aktionariat",
+        "nodeType": "SourceUnit",
+        "nodes": [
+            {
+                "id": 3918,
+                "literals": [
+                    "solidity",
+                    ">=",
+                    "0.7"
+                ],
+                "nodeType": "PragmaDirective",
+                "src": "1336:22:11"
+            },
+            {
+                "abstract": true,
+                "baseContracts": [],
+                "contractDependencies": [],
+                "contractKind": "contract",
+                "documentation": null,
+                "fullyImplemented": false,
+                "id": 3924,
+                "linearizedBaseContracts": [
+                    3924
+                ],
+                "name": "IMigratable",
+                "nodeType": "ContractDefinition",
+                "nodes": [
+                    {
+                        "body": null,
+                        "documentation": null,
+                        "functionSelector": "ee5554d3",
+                        "id": 3923,
+                        "implemented": false,
+                        "kind": "function",
+                        "modifiers": [],
+                        "name": "migrationToContract",
+                        "nodeType": "FunctionDefinition",
+                        "overrides": null,
+                        "parameters": {
+                            "id": 3919,
+                            "nodeType": "ParameterList",
+                            "parameters": [],
+                            "src": "1427:2:11"
+                        },
+                        "returnParameters": {
+                            "id": 3922,
+                            "nodeType": "ParameterList",
+                            "parameters": [
+                                {
+                                    "constant": false,
+                                    "id": 3921,
+                                    "mutability": "mutable",
+                                    "name": "",
+                                    "nodeType": "VariableDeclaration",
+                                    "overrides": null,
+                                    "scope": 3923,
+                                    "src": "1454:7:11",
+                                    "stateVariable": false,
+                                    "storageLocation": "default",
+                                    "typeDescriptions": {
+                                        "typeIdentifier": "t_address",
+                                        "typeString": "address"
+                                    },
+                                    "typeName": {
+                                        "id": 3920,
+                                        "name": "address",
+                                        "nodeType": "ElementaryTypeName",
+                                        "src": "1454:7:11",
+                                        "stateMutability": "nonpayable",
+                                        "typeDescriptions": {
+                                            "typeIdentifier": "t_address",
+                                            "typeString": "address"
+                                        }
+                                    },
+                                    "value": null,
+                                    "visibility": "internal"
+                                }
+                            ],
+                            "src": "1453:9:11"
+                        },
+                        "scope": 3924,
+                        "src": "1399:64:11",
+                        "stateMutability": "nonpayable",
+                        "virtual": true,
+                        "visibility": "public"
+                    }
+                ],
+                "scope": 3925,
+                "src": "1362:104:11"
+            }
+        ],
+        "src": "1336:130:11"
+    },
+    "functionHashes": {
+        "migrationToContract()": "ee5554d3"
+    },
+    "gasEstimates": null
+}

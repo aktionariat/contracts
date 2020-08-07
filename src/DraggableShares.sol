@@ -27,7 +27,7 @@
 */
 pragma solidity >=0.7;
 
-import "./ERC20Claimable.sol";
+import "./ERC20Recoverable.sol";
 import "./ERC20Draggable.sol";
 
 /**
@@ -54,7 +54,7 @@ import "./ERC20Draggable.sol";
  * to vote.
  */
 
-contract DraggableShares is ERC20Claimable, ERC20Draggable {
+contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     using SafeMath for uint256;
 
@@ -65,7 +65,7 @@ contract DraggableShares is ERC20Claimable, ERC20Draggable {
      */
     constructor(string memory _terms, address wrappedToken, address xchfAddress)
         ERC20Draggable(wrappedToken, 7500, 7500, xchfAddress) {
-        IClaimable(wrappedToken).setClaimable(false);
+        IRecoverable(wrappedToken).setRecoverable(false);
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     }
 
@@ -81,12 +81,12 @@ contract DraggableShares is ERC20Claimable, ERC20Draggable {
         super._transfer(from, to, value);
     }
 
-    function transfer(address to, uint256 value) override(ERC20Claimable, ERC20) public returns (bool) {
+    function transfer(address to, uint256 value) override(ERC20Recoverable, ERC20) public returns (bool) {
         return super.transfer(to, value);
     }
 
     function getClaimDeleter() public view override returns (address) {
-        return IClaimable(getWrappedContract()).getClaimDeleter();
+        return IRecoverable(getWrappedContract()).getClaimDeleter();
     }
 
     function getCollateralRate(address collateralType) public view override returns (uint256) {
@@ -97,15 +97,15 @@ contract DraggableShares is ERC20Claimable, ERC20Draggable {
             return unwrapConversionFactor;
         } else {
             // If the wrapped contract allows for a specific collateral, we should too.
-            // If the wrapped contract is not IClaimable, we will fail here, but would fail anyway.
-            return IClaimable(getWrappedContract()).getCollateralRate(collateralType).mul(unwrapConversionFactor);
+            // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
+            return IRecoverable(getWrappedContract()).getCollateralRate(collateralType).mul(unwrapConversionFactor);
         }
     }
 
 }
 
-abstract contract IClaimable {
-    function setClaimable(bool) public virtual;
+abstract contract IRecoverable {
+    function setRecoverable(bool) public virtual;
     function getCollateralRate(address) public virtual view returns (uint256);
     function getClaimDeleter() public virtual view returns (address);
 }
