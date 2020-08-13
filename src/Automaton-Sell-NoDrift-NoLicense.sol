@@ -80,7 +80,7 @@ contract Automaton is Ownable, Pausable {
         path[1] = base;
         uint256[] memory amounts = uniswap.swapETHForExactTokens{value: totPriceEth}(totPrice, path, address(this), block.timestamp);
         assert(totPrice == amounts[1]);
-        _buy(msg.sender, msg.sender, shares, amounts[1]);
+        _buy(msg.sender, msg.sender, shares);
         uint256 excessPayment = msg.value - totPriceEth;
         if (excessPayment > 0){
             msg.sender.transfer(excessPayment);
@@ -93,18 +93,13 @@ contract Automaton is Ownable, Pausable {
     }
 
     function buy(address recipient, uint256 numberOfSharesToBuy) public returns (uint256) {
-        return _buy(msg.sender, recipient, numberOfSharesToBuy, 0);
+        return _buy(msg.sender, recipient, numberOfSharesToBuy);
     }
 
-    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid) internal returns (uint256) {
+    function _buy(address paying, address recipient, uint256 shares) internal returns (uint256) {
         uint256 totPrice = getPrice(shares);
         IERC20 baseToken = IERC20(base);
-        if (totPrice > alreadyPaid){
-            require(baseToken.transferFrom(paying, address(this), totPrice - alreadyPaid));
-        } else if (totPrice < alreadyPaid){
-            // caller paid to much, return excess amount
-            require(baseToken.transfer(paying, alreadyPaid - totPrice));
-        }
+        require(baseToken.transferFrom(paying, address(this), totPrice));
         IERC20 shareToken = IERC20(token);
         require(shareToken.transfer(recipient, shares));
         emit Transaction(paying, int256(shares), token, totPrice, 0, base, price);
