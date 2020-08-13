@@ -52,16 +52,16 @@ contract Automaton is Ownable, Pausable {
         token = shareToken;
     }
 
-    function setPrice(uint256 newPrice) public onlyOwner {
-        price = newPrice;
-    }
-
     function getPrice() public view returns (uint256) {
         return price;
     }
 
     function getPrice(uint256 shares) public view returns (uint256) {
         return price.mul(shares);
+    }
+
+    function setPrice(uint256 newPrice) public onlyOwner {
+        price = newPrice;
     }
 
     function getPriceInEther(uint256 shares) public view returns (uint256) {
@@ -117,6 +117,6 @@ contract Automaton is Ownable, Pausable {
     }
 
     function withdrawETH(address payable to, uint256 amount) public onlyOwner() {
-        require(to.transfer(amount), "Transfer failed");
+        to.transfer(amount);
     }
 }
