@@ -40,7 +40,6 @@ import "./IAutomaton.sol";
  * Whether a performance fee is owed has to be determined off-chain.
  *
  * State: untested, initial concept!
- * TODO: think about how to do this in case of an acquisition...
  */
 contract FeeCollector is IERC677Receiver {
 
@@ -65,27 +64,48 @@ contract FeeCollector is IERC677Receiver {
         return address(automaton);
     }
 
-    function sell(uint256 shares) internal returns (uint256) {
+    // Sells amount shares through the automaton, collecting the performance fee.
+    // Allowance must be given to this contract.
+    function sell(uint256 shares) public returns (uint256) {
         require(IERC20(automaton.token()).transferFrom(msg.sender, address(this), shares));
-        processSale(msg.sender, shares);
+        return processSale(msg.sender, shares);
     }
 
+    // Sells amount shares through the automaton, collecting the performance fee.
+    // This only works when using the "transferAndCall" method on the token contract.
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public {
         require(msg.sender == automaton.token());
         processSale(from, amount);
     }
 
-    function processSale(address seller, uint256 shares) internal {
+    // Unwraps the shares of the user and automatically collects the fee.
+    // Allowance must be given to this contract before calling this method.
+    function unwrapDraggable(uint256 shares) public returns (uint256) {
+        address tokenAddress = automaton.token();
+        IERC20(tokenAddress).transferFrom(msg.sender, address(this), shares);
+        IDraggable draggable = IDraggable(tokenAddress);
+        (address currency, uint256 unwrapped) = draggable.unwrap(shares);
+        IERC20(currency).transfer(msg.sender, unwrapped);
+        (uint256 proceeds, uint256 fee) = calculateFees(shares, unwrapped);
+        emit FeeCollected(recipient, msg.sender, automaton.token(), shares, currency, proceeds, fee);
+        return proceeds - fee;
+    }
+
+    function processSale(address seller, uint256 shares) internal returns (uint256){
         (uint256 grossProceeds, uint256 fee) = calculateFee(shares);
         uint256 netProceeds = automaton.sell(shares); // allowance was already set in constructor
         address currency = automaton.base();
         require(IERC20(currency).transfer(recipient, fee));
         require(IERC20(currency).transfer(seller, netProceeds - fee));
         emit FeeCollected(recipient, msg.sender, automaton.token(), shares, currency, grossProceeds, fee);
+        return netProceeds - fee;
     }
 
     function calculateFee(uint256 shares) public view returns (uint256, uint256) {
-        uint256 proceeds = automaton.getSellPrice(shares);
+        return calculateFees(shares, automaton.getSellPrice(shares));
+    }
+
+    function calculateFees(uint256 shares, uint256 proceeds) internal view returns (uint256, uint256) {
         uint256 acquisitionCost = shares * acquisitionPrice;
         if (proceeds >= acquisitionCost){
             return (proceeds, 0);
@@ -94,4 +114,8 @@ contract FeeCollector is IERC677Receiver {
         }
     }
 
+}
+
+abstract contract IDraggable {
+    function unwrap(uint256 amount) virtual public returns (address, uint256);
 }
