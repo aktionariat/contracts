@@ -33,7 +33,7 @@ import "./Pausable.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
 
-contract Automaton is Ownable, Pausable {
+contract Simpleton is Ownable, Pausable {
 
     using SafeMath for uint256;
 
