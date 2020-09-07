@@ -108,7 +108,7 @@ contract Shares is ERC20Claimable, Pausable {
     }
 
     /**
-     * Under some use-cases, tokens are held by smart contracts that are ERC20 contracts themselves.
+     * Sometimes, tokens are held by smart contracts that are ERC20 contracts themselves.
      * For example, some tokens might be held by a smart contract representing a shareholder agreement.
      * In that case, the owners of that sub-contract are the shareholders, and not the contract itself
      * For such cases, having a list of recognized such subregisters might be helpful with the automated
