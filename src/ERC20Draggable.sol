@@ -139,10 +139,12 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     }
 
     /** Decrease the number of drag-along tokens. The user gets back their shares in return */
-    function unwrap(uint256 amount) public {
+    function unwrap(uint256 amount) public returns (address, uint256) {
         require(!active, "As long as the contract is active, you are bound to it");
         _burn(msg.sender, amount);
-        require(wrapped.transfer(msg.sender, amount.mul(unwrapConversionFactor)), "Share transfer failed");
+        uint256 unwrappedTokens = amount.mul(unwrapConversionFactor);
+        require(wrapped.transfer(msg.sender, unwrappedTokens));
+        return (address(wrapped), unwrappedTokens); // Pre August 2020 version did not have a return value
     }
 
     /**

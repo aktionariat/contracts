@@ -28,7 +28,7 @@
 pragma solidity >=0.7;
 
 import "./SafeMath.sol";
-import "./ERC20Claimable.sol";
+import "./ERC20Recoverable.sol";
 import "./Pausable.sol";
 import "./IERC677Receiver.sol";
 
@@ -57,7 +57,7 @@ import "./IERC677Receiver.sol";
  * Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
 
-contract Shares is ERC20Claimable, Pausable {
+contract Shares is ERC20Recoverable, Pausable {
 
     using SafeMath for uint256;
 

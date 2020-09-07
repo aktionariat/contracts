@@ -1,16 +1,16 @@
-# Claim Mechanism
+# Recovery Mechanism
 
 ## Motivation
 
 It is desirable that share tokens (which legally represent the company's equity) do not get 'lost' if a shareholder loses the private key to their account or accidentally sends them to an invalid address. While some issuers address this by adding a back-door to their smart contract, giving them full control over all tokens, we prefer following a decentralized approach. This is also what thethe Swiss Blockchain Federation recommends in their [Security Token Circular](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf). Our decentralized approach allows holders to reclaim their shares without having to rely on a centralized authority.
 
-## Claim Process
+## Process
 
-The claim process works as follows: Let us assume that Alice has lost the key to her address A. She picks a new address B and makes all calls from the new address.
+The recovery process works as follows: Let us assume that Alice has lost the key to her address A. She picks a new address B and makes all calls from the new address.
 
-1. Alice makes sure she has enough collateral ready to make the claim and grants an according allowance to the contract of the token she wants to reclaim.
+1. Alice makes sure she has enough collateral ready to make the claim and grants an according allowance to the contract of the token she wants to recover.
 2. Alice calls the function `declareLost(address, collateral)` to declare that the tokens on the specified address are hers and that she wants to retrieve them through the claim mechanism. The second parameter is the collateral to be used, which is transferred to the token contract.
-3. After waiting for 6 months (this value can be configured by the issuer, but must be at least 3 months), Alice can call `resolveClaim` (providing her lost address as an argument) to gain back her shares and the collateral.
+3. After waiting for 6 months (this value can be configured by the issuer, but must be at least 3 months), Alice can call `recover` (providing her lost address as an argument) to gain back her shares and the collateral.
 
 If the key is found again, or the claim was made maliciously, the rightful owner can always call `clearClaim` from the claimed address to delete the claim and seize the collateral. This makes attacks economically infeasible. When an attacker makes a claim for your address to obtain all your 7 shares in Example Inc., the attacker must also provide a collateral worth 7 shares. Now you have six months time to call `clearClaim`, thereby not only deleting the fraudulent claim, but also taking away the attacker's collateral. If your wallet does not support calling custom methods such as `clearClaim`, you can also just transfer one share to a new address, which triggers an implicit call to `clearClaim` and has the same effect.
 

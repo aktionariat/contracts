@@ -32,7 +32,7 @@ import "./ERC20.sol";
 import "./IERC20.sol";
 
 /**
- * @title Claimable
+ * @title Recoverable
  * In case of tokens that represent real-world assets such as shares of a company, one needs a way
  * to handle lost private keys. With physical certificates, courts can declare share certificates as
  * invalid so the company can issue replacements. Here, we want a solution that does not depend on
@@ -47,7 +47,7 @@ import "./IERC20.sol";
  * function.
  */
 
-abstract contract ERC20Claimable is ERC20 {
+abstract contract ERC20Recoverable is ERC20 {
 
     using SafeMath for uint256;
 
@@ -62,7 +62,7 @@ abstract contract ERC20Claimable is ERC20 {
     uint256 public claimPeriod = 180 days; // Default of 180 days;
 
     mapping(address => Claim) public claims; // there can be at most one claim per address, here address is claimed address
-    mapping(address => bool) public claimingDisabled; // disable claimability (e.g. for long term storage)
+    mapping(address => bool) public recoveryDisabled; // disable claimability (e.g. for long term storage)
 
     // ERC-20 token that can be used as collateral or 0x0 if disabled
     address public customCollateralAddress;
@@ -116,16 +116,16 @@ abstract contract ERC20Claimable is ERC20 {
         emit ClaimPeriodChanged(claimPeriod);
     }
 
-    function setClaimable(bool enabled) public {
-        claimingDisabled[msg.sender] = !enabled;
+    function setRecoverable(bool enabled) public {
+        recoveryDisabled[msg.sender] = !enabled;
     }
 
     /**
      * Some users might want to disable claims for their address completely.
      * For example if they use a deep cold storage solution or paper wallet.
      */
-    function isClaimsEnabled(address target) public view returns (bool) {
-        return !claimingDisabled[target];
+    function isRecoveryEnabled(address target) public view returns (bool) {
+        return !recoveryDisabled[target];
     }
 
     event ClaimMade(address indexed lostAddress, address indexed claimant, uint256 balance);
@@ -137,9 +137,9 @@ abstract contract ERC20Claimable is ERC20 {
 
   /** Anyone can declare that the private key to a certain address was lost by calling declareLost
     * providing a deposit/collateral. There are three possibilities of what can happen with the claim:
-    * 1) The claim period expires and the claimant can get the deposit and the shares back by calling resolveClaim
+    * 1) The claim period expires and the claimant can get the deposit and the shares back by calling recover
     * 2) The "lost" private key is used at any time to call clearClaim. In that case, the claim is deleted and
-    *    the deposit sent to the shareholder (the owner of the private key). It is recommended to call resolveClaim
+    *    the deposit sent to the shareholder (the owner of the private key). It is recommended to call recover
     *    whenever someone transfers funds to let claims be resolved automatically when the "lost" private key is
     *    used again.
     * 3) The owner deletes the claim and assigns the deposit to the claimant. This is intended to be used to resolve
@@ -153,7 +153,7 @@ abstract contract ERC20Claimable is ERC20 {
     * was previously commited using the "prepareClaim" function.
     */
     function declareLost(address collateralType, address lostAddress) public {
-        require(isClaimsEnabled(lostAddress), "Claims disabled for this address");
+        require(isRecoveryEnabled(lostAddress), "Claims disabled for this address");
         uint256 collateralRate = getCollateralRate(collateralType);
         require(collateralRate > 0, "Unsupported collateral");
         address claimant = msg.sender;
@@ -214,7 +214,7 @@ abstract contract ERC20Claimable is ERC20 {
     * After the claim period has passed, the claimant can call this function to send the
     * tokens on the lost address as well as the collateral to himself.
     */
-    function resolveClaim(address lostAddress) public {
+    function recover(address lostAddress) public {
         Claim memory claim = claims[lostAddress];
         uint256 collateral = claim.collateral;
         IERC20 currency = IERC20(claim.currencyUsed);
@@ -229,7 +229,7 @@ abstract contract ERC20Claimable is ERC20 {
     }
 
     /**
-     * This function is to be executed by the owner only in case a dispute needs to be resolved manually.
+     * This function is to be executed by the claim deleter only in case a dispute needs to be resolved manually.
      */
     function deleteClaim(address lostAddress) public {
         require(msg.sender == getClaimDeleter(), "You cannot delete claims");
