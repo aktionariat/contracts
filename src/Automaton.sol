@@ -53,7 +53,7 @@ contract Automaton is Ownable, Pausable {
     IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    event Transaction(bytes ref, address who, int amount, address token, uint totPrice, uint fee, address base, uint price);
+    event Transaction(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
     constructor(address baseCurrency, address shareToken) {
         base = baseCurrency;
@@ -144,7 +144,7 @@ contract Automaton is Ownable, Pausable {
         IERC20 shareToken = IERC20(token);
         require(shareToken.transfer(recipient, shares));
         price = price.add(shares.mul(increment));
-        emit Transaction(ref, paying, int256(shares), token, totPrice, 0, base, price);
+        emit Transaction(token, paying, ref, int256(shares), base, totPrice, 0, price);
         return totPrice;
     }
 
@@ -189,7 +189,7 @@ contract Automaton is Ownable, Pausable {
         }
         require(baseToken.transfer(recipient, totPrice - fee));
         price = price.sub(amount.mul(increment));
-        emit Transaction(ref, recipient, -int256(amount), token, totPrice, fee, base, price);
+        emit Transaction(token, recipient, ref, -int256(amount), base, totPrice, fee, price);
         return totPrice;
     }
 
