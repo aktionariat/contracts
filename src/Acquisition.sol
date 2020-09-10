@@ -146,9 +146,8 @@ contract Acquisition {
         vote(Vote.NO, votes_, sender);
     }
 
-    function vote(Vote yesOrNo, uint256 votes_, address voter) internal {
+    function vote(Vote newVote, uint256 votes_, address voter) internal {
         Vote previousVote = votes[voter];
-        Vote newVote = yesOrNo;
         votes[voter] = newVote;
         update(previousVote, newVote, votes_);
     }

@@ -69,9 +69,9 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     }
 
-    function _mint(address account, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {
+    /* function _mint(address account, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {
         super._mint(account, amount);
-    }
+    } */
 
     function _burn(address account, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {
         super._burn(account, amount);
@@ -86,19 +86,19 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
     }
 
     function getClaimDeleter() public view override returns (address) {
-        return IRecoverable(getWrappedContract()).getClaimDeleter();
+        return IRecoverable(address(wrapped)).getClaimDeleter();
     }
 
     function getCollateralRate(address collateralType) public view override returns (uint256) {
         uint256 rate = super.getCollateralRate(collateralType);
         if (rate > 0) {
             return rate;
-        } else if (collateralType == getWrappedContract()) {
+        } else if (collateralType == address(wrapped)) {
             return unwrapConversionFactor;
         } else {
             // If the wrapped contract allows for a specific collateral, we should too.
             // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
-            return IRecoverable(getWrappedContract()).getCollateralRate(collateralType).mul(unwrapConversionFactor);
+            return IRecoverable(address(wrapped)).getCollateralRate(collateralType).mul(unwrapConversionFactor);
         }
     }
 

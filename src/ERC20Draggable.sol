@@ -53,7 +53,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     using SafeMath for uint256;
 
-    IERC20 private wrapped;                        // The wrapped contract
+    IERC20 public wrapped;                        // The wrapped contract
 
     // If the wrapped tokens got replaced in an acquisition, unwrapping might yield many currency tokens
     uint256 public unwrapConversionFactor = 1;
@@ -61,18 +61,15 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     // The current acquisition attempt, if any. See initiateAcquisition to see the requirements to make a public offer.
     Acquisition public offer;
 
-    address payable public licenseFeeRecipient;    // Recipient of the fee. Fee makes sure the offer is serious.
-
     uint256 public migrationQuorum;        // Number of tokens that need to be migrated to complete migration
     uint256 public acquisitionQuorum;
 
     uint256 constant MIN_OFFER_INCREMENT = 10500;  // New offer must be at least 105% of old offer
-    uint256 constant MIN_HOLDING = 500;            // Need at least 5% of all drag along tokens to make an offer
     uint256 constant MIN_DRAG_ALONG_QUOTA = 3000;  // 30% of the equity needs to be represented by drag along tokens for an offer to be made
 
     bool public active = true;                     // True as long as this contract is legally binding and the wrapped tokens are locked.
 
-    event OfferCreated(address indexed buyer, uint256 pricePerShare, address offerContract);
+    event OfferCreated(address indexed buyer, uint256 pricePerShare, address currency, address offerContract);
     event OfferEnded(address indexed buyer, address sender, bool success, string message, address offerContract);
     event MigrationSucceeded(address newContractAddress);
 
@@ -88,10 +85,9 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         uint256 acquisitionQuorum_
     ) ERC20(0) {
         wrapped = IERC20(wrappedToken);
-        licenseFeeRecipient = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         migrationQuorum = migrationQuorumInBIPS_;
         acquisitionQuorum = acquisitionQuorum_;
-        IShares(wrappedToken).totalShares();
+        IShares(wrappedToken).totalShares(); // check if wrapped token supports this method
     }
 
     function name() public override view returns (string memory){
@@ -102,10 +98,6 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         return string(abi.encodePacked("D", wrapped.symbol()));
     }
 
-    function getWrappedContract() public view returns (address) {
-        return address(wrapped);
-    }
-
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public {
         require(msg.sender == address(wrapped));
         dowrap(from, amount);
@@ -113,18 +105,18 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     /** Increases the number of drag-along tokens. Requires minter to deposit an equal amount of share tokens */
     function wrap(address shareholder, uint256 amount) public noOfferPending() {
-        require(wrapped.transferFrom(msg.sender, address(this), amount), "Share transfer failed");
+        require(wrapped.transferFrom(msg.sender, address(this), amount));
         dowrap(shareholder, amount);
     }
 
     function dowrap(address shareholder, uint256 amount) internal noOfferPending() {
-        require(active, "Contract not active any more.");
+        require(active, "not active");
         _mint(shareholder, amount);
     }
 
     /** Decrease the number of drag-along tokens. The user gets back their shares in return */
     function unwrap(uint256 amount) public returns (address, uint256) {
-        require(!active, "As long as the contract is active, you are bound to it");
+        require(!active, "active");
         _burn(msg.sender, amount);
         uint256 unwrappedTokens = amount.mul(unwrapConversionFactor);
         require(wrapped.transfer(msg.sender, unwrappedTokens));
@@ -142,57 +134,51 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
      */
     function burn(uint256 amount) public {
         _burn(msg.sender, amount);
-        IBurnable(getWrappedContract()).burn(amount.mul(unwrapConversionFactor));
+        IBurnable(address(wrapped)).burn(amount.mul(unwrapConversionFactor));
     }
 
   /** @dev Function to start drag-along procedure
    *  This can be called by anyone, but there is an upfront payment.
    */
     function initiateAcquisition(uint256 pricePerShare, address currency) public {
-        require(active, "An accepted offer exists");
-        uint256 totalEquity = IShares(getWrappedContract()).totalShares();
-        address buyer = msg.sender;
-
+        require(active);
+        uint256 totalEquity = IShares(address(wrapped)).totalShares();
         require(totalSupply() >= totalEquity.mul(MIN_DRAG_ALONG_QUOTA).div(10000), "This contract does not represent enough equity");
-        require(balanceOf(buyer) >= totalEquity.mul(MIN_HOLDING).div(10000), "You need to hold at least 5% of the firm to make an offer");
 
-        licenseFeeRecipient.transfer(1 ether); 
+        // License Fee to Aktionariat AG, also ensures that offer is serious
+        0x29Fe8914e76da5cE2d90De98a64d0055f199d06D.transfer(3 ether);
 
         Acquisition newOffer = new Acquisition(msg.sender, currency, pricePerShare, acquisitionQuorum);
-        require(newOffer.isWellFunded(totalSupply() - balanceOf(buyer)), "Insufficient funding");
+        require(newOffer.isWellFunded(totalSupply() - balanceOf(msg.sender)), "Insufficient funding");
         if (offerExists()) {
             require(currency == offer.currency() && pricePerShare >= offer.price().mul(MIN_OFFER_INCREMENT).div(10000), "New offers must be at least 5% higher than the pending offer");
             killAcquisition("Offer replaced by higher bid");
         }
         offer = newOffer;
 
-        emit OfferCreated(buyer, pricePerShare, getPendingOffer());
+        emit OfferCreated(msg.sender, pricePerShare, currency, address(offer));
     }
 
     function voteYes() public offerPending() {
-        address voter = msg.sender;
-        offer.voteYes(voter, balanceOf(voter));
+        offer.voteYes(msg.sender, balanceOf(msg.sender));
     }
 
     function voteNo() public offerPending() {
-        address voter = msg.sender;
-        offer.voteNo(voter, balanceOf(voter));
+        offer.voteNo(msg.sender, balanceOf(msg.sender));
     }
 
     function cancelAcquisition() public offerPending() {
-        require(msg.sender == offer.buyer(), "You are not authorized to cancel this acquisition offer");
-        killAcquisition("Cancelled by buyer");
+        require(msg.sender == offer.buyer());
+        killAcquisition("Cancelled");
     }
 
     function contestAcquisition() public offerPending() {
         if (offer.hasExpired()) {
-            killAcquisition("Offer expired");
+            killAcquisition("Expired");
         } else if (offer.quorumHasFailed()) {
             killAcquisition("Not enough support");
         } else if (!offer.isWellFunded(totalSupply() - balanceOf(offer.buyer()))) {
-            killAcquisition("Offer was not sufficiently funded");
-        } else {
-            revert("Acquisition contest unsuccessful");
+            killAcquisition("Insufficient funds");
         }
     }
 
@@ -203,29 +189,25 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
             msg.sender,
             false,
             message,
-            getPendingOffer()
+            address(offer)
         );
         offer.kill();
         offer = Acquisition(address(0));
     }
 
     function completeAcquisition() public offerPending() {
-        address buyer = offer.buyer();
-        require(msg.sender == buyer, "You are not authorized to complete this acquisition offer");
-        require(offer.isQuorumReached(), "Insufficient number of yes votes");
-        require(offer.isWellFunded(totalSupply() - balanceOf(buyer)), "Offer insufficiently funded");
-        invertHoldings(buyer, offer.currency(), offer.price());
+        require(msg.sender == offer.buyer());
+        require(offer.isQuorumReached(), "Insufficient support");
+        //not necessary to check funding, will fail anyway if not enough
+        //require(offer.isWellFunded(totalSupply() - balanceOf(buyer)), "insufficient funds");
+        invertHoldings(msg.sender, offer.currency(), offer.price());
         emit OfferEnded(
-            buyer,
+            msg.sender,
             msg.sender,
             true,
-            "Completed successfully",
+            "Success",
             address(offer)
         );
-    }
-
-    function wasAcquired() public view returns (bool) {
-        return offerExists() ? !active : false;
     }
 
     function invertHoldings(address newOwner, address newWrapped, uint256 conversionRate) internal {
@@ -234,37 +216,34 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         active = false;
         unwrap(buyerBalance);
         uint256 remaining = initialSupply.sub(buyerBalance);
-        require(wrapped.transfer(newOwner, remaining), "transfer failed");
+        require(wrapped.transfer(newOwner, remaining));
         wrapped = IERC20(newWrapped);
         unwrapConversionFactor = conversionRate;
-        require(wrapped.transferFrom(newOwner, address(this), conversionRate.mul(remaining)), "Backing transfer failed");
+        require(wrapped.transferFrom(newOwner, address(this), conversionRate.mul(remaining)));
     }
 
     function migrate() public {
-        require(active, "Contract is not active");
+        require(active, "not active");
         address successor = msg.sender;
         require(balanceOf(successor) >= totalSupply().mul(migrationQuorum).div(10000), "Quorum not reached");
 
         if (offerExists()) {
-            if (!offer.quorumHasFailed()) {
-                voteNo(); // should shut down the offer
-                require(offer.quorumHasFailed(), "Quorum has not failed");
-            }
+            voteNo(); // should shut down the offer
             contestAcquisition();
-            assert (!offerExists());
+            assert(!offerExists());
         }
 
         invertHoldings(successor, successor, 1);
         emit MigrationSucceeded(successor);
     }
 
-    function _mint(address account, uint256 amount) virtual override internal {
+    // not needed in the default implementation as wrap requires no offer
+    /* function _mint(address account, uint256 amount) virtual override internal {
         super._mint(account, amount);
         if (offerExists() && active) {
-            // never executed in the default implementation as wrap requires no offer
             offer.adjustVotes(address(0), account, amount);
         }
-    }
+    } */
 
     function _transfer(address from, address to, uint256 value) virtual override internal {
         super._transfer(from, to, value);
@@ -280,21 +259,17 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         }
     }
 
-    function getPendingOffer() public view returns (address) {
-        return address(offer);
-    }
-
-    function offerExists() public view returns (bool) {
-        return getPendingOffer() != address(0);
+    function offerExists() internal view returns (bool) {
+        return address(offer) != address(0);
     }
 
     modifier offerPending() {
-        require(offerExists() && active, "There is no pending offer");
+        require(offerExists() && active, "no pending offer");
         _;
     }
 
     modifier noOfferPending() {
-        require(!offerExists(), "There is a pending offer");
+        require(!offerExists(), "offer pending");
         _;
     }
 
