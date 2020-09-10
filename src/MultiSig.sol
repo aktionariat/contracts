@@ -13,8 +13,7 @@ contract MultiSig {
 
   uint16 public signerCount;
 
-  // Observation: the nonce is not increase when the transaction fails.
-  uint256 private sequenceNumber; // A sequence number that contains the address of this contract to make it globally unique
+  uint256 private sequenceNumber; // A sequence number starting with 1 and that is increased with every successful (!) transaction
   bytes public contractId; // most likely unique id of this contract
 
   event SignerChange(

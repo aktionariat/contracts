@@ -53,7 +53,7 @@ contract Automaton is Ownable, Pausable {
     IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    event Transaction(address who, int amount, address token, uint totPrice, uint fee, address base, uint price);
+    event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
     constructor(address baseCurrency, address shareToken) {
         base = baseCurrency;
@@ -108,7 +108,7 @@ contract Automaton is Ownable, Pausable {
         return uniswap.getAmountsIn(totPrice, path)[0];
     }
 
-    function buyWithEther(uint256 shares) public payable returns (uint256) {
+    function buyWithEther(uint256 shares, bytes calldata ref) public payable returns (uint256) {
         uint256 totPrice = getBuyPrice(shares);
         uint256 totPriceEth = getPriceInEther(shares);
         address[] memory path = new address[](2);
@@ -116,7 +116,7 @@ contract Automaton is Ownable, Pausable {
         path[1] = base;
         uint256[] memory amounts = uniswap.swapETHForExactTokens{value: totPriceEth}(totPrice, path, address(this), block.timestamp);
         assert(totPrice == amounts[1]);
-        _buy(msg.sender, msg.sender, shares, amounts[1]);
+        _buy(msg.sender, msg.sender, shares, amounts[1], ref);
         uint256 contractEtherBalance = address(this).balance;
         if (contractEtherBalance > 0){
             msg.sender.transfer(contractEtherBalance);
@@ -124,15 +124,15 @@ contract Automaton is Ownable, Pausable {
         return amounts[0];
     }
 
-    function buy(uint256 numberOfSharesToBuy) public returns (uint256) {
-        return buy(msg.sender, numberOfSharesToBuy);
+    function buy(uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
+        return buy(msg.sender, numberOfSharesToBuy, ref);
     }
 
-    function buy(address recipient, uint256 numberOfSharesToBuy) public returns (uint256) {
-        return _buy(msg.sender, recipient, numberOfSharesToBuy, 0);
+    function buy(address recipient, uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
+        return _buy(msg.sender, recipient, numberOfSharesToBuy, 0, ref);
     }
 
-    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid) internal returns (uint256) {
+    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid, bytes calldata ref) internal returns (uint256) {
         uint256 totPrice = getBuyPrice(shares);
         IERC20 baseToken = IERC20(base);
         if (totPrice > alreadyPaid){
@@ -144,43 +144,43 @@ contract Automaton is Ownable, Pausable {
         IERC20 shareToken = IERC20(token);
         require(shareToken.transfer(recipient, shares));
         price = price.add(shares.mul(increment));
-        emit Transaction(paying, int256(shares), token, totPrice, 0, base, price);
+        emit Trade(token, paying, ref, int256(shares), base, totPrice, 0, price);
         return totPrice;
     }
 
-    function _notifyMoneyReceived(address from, uint256 amount) internal {
+    function _notifyMoneyReceived(address from, uint256 amount, bytes calldata ref) internal {
         uint shares = getShares(amount);
-        _buy(from, from, shares, amount);
+        _buy(from, from, shares, amount, ref);
     }
 
-    function sell(uint256 tokens) public returns (uint256){
-        return sell(msg.sender, tokens);
+    function sell(uint256 tokens, bytes calldata ref) public returns (uint256){
+        return sell(msg.sender, tokens, ref);
     }
 
-    function sell(address recipient, uint256 tokens) public returns (uint256){
-        return _sell(msg.sender, recipient, tokens);
+    function sell(address recipient, uint256 tokens, bytes calldata ref) public returns (uint256){
+        return _sell(msg.sender, recipient, tokens, ref);
     }
 
-    function _sell(address seller, address recipient, uint256 shares) internal returns (uint256) {
+    function _sell(address seller, address recipient, uint256 shares, bytes calldata ref) internal returns (uint256) {
         IERC20 shareToken = IERC20(token);
         require(shareToken.transferFrom(seller, address(this), shares));
-        return _notifyTokensReceived(recipient, shares);
+        return _notifyTokensReceived(recipient, shares, ref);
     }
 
     // ERC-677 recipient
-    function onTokenTransfer(address from, uint256 amount, bytes calldata /*data*/) public returns (bool success) {
+    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public returns (bool success) {
         require(msg.sender == token || msg.sender == base);
         if (msg.sender == token){
-            _notifyTokensReceived(from, amount);
+            _notifyTokensReceived(from, amount, ref);
         } else if (msg.sender == base){
-            _notifyMoneyReceived(from, amount);
+            _notifyMoneyReceived(from, amount, ref);
         } else {
             require(false);
         }
         return true;
     }
 
-    function _notifyTokensReceived(address recipient, uint256 amount) internal returns (uint256){
+    function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256){
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
         uint256 fee = getSaleFee(totPrice);
@@ -189,7 +189,7 @@ contract Automaton is Ownable, Pausable {
         }
         require(baseToken.transfer(recipient, totPrice - fee));
         price = price.sub(amount.mul(increment));
-        emit Transaction(recipient, -int256(amount), token, totPrice, fee, base, price);
+        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, price);
         return totPrice;
     }
 

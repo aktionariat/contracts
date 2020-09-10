@@ -10,4 +10,7 @@ interface IUniswapV2 {
         function getAmountsIn(uint amountOut, address[] memory path)
                 external view returns (uint[] memory amounts);
 
+        function getAmountsOut(uint amountIn, address[] memory path)
+                external view returns (uint[] memory amounts);
+
 }
