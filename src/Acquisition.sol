@@ -48,7 +48,9 @@ contract Acquisition {
 
     address private parent;                             // the parent contract
     address payable public buyer;                       // the person who made the offer
-    uint256 public price;                               // the price offered per share (in XCHF base units, so 10**18 is 1 XCHF)
+    
+    address public currency;
+    uint256 public price;                               // the price offered per share
     uint256 public timestamp;                           // the timestamp of the block in which the acquisition was created
 
     uint256 public noVotes;                             // number of tokens voting for no
@@ -59,21 +61,22 @@ contract Acquisition {
 
     event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
 
-    constructor (address payable buyer_, uint256 price_, uint256 quorum_) {
-        require(price_ > 0, "Price cannot be zero");
+    constructor (address payable buyer_, address currency_, uint256 price_, uint256 quorum_) {
+        require(price_ > 0, "invalid price");
         parent = msg.sender;
         buyer = buyer_;
+        currency = currency_;
         price = price_;
         quorum = quorum_;
         timestamp = block.timestamp;
     }
 
-    function isWellFunded(address currency_, uint256 sharesToAcquire) public view returns (bool) {
-        IERC20 currency = IERC20(currency_);
-        uint256 buyerXCHFBalance = currency.balanceOf(buyer);
-        uint256 buyerXCHFAllowance = currency.allowance(buyer, parent);
+    function isWellFunded(uint256 sharesToAcquire) public view returns (bool) {
+        IERC20 cur = IERC20(currency);
+        uint256 buyerBalance = cur.balanceOf(buyer);
+        uint256 buyerAllowance = cur.allowance(buyer, parent);
         uint256 xchfNeeded = sharesToAcquire.mul(price);
-        return xchfNeeded <= buyerXCHFBalance && xchfNeeded <= buyerXCHFAllowance;
+        return xchfNeeded <= buyerBalance && xchfNeeded <= buyerAllowance;
     }
 
     function isQuorumReached() public view returns (bool) {
@@ -159,12 +162,11 @@ contract Acquisition {
     }
 
     function kill() public parentOnly() {
-        // destroy the contract and send leftovers to the buyer.
         selfdestruct(buyer);
     }
 
     modifier parentOnly () {
-        require(msg.sender == parent, "Can only be called by parent contract");
+        require(msg.sender == parent, "not parent");
         _;
     }
 }

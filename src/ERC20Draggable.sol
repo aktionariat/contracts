@@ -61,11 +61,8 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     // The current acquisition attempt, if any. See initiateAcquisition to see the requirements to make a public offer.
     Acquisition public offer;
 
-    IERC20 private currency;
+    address payable public licenseFeeRecipient;    // Recipient of the fee. Fee makes sure the offer is serious.
 
-    address public licenseFeeRecipient;    // Recipient of the fee. Fee makes sure the offer is serious.
-
-    uint256 public licenseFee;             // Fee of 5000 XCHF
     uint256 public migrationQuorum;        // Number of tokens that need to be migrated to complete migration
     uint256 public acquisitionQuorum;
 
@@ -88,15 +85,12 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     constructor(
         address wrappedToken,
         uint256 migrationQuorumInBIPS_,
-        uint256 acquisitionQuorum_,
-        address currencyAddress
+        uint256 acquisitionQuorum_
     ) ERC20(0) {
         wrapped = IERC20(wrappedToken);
         licenseFeeRecipient = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
-        licenseFee = 5000 * (10**18);   // License fee charged when initiating an offer. Also ensures that the offer is serious.
         migrationQuorum = migrationQuorumInBIPS_;
         acquisitionQuorum = acquisitionQuorum_;
-        currency = IERC20(currencyAddress);
         IShares(wrappedToken).totalShares();
     }
 
@@ -110,16 +104,6 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     function getWrappedContract() public view returns (address) {
         return address(wrapped);
-    }
-
-    function getCurrencyContract() public view returns (address) {
-        return address(currency);
-    }
-
-    function updateCurrency(address newCurrency) public noOfferPending () {
-        require(active, "Contract is not active");
-        require(IMigratable(getCurrencyContract()).migrationToContract() == newCurrency, "Invalid currency update");
-        currency = IERC20(newCurrency);
     }
 
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public {
@@ -164,7 +148,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
   /** @dev Function to start drag-along procedure
    *  This can be called by anyone, but there is an upfront payment.
    */
-    function initiateAcquisition(uint256 pricePerShare) public {
+    function initiateAcquisition(uint256 pricePerShare, address currency) public {
         require(active, "An accepted offer exists");
         uint256 totalEquity = IShares(getWrappedContract()).totalShares();
         address buyer = msg.sender;
@@ -172,13 +156,13 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         require(totalSupply() >= totalEquity.mul(MIN_DRAG_ALONG_QUOTA).div(10000), "This contract does not represent enough equity");
         require(balanceOf(buyer) >= totalEquity.mul(MIN_HOLDING).div(10000), "You need to hold at least 5% of the firm to make an offer");
 
-        require(currency.transferFrom(buyer, licenseFeeRecipient, licenseFee), "Currency transfer failed");
+        licenseFeeRecipient.transfer(1 ether); 
 
-        Acquisition newOffer = new Acquisition(msg.sender, pricePerShare, acquisitionQuorum);
-        require(newOffer.isWellFunded(getCurrencyContract(), totalSupply() - balanceOf(buyer)), "Insufficient funding");
+        Acquisition newOffer = new Acquisition(msg.sender, currency, pricePerShare, acquisitionQuorum);
+        require(newOffer.isWellFunded(totalSupply() - balanceOf(buyer)), "Insufficient funding");
         if (offerExists()) {
-            require(pricePerShare >= offer.price().mul(MIN_OFFER_INCREMENT).div(10000), "New offers must be at least 5% higher than the pending offer");
-            killAcquisition("Offer was replaced by a higher bid");
+            require(currency == offer.currency() && pricePerShare >= offer.price().mul(MIN_OFFER_INCREMENT).div(10000), "New offers must be at least 5% higher than the pending offer");
+            killAcquisition("Offer replaced by higher bid");
         }
         offer = newOffer;
 
@@ -205,12 +189,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
             killAcquisition("Offer expired");
         } else if (offer.quorumHasFailed()) {
             killAcquisition("Not enough support");
-        } else if (
-            !offer.isWellFunded(
-                getCurrencyContract(),
-                totalSupply().sub(balanceOf(offer.buyer()))
-                )
-            ) {
+        } else if (!offer.isWellFunded(totalSupply() - balanceOf(offer.buyer()))) {
             killAcquisition("Offer was not sufficiently funded");
         } else {
             revert("Acquisition contest unsuccessful");
@@ -234,13 +213,8 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         address buyer = offer.buyer();
         require(msg.sender == buyer, "You are not authorized to complete this acquisition offer");
         require(offer.isQuorumReached(), "Insufficient number of yes votes");
-        require(
-            offer.isWellFunded(
-            getCurrencyContract(),
-            totalSupply().sub(balanceOf(buyer))),
-            "Offer insufficiently funded"
-            );
-        invertHoldings(buyer, currency, offer.price());
+        require(offer.isWellFunded(totalSupply() - balanceOf(buyer)), "Offer insufficiently funded");
+        invertHoldings(buyer, offer.currency(), offer.price());
         emit OfferEnded(
             buyer,
             msg.sender,
@@ -254,17 +228,16 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         return offerExists() ? !active : false;
     }
 
-    function invertHoldings(address newOwner, IERC20 newBacking, uint256 conversionRate) internal {
+    function invertHoldings(address newOwner, address newWrapped, uint256 conversionRate) internal {
         uint256 buyerBalance = balanceOf(newOwner);
         uint256 initialSupply = totalSupply();
         active = false;
         unwrap(buyerBalance);
         uint256 remaining = initialSupply.sub(buyerBalance);
-        require(wrapped.transfer(newOwner, remaining), "Wrapped token transfer failed");
-        require(newBacking.transferFrom(newOwner, address(this), conversionRate.mul(remaining)), "Backing transfer failed");
-
-        wrapped = newBacking;
+        require(wrapped.transfer(newOwner, remaining), "transfer failed");
+        wrapped = IERC20(newWrapped);
         unwrapConversionFactor = conversionRate;
+        require(wrapped.transferFrom(newOwner, address(this), conversionRate.mul(remaining)), "Backing transfer failed");
     }
 
     function migrate() public {
@@ -281,7 +254,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
             assert (!offerExists());
         }
 
-        invertHoldings(successor, IERC20(successor), 1);
+        invertHoldings(successor, successor, 1);
         emit MigrationSucceeded(successor);
     }
 
@@ -301,7 +274,6 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     }
 
     function _burn(address account, uint256 amount) virtual override internal {
-        require(balanceOf(msg.sender) >= amount, "Balance insufficient");
         super._burn(account, amount);
         if (offerExists() && active) {
             offer.adjustVotes(account, address(0), amount);
