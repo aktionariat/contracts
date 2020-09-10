@@ -29,7 +29,7 @@ pragma solidity >=0.7;
 
 import "./SafeMath.sol";
 import "./ERC20Recoverable.sol";
-import "./Pausable.sol";
+import "./Ownable.sol";
 import "./IERC677Receiver.sol";
 
 /**
@@ -57,7 +57,7 @@ import "./IERC677Receiver.sol";
  * Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
 
-contract Shares is ERC20Recoverable, Pausable {
+contract Shares is ERC20Recoverable, Ownable {
 
     using SafeMath for uint256;
 
@@ -76,7 +76,7 @@ contract Shares is ERC20Recoverable, Pausable {
     event SubRegisterAdded(address contractAddress);
     event SubRegisterRemoved(address contractAddress);
 
-    constructor(string memory _symbol, string memory _name, string memory _terms) ERC20(0) {
+    constructor(address firstowner, string memory _symbol, string memory _name, string memory _terms) ERC20(0) Ownable(firstowner) {
         setName(_symbol, _name);
         terms = _terms;
     }
@@ -84,12 +84,12 @@ contract Shares is ERC20Recoverable, Pausable {
     function setName(string memory _symbol, string memory _name) public onlyOwner {
         symbol = _symbol;
         name = _name;
-        emit Announcement(string(abi.encodePacked("Name updated to: ", _name, " (", _symbol, ")")));
+        emit Announcement(string(abi.encodePacked("New name: ", _name, " (", _symbol, ")")));
     }
 
     function setTerms(string memory _terms) public onlyOwner {
         terms = _terms;
-        emit Announcement(string(abi.encodePacked("Terms updated: ", _terms)));
+        emit Announcement(string(abi.encodePacked("New terms: ", _terms)));
     }
 
     /**
@@ -167,7 +167,7 @@ contract Shares is ERC20Recoverable, Pausable {
     }
 
     function getClaimDeleter() public override view returns (address) {
-        return owner();
+        return owner;
     }
 
     /**
@@ -242,11 +242,6 @@ contract Shares is ERC20Recoverable, Pausable {
         require(_amount <= balanceOf(msg.sender), "Not enough shares available");
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
-    }
-
-    function _transfer(address from, address _to, uint256 _value) internal override {
-        require(!paused, "Contract is paused");
-        super._transfer(from, _to, _value);
     }
 
 }

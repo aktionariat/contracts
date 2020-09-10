@@ -7,7 +7,7 @@ pragma solidity >=0.7;
 
 import "./Ownable.sol";
 
-contract Pausable is Ownable {
+contract Pausable is Ownable(msg.sender) {
     
   event Pause();
   event Unpause();

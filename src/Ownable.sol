@@ -30,8 +30,8 @@ contract Ownable {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor () {
-        transferOwnership(msg.sender);
+    constructor (address initialOwner) {
+        transferOwnership(initialOwner);
     }
 
     /**
