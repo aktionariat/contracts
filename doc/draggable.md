@@ -2,8 +2,6 @@
 
 ![drag along](draggable.jpg)
 
-TODO: improve. Move too technical parts into source code as code comment and add nice screenshots of the app and the like.
-
 ## Overview and Motivation
 
 Typical shareholder agreements contain 'drag-along' and 'tag-along' clauses. If someone makes an acquisition offer and a majority of shareholders want to sell, the drag-along clause allows them to force the rest of the shareholders to join them in selling their shares at the same price. This is useful because an acquirer often wants to either buy a company completely or not at all. This is similar to a squeeze-out on the stock market, which allows someone owning 98% of the shares to buy the remaining 2%. In contrast, a drag-along clause is often already enforcable when 75% or so of the shareholders agree. However, enforcing a drag-along clause can be time consuming in practice as all involved parties need to be contacted, need to sign a transfer agreement, and need to be paid. Our draggable smart contract fully automates this process, thereby allowing companies to have thousands of shareholders without losing the strategic option of selling the whole company to an acquirer.
