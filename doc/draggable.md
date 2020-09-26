@@ -22,6 +22,10 @@ The ERC20 contract [ERC20Draggable](../src/ERC20Draggable.sol) can be used to co
 - Counteroffers can be made, but the price needs to be at least 5% better than the previous offer and in the same currency.
 - The offer can end early if there enough votes have been cast to make sure that the remaining votes cannot make a difference any more.
 
+## Why no tag-along?
+
+While it is relatively easy to implement a drag-along clause in a smart contract, there is no straight-forward way to implement a tag-along clause. This illustrates that smart contracts are actually not that smart. A tag-along clause allows a shareholder to sell shares at the same price if a other shareholder sell a large package of shares to a buyer. This is difficult to automatically enforce because a transfer of shares (which could easily be detected) does not necessarily imply a sale of shares and even if it does represent a sale, it is unclear what the price was. For example, if someone 1000 shares from address 0x123.. to address 0x345.., it is not clear whether the 1000 shares changed their owner. Maybe the holder just moved them to a different wallet? And even if the shares where sold, there is no guarantee that shares were paid for in a blockchain-based transaction that a smart contract could refer to. The enforcing of a tag-along term necessarily requires human intervention and cannot be automated. The same holds for a large number of other contractual clauses. We are fortunate that the most important one, the drag-along, can be represented with a relatively simple smart contract.
+
 ## License Fee
 
 For this smart contract, we created a new type of software license, the "MIT License with Automated License Fee Payments". Anyone is free to reuse the code as long as the built-in license fee of 3 Ether, paid to Aktionariat AG, is preserved.
