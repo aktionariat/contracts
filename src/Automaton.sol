@@ -238,7 +238,7 @@ contract Automaton is Ownable, Pausable {
 
     function setLicenseFee(uint8 bps) public {
         require(msg.sender == copyright);
-        require(bps < 100);
+        require(bps <= 100);
         licenseFeeBps = bps;
     }
 
