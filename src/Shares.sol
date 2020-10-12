@@ -77,8 +77,7 @@ contract Shares is ERC20Recoverable, Ownable {
     event SubRegisterRemoved(address contractAddress);
 
     constructor(address firstowner, string memory _symbol, string memory _name, string memory _terms) ERC20(0) Ownable(firstowner) {
-        symbol = _symbol;
-        name = _name;
+        setName(_symbol, _name);
         terms = _terms;
     }
 
