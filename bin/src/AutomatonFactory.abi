@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"bytes32","name":"salt","type":"bytes32"},{"internalType":"address","name":"baseCurrency","type":"address"},{"internalType":"address","name":"shareToken","type":"address"}],"name":"create","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"nonpayable","type":"function"}]
