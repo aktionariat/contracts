@@ -33,7 +33,7 @@ import "./Pausable.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
 
-contract Automaton is Ownable, Pausable {
+contract MarketMaker is Ownable, Pausable {
 
     using SafeMath for uint256;
 
