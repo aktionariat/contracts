@@ -217,10 +217,9 @@ contract Shares is ERC20Recoverable, Ownable {
         _mint(shareholder, lastShareNumber.sub(firstShareNumber).add(1));
     }
 
-    function mintNumberedAndCall(address shareholder, address callee, uint256 amount, bytes calldata data,
-        uint256 firstShareNumber, uint256 lastShareNumber) public {
+    function mintNumberedAndCall(address shareholder, address callee, uint256 firstShareNumber, uint256 lastShareNumber, bytes calldata data) public {
         mintNumbered(shareholder, firstShareNumber, lastShareNumber);
-        IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data);
+        IERC677Receiver(callee).onTokenTransfer(shareholder, lastShareNumber.sub(firstShareNumber).add(1), data);
     }
 
     function _mint(address account, uint256 amount) internal override {
