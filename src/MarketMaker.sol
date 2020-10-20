@@ -46,9 +46,9 @@ contract MarketMaker is Ownable, Pausable {
     uint256 private price; // current offer price, without drift
     uint256 public increment; // increment
 
-    uint256 private driftStart;
-    uint256 private timeToDrift; // seconds until drift pushes price by one increment
-    bool private driftDirection;
+    uint256 public driftStart;
+    uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
+    int256 public driftIncrement;
 
     IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -60,13 +60,11 @@ contract MarketMaker is Ownable, Pausable {
         token = shareToken;
         copyright = msg.sender;
         driftStart = block.timestamp;
-        timeToDrift = 0;
     }
 
     function setPrice(uint256 newPrice, uint256 newIncrement) public onlyOwner {
-        price = newPrice;
+        anchorPrice(newPrice);
         increment = newIncrement;
-        driftStart = block.timestamp;
     }
 
     function hasDrift() public view returns (bool) {
@@ -74,10 +72,15 @@ contract MarketMaker is Ownable, Pausable {
     }
 
     // secondsPerStep should be negative for downwards drift
-    function setDrift(uint256 secondsPerStep, bool upwards) public onlyOwner {
-        setPrice(getPrice(), increment);
+    function setDrift(uint256 secondsPerStep, int256 newDriftIncrement) public onlyOwner {
+        anchorPrice(getPrice());
         timeToDrift = secondsPerStep;
-        driftDirection = upwards;
+        driftIncrement = newDriftIncrement;
+    }
+
+    function anchorPrice(uint256 currentPrice) private {
+        price = currentPrice;
+        driftStart = block.timestamp;
     }
 
     function getPrice() public view returns (uint256) {
@@ -86,14 +89,13 @@ contract MarketMaker is Ownable, Pausable {
 
     function getPrice(uint256 timestamp) public view returns (uint256) {
         if (hasDrift()){
-            uint256 passed = timestamp.sub(driftStart);
-            uint256 drifted = (passed / timeToDrift).mul(increment);
-            if (driftDirection){
-                return price.add(drifted);
-            } else if (drifted >= price){
+            uint256 passed = timestamp - driftStart;
+            int256 drifted = int256(passed / timeToDrift) * driftIncrement;
+            int256 driftedPrice = int256(price) + drifted;
+            if (driftedPrice < 0){
                 return 0;
             } else {
-                return price - drifted;
+                return uint256(driftedPrice);
             }
         } else {
             return price;
