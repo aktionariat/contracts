@@ -50,6 +50,8 @@ contract MarketMaker is Ownable, Pausable {
     uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
     int256 public driftIncrement;
 
+    bool public sellingEnabled = true;
+
     IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
@@ -156,10 +158,12 @@ contract MarketMaker is Ownable, Pausable {
     }
 
     function sell(uint256 tokens, bytes calldata ref) public returns (uint256){
+        require(sellingEnabled);
         return sell(msg.sender, tokens, ref);
     }
 
     function sell(address recipient, uint256 tokens, bytes calldata ref) public returns (uint256){
+        require(sellingEnabled);
         return _sell(msg.sender, recipient, tokens, ref);
     }
 
@@ -249,4 +253,7 @@ contract MarketMaker is Ownable, Pausable {
         require(erc20.transfer(to, amount), "Transfer failed");
     }
 
+    function setSellingEnabled(bool newSellingEnabled) public onlyOwner() {
+        sellingEnabled = newSellingEnabled;
+    }
 }
