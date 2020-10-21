@@ -134,7 +134,7 @@ contract MarketMaker is Ownable, Pausable {
         return _buy(msg.sender, recipient, numberOfSharesToBuy, 0, ref);
     }
 
-    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid, bytes calldata ref) internal returns (uint256) {
+    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid, bytes calldata ref) internal whenNotPaused returns (uint256) {
         uint256 totPrice = getBuyPrice(shares);
         IERC20 baseToken = IERC20(base);
         if (totPrice > alreadyPaid){
@@ -182,7 +182,7 @@ contract MarketMaker is Ownable, Pausable {
         return true;
     }
 
-    function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256){
+    function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal whenNotPaused returns (uint256){
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
         uint256 fee = getSaleFee(totPrice);
