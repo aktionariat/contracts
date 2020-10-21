@@ -256,11 +256,8 @@ contract MarketMaker is Ownable {
         require(erc20.transfer(to, amount), "Transfer failed");
     }
 
-    function setBuyingEnabled(bool newBuyingEnabled) public onlyOwner() {
+    function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) public onlyOwner() {
         buyingEnabled = newBuyingEnabled;
-    }
-
-    function setSellingEnabled(bool newSellingEnabled) public onlyOwner() {
         sellingEnabled = newSellingEnabled;
     }
 }
