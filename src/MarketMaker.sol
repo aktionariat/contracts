@@ -60,7 +60,7 @@ contract MarketMaker is Ownable, Pausable {
     constructor(address baseCurrency, address shareToken) {
         base = baseCurrency;
         token = shareToken;
-        copyright = msg.sender;
+        copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         driftStart = block.timestamp;
     }
 
