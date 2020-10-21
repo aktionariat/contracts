@@ -29,11 +29,10 @@ pragma solidity >=0.7;
 
 import "./SafeMath.sol";
 import "./Ownable.sol";
-import "./Pausable.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
 
-contract MarketMaker is Ownable, Pausable {
+contract MarketMaker is Ownable {
 
     using SafeMath for uint256;
 
@@ -50,6 +49,7 @@ contract MarketMaker is Ownable, Pausable {
     uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
     int256 public driftIncrement;
 
+    bool public buyingEnabled = true;
     bool public sellingEnabled = true;
 
     IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
@@ -113,6 +113,7 @@ contract MarketMaker is Ownable, Pausable {
     }
 
     function buyWithEther(uint256 shares, bytes calldata ref) public payable returns (uint256) {
+        require(buyingEnabled);
         uint256 totPrice = getBuyPrice(shares);
         uint256 totPriceEth = getPriceInEther(shares);
         address[] memory path = new address[](2);
@@ -129,14 +130,16 @@ contract MarketMaker is Ownable, Pausable {
     }
 
     function buy(uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
+        require(buyingEnabled);
         return buy(msg.sender, numberOfSharesToBuy, ref);
     }
 
     function buy(address recipient, uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
+        require(buyingEnabled);
         return _buy(msg.sender, recipient, numberOfSharesToBuy, 0, ref);
     }
 
-    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid, bytes calldata ref) internal whenNotPaused returns (uint256) {
+    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid, bytes calldata ref) internal returns (uint256) {
         uint256 totPrice = getBuyPrice(shares);
         IERC20 baseToken = IERC20(base);
         if (totPrice > alreadyPaid){
@@ -186,7 +189,7 @@ contract MarketMaker is Ownable, Pausable {
         return true;
     }
 
-    function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal whenNotPaused returns (uint256){
+    function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
         uint256 fee = getSaleFee(totPrice);
@@ -251,6 +254,10 @@ contract MarketMaker is Ownable, Pausable {
     function withdraw(address ercAddress, address to, uint256 amount) public onlyOwner() {
         IERC20 erc20 = IERC20(ercAddress);
         require(erc20.transfer(to, amount), "Transfer failed");
+    }
+
+    function setBuyingEnabled(bool newBuyingEnabled) public onlyOwner() {
+        buyingEnabled = newBuyingEnabled;
     }
 
     function setSellingEnabled(bool newSellingEnabled) public onlyOwner() {
