@@ -53,7 +53,7 @@ contract MarketMaker is Ownable {
     bool public sellingEnabled = true;
 
     IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-    address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public weth;
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
@@ -61,6 +61,7 @@ contract MarketMaker is Ownable {
         require(token == address(0), "Already initialized.");
         base = baseCurrency;
         token = shareToken;
+        weth = uniswap.WETH();
         copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         driftStart = block.timestamp;
     }
