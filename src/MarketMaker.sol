@@ -57,7 +57,8 @@ contract MarketMaker is Ownable {
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
-    constructor(address baseCurrency, address shareToken) {
+    function initialize(address baseCurrency, address shareToken) public {
+        require(token == address(0), "Already initialized.");
         base = baseCurrency;
         token = shareToken;
         copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
