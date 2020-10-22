@@ -15,6 +15,7 @@ contract MarketMakerFactory {
     MarketMaker marketMaker = new MarketMaker{salt: salt}();
     marketMaker.initialize(baseCurrency, shareToken);
     emit ContractDeployed(address(marketMaker));
+    marketMaker.transferOwnership(msg.sender);
     return address(marketMaker);
   }
 }
