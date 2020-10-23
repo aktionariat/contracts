@@ -182,8 +182,10 @@ contract MarketMaker is Ownable {
     function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public returns (bool success) {
         require(msg.sender == token || msg.sender == base);
         if (msg.sender == token){
+            require(sellingEnabled);
             _notifyTokensReceived(from, amount, ref);
         } else if (msg.sender == base){
+            require(buyingEnabled);
             _notifyMoneyReceived(from, amount, ref);
         } else {
             require(false);
