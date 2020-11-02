@@ -88,10 +88,10 @@ contract MarketMaker is Ownable {
     }
 
     function getPrice() public view returns (uint256) {
-        return getPrice(block.timestamp);
+        return getPriceAtTime(block.timestamp);
     }
 
-    function getPrice(uint256 timestamp) public view returns (uint256) {
+    function getPriceAtTime(uint256 timestamp) public view returns (uint256) {
         if (hasDrift()){
             uint256 passed = timestamp - driftStart;
             int256 drifted = int256(passed / timeToDrift) * driftIncrement;
@@ -224,24 +224,28 @@ contract MarketMaker is Ownable {
     }
 
     function getPrice(uint256 lowest, uint256 shares) internal view returns (uint256){
-        require(shares >= 1);
-        uint256 highest = lowest + (shares - 1).mul(increment);
-        return (lowest.add(highest) / 2).mul(shares);
+        if (shares == 0){
+            return 0;
+        } else {
+            uint256 highest = lowest + (shares - 1).mul(increment);
+            return (lowest.add(highest) / 2).mul(shares);
+        }
     }
 
     function getShares(uint256 money) public view returns (uint256) {
-        return getShares(money, price);
-    }
-
-    function getShares(uint256 money, uint256 current) internal view returns (uint256) {
-        if (money < current){
-            return 0;
-        } else {
-            uint atleast = money / (current - 1);
-            uint newPrice = current - atleast * increment;
-            uint paid = getPrice(newPrice, atleast);
-            return atleast + getShares(money - paid, newPrice);
+        uint256 currentPrice = getPrice();
+        uint256 min = 0;
+        uint256 max = money / currentPrice;
+        while (min + 1 < max){
+            uint256 middle = (min + max)/2;
+            uint256 totalPrice = getPrice(currentPrice, middle);
+            if (totalPrice > money){
+                max = middle;
+            } else {
+                min = middle;
+            }
         }
+        return min;
     }
 
     function setCopyright(address newOwner) public {
