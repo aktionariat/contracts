@@ -6,14 +6,13 @@ pragma solidity >=0.7;
 
 import "./Address.sol";
 import "./RLPEncode.sol";
+import "./Nonce.sol";
 
-contract MultiSig {
+contract MultiSig is Nonce {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
   uint16 public signerCount;
-
-  uint256 private sequenceNumber; // A sequence number starting with 1 and that is increased with every successful (!) transaction
   bytes public contractId; // most likely unique id of this contract
 
   event SignerChange(
@@ -34,7 +33,7 @@ contract MultiSig {
     // two multisig contracts with the same id, and that's all we need to prevent
     // replay-attacks.
     contractId = toBytes(uint32(address(this)));
-    _setSigner(owner, 1); // start with the contract creator as owner
+    _setSigner(owner, 1); // set initial owner
   }
 
   /**
@@ -46,9 +45,9 @@ contract MultiSig {
   /**
    * Checks if the provided signatures suffice to sign the transaction and if the nonce is correct.
    */
-  function checkSignatures(address to, uint value, bytes calldata data,
+  function checkSignatures(uint128 nonce, address to, uint value, bytes calldata data,
     uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) public view returns (address[] memory) {
-    bytes32 transactionHash = calculateTransactionHash(nextSequenceNumber(), contractId, to, value, data);
+    bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     return verifySignatures(transactionHash, v, r, s);
   }
 
@@ -60,13 +59,11 @@ contract MultiSig {
     require(false, "Test passed. Reverting.");
   }
 
-  function execute(address to, uint value, bytes calldata data,
-  uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) public returns (bytes memory) {
-    // ok to increment here already, will be rolled back in case of failure and saves us one local variable
-    sequenceNumber = nextSequenceNumber();
-    bytes32 transactionHash = calculateTransactionHash(sequenceNumber, contractId, to, value, data);
+  function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) public returns (bytes memory) {
+    bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     address[] memory found = verifySignatures(transactionHash, v, r, s);
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
+    flagUsed(nonce);
     emit Transacted(to, extractSelector(data), found);
     return returndata;
   }
@@ -77,10 +74,6 @@ contract MultiSig {
     } else {
       return bytes4(data[0]) | (bytes4(data[1]) >> 8) | (bytes4(data[2]) >> 16) | (bytes4(data[3]) >> 24);
     }
-  }
-
-  function nextSequenceNumber() public view returns (uint256){
-    return sequenceNumber + 1;
   }
 
   function toBytes(uint number) internal pure returns (bytes memory){
@@ -100,7 +93,7 @@ contract MultiSig {
   }
 
   // Note: does not work with contract creation
-  function calculateTransactionHash(uint sequence, bytes storage id, address to, uint value, bytes calldata data)
+  function calculateTransactionHash(uint128 sequence, bytes storage id, address to, uint value, bytes calldata data)
     private pure returns (bytes32){
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
@@ -152,7 +145,6 @@ contract MultiSig {
   }
 
   function migrate(address source, address destination) public authorized {
-    require(source == address(this));
     _migrate(source, destination);
   }
 

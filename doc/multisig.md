@@ -12,4 +12,6 @@ Our approach comes with a number of advantages in comparison to other multisigna
 
 3. It can reflect the standard corporate signatory powers, which allows to have signers with different signatory powers. For example, one signer might have single-signatory power, being able to sign transactions alone, while others are required to sign along with one or more co-signers.
 
+To safe gas on creating new instances of the multi-signature contract, we have created a factory contract, available at [0xd05bba08a7a2209896cd5df11ffa0211bb03d418](https://etherscan.io/address/0xd05bba08a7a2209896cd5df11ffa0211bb03d418).
+
 The address of our own multisignature contract is [0xcc1fb945ed5652c150cf00c0e495b76bf22cc7ad](https://etherscan.io/address/0xcc1fb945ed5652c150cf00c0e495b76bf22cc7ad#code). If you want to use this multisignature contract for your own purpose outside the context of Aktionariat, feel free to get in touch. We have built a few server-side tools to support the transaction workflow that might be useful to you in such a case.

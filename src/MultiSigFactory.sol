@@ -9,17 +9,23 @@ import "./MultiSig.sol";
 
 contract MultiSigFactory {
 
-  function create() public returns (address) {
-    return address(new MultiSig(msg.sender));
+  event ContractCreated(address contractAddress, string typeName);
+
+  function create(address owner) public returns (address) {
+    address instance = address(new MultiSig(owner));
+    emit ContractCreated(instance, "MultiSig");
+    return instance;
   }
 
-  function predict(bytes32 salt) public view returns (address) {
+  function predict(address owner, bytes32 salt) public view returns (address) {
     return address(uint(keccak256(abi.encodePacked(byte(0xff), address(this), salt,
-            keccak256(abi.encodePacked(type(MultiSig).creationCode, msg.sender))
+            keccak256(abi.encodePacked(type(MultiSig).creationCode, owner))
         ))));
   }
 
-  function create(bytes32 salt) public returns (address) {
-    return address(new MultiSig{salt: salt}(msg.sender));
+  function create(address owner, bytes32 salt) public returns (address) {
+    address instance = address(new MultiSig{salt: salt}(owner));
+    emit ContractCreated(instance, "MultiSig");
+    return instance;
   }
 }
