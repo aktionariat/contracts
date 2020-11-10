@@ -1,6 +1,6 @@
 # Recovery Mechanism
 
-Documentation for the token recovery mechanism implemented in [ERC20Recoverable.sol](../src/ERC20Recoverable.sol)]
+Documentation for the token recovery mechanism implemented in [ERC20Recoverable.sol](../src/ERC20Recoverable.sol).
 
 ## Motivation
 
