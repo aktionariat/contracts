@@ -153,7 +153,7 @@ contract MarketMaker is Ownable {
         IERC20 shareToken = IERC20(token);
         require(shareToken.transfer(recipient, shares));
         price = price.add(shares.mul(increment));
-        emit Trade(token, paying, ref, int256(shares), base, totPrice, 0, price);
+        emit Trade(token, paying, ref, int256(shares), base, totPrice, 0, getPrice());
         return totPrice;
     }
 
@@ -202,7 +202,7 @@ contract MarketMaker is Ownable {
         }
         require(baseToken.transfer(recipient, totPrice - fee));
         price = price.sub(amount.mul(increment));
-        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, price);
+        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
         return totPrice;
     }
 
