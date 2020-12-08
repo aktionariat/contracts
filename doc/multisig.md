@@ -6,9 +6,9 @@ Unlike the other multisignature contracts we know, our multisignature contract i
 
 Our approach comes with a number of advantages in comparison to other multisignature contracts:
 
-1. The signers do not need to sign a cryptic message, but can actually sign data that conforms to the standard transaction format supported by many wallets. This ensures a high level of compatibility as well as user-friendliness. All that's needed is a wallet that supports signing offline-transactions. (As a notable exception, the MetaMask browser plugin [unfortunately does not](https://github.com/MetaMask/metamask-extension/issues/7644).)
+1. The signers do not need to sign a cryptic message, but can actually sign data that conforms to the standard transaction format supported by many wallets. This ensures a high level of compatibility as well as user-friendliness. All that’s needed is a wallet that supports signing offline transactions. (As a notable exception, the MetaMask browser plugin [unfortunately does not](https://github.com/MetaMask/metamask-extension/issues/7644).)
 
-2. There is only one transaction that needs to be sent to the Ethereum network. Other multisignature scheme require every signer to send to execute their own transaction on chain. As a nice side-effect of this architecture, the transaction fee can be paid for by whoever collected the signed transaction. In our case, this is the Aktionariat server. This allows our client to execute corporate actions without having to worry about transaction fees or running out of gas.
+2. There is only one transaction that needs to be sent to the Ethereum network. Other multisignature schemes require every signer to send to execute their own transaction on chain. As a nice side-effect of this architecture, the transaction fee can be paid for by whoever collected the signed transaction. In our case, this is the Aktionariat server. This allows our client to execute corporate actions without having to worry about transaction fees or running out of gas.
 
 3. It can reflect the standard corporate signatory powers, which allows to have signers with different signatory powers. For example, one signer might have single-signatory power, being able to sign transactions alone, while others are required to sign along with one or more co-signers.
 
