@@ -47,7 +47,7 @@ import "./ERC20Draggable.sol";
  * chosen to ensure that token holders are aware that they are bound to such an agreement.
  *
  * The percentage of token holders that must agree with an update of the terms is defined by the
- * constant UPDATE_QUORUM. The precentage of yes-votes that is needed to successfully complete an
+ * constant UPDATE_QUORUM. The percentage of yes-votes that is needed to successfully complete an
  * acquisition is defined in the constant ACQUISITION_QUORUM. Note that the update quorum is based
  * on the total number of tokens in circulation. In contrast, the acquisition quorum is based on the
  * number of votes cast during the voting period, not taking into account those who did not bother
