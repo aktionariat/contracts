@@ -47,7 +47,7 @@
             "type": "function"
         }
     ],
-    "metadata": "{\"compiler\":{\"version\":\"0.8.0+commit.c7dfd78e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"getClaimDeleter\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"getCollateralRate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"name\":\"setRecoverable\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"c:/Users/luziu/Documents/aktionariat/contracts/src/DraggableShares.sol\":\"IRecoverable\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"c:/Users/luziu/Documents/aktionariat/contracts/src/DraggableShares.sol\":{\"keccak256\":\"0xffc25e527d1df5f73564f66518fa09af2e31d60df833c3210effdafbc2fc452b\",\"license\":\"LicenseRef-Aktionariat\",\"urls\":[\"bzz-raw://88e423516f3ed745ed019307af93f38e90cd0178dfc5ca522b2cedd15eae8ba3\",\"dweb:/ipfs/QmeZbwudwVTyMzs9hatMHN6mtmd9fgvnV44brBCb3YvYRa\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/ERC20.sol\":{\"keccak256\":\"0x7589205fed6098c2c1f39106f2d87ddcab37301d5f3f9ef0852340e39c058247\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://652fbfb982c5ef52e9e6addc8d24a1a7b6e0a817c04c78e65c74f80f5fa408ba\",\"dweb:/ipfs/QmPxsUqFZRo4wTnURhLsPALxsJ8JCvcfFuZ3hxPwT1wRiK\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/ERC20Draggable.sol\":{\"keccak256\":\"0x139853138b0e634942de831a7f8e6c152668553f08e0623072341d17ed1b74fe\",\"license\":\"LicenseRef-Aktionariat\",\"urls\":[\"bzz-raw://3eed7eb9cc56cc78c28ef0f08e46338448b99484fd4841579ea60e83174c79ac\",\"dweb:/ipfs/QmTYfac18qLu7iPgAqBH3eQZmS1VSsNpwkxfin4Lxinm83\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/ERC20Recoverable.sol\":{\"keccak256\":\"0x0a386ed93c20d20f9249e62fe92bdcc90dda77ed6b0d465e04e2399cf533f795\",\"license\":\"LicenseRef-Aktionariat\",\"urls\":[\"bzz-raw://87cdadcbd7eaf9315dc257c0c20099b4de116dc3b28aa3a358fe8e7a096cb315\",\"dweb:/ipfs/QmYfCc9Sfg2xahwyBf37ekTMnoMDteB1GqS53QnpPidz3g\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/IERC20.sol\":{\"keccak256\":\"0xdd9ef23be041b279c4815ae1483703e0532d8839865b8081e12955a52d4e148f\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2eef9ae3fc010bd8012716c89852c245aacf07474f3a52b84280f9f7958210fe\",\"dweb:/ipfs/QmSsjJBfgFw8PzaBTaZwCLzHkqM6pfS6NDrrFysNkCbS2M\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/IERC677Receiver.sol\":{\"keccak256\":\"0xa1be3ece738b7e5231cbdb0f5d95e33015f917f8b9326083960deeee34b78752\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://f13ac395559850cbf6ca4a35fc04c8b3ebbff238895ad228f47041d6520c96d6\",\"dweb:/ipfs/QmaEXT6Zxoz6jYQEMv4PDVuxt7LUick6Y3ebhuxRooJamK\"]}},\"version\":1}",
+    "metadata": "{\"compiler\":{\"version\":\"0.8.0+commit.c7dfd78e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"getClaimDeleter\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"getCollateralRate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"name\":\"setRecoverable\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"c:/Users/luziu/Documents/aktionariat/contracts/src/DraggableShares.sol\":\"IRecoverable\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"c:/Users/luziu/Documents/aktionariat/contracts/src/DraggableShares.sol\":{\"keccak256\":\"0xffc25e527d1df5f73564f66518fa09af2e31d60df833c3210effdafbc2fc452b\",\"license\":\"LicenseRef-Aktionariat\",\"urls\":[\"bzz-raw://88e423516f3ed745ed019307af93f38e90cd0178dfc5ca522b2cedd15eae8ba3\",\"dweb:/ipfs/QmeZbwudwVTyMzs9hatMHN6mtmd9fgvnV44brBCb3YvYRa\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/ERC20.sol\":{\"keccak256\":\"0x7589205fed6098c2c1f39106f2d87ddcab37301d5f3f9ef0852340e39c058247\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://652fbfb982c5ef52e9e6addc8d24a1a7b6e0a817c04c78e65c74f80f5fa408ba\",\"dweb:/ipfs/QmPxsUqFZRo4wTnURhLsPALxsJ8JCvcfFuZ3hxPwT1wRiK\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/ERC20Draggable.sol\":{\"keccak256\":\"0x196ded85b835da0294c6045f58ec2f180f0a4387676ed6ab0c9c92ec363d0301\",\"license\":\"LicenseRef-Aktionariat\",\"urls\":[\"bzz-raw://4e972ab7ba1f2cf40cde0491428df9832c3a4b62eafb0942ba50103074400382\",\"dweb:/ipfs/QmRzGUoLrJELUA1ru3Eqa6NDaJtnQ784fuRYrRCyWvYHzQ\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/ERC20Recoverable.sol\":{\"keccak256\":\"0x0a386ed93c20d20f9249e62fe92bdcc90dda77ed6b0d465e04e2399cf533f795\",\"license\":\"LicenseRef-Aktionariat\",\"urls\":[\"bzz-raw://87cdadcbd7eaf9315dc257c0c20099b4de116dc3b28aa3a358fe8e7a096cb315\",\"dweb:/ipfs/QmYfCc9Sfg2xahwyBf37ekTMnoMDteB1GqS53QnpPidz3g\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/IERC20.sol\":{\"keccak256\":\"0xdd9ef23be041b279c4815ae1483703e0532d8839865b8081e12955a52d4e148f\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2eef9ae3fc010bd8012716c89852c245aacf07474f3a52b84280f9f7958210fe\",\"dweb:/ipfs/QmSsjJBfgFw8PzaBTaZwCLzHkqM6pfS6NDrrFysNkCbS2M\"]},\"c:/Users/luziu/Documents/aktionariat/contracts/src/IERC677Receiver.sol\":{\"keccak256\":\"0xa1be3ece738b7e5231cbdb0f5d95e33015f917f8b9326083960deeee34b78752\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://f13ac395559850cbf6ca4a35fc04c8b3ebbff238895ad228f47041d6520c96d6\",\"dweb:/ipfs/QmaEXT6Zxoz6jYQEMv4PDVuxt7LUick6Y3ebhuxRooJamK\"]}},\"version\":1}",
     "bytecode": "",
     "deployedBytecode": "",
     "sourceMap": "",
@@ -67,25 +67,25 @@
                 539
             ],
             "ERC20Draggable": [
-                1020
+                1023
             ],
             "ERC20Recoverable": [
-                1650
+                1653
             ],
             "IBurnable": [
-                1026
+                1029
             ],
             "IERC20": [
-                1743
+                1746
             ],
             "IERC677Receiver": [
-                1755
+                1758
             ],
             "IOffer": [
-                1041
+                1044
             ],
             "IOfferFactory": [
-                1061
+                1064
             ],
             "IRecoverable": [
                 136
@@ -111,7 +111,7 @@
                 "id": 2,
                 "nodeType": "ImportDirective",
                 "scope": 137,
-                "sourceUnit": 1651,
+                "sourceUnit": 1654,
                 "src": "1362:32:0",
                 "symbolAliases": [],
                 "unitAlias": ""
@@ -122,7 +122,7 @@
                 "id": 3,
                 "nodeType": "ImportDirective",
                 "scope": 137,
-                "sourceUnit": 1062,
+                "sourceUnit": 1065,
                 "src": "1396:30:0",
                 "symbolAliases": [],
                 "unitAlias": ""
@@ -135,7 +135,7 @@
                             "id": 5,
                             "name": "ERC20Recoverable",
                             "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 1650,
+                            "referencedDeclaration": 1653,
                             "src": "3041:16:0"
                         },
                         "id": 6,
@@ -147,7 +147,7 @@
                             "id": 7,
                             "name": "ERC20Draggable",
                             "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 1020,
+                            "referencedDeclaration": 1023,
                             "src": "3059:14:0"
                         },
                         "id": 8,
@@ -157,10 +157,10 @@
                 ],
                 "contractDependencies": [
                     539,
-                    1020,
-                    1650,
-                    1743,
-                    1755
+                    1023,
+                    1653,
+                    1746,
+                    1758
                 ],
                 "contractKind": "contract",
                 "documentation": {
@@ -173,11 +173,11 @@
                 "id": 118,
                 "linearizedBaseContracts": [
                     118,
-                    1020,
-                    1755,
-                    1650,
+                    1023,
+                    1758,
+                    1653,
                     539,
-                    1743
+                    1746
                 ],
                 "name": "DraggableShares",
                 "nodeType": "ContractDefinition",
@@ -410,7 +410,7 @@
                                     "id": 19,
                                     "name": "ERC20Draggable",
                                     "nodeType": "IdentifierPath",
-                                    "referencedDeclaration": 1020,
+                                    "referencedDeclaration": 1023,
                                     "src": "3308:14:0"
                                 },
                                 "nodeType": "ModifierInvocation",
@@ -520,7 +520,7 @@
                     {
                         "baseFunctions": [
                             213,
-                            1444
+                            1447
                         ],
                         "body": {
                             "id": 54,
@@ -585,7 +585,7 @@
                                             "lValueRequested": false,
                                             "memberName": "transfer",
                                             "nodeType": "MemberAccess",
-                                            "referencedDeclaration": 1444,
+                                            "referencedDeclaration": 1447,
                                             "src": "3697:14:0",
                                             "typeDescriptions": {
                                                 "typeIdentifier": "t_function_internal_nonpayable$_t_address_$_t_uint256_$returns$_t_bool_$",
@@ -629,7 +629,7 @@
                                     "id": 42,
                                     "name": "ERC20Recoverable",
                                     "nodeType": "IdentifierPath",
-                                    "referencedDeclaration": 1650,
+                                    "referencedDeclaration": 1653,
                                     "src": "3632:16:0"
                                 },
                                 {
@@ -743,7 +743,7 @@
                     },
                     {
                         "baseFunctions": [
-                            1169
+                            1172
                         ],
                         "body": {
                             "id": 70,
@@ -767,7 +767,7 @@
                                                                 "referencedDeclaration": 563,
                                                                 "src": "3843:7:0",
                                                                 "typeDescriptions": {
-                                                                    "typeIdentifier": "t_contract$_IERC20_$1743",
+                                                                    "typeIdentifier": "t_contract$_IERC20_$1746",
                                                                     "typeString": "contract IERC20"
                                                                 }
                                                             }
@@ -775,7 +775,7 @@
                                                         "expression": {
                                                             "argumentTypes": [
                                                                 {
-                                                                    "typeIdentifier": "t_contract$_IERC20_$1743",
+                                                                    "typeIdentifier": "t_contract$_IERC20_$1746",
                                                                     "typeString": "contract IERC20"
                                                                 }
                                                             ],
@@ -944,7 +944,7 @@
                     },
                     {
                         "baseFunctions": [
-                            1122
+                            1125
                         ],
                         "body": {
                             "id": 116,
@@ -1025,7 +1025,7 @@
                                             "lValueRequested": false,
                                             "memberName": "getCollateralRate",
                                             "nodeType": "MemberAccess",
-                                            "referencedDeclaration": 1122,
+                                            "referencedDeclaration": 1125,
                                             "src": "4002:23:0",
                                             "typeDescriptions": {
                                                 "typeIdentifier": "t_function_internal_view$_t_address_$returns$_t_uint256_$",
@@ -1132,7 +1132,7 @@
                                                         "referencedDeclaration": 563,
                                                         "src": "4140:7:0",
                                                         "typeDescriptions": {
-                                                            "typeIdentifier": "t_contract$_IERC20_$1743",
+                                                            "typeIdentifier": "t_contract$_IERC20_$1746",
                                                             "typeString": "contract IERC20"
                                                         }
                                                     }
@@ -1140,7 +1140,7 @@
                                                 "expression": {
                                                     "argumentTypes": [
                                                         {
-                                                            "typeIdentifier": "t_contract$_IERC20_$1743",
+                                                            "typeIdentifier": "t_contract$_IERC20_$1746",
                                                             "typeString": "contract IERC20"
                                                         }
                                                     ],
@@ -1234,7 +1234,7 @@
                                                                                     "referencedDeclaration": 563,
                                                                                     "src": "4447:7:0",
                                                                                     "typeDescriptions": {
-                                                                                        "typeIdentifier": "t_contract$_IERC20_$1743",
+                                                                                        "typeIdentifier": "t_contract$_IERC20_$1746",
                                                                                         "typeString": "contract IERC20"
                                                                                     }
                                                                                 }
@@ -1242,7 +1242,7 @@
                                                                             "expression": {
                                                                                 "argumentTypes": [
                                                                                     {
-                                                                                        "typeIdentifier": "t_contract$_IERC20_$1743",
+                                                                                        "typeIdentifier": "t_contract$_IERC20_$1746",
                                                                                         "typeString": "contract IERC20"
                                                                                     }
                                                                                 ],

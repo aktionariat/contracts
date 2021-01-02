@@ -52,10 +52,8 @@ contract OfferFactory {
     }
 
     // Do not call directly, msg.sender must be the token to be acquired
-    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod, uint256 validityPeriod) public returns (address) {
-        // License Fee to Aktionariat AG, also ensures that offer is serious
-        payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
-        return address(new Offer{salt: salt}(buyer, msg.sender, pricePerShare, currency, quorum, votePeriod, validityPeriod));
+    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod, uint256 validityPeriod) public payable returns (address) {
+        return address(new Offer{value: msg.value, salt: salt}(buyer, msg.sender, pricePerShare, currency, quorum, votePeriod, validityPeriod));
     }
 
 }

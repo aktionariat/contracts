@@ -121,9 +121,8 @@ contract MarketMaker is Ownable {
         uint256[] memory amounts = uniswap.swapETHForExactTokens{value: totPriceEth}(totPrice, path, address(this), block.timestamp);
         assert(totPrice == amounts[1]);
         _buy(msg.sender, msg.sender, shares, amounts[1], ref);
-        uint256 contractEtherBalance = address(this).balance;
-        if (contractEtherBalance > 0){
-            msg.sender.transfer(contractEtherBalance);
+        if (address(this).balance > 0){
+            payable(msg.sender).transfer(address(this).balance);
         }
         return amounts[0];
     }

@@ -57,7 +57,7 @@ contract Offer {
     event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);
     event OfferEnded(address indexed buyer, bool success, string message);
 
-    constructor (address buyer_, address token_, uint256 price_, address currency_, uint256 quorum_, uint256 votePeriod, uint256 validityPeriod) {
+    constructor (address buyer_, address token_, uint256 price_, address currency_, uint256 quorum_, uint256 votePeriod, uint256 validityPeriod) payable {
         buyer = buyer_;
         token = token_;
         currency = currency_;
@@ -67,6 +67,9 @@ contract Offer {
         expiration = block.timestamp + validityPeriod;
         require(voteEnd <= expiration);
         require(isWellFunded());
+        // License Fee to Aktionariat AG, also ensures that offer is serious.
+        // Any circumvention of this license fee payment is a violation of the copyright terms.
+        payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
         emit OfferCreated(buyer, token, price, currency);
     }
 
