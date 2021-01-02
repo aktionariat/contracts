@@ -25,16 +25,13 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
-import "./SafeMath.sol";
 import "./Ownable.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
 
 contract MarketMaker is Ownable {
-
-    using SafeMath for uint256;
 
     address public base;  // ERC-20 currency
     address public token; // ERC-20 share token
@@ -152,7 +149,7 @@ contract MarketMaker is Ownable {
         }
         IERC20 shareToken = IERC20(token);
         require(shareToken.transfer(recipient, shares));
-        price = price.add(shares.mul(increment));
+        price = price + (shares * increment);
         emit Trade(token, paying, ref, int256(shares), base, totPrice, 0, getPrice());
         return totPrice;
     }
@@ -201,13 +198,13 @@ contract MarketMaker is Ownable {
             require(baseToken.transfer(copyright, fee));
         }
         require(baseToken.transfer(recipient, totPrice - fee));
-        price = price.sub(amount.mul(increment));
+        price -= amount * increment;
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
         return totPrice;
     }
 
     function getSaleFee(uint256 totalPrice) public view returns (uint256) {
-        return totalPrice.mul(licenseFeeBps).div(10000);
+        return totalPrice * licenseFeeBps / 10000;
     }
 
     function getSaleProceeds(uint256 shares) public view returns (uint256) {
@@ -216,7 +213,7 @@ contract MarketMaker is Ownable {
     }
 
     function getSellPrice(uint256 shares) public view returns (uint256) {
-        return getPrice(getPrice().sub(shares.mul(increment)), shares);
+        return getPrice(getPrice() - (shares * increment), shares);
     }
 
     function getBuyPrice(uint256 shares) public view returns (uint256) {
@@ -227,8 +224,8 @@ contract MarketMaker is Ownable {
         if (shares == 0){
             return 0;
         } else {
-            uint256 highest = lowest + (shares - 1).mul(increment);
-            return (lowest.add(highest) / 2).mul(shares);
+            uint256 highest = lowest + (shares - 1) * increment;
+            return ((lowest + highest) / 2) * shares;
         }
     }
 

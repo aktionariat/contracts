@@ -25,14 +25,13 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
 import "./ERC20Recoverable.sol";
 import "./ERC20Draggable.sol";
 
 /**
  * @title Draggable CompanyName AG Shares
- * @author Benjamin Rickenbacher, b.rickenbacher@intergga.ch
  * @author Luzius Meisser, luzius@meissereconomics.com
  *
  * This is an ERC-20 token representing shares of CompanyName AG that are bound to
@@ -56,29 +55,15 @@ import "./ERC20Draggable.sol";
 
 contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
-    using SafeMath for uint256;
-
     string public terms;
 
     /**
      * Designed to be used with the Crypto Franc as currency token. See also parent constructor.
      */
     constructor(string memory _terms, address wrappedToken, uint256 quorum)
-        ERC20Draggable(wrappedToken, quorum, quorum) {
+        ERC20Draggable(wrappedToken, quorum) {
         IRecoverable(wrappedToken).setRecoverable(false);
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
-    }
-
-    /* function _mint(address account, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {
-        super._mint(account, amount);
-    } */
-
-    function _burn(address account, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {
-        super._burn(account, amount);
-    }
-
-    function _transfer(address from, address to, uint256 value) override(ERC20Draggable, ERC20) internal {
-        super._transfer(from, to, value);
     }
 
     function transfer(address to, uint256 value) override(ERC20Recoverable, ERC20) public returns (bool) {
@@ -98,7 +83,7 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         } else {
             // If the wrapped contract allows for a specific collateral, we should too.
             // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
-            return IRecoverable(address(wrapped)).getCollateralRate(collateralType).mul(unwrapConversionFactor);
+            return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * unwrapConversionFactor;
         }
     }
 

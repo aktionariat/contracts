@@ -25,17 +25,13 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
-import "./SafeMath.sol";
 import "./Ownable.sol";
-import "./Pausable.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
 
-contract Simpleton is Ownable, Pausable {
-
-    using SafeMath for uint256;
+contract Simpleton is Ownable {
 
     address public base;  // ERC-20 currency
     address public token; // ERC-20 share token
@@ -57,7 +53,7 @@ contract Simpleton is Ownable, Pausable {
     }
 
     function getPrice(uint256 shares) public view returns (uint256) {
-        return price.mul(shares);
+        return price * shares;
     }
 
     function setPrice(uint256 newPrice) public onlyOwner {
@@ -83,7 +79,7 @@ contract Simpleton is Ownable, Pausable {
         _buy(msg.sender, msg.sender, shares);
         uint256 excessPayment = msg.value - totPriceEth;
         if (excessPayment > 0){
-            msg.sender.transfer(excessPayment);
+            payable(msg.sender).transfer(excessPayment);
         }
         return amounts[0];
     }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
 import "./MultiSig.sol";
 
@@ -18,7 +18,7 @@ contract MultiSigFactory {
   }
 
   function predict(address owner, bytes32 salt) public view returns (address) {
-    return address(uint(keccak256(abi.encodePacked(byte(0xff), address(this), salt,
+    return address(uint(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt,
             keccak256(abi.encodePacked(type(MultiSig).creationCode, owner))
         ))));
   }

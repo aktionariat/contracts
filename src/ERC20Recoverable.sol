@@ -25,9 +25,8 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
-import "./SafeMath.sol";
 import "./ERC20.sol";
 import "./IERC20.sol";
 
@@ -48,8 +47,6 @@ import "./IERC20.sol";
  */
 
 abstract contract ERC20Recoverable is ERC20 {
-
-    using SafeMath for uint256;
 
     // A struct that represents a claim made
     struct Claim {
@@ -111,7 +108,7 @@ abstract contract ERC20Recoverable is ERC20 {
      */
     function _setClaimPeriod(uint256 claimPeriodInDays) internal {
         require(claimPeriodInDays > 90, "Claim period must be at least 90 days"); // must be at least 90 days
-        uint256 claimPeriodInSeconds = claimPeriodInDays.mul(1 days);
+        uint256 claimPeriodInSeconds = claimPeriodInDays * (1 days);
         claimPeriod = claimPeriodInSeconds;
         emit ClaimPeriodChanged(claimPeriod);
     }
@@ -158,7 +155,7 @@ abstract contract ERC20Recoverable is ERC20 {
         require(collateralRate > 0, "Unsupported collateral");
         address claimant = msg.sender;
         uint256 balance = balanceOf(lostAddress);
-        uint256 collateral = balance.mul(collateralRate);
+        uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
         require(balance > 0, "Claimed address holds no shares");
         require(claims[lostAddress].collateral == 0, "Address already claimed");
@@ -220,7 +217,7 @@ abstract contract ERC20Recoverable is ERC20 {
         IERC20 currency = IERC20(claim.currencyUsed);
         require(collateral != 0, "No claim found");
         require(claim.claimant == msg.sender, "Only claimant can resolve claim");
-        require(claim.timestamp.add(claimPeriod) <= block.timestamp, "Claim period not over yet");
+        require(claim.timestamp + claimPeriod <= block.timestamp, "Claim period not over yet");
         address claimant = claim.claimant;
         delete claims[lostAddress];
         require(currency.transfer(claimant, collateral), "Collateral transfer failed");

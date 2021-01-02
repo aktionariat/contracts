@@ -25,18 +25,15 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
-import "./SafeMath.sol";
-import "./ERC20Recoverable.sol";
 import "./Ownable.sol";
+import "./ERC20Recoverable.sol";
 import "./IERC677Receiver.sol";
 
 /**
  * @title CompanyName AG Shares
- * @author Benjamin Rickenbacher, b.rickenbacher@intergga.ch
- * @author Luzius Meisser, luzius@meissereconomics.com
- * @dev These tokens are based on the ERC20 standard and the open-zeppelin library.
+ * @author Luzius Meisser, luzius@aktionariat.com
  *
  * These tokens are uncertified shares (Wertrechte according to the Swiss code of obligations),
  * with this smart contract serving as onwership registry (Wertrechtebuch), but not as shareholder
@@ -52,14 +49,8 @@ import "./IERC677Receiver.sol";
  * @notice The main addition is a functionality that allows the user to claim that the key for a certain address is lost.
  * @notice In order to prevent malicious attempts, a collateral needs to be posted.
  * @notice The contract owner can delete claims in case of disputes.
- *
- * https://github.com/ethereum/EIPs/issues/20
- * Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
-
 contract Shares is ERC20Recoverable, Ownable {
-
-    using SafeMath for uint256;
 
     string public override name;
     string public override symbol;
@@ -143,7 +134,7 @@ contract Shares is ERC20Recoverable, Ownable {
         uint256 balance = balanceOf(holder);
         for (uint256 i = 0; i<subregisters.length; i++) {
             IERC20 subERC = IERC20(subregisters[i]);
-            balance = balance.add(subERC.balanceOf(holder));
+            balance += subERC.balanceOf(holder);
         }
         return balance;
     }
@@ -172,13 +163,16 @@ contract Shares is ERC20Recoverable, Ownable {
 
     /**
      * Signals that the indicated tokens have been declared invalid (e.g. by a court ruling in accordance
-     * with article 973g of the planned adjustments to the Swiss Code of Obligations) and got detached from
+     * with article 973g of the Swiss Code of Obligations) and got detached from
      * the underlying shares. Invalid tokens do not carry any shareholder rights any more.
+     *
+     * This function is purely declarative. It does not technically immobilize the affected tokens as
+     * that would give the issuer too much power.
      */
     function declareInvalid(address holder, uint256 amount, string calldata message) external onlyOwner() {
         uint256 holderBalance = balanceOf(holder);
-        require(amount <= holderBalance, "Cannot invalidate more tokens than held by address");
-        invalidTokens = invalidTokens.add(amount);
+        require(amount <= holderBalance);
+        invalidTokens += amount;
         emit TokensDeclaredInvalid(holder, amount, message);
     }
 
@@ -187,7 +181,7 @@ contract Shares is ERC20Recoverable, Ownable {
      * number might be lower than totalSupply(). Also, it will always be lower than or equal to totalShares().
      */
     function totalValidSupply() public view returns (uint256) {
-        return totalSupply().sub(invalidTokens);
+        return totalSupply() - invalidTokens;
     }
 
     /**
@@ -214,16 +208,16 @@ contract Shares is ERC20Recoverable, Ownable {
      */
     function mintNumbered(address shareholder, uint256 firstShareNumber, uint256 lastShareNumber) public onlyOwner() {
         emit ShareNumberingEvent(shareholder, firstShareNumber, lastShareNumber); // emit mint event before transfer event
-        _mint(shareholder, lastShareNumber.sub(firstShareNumber).add(1));
+        _mint(shareholder, lastShareNumber - firstShareNumber + 1);
     }
 
     function mintNumberedAndCall(address shareholder, address callee, uint256 firstShareNumber, uint256 lastShareNumber, bytes calldata data) public {
         mintNumbered(shareholder, firstShareNumber, lastShareNumber);
-        IERC677Receiver(callee).onTokenTransfer(shareholder, lastShareNumber.sub(firstShareNumber).add(1), data);
+        IERC677Receiver(callee).onTokenTransfer(shareholder, lastShareNumber - firstShareNumber + 1, data);
     }
 
     function _mint(address account, uint256 amount) internal override {
-        require(totalValidSupply().add(amount) <= totalShares, "There can't be fewer shares than valid tokens");
+        require(totalValidSupply() + amount <= totalShares, "There can't be fewer shares than valid tokens");
         super._mint(account, amount);
     }
 
@@ -241,6 +235,9 @@ contract Shares is ERC20Recoverable, Ownable {
         require(_amount <= balanceOf(msg.sender), "Not enough shares available");
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) override internal {
     }
 
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copied from https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/UniswapV2Router02.sol
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
 interface IUniswapV2 {
 

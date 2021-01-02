@@ -2,8 +2,6 @@
  *Submitted for verification at Etherscan.io on 2019-10-09
 */
 
-// File: contracts/SafeMath.sol
-
 /**	
 * MIT License	
 *	

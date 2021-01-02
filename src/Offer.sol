@@ -25,33 +25,27 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
-import "./SafeMath.sol";
 import "./IERC20.sol";
 
 /**
  * @title Acquisition Attempt
- * @author Benjamin Rickenbacher, b.rickenbacher@intergga.ch
- * @author Luzius Meisser, luzius@meissereconomics.com
- *
+ * @author Luzius Meisser, luzius@aktionariat.com
  */
 
-contract Acquisition {
-
-    using SafeMath for uint256;
-
-    uint256 public constant VOTING_PERIOD = 60 days;    // 2months/60days
-    uint256 public constant VALIDITY_PERIOD = 90 days;  // 3months/90days
+contract Offer {
 
     uint256 public quorum;                              // Percentage of votes needed to start drag-along process
 
-    address private parent;                             // the parent contract
-    address payable public buyer;                       // the person who made the offer
+    address public token;
+    address public buyer;                       // the person who made the offer
     
     address public currency;
     uint256 public price;                               // the price offered per share
-    uint256 public timestamp;                           // the timestamp of the block in which the acquisition was created
+    
+    uint256 public expiration;
+    uint256 public voteEnd;
 
     uint256 public noVotes;                             // number of tokens voting for no
     uint256 public yesVotes;                            // number of tokens voting for yes
@@ -60,46 +54,87 @@ contract Acquisition {
     mapping (address => Vote) private votes;            // Who votes what
 
     event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
+    event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);
+    event OfferEnded(address indexed buyer, bool success, string message);
 
-    constructor (address payable buyer_, address currency_, uint256 price_, uint256 quorum_) {
-        require(price_ > 0, "invalid price");
-        parent = msg.sender;
+    constructor (address buyer_, address token_, uint256 price_, address currency_, uint256 quorum_, uint256 votePeriod, uint256 validityPeriod) {
         buyer = buyer_;
+        token = token_;
         currency = currency_;
         price = price_;
         quorum = quorum_;
-        timestamp = block.timestamp;
+        voteEnd = block.timestamp + votePeriod;
+        expiration = block.timestamp + validityPeriod;
+        require(voteEnd <= expiration);
+        require(isWellFunded());
+        emit OfferCreated(buyer, token, price, currency);
     }
 
-    function isWellFunded(uint256 sharesToAcquire) public view returns (bool) {
+    function contest(address betterOffer) public {
+        require(msg.sender == token);
+        Offer better = Offer(betterOffer);
+        require(currency == better.currency() && better.price() > price, "New offer must be better");
+        kill(false, "replaced");
+    }
+
+    function contest() public {
+        if (hasExpired()) {
+            kill(false, "Expired");
+        } else if (quorumHasFailed()) {
+            kill(false, "Not enough support");
+        } else if (!isWellFunded()) {
+            kill(false, "Insufficient funds");
+        }
+    }
+
+    function cancel() public {
+        require(msg.sender == buyer);
+        kill(false, "Cancelled");
+    }
+
+    function execute() public {
+        require(isQuorumReached(), "Insufficient support");
+        uint256 totalPrice = getTotalPrice();
+        require(IERC20(currency).transferFrom(buyer, token, totalPrice));
+        IDraggable(token).drag(buyer, currency);
+        kill(true, "success");
+    }
+
+    function getTotalPrice() internal view returns (uint256) {
+        IERC20 tok = IERC20(token);
+        return (tok.totalSupply() - tok.balanceOf(buyer)) * price;
+    }
+
+    function isWellFunded() public view returns (bool) {
         IERC20 cur = IERC20(currency);
         uint256 buyerBalance = cur.balanceOf(buyer);
-        uint256 buyerAllowance = cur.allowance(buyer, parent);
-        uint256 xchfNeeded = sharesToAcquire.mul(price);
-        return xchfNeeded <= buyerBalance && xchfNeeded <= buyerAllowance;
+        uint256 buyerAllowance = cur.allowance(buyer, address(this));
+        uint256 totalPrice = getTotalPrice();
+        return totalPrice <= buyerBalance && totalPrice <= buyerAllowance;
     }
 
     function isQuorumReached() public view returns (bool) {
         if (isVotingOpen()) {
             // is it already clear that 75% will vote yes even though the vote is not over yet?
-            return yesVotes.mul(10000).div(IERC20(parent).totalSupply()) >= quorum;
+            return yesVotes * 10000  >= quorum * IERC20(token).totalSupply();
         } else {
             // did 75% of all cast votes say 'yes'?
-            return yesVotes.mul(10000).div(yesVotes.add(noVotes)) >= quorum;
+            return yesVotes * 10000 >= quorum * (yesVotes + noVotes);
         }
     }
 
     function quorumHasFailed() public view returns (bool) {
         if (isVotingOpen()) {
             // is it already clear that 25% will vote no even though the vote is not over yet?
-            return (IERC20(parent).totalSupply().sub(noVotes)).mul(10000).div(IERC20(parent).totalSupply()) < quorum;
+            return (IERC20(token).totalSupply() - noVotes) * 10000 < quorum * IERC20(token).totalSupply();
         } else {
-            // did 25% of all cast votes say 'no'?
-            return yesVotes.mul(10000).div(yesVotes.add(noVotes)) < quorum;
+            // did quorum% of all cast votes say 'no'?
+            return 10000 * yesVotes < quorum * (yesVotes + noVotes);
         }
     }
 
-    function adjustVotes(address from, address to, uint256 value) public parentOnly() {
+    function notifyMoved(address from, address to, uint256 value) public {
+        require(msg.sender == token);
         if (isVotingOpen()) {
             Vote fromVoting = votes[from];
             Vote toVoting = votes[to];
@@ -110,27 +145,25 @@ contract Acquisition {
     function update(Vote previousVote, Vote newVote, uint256 votes_) internal {
         if (previousVote != newVote) {
             if (previousVote == Vote.NO) {
-                noVotes = noVotes.sub(votes_);
+                noVotes = noVotes - votes_;
             } else if (previousVote == Vote.YES) {
-                yesVotes = yesVotes.sub(votes_);
+                yesVotes = yesVotes - votes_;
             }
             if (newVote == Vote.NO) {
-                noVotes = noVotes.add(votes_);
+                noVotes = noVotes + votes_;
             } else if (newVote == Vote.YES) {
-                yesVotes = yesVotes.add(votes_);
+                yesVotes = yesVotes + votes_;
             }
             emit VotesChanged(yesVotes, noVotes);
         }
     }
 
     function isVotingOpen() public view returns (bool) {
-        uint256 age = block.timestamp.sub(timestamp);
-        return age <= VOTING_PERIOD;
+        return block.timestamp <= voteEnd;
     }
 
     function hasExpired() public view returns (bool) {
-        uint256 age = block.timestamp.sub(timestamp);
-        return age > VALIDITY_PERIOD;
+        return block.timestamp > expiration;
     }
 
     modifier votingOpen() {
@@ -138,18 +171,18 @@ contract Acquisition {
         _;
     }
 
-    function voteYes(address sender, uint256 votes_) public parentOnly() votingOpen() {
-        vote(Vote.YES, votes_, sender);
+    function voteYes() public {
+        vote(Vote.YES);
     }
 
-    function voteNo(address sender, uint256 votes_) public parentOnly() votingOpen() {
-        vote(Vote.NO, votes_, sender);
+    function voteNo() public { 
+        vote(Vote.NO);
     }
 
-    function vote(Vote newVote, uint256 votes_, address voter) internal {
-        Vote previousVote = votes[voter];
-        votes[voter] = newVote;
-        update(previousVote, newVote, votes_);
+    function vote(Vote newVote) internal votingOpen() {
+        Vote previousVote = votes[msg.sender];
+        votes[msg.sender] = newVote;
+        update(previousVote, newVote, IERC20(token).balanceOf(msg.sender));
     }
 
     function hasVotedYes(address voter) public view returns (bool) {
@@ -160,12 +193,17 @@ contract Acquisition {
         return votes[voter] == Vote.NO;
     }
 
-    function kill() public parentOnly() {
-        selfdestruct(buyer);
+    function kill(bool success, string memory message) internal {
+        IDraggable(token).notifyOfferEnded();
+        emit OfferEnded(buyer, success, message);
+        selfdestruct(payable(buyer));
     }
 
-    modifier parentOnly () {
-        require(msg.sender == parent, "not parent");
-        _;
-    }
+}
+
+abstract contract IDraggable {
+
+    function drag(address buyer, address currency) public virtual;
+    function notifyOfferEnded() public virtual;
+
 }

@@ -3,7 +3,7 @@
 /// @author Sam Mayo (sammayo888@gmail.com)
 /// @dev Library for rlp encoding arbitrary bytes or lists.
 
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
 library RLPEncode {
     uint8 constant STRING_SHORT_PREFIX = 0x80;
@@ -39,7 +39,7 @@ library RLPEncode {
             bytes memory encoded = new bytes(len+1);
             uint8 lenshort = uint8(len);
             // length encoding byte
-            encoded[0] = byte(prefix1+lenshort);
+            encoded[0] = bytes1(prefix1+lenshort);
 
             // string/list contents
             uint encodedPtr;
@@ -58,11 +58,11 @@ library RLPEncode {
            bytes memory encoded = new bytes(1+lenLen+len);
 
             // length of the length encoding byte
-            encoded[0] = byte(prefix2+lenLen);
+            encoded[0] = bytes1(prefix2+lenLen);
 
             // length bytes
             for(i=1; i<=lenLen; i++) {
-                encoded[i] = byte(uint8((len/(0x100**(lenLen-i)))%0x100));
+                encoded[i] = bytes1(uint8((len/(0x100**(lenLen-i)))%0x100));
             }
 
             // string/list contents

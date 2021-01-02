@@ -4,10 +4,9 @@
 //
 // Modifications:
 // - Replaced Context._msgSender() with msg.sender
-// - Added possibility to modify itself for multisig setup
 // - Made leaner
 
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where

@@ -1,14 +1,16 @@
-/**
-* SPDX-License-Identifier: MIT
-*
-* Copyright (c) 2016-2019 zOS Global Limited
-*
-* With modifications to support ERC-677
-*/
-pragma solidity >=0.7;
+// SPDX-License-Identifier: MIT
+// Copied and adjusted from OpenZeppelin
+// Adjustments:
+// - modifications to support ERC-677
+// - removed require messages to save space
+// - removed unnecessary require statements
+// - removed GSN Context
+// - upgraded to 0.8 to drop SafeMath
+// - let name() and symbol() be implemented by subclass
+
+pragma solidity >=0.8;
 
 import "./IERC20.sol";
-import "./SafeMath.sol";
 import "./IERC677Receiver.sol";
 
 /**
@@ -36,8 +38,6 @@ import "./IERC677Receiver.sol";
  */
 
 abstract contract ERC20 is IERC20 {
-
-    using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
 
@@ -111,7 +111,7 @@ abstract contract ERC20 is IERC20 {
      */
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
+        _approve(sender, msg.sender, _allowances[sender][msg.sender] - amount);
         return true;
     }
 
@@ -128,7 +128,7 @@ abstract contract ERC20 is IERC20 {
      * - `spender` cannot be the zero address.
      */
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].add(addedValue));
+        _approve(msg.sender, spender, _allowances[msg.sender][spender] + addedValue);
         return true;
     }
 
@@ -147,7 +147,7 @@ abstract contract ERC20 is IERC20 {
      * `subtractedValue`.
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue));
+        _approve(msg.sender, spender, _allowances[msg.sender][spender] - subtractedValue);
         return true;
     }
 
@@ -168,8 +168,10 @@ abstract contract ERC20 is IERC20 {
     function _transfer(address sender, address recipient, uint256 amount) internal virtual {
         require(recipient != address(0));
 
-        _balances[sender] = _balances[sender].sub(amount);
-        _balances[recipient] = _balances[recipient].add(amount);
+        _beforeTokenTransfer(sender, recipient, amount);
+
+        _balances[sender] -= amount;
+        _balances[recipient] += amount;
         emit Transfer(sender, recipient, amount);
     }
 
@@ -191,12 +193,14 @@ abstract contract ERC20 is IERC20 {
      *
      * - `to` cannot be the zero address.
      */
-    function _mint(address account, uint256 amount) internal virtual {
-        require(account != address(0));
+    function _mint(address recipient, uint256 amount) internal virtual {
+        require(recipient != address(0));
 
-        _totalSupply = _totalSupply.add(amount);
-        _balances[account] = _balances[account].add(amount);
-        emit Transfer(address(0), account, amount);
+        _beforeTokenTransfer(address(0), recipient, amount);
+
+        _totalSupply += amount;
+        _balances[recipient] += amount;
+        emit Transfer(address(0), recipient, amount);
     }
 
      /**
@@ -210,10 +214,12 @@ abstract contract ERC20 is IERC20 {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function _burn(address account, uint256 value) internal virtual {
-        _totalSupply = _totalSupply.sub(value);
-        _balances[account] = _balances[account].sub(value);
-        emit Transfer(account, address(0), value);
+    function _burn(address account, uint256 amount) internal virtual {
+        _beforeTokenTransfer(account, address(0), amount);
+
+        _totalSupply -= amount;
+        _balances[account] -= amount;
+        emit Transfer(account, address(0), amount);
     }
 
     /**
@@ -235,13 +241,18 @@ abstract contract ERC20 is IERC20 {
     }
 
     /**
-     * @dev Destoys `amount` tokens from `account`.`amount` is then deducted
-     * from the caller's allowance.
+     * @dev Hook that is called before any transfer of tokens. This includes
+     * minting and burning.
      *
-     * See `_burn` and `_approve`.
+     * Calling conditions:
+     *
+     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+     * will be to transferred to `to`.
+     * - when `from` is zero, `amount` tokens will be minted for `to`.
+     * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
+     * - `from` and `to` are never both zero.
+     *
+     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _burnFrom(address account, uint256 amount) internal {
-        _burn(account, amount);
-        _approve(account, msg.sender, _allowances[account][msg.sender].sub(amount));
-    }
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal;
 }
