@@ -59,7 +59,7 @@ contract Nonce {
      * Flags the given nonce as used.
      * Reverts if the provided nonce is not free.
      */
-    function flagUsed(uint128 nonce) public {
+    function flagUsed(uint128 nonce) internal {
         uint256 comp = compound;
         uint128 max = uint128(comp);
         uint128 reg = uint128(comp >> 128);

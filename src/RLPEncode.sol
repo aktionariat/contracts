@@ -1,108 +1,162 @@
-/// SPDX-License-Identifier: MIT
-/// @title RLP Encoding Library for Solidity
-/// @author Sam Mayo (sammayo888@gmail.com)
-/// @dev Library for rlp encoding arbitrary bytes or lists.
-
-pragma solidity >=0.7;
-
+pragma solidity >=0.4.0;
+/**
+ * @title RLPEncode
+ * @dev A simple RLP encoding library.
+ * @author Bakaoh
+ */
 library RLPEncode {
-    uint8 constant STRING_SHORT_PREFIX = 0x80;
-    uint8 constant STRING_LONG_PREFIX = 0xb7;
-    uint8 constant LIST_SHORT_PREFIX = 0xc0;
-    uint8 constant LIST_LONG_PREFIX = 0xf7;
+    /*
+     * Internal functions
+     */
 
-    /// @dev Rlp encodes a bytes
-    /// @param self The bytes to be encoded
-    /// @return The rlp encoded bytes
+    /**
+     * @dev RLP encodes a byte string.
+     * @param self The byte string to encode.
+     * @return The RLP encoded string in bytes.
+     */
     function encodeBytes(bytes memory self) internal pure returns (bytes memory) {
-        if(self.length == 1 && self[0] < 0x80) {
-            return self;
+        bytes memory encoded;
+        if (self.length == 1 && uint8(self[0]) <= 128) {
+            encoded = self;
         } else {
-            return encode(self, STRING_SHORT_PREFIX, STRING_LONG_PREFIX);
+            encoded = concat(encodeLength(self.length, 128), self);
         }
+        return encoded;
     }
-    
-    /// @dev Rlp encodes a bytes[]. Note that the items in the bytes[] will not automatically be rlp encoded.
-    /// @param self The bytes[] to be encoded
-    /// @return The rlp encoded bytes[]
+
+    /**
+     * @dev RLP encodes a list of RLP encoded byte byte strings.
+     * @param self The list of RLP encoded byte strings.
+     * @return The RLP encoded list of items in bytes.
+     */
     function encodeList(bytes[] memory self) internal pure returns (bytes memory) {
         bytes memory list = flatten(self);
-        return encode(list, LIST_SHORT_PREFIX, LIST_LONG_PREFIX);
+        return concat(encodeLength(list.length, 192), list);
     }
 
-    function encode(bytes memory self, uint8 prefix1, uint8 prefix2) private pure returns (bytes memory) {
-        uint selfPtr;
-        assembly { selfPtr := add(self, 0x20) }
+    /**
+     * @dev RLP encodes a string.
+     * @param self The string to encode.
+     * @return The RLP encoded string in bytes.
+     */
+    function encodeString(string memory self) internal pure returns (bytes memory) {
+        return encodeBytes(bytes(self));
+    }
 
-        uint len = self.length;
-        if(len <= 55) {
-            bytes memory encoded = new bytes(len+1);
-            uint8 lenshort = uint8(len);
-            // length encoding byte
-            encoded[0] = bytes1(prefix1+lenshort);
+    /** 
+     * @dev RLP encodes an address.
+     * @param self The address to encode.
+     * @return The RLP encoded address in bytes.
+     */
+    function encodeAddress(address self) internal pure returns (bytes memory) {
+        bytes memory inputBytes;
+        assembly {
+            let m := mload(0x40)
+            mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, self))
+            mstore(0x40, add(m, 52))
+            inputBytes := m
+        }
+        return encodeBytes(inputBytes);
+    }
 
-            // string/list contents
-            uint encodedPtr;
-            assembly { encodedPtr := add(encoded, 0x21) }
-            memcpy(encodedPtr, selfPtr, len);
-            return encoded;
+    /** 
+     * @dev RLP encodes a uint.
+     * @param self The uint to encode.
+     * @return The RLP encoded uint in bytes.
+     */
+    function encodeUint(uint self) internal pure returns (bytes memory) {
+        return encodeBytes(toBinary(self));
+    }
+
+    /** 
+     * @dev RLP encodes an int.
+     * @param self The int to encode.
+     * @return The RLP encoded int in bytes.
+     */
+    function encodeInt(int self) internal pure returns (bytes memory) {
+        return encodeUint(uint(self));
+    }
+
+    /** 
+     * @dev RLP encodes a bool.
+     * @param self The bool to encode.
+     * @return The RLP encoded bool in bytes.
+     */
+    function encodeBool(bool self) internal pure returns (bytes memory) {
+        bytes memory encoded = new bytes(1);
+        encoded[0] = (self ? bytes1(0x01) : bytes1(0x80));
+        return encoded;
+    }
+
+
+    /*
+     * Private functions
+     */
+
+    /**
+     * @dev Encode the first byte, followed by the `len` in binary form if `length` is more than 55.
+     * @param len The length of the string or the payload.
+     * @param offset 128 if item is string, 192 if item is list.
+     * @return RLP encoded bytes.
+     */
+    function encodeLength(uint len, uint offset) private pure returns (bytes memory) {
+        bytes memory encoded;
+        if (len < 56) {
+            encoded = new bytes(1);
+            encoded[0] = bytes32(len + offset)[31];
         } else {
-            uint8 lenLen;
-            uint i = 0x1;
-            while(len/i != 0) {
+            uint lenLen;
+            uint i = 1;
+            while (len / i != 0) {
                 lenLen++;
-                i *= 0x100;
+                i *= 256;
             }
 
-            // 1 is the length of the length of the length
-           bytes memory encoded = new bytes(1+lenLen+len);
-
-            // length of the length encoding byte
-            encoded[0] = bytes1(prefix2+lenLen);
-
-            // length bytes
-            for(i=1; i<=lenLen; i++) {
-                encoded[i] = bytes1(uint8((len/(0x100**(lenLen-i)))%0x100));
+            encoded = new bytes(lenLen + 1);
+            encoded[0] = bytes32(lenLen + offset + 55)[31];
+            for(i = 1; i <= lenLen; i++) {
+                encoded[i] = bytes32((len / (256**(lenLen-i))) % 256)[31];
             }
-
-            // string/list contents
-            uint encodedPtr;
-            assembly { encodedPtr := add(add(encoded, 0x21), lenLen) }
-            memcpy(encodedPtr, selfPtr, len);
-            return encoded;
         }
-    }
-    
-    function flatten(bytes[] memory self) private pure returns (bytes memory) {
-        if(self.length == 0) {
-            return new bytes(0);
-        }
-
-        uint len;
-        for(uint i=0; i<self.length; i++) {
-            len += self[i].length;
-        }
-
-        bytes memory flattened = new bytes(len);
-        uint flattenedPtr;
-        assembly { flattenedPtr := add(flattened, 0x20) }
-
-        for(uint i=0; i<self.length; i++) {
-            bytes memory item = self[i];
-            
-            uint selfPtr;
-            assembly { selfPtr := add(item, 0x20)}
-
-            memcpy(flattenedPtr, selfPtr, item.length);
-            flattenedPtr += self[i].length;
-        }
-
-        return flattened;
+        return encoded;
     }
 
-    /// This function is from Nick Johnson's string utils library
-    function memcpy(uint dest, uint src, uint len) private pure {
-        // Copy word-length chunks while possible
+    /**
+     * @dev Encode integer in big endian binary form with no leading zeroes.
+     * @notice TODO: This should be optimized with assembly to save gas costs.
+     * @param _x The integer to encode.
+     * @return RLP encoded bytes.
+     */
+    function toBinary(uint _x) private pure returns (bytes memory) {
+        bytes memory b = new bytes(32);
+        assembly { 
+            mstore(add(b, 32), _x) 
+        }
+        uint i;
+        for (i = 0; i < 32; i++) {
+            if (b[i] != 0) {
+                break;
+            }
+        }
+        bytes memory res = new bytes(32 - i);
+        for (uint j = 0; j < res.length; j++) {
+            res[j] = b[i++];
+        }
+        return res;
+    }
+
+    /**
+     * @dev Copies a piece of memory to another location.
+     * @notice From: https://github.com/Arachnid/solidity-stringutils/blob/master/src/strings.sol.
+     * @param _dest Destination location.
+     * @param _src Source location.
+     * @param _len Length of memory to copy.
+     */
+    function memcpy(uint _dest, uint _src, uint _len) private pure {
+        uint dest = _dest;
+        uint src = _src;
+        uint len = _len;
+
         for(; len >= 32; len -= 32) {
             assembly {
                 mstore(dest, mload(src))
@@ -111,12 +165,97 @@ library RLPEncode {
             src += 32;
         }
 
-        // Copy remaining bytes
         uint mask = 256 ** (32 - len) - 1;
         assembly {
             let srcpart := and(mload(src), not(mask))
             let destpart := and(mload(dest), mask)
             mstore(dest, or(destpart, srcpart))
         }
+    }
+
+    /**
+     * @dev Flattens a list of byte strings into one byte string.
+     * @notice From: https://github.com/sammayo/solidity-rlp-encoder/blob/master/RLPEncode.sol.
+     * @param _list List of byte strings to flatten.
+     * @return The flattened byte string.
+     */
+    function flatten(bytes[] memory _list) private pure returns (bytes memory) {
+        if (_list.length == 0) {
+            return new bytes(0);
+        }
+
+        uint len;
+        uint i;
+        for (i = 0; i < _list.length; i++) {
+            len += _list[i].length;
+        }
+
+        bytes memory flattened = new bytes(len);
+        uint flattenedPtr;
+        assembly { flattenedPtr := add(flattened, 0x20) }
+
+        for(i = 0; i < _list.length; i++) {
+            bytes memory item = _list[i];
+            
+            uint listPtr;
+            assembly { listPtr := add(item, 0x20)}
+
+            memcpy(flattenedPtr, listPtr, item.length);
+            flattenedPtr += _list[i].length;
+        }
+
+        return flattened;
+    }
+
+    /**
+     * @dev Concatenates two bytes.
+     * @notice From: https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol.
+     * @param _preBytes First byte string.
+     * @param _postBytes Second byte string.
+     * @return Both byte string combined.
+     */
+    function concat(bytes memory _preBytes, bytes memory _postBytes) private pure returns (bytes memory) {
+        bytes memory tempBytes;
+
+        assembly {
+            tempBytes := mload(0x40)
+
+            let length := mload(_preBytes)
+            mstore(tempBytes, length)
+
+            let mc := add(tempBytes, 0x20)
+            let end := add(mc, length)
+
+            for {
+                let cc := add(_preBytes, 0x20)
+            } lt(mc, end) {
+                mc := add(mc, 0x20)
+                cc := add(cc, 0x20)
+            } {
+                mstore(mc, mload(cc))
+            }
+
+            length := mload(_postBytes)
+            mstore(tempBytes, add(length, mload(tempBytes)))
+
+            mc := end
+            end := add(mc, length)
+
+            for {
+                let cc := add(_postBytes, 0x20)
+            } lt(mc, end) {
+                mc := add(mc, 0x20)
+                cc := add(cc, 0x20)
+            } {
+                mstore(mc, mload(cc))
+            }
+
+            mstore(0x40, and(
+              add(add(end, iszero(add(length, mload(_preBytes)))), 31),
+              not(31)
+            ))
+        }
+
+        return tempBytes;
     }
 }

@@ -94,7 +94,7 @@ contract MultiSig is Nonce {
 
   // Note: does not work with contract creation
   function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
-    public pure returns (bytes32){
+    internal pure returns (bytes32){
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
