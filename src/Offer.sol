@@ -66,7 +66,6 @@ contract Offer {
         voteEnd = block.timestamp + votePeriod;
         expiration = block.timestamp + validityPeriod;
         require(voteEnd <= expiration);
-        require(isWellFunded());
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);

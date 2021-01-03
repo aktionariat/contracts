@@ -48,7 +48,7 @@ contract OfferFactory {
     function predict(bytes32 salt, address buyer, address token, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod, uint256 validityPeriod) public view returns (address) {
         bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt,
             keccak256(abi.encodePacked(type(Offer).creationCode, buyer, token, pricePerShare, currency, quorum, votePeriod, validityPeriod))));
-        return address(uint160(uint(hashResult))); // TODO: test, is this conversion correct?
+        return address(uint(hashResult)); // TODO: test, is this conversion correct?
     }
 
     // Do not call directly, msg.sender must be the token to be acquired

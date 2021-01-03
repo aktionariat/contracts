@@ -11,20 +11,22 @@ Typical shareholder agreements contain ‘drag-along’ and ‘tag-along’ clau
 The ERC20 contract [ERC20Draggable](../src/ERC20Draggable.sol) can be used to convert any existing ERC20 token (referred to as base token) into a draggable token by wrapping it. Once deployed, the contract offers the following functionality:
 
 - Anyone owning base tokens can wrap them at any time, thereby converting these base tokens into draggable tokens. The base tokens still exist, but are now under control of the draggable contract. Think of this process as taking a traditional paper certificate and putting it into a sealed envelope. For each outstanding draggable token, the draggable contract holds exactly one base token as backing. A draggable token legally represents a base token that is bound to a shareholder agreement.
-- A majority of 75% of token holds can update the shareholder agreement and migrate all the base tokens to a new contract that represents a different shareholder agreement or even end the shareholder agreement completely. Once the agreement has ended, token holders are free to unwrap their base tokens again – or to break the seal and open the envelope when thinking in terms of the paper analogy.
-- Anyone can make an acquisition offer at any time. When doing so, the full acquisition amount must be deposited in a currency of choice (for example 10 million DAI, if the company is valued that highly). If 75% of all votes cast within a given timeframe (e.g. 3 months) approve the acquisition, all base tokens are sent to the acquirer and replaced with the according amount of money. From now on, the draggable tokens do not represent a share any more, but the according amount of the acquisition currency (e.g. 100 DAI per token). Token holders are free to unwrap their DAI at any time. In the paper analogy, the shareholders can now open their sealed envelopes as the shareholder agreement has ended, but instead of finding a certificate inside, they magically find a bundle of bank notes.
+- A majority of 80% of token holds can update the shareholder agreement and migrate all the base tokens to a new contract that represents a different shareholder agreement or even end the shareholder agreement completely. Once the agreement has ended, token holders are free to unwrap their base tokens again – or to break the seal and open the envelope when thinking in terms of the paper analogy.
+- Anyone can make an acquisition offer at any time. When doing so, the full acquisition amount must be available in a currency of choice (for example 10 million DAI, if the company is valued that highly). If 75% of all votes cast within a given timeframe (e.g. 3 months) approve the acquisition, all base tokens are sent to the acquirer and replaced with the according amount of money. From now on, the draggable tokens do not represent a share any more, but the according amount of the acquisition currency (e.g. 100 DAI per token). Token holders are free to unwrap their DAI at any time. In the paper analogy, the shareholders can now open their sealed envelopes as the shareholder agreement has ended, but instead of finding a certificate inside, they magically find a bundle of bank notes.
 
 ## Some Details
 
-- If the offer has expired or the offer is not well funded anymore, anyone can kill the current offer by calling `contestAcquisition`.
+- If the offer has expired or the offer is not well funded anymore, anyone can kill the current offer by calling `contest` on the offer contract.
 - When making an offer, a license fee of 3 Ether is charged. This has the nice side-effect of ensuring that the offer is serious.
 - The person who made the offer can cancel the offer at any point in time.
-- Counteroffers can be made, but the price needs to be at least 5% better than the previous offer and in the same currency.
+- Counteroffers can be made, but the price needs to be higher than the previous offer and in the same currency.
 - The offer can be ended early if it is clear that the remaining votes cannot make a difference any more.
 
 ## Attack Vectors
 
-A majority of shareholders could abuse the smart contract to acquire the shares of the remaining shareholders at a very small price by making a cheap acquisition offer and approving it. Our assumption is that it is always possible to identify the majority shareholder of a company and to hold that shareholder accountable using the traditional legal system.
+A majority of shareholders could abuse the smart contract to acquire the shares of the remaining shareholders at a very small price by making a cheap acquisition offer and approving it. Doing so
+would likely constitute a violation of the shareholder agreement and the minority shareholder would have to hold the majority accountable using the traditional legal system. The assumption is that
+it is possible to identify some of the majority shareholder in such a case so they can be taken to court or everything settled bilaterally.
 
 ## Why no tag-along?
 
@@ -32,4 +34,4 @@ While it is relatively easy to implement a drag-along clause in a smart contract
 
 ## License Fee
 
-For this smart contract, we created a new type of software license, the “MIT License with Automated License Fee Payments”. Anyone is free to reuse the code as long as the built-in license fee of 3 Ether, paid to Aktionariat AG, is preserved.
+For this smart contract, we created a new type of software license, the “MIT License with Automated License Fee Payments”. Anyone is free to reuse the code as long as the built-in license fee, paid to Aktionariat AG, is preserved. The license fee is due whenever a new acquisition offer is made and is to be payed by the prospective buyer.

@@ -26,7 +26,7 @@
 * SOFTWARE.
 */
 
-pragma solidity >=0.8;
+pragma solidity >=0.7;
 
 contract Nonce {
 

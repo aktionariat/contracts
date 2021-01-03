@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity >=0.8;
+pragma solidity >=0.7;
 
 import "./Address.sol";
 import "./RLPEncode.sol";
@@ -32,7 +32,7 @@ contract MultiSig is Nonce {
     // same id, but it practically rules out that someone accidentally creates two
     // two multisig contracts with the same id, and that's all we need to prevent
     // replay-attacks.
-    contractId = toBytes(uint32(address(this)));
+    contractId = toBytes(uint32(uint160(address(this))));
     _setSigner(owner, 1); // set initial owner
   }
 
@@ -93,8 +93,8 @@ contract MultiSig is Nonce {
   }
 
   // Note: does not work with contract creation
-  function calculateTransactionHash(uint128 sequence, bytes storage id, address to, uint value, bytes calldata data)
-    private pure returns (bytes32){
+  function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
+    public pure returns (bytes32){
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
@@ -112,7 +112,7 @@ contract MultiSig is Nonce {
   }
 
   function verifySignatures(bytes32 transactionHash, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s)
-    private view returns (address[] memory) {
+    public view returns (address[] memory) {
     address[] memory found = new address[](r.length);
     for (uint i = 0; i < r.length; i++) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);

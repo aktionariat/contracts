@@ -49,9 +49,9 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     uint256 public constant VOTING_PERIOD = 60 days;    // 2months/60days
     uint256 public constant VALIDITY_PERIOD = 90 days;  // 3months/90days
-    address public constant OFFER_FACTORY = address(0x0);
 
     IERC20 public wrapped;                        // The wrapped contract
+    IOfferFactory public factory;
 
     // If the wrapped tokens got replaced in an acquisition, unwrapping might yield many currency tokens
     uint256 public unwrapConversionFactor = 0;
@@ -64,9 +64,11 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     event MigrationSucceeded(address newContractAddress);
 
     constructor(
+        address offerFactory,
         address wrappedToken,
         uint256 quorum_
     ) ERC20(0) {
+        factory = IOfferFactory(offerFactory);
         wrapped = IERC20(wrappedToken);
         quorum = quorum_;
     }
@@ -136,7 +138,6 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     function makeAcquisitionOffer(bytes32 salt, uint256 pricePerShare, address currency) public payable {
         require(isBinding());
-        IOfferFactory factory = IOfferFactory(OFFER_FACTORY);
         address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, VOTING_PERIOD, VALIDITY_PERIOD);        
         if (offerExists()) {
             offer.contest(newOffer);
