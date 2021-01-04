@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity >=0.7;
+pragma solidity >=0.8;
 
 import "./Address.sol";
 import "./RLPEncode.sol";
@@ -94,7 +94,7 @@ contract MultiSig is Nonce {
 
   // Note: does not work with contract creation
   function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
-    internal pure returns (bytes32){
+    internal view returns (bytes32){
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
@@ -102,7 +102,7 @@ contract MultiSig is Nonce {
     all[3] = abi.encodePacked(to);
     all[4] = toBytes(value);
     all[5] = data;
-    all[6] = toBytes(1);
+    all[6] = toBytes(block.chainid);
     all[7] = toBytes(0);
     for (uint i = 0; i<8; i++){
       all[i] = RLPEncode.encodeBytes(all[i]);
