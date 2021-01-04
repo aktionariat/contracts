@@ -80,21 +80,21 @@ contract Offer {
 
     function contest() public {
         if (hasExpired()) {
-            kill(false, "Expired");
-        } else if (quorumHasFailed()) {
-            kill(false, "Not enough support");
+            kill(false, "expired");
+        } else if (isDeclined()) {
+            kill(false, "declined");
         } else if (!isWellFunded()) {
-            kill(false, "Insufficient funds");
+            kill(false, "lack of funds");
         }
     }
 
     function cancel() public {
         require(msg.sender == buyer);
-        kill(false, "Cancelled");
+        kill(false, "cancelled");
     }
 
     function execute() public {
-        require(isQuorumReached(), "Insufficient support");
+        require(isAccepted(), "not accepted");
         uint256 totalPrice = getTotalPrice();
         require(IERC20(currency).transferFrom(buyer, token, totalPrice));
         IDraggable(token).drag(buyer, currency);
@@ -114,7 +114,7 @@ contract Offer {
         return totalPrice <= buyerBalance && totalPrice <= buyerAllowance;
     }
 
-    function isQuorumReached() public view returns (bool) {
+    function isAccepted() public view returns (bool) {
         if (isVotingOpen()) {
             // is it already clear that 75% will vote yes even though the vote is not over yet?
             return yesVotes * 10000  >= quorum * IERC20(token).totalSupply();
@@ -124,7 +124,7 @@ contract Offer {
         }
     }
 
-    function quorumHasFailed() public view returns (bool) {
+    function isDeclined() public view returns (bool) {
         if (isVotingOpen()) {
             // is it already clear that 25% will vote no even though the vote is not over yet?
             return (IERC20(token).totalSupply() - noVotes) * 10000 < quorum * IERC20(token).totalSupply();
@@ -164,7 +164,7 @@ contract Offer {
     }
 
     modifier votingOpen() {
-        require(isVotingOpen(), "The vote has ended.");
+        require(isVotingOpen(), "vote ended");
         _;
     }
 
