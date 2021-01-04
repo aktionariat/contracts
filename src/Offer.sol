@@ -39,33 +39,28 @@ contract Offer {
     uint256 public quorum;                              // Percentage of votes needed to start drag-along process
 
     address public token;
-    address public buyer;                       // the person who made the offer
+    address public buyer;                               // who made the offer
     
     address public currency;
     uint256 public price;                               // the price offered per share
-    
-    uint256 public expiration;
-    uint256 public voteEnd;
-
-    uint256 public noVotes;                             // number of tokens voting for no
-    uint256 public yesVotes;                            // number of tokens voting for yes
 
     enum Vote { NONE, YES, NO }                         // Used internally, represents not voted yet or yes/no vote.
     mapping (address => Vote) private votes;            // Who votes what
+    uint256 public noVotes;                             // number of tokens voting for no
+    uint256 public yesVotes;                            // number of tokens voting for yes
+    uint256 public voteEnd;
 
     event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
     event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);
     event OfferEnded(address indexed buyer, bool success, string message);
 
-    constructor (address buyer_, address token_, uint256 price_, address currency_, uint256 quorum_, uint256 votePeriod, uint256 validityPeriod) payable {
+    constructor (address buyer_, address token_, uint256 price_, address currency_, uint256 quorum_, uint256 votePeriod) payable {
         buyer = buyer_;
         token = token_;
         currency = currency_;
         price = price_;
         quorum = quorum_;
         voteEnd = block.timestamp + votePeriod;
-        expiration = block.timestamp + validityPeriod;
-        require(voteEnd <= expiration);
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
@@ -77,6 +72,10 @@ contract Offer {
         Offer better = Offer(betterOffer);
         require(currency == better.currency() && better.price() > price, "New offer must be better");
         kill(false, "replaced");
+    }
+
+    function hasExpired() internal view returns (bool) {
+        return block.timestamp > voteEnd + 3 days; // buyer has three days to complete acquisition after voting ends
     }
 
     function contest() public {
@@ -162,10 +161,6 @@ contract Offer {
 
     function isVotingOpen() public view returns (bool) {
         return block.timestamp <= voteEnd;
-    }
-
-    function hasExpired() public view returns (bool) {
-        return block.timestamp > expiration;
     }
 
     modifier votingOpen() {

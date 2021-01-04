@@ -19,9 +19,7 @@ contract MultiSigFactory {
 
   function predict(address owner, bytes32 salt) public view returns (address) {
     bytes32 bytecodeHash = keccak256(abi.encodePacked(type(MultiSig).creationCode, abi.encode(owner)));
-    bytes32 _data = keccak256(
-            abi.encodePacked(bytes1(0xff), address(this), salt, bytecodeHash)
-        );
+    bytes32 _data = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, bytecodeHash));
     return address(uint160(uint256(_data)));
   }
 

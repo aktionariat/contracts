@@ -45,15 +45,16 @@ import "./Offer.sol";
 
 contract OfferFactory {
 
-    function predict(bytes32 salt, address buyer, address token, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod, uint256 validityPeriod) public view returns (address) {
-        bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt,
-            keccak256(abi.encodePacked(type(Offer).creationCode, buyer, token, pricePerShare, currency, quorum, votePeriod, validityPeriod))));
-        return address(uint(hashResult)); // TODO: test, is this conversion correct?
+    function predict(bytes32 salt, address buyer, address token, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod) public view returns (address) {
+        bytes32 initCodeHash = keccak256(abi.encodePacked(type(Offer).creationCode, abi.encode(buyer, token, pricePerShare, currency, quorum, votePeriod)));
+        bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, initCodeHash));
+        return address(uint160(uint256(hashResult)));
     }
 
     // Do not call directly, msg.sender must be the token to be acquired
-    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod, uint256 validityPeriod) public payable returns (address) {
-        return address(new Offer{value: msg.value, salt: salt}(buyer, msg.sender, pricePerShare, currency, quorum, votePeriod, validityPeriod));
+    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod) public payable returns (address) {
+        Offer offer = new Offer{value: msg.value, salt: salt}(buyer, msg.sender, pricePerShare, currency, quorum, votePeriod);
+        return address(offer);
     }
 
 }

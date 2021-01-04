@@ -48,9 +48,8 @@ import "./IERC677Receiver.sol";
 contract ERC20Draggable is ERC20, IERC677Receiver {
 
     uint256 public constant VOTING_PERIOD = 60 days;    // 2months/60days
-    uint256 public constant VALIDITY_PERIOD = 90 days;  // 3months/90days
 
-    IERC20 public wrapped;                        // The wrapped contract
+    IERC20 public wrapped;                              // The wrapped contract
     IOfferFactory public factory;
 
     // If the wrapped tokens got replaced in an acquisition, unwrapping might yield many currency tokens
@@ -138,7 +137,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     function makeAcquisitionOffer(bytes32 salt, uint256 pricePerShare, address currency) public payable {
         require(isBinding());
-        address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, VOTING_PERIOD, VALIDITY_PERIOD);        
+        address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, VOTING_PERIOD);        
         if (offerExists()) {
             offer.contest(newOffer);
         }
@@ -196,5 +195,5 @@ abstract contract IOffer {
 }
 
 abstract contract IOfferFactory {
-    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod, uint256 validityPeriod) virtual public payable returns (address);
+    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod) virtual public payable returns (address);
 }
