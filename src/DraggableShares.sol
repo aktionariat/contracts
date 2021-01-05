@@ -32,7 +32,7 @@ import "./ERC20Draggable.sol";
 
 /**
  * @title Draggable CompanyName AG Shares
- * @author Luzius Meisser, luzius@meissereconomics.com
+ * @author Luzius Meisser, luzius@aktionariat.com
  *
  * This is an ERC-20 token representing shares of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.

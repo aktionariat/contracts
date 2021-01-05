@@ -31,7 +31,7 @@ import "./Ownable.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
 
-contract MarketMaker is Ownable {
+contract Market is Ownable {
 
     address public base;  // ERC-20 currency
     address public token; // ERC-20 share token

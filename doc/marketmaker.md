@@ -1,3 +1,3 @@
-# Market Maker
+# Market
 
-TODO: Document how the Market Maker works
+TODO: Document how the Market works

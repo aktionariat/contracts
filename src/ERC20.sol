@@ -175,7 +175,7 @@ abstract contract ERC20 is IERC20 {
         emit Transfer(sender, recipient, amount);
     }
 
-    // ERC-677 functionality, can be useful for Market Maker and also wrapping tokens
+    // ERC-677 functionality, can be useful for swapping and wrapping tokens
     function transferAndCall(address recipient, uint amount, bytes calldata data) public returns (bool) {
         bool success = transfer(recipient, amount);
         if (success){

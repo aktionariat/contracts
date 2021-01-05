@@ -29,80 +29,79 @@ pragma solidity >=0.8;
 
 import "./IERC20.sol";
 import "./IERC677Receiver.sol";
-import "./IMarketMaker.sol";
+import "./IMarket.sol";
 
 /**
- * @title CompanyName Shareholder Agreement
- * @author Luzius Meisser, luzius@meissereconomics.com
- * @dev These tokens are based on the ERC20 standard and the open-zeppelin library.
+ * @title FeeCollector
+ * @author Luzius Meisser, luzius@aktionariat.com
  *
  * Collects a performance fee when an investor sells shares.
  * Whether a performance fee is owed has to be determined off-chain.
  *
- * State: untested, initial concept!
+ * State: untested, initial proof of concept! Not in use.
  */
 contract FeeCollector is IERC677Receiver {
 
-    IMarketMaker private marketMaker;
+    IMarket private market;
     address public recipient;
     uint256 public feeInBips;
     uint256 public acquisitionPrice;
 
     event FeeCollected(address indexed recipient, address indexed seller, address tokens, uint256 amountSold, address currency, uint256 price, uint256 fee);
 
-    constructor(address marketMakerAddress, address recipient_, uint256 feeInBips_, uint256 acquisitionPrice_) {
-        marketMaker = IMarketMaker(marketMakerAddress);
-        IERC20 shareToken = IERC20(marketMaker.token());
-        shareToken.approve(marketMakerAddress, 10**50); // more than enough forever :)
+    constructor(address marketAddress, address recipient_, uint256 feeInBips_, uint256 acquisitionPrice_) {
+        market = IMarket(marketAddress);
+        IERC20 shareToken = IERC20(market.token());
+        shareToken.approve(marketAddress, 10**50); // more than enough forever :)
         recipient = recipient_;
         feeInBips = feeInBips_;
         acquisitionPrice = acquisitionPrice_;
         require(feeInBips <= 10000);
     }
 
-    function getMarketMaker() public view returns (address) {
-        return address(marketMaker);
+    function getMarket() public view returns (address) {
+        return address(market);
     }
 
-    // Sells amount shares through the Market Maker, collecting the performance fee.
+    // Sells amount shares through the Market, collecting the performance fee.
     // Allowance must be given to this contract.
     function sell(uint256 shares) public returns (uint256) {
-        require(IERC20(marketMaker.token()).transferFrom(msg.sender, address(this), shares));
+        require(IERC20(market.token()).transferFrom(msg.sender, address(this), shares));
         return processSale(msg.sender, shares);
     }
 
-    // Sells amount shares through the Market Maker, collecting the performance fee.
+    // Sells amount shares through the Market, collecting the performance fee.
     // This only works when using the "transferAndCall" method on the token contract.
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public {
-        require(msg.sender == marketMaker.token());
+        require(msg.sender == market.token());
         processSale(from, amount);
     }
 
     // Unwraps the shares of the user and automatically collects the fee.
     // Allowance must be given to this contract before calling this method.
     function unwrapDraggable(uint256 shares) public returns (uint256) {
-        address tokenAddress = marketMaker.token();
+        address tokenAddress = market.token();
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), shares);
         IDraggable draggable = IDraggable(tokenAddress);
         (address currency, uint256 unwrapped) = draggable.unwrap(shares);
         IERC20(currency).transfer(msg.sender, unwrapped);
         (uint256 proceeds, uint256 fee) = calculateFees(shares, unwrapped);
-        emit FeeCollected(recipient, msg.sender, marketMaker.token(), shares, currency, proceeds, fee);
+        emit FeeCollected(recipient, msg.sender, market.token(), shares, currency, proceeds, fee);
         return proceeds - fee;
     }
 
     function processSale(address seller, uint256 shares) internal returns (uint256){
         (uint256 grossProceeds, uint256 fee) = calculateFee(shares);
-        uint256 netProceeds = marketMaker.sell(shares); // allowance was already set in constructor
-        address currency = marketMaker.base();
+        uint256 netProceeds = market.sell(shares); // allowance was already set in constructor
+        address currency = market.base();
         require(IERC20(currency).transfer(recipient, fee));
         require(IERC20(currency).transfer(seller, netProceeds - fee));
-        emit FeeCollected(recipient, msg.sender, marketMaker.token(), shares, currency, grossProceeds, fee);
+        emit FeeCollected(recipient, msg.sender, market.token(), shares, currency, grossProceeds, fee);
         return netProceeds - fee;
     }
 
     function calculateFee(uint256 shares) public view returns (uint256, uint256) {
-        return calculateFees(shares, marketMaker.getSellPrice(shares));
+        return calculateFees(shares, market.getSellPrice(shares));
     }
 
     function calculateFees(uint256 shares, uint256 proceeds) internal view returns (uint256, uint256) {
