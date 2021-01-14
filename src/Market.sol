@@ -54,13 +54,14 @@ contract Market is Ownable {
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
-    function initialize(address baseCurrency, address shareToken) public {
-        require(token == address(0), "Already initialized.");
+    constructor(address shareToken, uint256 price_, address baseCurrency, address owner) {
         base = baseCurrency;
         token = shareToken;
+        price = price_;
         weth = uniswap.WETH();
         copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         driftStart = block.timestamp;
+        transferOwnership(owner);
     }
 
     function setPrice(uint256 newPrice, uint256 newIncrement) public onlyOwner {
