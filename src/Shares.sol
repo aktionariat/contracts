@@ -67,8 +67,9 @@ contract Shares is ERC20Recoverable, Ownable {
     event SubRegisterAdded(address contractAddress);
     event SubRegisterRemoved(address contractAddress);
 
-    constructor(string memory _symbol, string memory _name, string memory _terms) ERC20(0) {
+    constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares) ERC20(0) {
         setName(_symbol, _name);
+        setTotalShares(_totalShares);
         terms = _terms;
     }
 
