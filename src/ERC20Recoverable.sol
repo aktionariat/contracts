@@ -146,8 +146,6 @@ abstract contract ERC20Recoverable is ERC20 {
     * It is highly recommended that the owner observes the claims made and informs the owners of the claimed addresses
     * whenever a claim is made for their address (this of course is only possible if they are known to the owner, e.g.
     * through a shareholder register).
-    * To prevent frontrunning attacks, a claim can only be made if the information revealed when calling "declareLost"
-    * was previously commited using the "prepareClaim" function.
     */
     function declareLost(address collateralType, address lostAddress) public {
         require(isRecoveryEnabled(lostAddress), "Claims disabled for this address");
