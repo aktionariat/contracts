@@ -74,11 +74,19 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     }
 
     function name() public override view returns (string memory){
-        return string(abi.encodePacked("Draggable ", wrapped.name()));
+        if (isBinding()){
+            return string(abi.encodePacked("Draggable ", wrapped.name()));
+        } else {
+            return string(abi.encodePacked("Wrapped ", wrapped.name()));
+        }
     }
 
     function symbol() public override view returns (string memory){
-        return string(abi.encodePacked("D", wrapped.symbol()));
+        if (isBinding()){
+            return string(abi.encodePacked("D", wrapped.symbol()));
+        } else {
+            return string(abi.encodePacked("W", wrapped.symbol()));
+        }
     }
 
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public {
