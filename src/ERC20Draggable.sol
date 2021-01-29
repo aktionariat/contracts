@@ -146,8 +146,9 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     function makeAcquisitionOffer(bytes32 salt, uint256 pricePerShare, address currency) public payable {
         require(isBinding());
-        address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, votePeriod);        
+        address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
         if (offerExists()) {
+            require(IOffer(newOffer).isWellFunded());
             offer.contest(newOffer);
         }
         offer = IOffer(newOffer);
@@ -199,6 +200,7 @@ abstract contract IBurnable {
 }
 
 abstract contract IOffer {
+    function isWellFunded() virtual public returns (bool);
     function contest(address newOffer) virtual public;
     function notifyMoved(address from, address to, uint256 value) virtual public;
 }
