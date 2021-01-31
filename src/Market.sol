@@ -60,8 +60,9 @@ contract Market is Ownable {
         price = price_;
         increment = increment_;
         weth = uniswap.WETH();
-        copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         driftStart = block.timestamp;
+        copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
+        licenseFeeBps = 90;
         transferOwnership(owner);
     }
 
