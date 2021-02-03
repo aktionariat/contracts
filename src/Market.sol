@@ -30,8 +30,12 @@ pragma solidity >=0.8;
 import "./Ownable.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
+import "./ITokenReceiver.sol";
+import "./IERC677Receiver.sol";
 
 contract Market is Ownable {
+
+    address public paymenthub; // TODO!
 
     address public base;  // ERC-20 currency
     address public token; // ERC-20 share token
@@ -49,17 +53,14 @@ contract Market is Ownable {
     bool public buyingEnabled = true;
     bool public sellingEnabled = true;
 
-    IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-    address public weth;
-
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
-    constructor(address shareToken, uint256 price_, address baseCurrency, address owner) {
+    constructor(address shareToken, uint256 price_, uint256 increment_, address baseCurrency, address owner) {
         base = baseCurrency;
         token = shareToken;
         price = price_;
-        weth = uniswap.WETH();
-        driftStart = block.timestamp;
+        increment = increment_;
+        paymenthub = address(0x0); // TODO: set default once address known
         copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         licenseFeeBps = 90;
         transferOwnership(owner);
@@ -105,41 +106,16 @@ contract Market is Ownable {
         }
     }
 
-    function getPriceInEther(uint256 shares) public view returns (uint256) {
-        uint256 totPrice = getBuyPrice(shares);
-        address[] memory path = new address[](2);
-        path[0] = weth;
-        path[1] = base;
-        return uniswap.getAmountsIn(totPrice, path)[0];
-    }
-
-    function buyWithEther(uint256 shares, bytes calldata ref) public payable returns (uint256) {
-        require(buyingEnabled);
-        uint256 totPrice = getBuyPrice(shares);
-        uint256 totPriceEth = getPriceInEther(shares);
-        address[] memory path = new address[](2);
-        path[0] = weth;
-        path[1] = base;
-        uint256[] memory amounts = uniswap.swapETHForExactTokens{value: totPriceEth}(totPrice, path, address(this), block.timestamp);
-        assert(totPrice == amounts[1]);
-        _buy(msg.sender, msg.sender, shares, amounts[1], ref);
-        if (address(this).balance > 0){
-            payable(msg.sender).transfer(address(this).balance);
-        }
-        return amounts[0];
-    }
-
     function buy(uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
-        require(buyingEnabled);
         return buy(msg.sender, numberOfSharesToBuy, ref);
     }
 
     function buy(address recipient, uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
-        require(buyingEnabled);
         return _buy(msg.sender, recipient, numberOfSharesToBuy, 0, ref);
     }
 
     function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid, bytes calldata ref) internal returns (uint256) {
+        require(buyingEnabled);
         uint256 totPrice = getBuyPrice(shares);
         IERC20 baseToken = IERC20(base);
         if (totPrice > alreadyPaid){
@@ -161,12 +137,10 @@ contract Market is Ownable {
     }
 
     function sell(uint256 tokens, bytes calldata ref) public returns (uint256){
-        require(sellingEnabled);
         return sell(msg.sender, tokens, ref);
     }
 
     function sell(address recipient, uint256 tokens, bytes calldata ref) public returns (uint256){
-        require(sellingEnabled);
         return _sell(msg.sender, recipient, tokens, ref);
     }
 
@@ -176,22 +150,24 @@ contract Market is Ownable {
         return _notifyTokensReceived(recipient, shares, ref);
     }
 
-    // ERC-677 recipient
-    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public returns (bool success) {
-        require(msg.sender == token || msg.sender == base);
-        if (msg.sender == token){
-            require(sellingEnabled);
+    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) public {
+        require(msg.sender == paymenthub || msg.sender == token_);
+        if (token_ == token){
             _notifyTokensReceived(from, amount, ref);
-        } else if (msg.sender == base){
-            require(buyingEnabled);
+        } else if (token_ == base){
             _notifyMoneyReceived(from, amount, ref);
         } else {
             require(false);
         }
-        return true;
+    }
+
+    // ERC-677 recipient
+    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public {
+        onTokenTransfer(msg.sender, from, amount, ref);
     }
 
     function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
+        require(sellingEnabled);
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
         uint256 fee = getSaleFee(totPrice);
@@ -260,6 +236,10 @@ contract Market is Ownable {
     function withdraw(address ercAddress, address to, uint256 amount) public onlyOwner() {
         IERC20 erc20 = IERC20(ercAddress);
         require(erc20.transfer(to, amount), "Transfer failed");
+    }
+
+    function setPaymentHub(address hub) public onlyOwner() {
+        paymenthub = hub;
     }
 
     function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) public onlyOwner() {
