@@ -89,9 +89,10 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         }
     }
 
-    function onTokenTransfer(address from, uint256 amount, bytes calldata) override public {
+    function onTokenTransfer(address from, uint256 amount, bytes calldata) override public returns (bool) {
         require(msg.sender == address(wrapped));
         _mint(from, amount);
+        return true;
     }
 
     /** Increases the number of drag-along tokens. Requires minter to deposit an equal amount of share tokens */

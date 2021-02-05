@@ -162,8 +162,9 @@ contract Market is Ownable {
     }
 
     // ERC-677 recipient
-    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public {
+    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public returns (bool) {
         onTokenTransfer(msg.sender, from, amount, ref);
+        return true;
     }
 
     function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {

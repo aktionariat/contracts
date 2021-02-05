@@ -69,10 +69,26 @@ contract PaymentHub {
     /**
      * Convenience method to swap ether and pay a target address
      */
-    function makePaymentFromEther(address recipient, uint256 xchfamount) payable public {
+    function payFromEther(address recipient, uint256 xchfamount) payable public {
         uniswap.swapETHForExactTokens{value: msg.value}(xchfamount, getPath(), recipient, block.timestamp);
         if (address(this).balance > 0){
             payable(msg.sender).transfer(address(this).balance); // return change
+        }
+    }
+
+    function multiPay(address[] calldata recipients, uint256[] calldata amounts) public {
+        multiPay(currency, recipients, amounts);
+    }
+
+    function multiPay(address token, address[] calldata recipients, uint256[] calldata amounts) public {
+        for (uint i=0; i<recipients.length; i++) {
+            require(IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]));
+        }
+    }
+
+    function multiPayAndNotify(address token, address[] calldata recipients, uint256[] calldata amounts, bytes[] calldata refs) public {
+        for (uint i=0; i<recipients.length; i++) {
+            payAndNotify(token, recipients[i], amounts[i], refs[i]);
         }
     }
 
@@ -84,17 +100,17 @@ contract PaymentHub {
 
     // Allows to make a payment from the sender to an address given an allowance to this contract
     // Equivalent to xchf.transfer(recipient, xchfamount)
-    function makePaymentAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) public {
-        makeTransferAndNotify(currency, recipient, xchfamount, ref);
+    function payAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) public {
+        payAndNotify(currency, recipient, xchfamount, ref);
     }
 
-    function makeTransferAndNotify(address token, address recipient, uint256 amount, bytes calldata ref) public {
+    function payAndNotify(address token, address recipient, uint256 amount, bytes calldata ref) public {
         require(IERC20(token).transferFrom(msg.sender, recipient, amount));
         ITokenReceiver(recipient).onTokenTransfer(token, msg.sender, amount, ref);
     }
 
-    function makePaymentFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable public {
-        makePaymentFromEther(recipient, xchfamount);
+    function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable public {
+        payFromEther(recipient, xchfamount);
         ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
     }
 

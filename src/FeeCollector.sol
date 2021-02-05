@@ -72,9 +72,10 @@ contract FeeCollector is IERC677Receiver {
 
     // Sells amount shares through the Market, collecting the performance fee.
     // This only works when using the "transferAndCall" method on the token contract.
-    function onTokenTransfer(address from, uint256 amount, bytes calldata) override public {
+    function onTokenTransfer(address from, uint256 amount, bytes calldata) override public returns (bool) {
         require(msg.sender == market.token());
         processSale(from, amount);
+        return true;
     }
 
     // Unwraps the shares of the user and automatically collects the fee.

@@ -179,7 +179,7 @@ abstract contract ERC20 is IERC20 {
     function transferAndCall(address recipient, uint amount, bytes calldata data) public returns (bool) {
         bool success = transfer(recipient, amount);
         if (success){
-            IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);
+            success = IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);
         }
         return success;
     }
