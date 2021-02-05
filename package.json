@@ -1,0 +1,16 @@
+{
+  "name": "aktionariat-contracts",
+  "version": "1.0.0",
+  "description": "The public repository for all smart contracts used by Aktionariat.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aktionariat/contracts.git"
+  },
+  "author": "Aktionariat AG",
+  "private": true,
+  "license": "LicenseRef-Aktionariat",
+  "bugs": {
+    "url": "https://github.com/aktionariat/contracts/issues"
+  },
+  "homepage": "https://github.com/aktionariat/contracts#readme"
+}
