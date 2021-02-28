@@ -59,13 +59,10 @@ contract Shares is ERC20Recoverable, Ownable {
     uint256 public totalShares = 0; // total number of shares, maybe not all tokenized
     uint256 public invalidTokens = 0;
 
-    address[] public subregisters;
-
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
     event ShareNumberingEvent(address indexed holder, uint256 firstInclusive, uint256 lastInclusive);
-    event SubRegisterAdded(address contractAddress);
-    event SubRegisterRemoved(address contractAddress);
+    event SubRegisterRecognized(address contractAddress);
 
     constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares) ERC20(0) {
         setName(_symbol, _name);
@@ -95,49 +92,17 @@ contract Shares is ERC20Recoverable, Ownable {
         totalShares = _newTotalShares;
     }
 
-    function countSubregisters() public view returns (uint256){
-        return subregisters.length;
-    }
-
     /**
-     * Sometimes, tokens are held by smart contracts that are ERC20 contracts themselves.
-     * For example, some tokens might be held by a smart contract representing a shareholder agreement.
-     * In that case, the owners of that sub-contract are the shareholders, and not the contract itself
-     * For such cases, having a list of recognized such subregisters might be helpful with the automated
-     * registration and tracking of shareholders.
+     * Sometimes, tokens are held by other smart contracts that serve as registers themselves. These could
+     * be our draggable contract, it could be a bridget to another blockchain, or it could be an address
+     * that belongs to a recognized custodian.
      * We assume that the number of sub registers stays limited, such that they are safe to iterate.
      * Subregisters should always have the same number of decimals as the main register and their total
      * balance must not exceed the number of tokens assigned to the subregister.
-     * In order to preserve FIFO-rules meaningfully, subregisters must be empty when added or removed.
+     * In order to preserve FIFO-rules meaningfully, subregisters should be empty when added or removed.
      */
     function recognizeSubRegister(address contractAddress) public onlyOwner () {
-        require(balanceOf(contractAddress) == 0, "Subregisters must be empty when added");
-        subregisters.push(contractAddress);
-        emit SubRegisterAdded(contractAddress);
-    }
-
-    function removeSubRegister(address contractAddress) public onlyOwner() {
-        require(balanceOf(contractAddress) == 0, "Subregisters must be empty when removed");
-        for (uint256 i = 0; i<subregisters.length; i++) {
-            if (subregisters[i] == contractAddress) {
-                subregisters[i] = subregisters[subregisters.length - 1];
-                subregisters.pop();
-                emit SubRegisterRemoved(contractAddress);
-            }
-        }
-    }
-
-    /**
-     * A deep balanceOf operator that also considers indirectly held tokens in
-     * recognized sub registers.
-     */
-    function balanceOfDeep(address holder) public view returns (uint256) {
-        uint256 balance = balanceOf(holder);
-        for (uint256 i = 0; i<subregisters.length; i++) {
-            IERC20 subERC = IERC20(subregisters[i]);
-            balance += subERC.balanceOf(holder);
-        }
-        return balance;
+        emit SubRegisterRecognized(contractAddress);
     }
 
     /**

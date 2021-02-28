@@ -66,7 +66,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     function convert() public {
         address oldBase = getOldBase();
         fetchTokens();
-        swtichBase(oldBase);
+        switchBase(oldBase);
     }
 
     function fetchTokens() internal {
@@ -85,7 +85,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
         return IDSHS(address(wrapped)).getWrappedContract();
     }
 
-    function swtichBase(address oldWrapped) internal {
+    function switchBase(address oldWrapped) internal {
         IERC20 oldBase = IERC20(oldWrapped);
         oldBase.approve(newBaseToken, oldBase.balanceOf(address(this)));
         IBaseToken(newBaseToken).convertOldShares();
