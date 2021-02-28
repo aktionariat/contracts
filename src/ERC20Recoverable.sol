@@ -137,16 +137,16 @@ abstract contract ERC20Recoverable is ERC20 {
     * through a shareholder register).
     */
     function declareLost(address collateralType, address lostAddress) public {
-        require(isRecoveryEnabled(lostAddress), "disabled");
+        require(isRecoveryEnabled(lostAddress), "Claims disabled for this address");
         uint256 collateralRate = getCollateralRate(collateralType);
         require(collateralRate > 0, "Unsupported collateral");
         address claimant = msg.sender;
         uint256 balance = balanceOf(lostAddress);
         uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
-        require(balance > 0, "empty");
-        require(claims[lostAddress].collateral == 0, "already claimed");
-        require(currency.transferFrom(claimant, address(this), collateral));
+        require(balance > 0, "Claimed address holds no shares");
+        require(claims[lostAddress].collateral == 0, "Address already claimed");
+        require(currency.transferFrom(claimant, address(this), collateral), "Collateral transfer failed");
 
         claims[lostAddress] = Claim({
             claimant: claimant,
