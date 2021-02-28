@@ -36,7 +36,7 @@ import "./IERC20.sol";
 
 contract Offer {
 
-    uint256 public quorum;                              // Percentage of votes needed to start drag-along process
+    uint256 public quorum;                              // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
 
     address public token;
     address public buyer;                               // who made the offer
@@ -48,7 +48,7 @@ contract Offer {
     mapping (address => Vote) private votes;            // Who votes what
     uint256 public noVotes;                             // number of tokens voting for no
     uint256 public yesVotes;                            // number of tokens voting for yes
-    uint256 public voteEnd;
+    uint256 public voteEnd;                             // end of vote period in block time (seconds after 1.1.1970)
 
     event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
     event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);

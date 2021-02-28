@@ -147,10 +147,6 @@ contract Shares is ERC20Recoverable, Ownable {
         emit Announcement(message);
     }
 
-    function setClaimPeriod(uint256 claimPeriodInDays) public onlyOwner() {
-        super._setClaimPeriod(claimPeriodInDays);
-    }
-
     /**
      * See parent method for collateral requirements.
      */

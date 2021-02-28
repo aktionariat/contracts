@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"bool","name":"enabled","type":"bool"}],"name":"setRecoverable","outputs":[],"stateMutability":"nonpayable","type":"function"}]

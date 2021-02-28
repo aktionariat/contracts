@@ -56,8 +56,8 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     // The current acquisition attempt, if any. See initiateAcquisition to see the requirements to make a public offer.
     IOffer public offer;
 
-    uint256 public quorum;
-    uint256 public votePeriod;
+    uint256 public quorum; // BPS (out of 10'000)
+    uint256 public votePeriod; // Seconds
 
     event MigrationSucceeded(address newContractAddress);
 
@@ -71,6 +71,10 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         wrapped = IERC20(wrappedToken);
         quorum = quorum_;
         votePeriod = votePeriod_;
+    }
+
+    function disableRecovery() public {
+        IRecoveryDisabler(address(wrapped)).setRecoverable(false);
     }
 
     function name() public override view returns (string memory){
@@ -115,7 +119,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
      * Deactivates the drag-along mechanism and enables the unwrap function.
      */
     function deactivate(uint256 factor) internal {
-        require(factor >= 1);
+        require(factor >= 1, "factor");
         unwrapConversionFactor = factor;
     }
 
@@ -179,7 +183,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     function migrate() public {
         address successor = msg.sender;
         require(!offerExists()); // if you have 80%, you can easily cancel the offer first if necessary
-        require(balanceOf(successor) * 10000 >= totalSupply() * 8000, "Quorum not reached");
+        require(balanceOf(successor) * 10000 >= totalSupply() * 8000, "quorum");
         replaceWrapped(successor, successor);
         emit MigrationSucceeded(successor);
     }
@@ -194,6 +198,10 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         return address(offer) != address(0);
     }
 
+}
+
+abstract contract IRecoveryDisabler {
+    function setRecoverable(bool enabled) public virtual;
 }
 
 abstract contract IBurnable {

@@ -51,10 +51,6 @@ contract PaymentHub {
         weth = IERC20(uniswap.WETH());
     }
 
-    function name() public view returns (string memory){
-        return string(abi.encodePacked("Payment hub for ", IERC20(currency).name()));
-    }
-
     function getPath() private view returns (address[] memory) {
         address[] memory path = new address[](2);
         path[0] = address(weth);
@@ -67,7 +63,7 @@ contract PaymentHub {
     }
 
     /**
-     * Convenience method to swap ether and pay a target address
+     * Convenience method to swap ether into currency and pay a target address
      */
     function payFromEther(address recipient, uint256 xchfamount) payable public {
         uniswap.swapETHForExactTokens{value: msg.value}(xchfamount, getPath(), recipient, block.timestamp);
@@ -86,9 +82,12 @@ contract PaymentHub {
         }
     }
 
-    function multiPayAndNotify(address token, address[] calldata recipients, uint256[] calldata amounts, bytes[] calldata refs) public {
+    /**
+     * Can (at least in theory) save some gas as the sender balance only is touched in one transaction.
+     */
+    function multiPayAndNotify(address token, address[] calldata recipients, uint256[] calldata amounts, bytes calldata ref) public {
         for (uint i=0; i<recipients.length; i++) {
-            payAndNotify(token, recipients[i], amounts[i], refs[i]);
+            payAndNotify(token, recipients[i], amounts[i], ref);
         }
     }
 
@@ -99,7 +98,7 @@ contract PaymentHub {
     } */
 
     // Allows to make a payment from the sender to an address given an allowance to this contract
-    // Equivalent to xchf.transfer(recipient, xchfamount)
+    // Equivalent to xchf.transferAndCall(recipient, xchfamount)
     function payAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) public {
         payAndNotify(currency, recipient, xchfamount, ref);
     }

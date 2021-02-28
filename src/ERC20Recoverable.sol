@@ -56,7 +56,7 @@ abstract contract ERC20Recoverable is ERC20 {
         address currencyUsed; // The currency (XCHF) can be updated, we record the currency used for every request
     }
 
-    uint256 public claimPeriod = 180 days; // Default of 180 days;
+    uint256 public constant claimPeriod = 180 days; // Default of 180 days;
 
     mapping(address => Claim) public claims; // there can be at most one claim per address, here address is claimed address
     mapping(address => bool) public recoveryDisabled; // disable claimability (e.g. for long term storage)
@@ -103,16 +103,6 @@ abstract contract ERC20Recoverable is ERC20 {
 
     function getClaimDeleter() virtual public view returns (address);
 
-    /**
-     * Allows subclasses to change the claim period, but not to fewer than 90 days.
-     */
-    function _setClaimPeriod(uint256 claimPeriodInDays) internal {
-        require(claimPeriodInDays > 90, "Claim period must be at least 90 days"); // must be at least 90 days
-        uint256 claimPeriodInSeconds = claimPeriodInDays * (1 days);
-        claimPeriod = claimPeriodInSeconds;
-        emit ClaimPeriodChanged(claimPeriod);
-    }
-
     function setRecoverable(bool enabled) public {
         recoveryDisabled[msg.sender] = !enabled;
     }
@@ -129,7 +119,6 @@ abstract contract ERC20Recoverable is ERC20 {
     event ClaimCleared(address indexed lostAddress, uint256 collateral);
     event ClaimDeleted(address indexed lostAddress, address indexed claimant, uint256 collateral);
     event ClaimResolved(address indexed lostAddress, address indexed claimant, uint256 collateral);
-    event ClaimPeriodChanged(uint256 newClaimPeriodInDays);
     event CustomClaimCollateralChanged(address newCustomCollateralAddress, uint256 newCustomCollareralRate);
 
   /** Anyone can declare that the private key to a certain address was lost by calling declareLost
@@ -148,16 +137,16 @@ abstract contract ERC20Recoverable is ERC20 {
     * through a shareholder register).
     */
     function declareLost(address collateralType, address lostAddress) public {
-        require(isRecoveryEnabled(lostAddress), "Claims disabled for this address");
+        require(isRecoveryEnabled(lostAddress), "disabled");
         uint256 collateralRate = getCollateralRate(collateralType);
         require(collateralRate > 0, "Unsupported collateral");
         address claimant = msg.sender;
         uint256 balance = balanceOf(lostAddress);
         uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
-        require(balance > 0, "Claimed address holds no shares");
-        require(claims[lostAddress].collateral == 0, "Address already claimed");
-        require(currency.transferFrom(claimant, address(this), collateral), "Collateral transfer failed");
+        require(balance > 0, "empty");
+        require(claims[lostAddress].collateral == 0, "already claimed");
+        require(currency.transferFrom(claimant, address(this), collateral));
 
         claims[lostAddress] = Claim({
             claimant: claimant,

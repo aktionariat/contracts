@@ -1,1 +1,0 @@
-[{"inputs":[{"internalType":"address","name":"buyer","type":"address"},{"internalType":"address","name":"currency","type":"address"}],"name":"drag","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"notifyOfferEnded","outputs":[],"stateMutability":"nonpayable","type":"function"}]

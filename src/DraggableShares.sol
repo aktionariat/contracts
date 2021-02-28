@@ -57,12 +57,8 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     string public terms;
 
-    /**
-     * Designed to be used with the Crypto Franc as currency token. See also parent constructor.
-     */
-    constructor(string memory _terms, address offerFactory, address wrappedToken, uint256 quorum, uint256 votePeriod)
-        ERC20Draggable(offerFactory, wrappedToken, quorum, votePeriod) {
-        IRecoverable(wrappedToken).setRecoverable(false);
+    constructor(string memory _terms, address offerFactory, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds)
+        ERC20Draggable(offerFactory, wrappedToken, quorumBps, votePeriodSeconds) {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     }
 
@@ -90,7 +86,6 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 }
 
 abstract contract IRecoverable {
-    function setRecoverable(bool) public virtual;
     function getCollateralRate(address) public virtual view returns (uint256);
     function getClaimDeleter() public virtual view returns (address);
 }

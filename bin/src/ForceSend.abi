@@ -1,1 +1,0 @@
-[{"inputs":[{"internalType":"address payable","name":"victim","type":"address"}],"name":"send","outputs":[],"stateMutability":"payable","type":"function"}]
