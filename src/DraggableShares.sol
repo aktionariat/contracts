@@ -57,8 +57,8 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     string public terms;
 
-    constructor(string memory _terms, address offerFactory, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds)
-        ERC20Draggable(offerFactory, wrappedToken, quorumBps, votePeriodSeconds) {
+    constructor(string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds)
+        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds) {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     }
 

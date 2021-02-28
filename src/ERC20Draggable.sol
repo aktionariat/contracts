@@ -48,7 +48,9 @@ import "./IERC677Receiver.sol";
 contract ERC20Draggable is ERC20, IERC677Receiver {
 
     IERC20 public wrapped;                              // The wrapped contract
-    IOfferFactory public factory;
+    IOfferFactory public constant factory = IOfferFactory(0xf9f92751F272f0872e2EDb6a280b0990F3e2b8A3);
+
+    uint256 private constant MIGRATION_QUORUM = 8000;
 
     // If the wrapped tokens got replaced in an acquisition, unwrapping might yield many currency tokens
     uint256 public unwrapConversionFactor = 0;
@@ -62,12 +64,10 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     event MigrationSucceeded(address newContractAddress);
 
     constructor(
-        address offerFactory,
         address wrappedToken,
         uint256 quorum_,
         uint256 votePeriod_
     ) ERC20(0) {
-        factory = IOfferFactory(offerFactory);
         wrapped = IERC20(wrappedToken);
         quorum = quorum_;
         votePeriod = votePeriod_;
@@ -183,7 +183,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
     function migrate() public {
         address successor = msg.sender;
         require(!offerExists()); // if you have 80%, you can easily cancel the offer first if necessary
-        require(balanceOf(successor) * 10000 >= totalSupply() * 8000, "quorum");
+        require(balanceOf(successor) * 10000 >= totalSupply() * MIGRATION_QUORUM, "quorum");
         replaceWrapped(successor, successor);
         emit MigrationSucceeded(successor);
     }

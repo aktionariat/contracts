@@ -56,7 +56,7 @@ abstract contract ERC20Recoverable is ERC20 {
         address currencyUsed; // The currency (XCHF) can be updated, we record the currency used for every request
     }
 
-    uint256 public constant claimPeriod = 180 days; // Default of 180 days;
+    uint256 public constant claimPeriod = 180 days;
 
     mapping(address => Claim) public claims; // there can be at most one claim per address, here address is claimed address
     mapping(address => bool) public recoveryDisabled; // disable claimability (e.g. for long term storage)
@@ -95,7 +95,7 @@ abstract contract ERC20Recoverable is ERC20 {
         if (customCollateralAddress == address(0)) {
             customCollateralRate = 0; // disabled
         } else {
-            require(rate > 0, "Collateral rate can't be zero");
+            require(rate > 0, "zero");
             customCollateralRate = rate;
         }
         emit CustomClaimCollateralChanged(collateral, rate);
@@ -137,16 +137,16 @@ abstract contract ERC20Recoverable is ERC20 {
     * through a shareholder register).
     */
     function declareLost(address collateralType, address lostAddress) public {
-        require(isRecoveryEnabled(lostAddress), "Claims disabled for this address");
+        require(isRecoveryEnabled(lostAddress), "disabled");
         uint256 collateralRate = getCollateralRate(collateralType);
-        require(collateralRate > 0, "Unsupported collateral");
+        require(collateralRate > 0, "bad collateral");
         address claimant = msg.sender;
         uint256 balance = balanceOf(lostAddress);
         uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
-        require(balance > 0, "Claimed address holds no shares");
-        require(claims[lostAddress].collateral == 0, "Address already claimed");
-        require(currency.transferFrom(claimant, address(this), collateral), "Collateral transfer failed");
+        require(balance > 0, "empty");
+        require(claims[lostAddress].collateral == 0, "already claimed");
+        require(currency.transferFrom(claimant, address(this), collateral));
 
         claims[lostAddress] = Claim({
             claimant: claimant,
@@ -175,7 +175,7 @@ abstract contract ERC20Recoverable is ERC20 {
     }
 
     function transfer(address recipient, uint256 amount) override virtual public returns (bool) {
-        require(super.transfer(recipient, amount), "Transfer failed");
+        require(super.transfer(recipient, amount));
         clearClaim();
         return true;
     }
@@ -189,7 +189,7 @@ abstract contract ERC20Recoverable is ERC20 {
             uint256 collateral = claims[msg.sender].collateral;
             IERC20 currency = IERC20(claims[msg.sender].currencyUsed);
             delete claims[msg.sender];
-            require(currency.transfer(msg.sender, collateral), "Collateral transfer failed");
+            require(currency.transfer(msg.sender, collateral));
             emit ClaimCleared(msg.sender, collateral);
         }
     }
@@ -202,12 +202,12 @@ abstract contract ERC20Recoverable is ERC20 {
         Claim memory claim = claims[lostAddress];
         uint256 collateral = claim.collateral;
         IERC20 currency = IERC20(claim.currencyUsed);
-        require(collateral != 0, "No claim found");
-        require(claim.claimant == msg.sender, "Only claimant can resolve claim");
-        require(claim.timestamp + claimPeriod <= block.timestamp, "Claim period not over yet");
+        require(collateral != 0, "not found");
+        require(claim.claimant == msg.sender, "not claimant");
+        require(claim.timestamp + claimPeriod <= block.timestamp, "too early");
         address claimant = claim.claimant;
         delete claims[lostAddress];
-        require(currency.transfer(claimant, collateral), "Collateral transfer failed");
+        require(currency.transfer(claimant, collateral));
         _transfer(lostAddress, claimant, balanceOf(lostAddress));
         emit ClaimResolved(lostAddress, claimant, collateral);
     }
@@ -216,12 +216,12 @@ abstract contract ERC20Recoverable is ERC20 {
      * This function is to be executed by the claim deleter only in case a dispute needs to be resolved manually.
      */
     function deleteClaim(address lostAddress) public {
-        require(msg.sender == getClaimDeleter(), "You cannot delete claims");
+        require(msg.sender == getClaimDeleter(), "no access");
         Claim memory claim = claims[lostAddress];
         IERC20 currency = IERC20(claim.currencyUsed);
-        require(claim.collateral != 0, "No claim found");
+        require(claim.collateral != 0, "not found");
         delete claims[lostAddress];
-        require(currency.transfer(claim.claimant, claim.collateral), "Collateral transfer failed");
+        require(currency.transfer(claim.claimant, claim.collateral));
         emit ClaimDeleted(lostAddress, claim.claimant, claim.collateral);
     }
 
