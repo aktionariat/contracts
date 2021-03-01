@@ -65,7 +65,8 @@ contract Shares is ERC20Recoverable, Ownable {
     event SubRegisterRecognized(address contractAddress);
 
     constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares) ERC20(0) {
-        setName(_symbol, _name);
+        symbol = _symbol;
+        name = _name;
         setTotalShares(_totalShares);
         terms = _terms;
     }
@@ -73,12 +74,10 @@ contract Shares is ERC20Recoverable, Ownable {
     function setName(string memory _symbol, string memory _name) public onlyOwner {
         symbol = _symbol;
         name = _name;
-        emit Announcement(string(abi.encodePacked("New name: ", _name, " (", _symbol, ")")));
     }
 
     function setTerms(string memory _terms) public onlyOwner {
         terms = _terms;
-        emit Announcement(string(abi.encodePacked("New terms: ", _terms)));
     }
 
     /**
@@ -88,7 +87,7 @@ contract Shares is ERC20Recoverable, Ownable {
      * tokens have become invalid.
      */
     function setTotalShares(uint256 _newTotalShares) public onlyOwner() {
-        require(_newTotalShares >= totalValidSupply(), "There can't be fewer tokens than shares");
+        require(_newTotalShares >= totalValidSupply(), "below supply");
         totalShares = _newTotalShares;
     }
 
