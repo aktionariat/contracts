@@ -35,13 +35,12 @@ import "./IERC677Receiver.sol";
 
 contract Market is Ownable {
 
-    address public paymenthub; // TODO!
+    address public paymenthub;
 
-    address public base;  // ERC-20 currency
-    address public token; // ERC-20 share token
+    address public immutable base;  // ERC-20 currency
+    address public immutable token; // ERC-20 share token
 
-    address public copyright;
-    uint8 public licenseFeeBps; // only charged on sales, max 1% i.e. 100
+    address public constant copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
 
     uint256 private price; // current offer price, without drift
     uint256 public increment; // increment
@@ -61,7 +60,6 @@ contract Market is Ownable {
         price = price_;
         increment = increment_;
         paymenthub = address(0x0); // TODO: set default once address known
-        copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
         licenseFeeBps = 90;
         transferOwnership(owner);
     }
@@ -107,33 +105,32 @@ contract Market is Ownable {
     }
 
     function buy(uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
-        return buy(msg.sender, numberOfSharesToBuy, ref);
-    }
-
-    function buy(address recipient, uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
-        return _buy(msg.sender, recipient, numberOfSharesToBuy, 0, ref);
-    }
-
-    function _buy(address paying, address recipient, uint256 shares, uint256 alreadyPaid, bytes calldata ref) internal returns (uint256) {
-        require(buyingEnabled);
-        uint256 totPrice = getBuyPrice(shares);
-        IERC20 baseToken = IERC20(base);
-        if (totPrice > alreadyPaid){
-            require(baseToken.transferFrom(paying, address(this), totPrice - alreadyPaid));
-        } else if (totPrice < alreadyPaid){
-            // caller paid to much, return excess amount
-            require(baseToken.transfer(paying, alreadyPaid - totPrice));
-        }
-        IERC20 shareToken = IERC20(token);
-        require(shareToken.transfer(recipient, shares));
-        price = price + (shares * increment);
-        emit Trade(token, paying, ref, int256(shares), base, totPrice, 0, getPrice());
+        uint256 totPrice = getBuyPrice(numberOfSharesToBuy);
+        buy(msg.sender, numberOfSharesToBuy, totPrice, ref);
         return totPrice;
     }
 
-    function _notifyMoneyReceived(address from, uint256 amount, bytes calldata ref) internal {
+    function buy(uint256 numberOfSharesToBuy, uint256 totprice, bytes calldata ref) public {
+        buy(msg.sender, numberOfSharesToBuy, totprice, ref);
+    }
+
+    function buy(address recipient, uint256 numberOfSharesToBuy, uint256 totprice, bytes calldata ref) public {
+        IERC20(base).transferFrom(msg.sender, address(this), totprice);
+        _buy(msg.sender, recipient, numberOfSharesToBuy, totprice, ref);
+    }
+
+    function _buy(address paying, address recipient, uint256 shares, uint256 paid, bytes calldata ref) internal {
+        require(buyingEnabled);
+        require(paid == getBuyPrice(shares));
+        IERC20(token).transfer(recipient, shares);
+        price = price + (shares * increment);
+        emit Trade(token, paying, ref, int256(shares), base, paid, 0, getPrice());
+    }
+
+    function _notifyMoneyReceived(address from, uint256 amount, bytes calldata ref) internal returns (uint256) {
         uint shares = getShares(amount);
         _buy(from, from, shares, amount, ref);
+        return shares;
     }
 
     function sell(uint256 tokens, bytes calldata ref) public returns (uint256){
@@ -146,24 +143,28 @@ contract Market is Ownable {
 
     function _sell(address seller, address recipient, uint256 shares, bytes calldata ref) internal returns (uint256) {
         IERC20 shareToken = IERC20(token);
-        require(shareToken.transferFrom(seller, address(this), shares));
+        shareToken.transferFrom(seller, address(this), shares);
         return _notifyTokensReceived(recipient, shares, ref);
     }
 
-    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) public {
-        require(msg.sender == paymenthub || msg.sender == token_);
+    /**
+     * Payment hub might actually have sent another accepted token, including Ether.
+     */
+    function processIncoming(address token_, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
+        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub);
         if (token_ == token){
-            _notifyTokensReceived(from, amount, ref);
+            return _notifyTokensReceived(from, amount, ref);
         } else if (token_ == base){
-            _notifyMoneyReceived(from, amount, ref);
+            return _notifyMoneyReceived(from, amount, ref);
         } else {
             require(false);
+            return 0;
         }
     }
 
     // ERC-677 recipient
     function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public returns (bool) {
-        onTokenTransfer(msg.sender, from, amount, ref);
+        processIncoming(msg.sender, from, amount, ref);
         return true;
     }
 
@@ -173,9 +174,9 @@ contract Market is Ownable {
         IERC20 baseToken = IERC20(base);
         uint256 fee = getSaleFee(totPrice);
         if (fee > 0){
-            require(baseToken.transfer(copyright, fee));
+            baseToken.transfer(copyright, fee);
         }
-        require(baseToken.transfer(recipient, totPrice - fee));
+        baseToken.transfer(recipient, totPrice - fee);
         price -= amount * increment;
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
         return totPrice;
@@ -223,28 +224,26 @@ contract Market is Ownable {
         return min;
     }
 
-    function setCopyright(address newOwner) public {
-        require(msg.sender == copyright);
-        copyright = newOwner;
+    function withdrawEther(uint256 amount) public ownerOrHub() {
+        payable(msg.sender).transfer(amount); // return change
     }
 
-    function setLicenseFee(uint8 bps) public {
-        require(msg.sender == copyright);
-        require(bps <= 100);
-        licenseFeeBps = bps;
-    }
-
-    function withdraw(address ercAddress, address to, uint256 amount) public onlyOwner() {
+    function withdraw(address ercAddress, address to, uint256 amount) public ownerOrHub() {
         IERC20 erc20 = IERC20(ercAddress);
         require(erc20.transfer(to, amount), "Transfer failed");
     }
 
-    function setPaymentHub(address hub) public onlyOwner() {
+    function setPaymentHub(address hub) public ownerOrHub() {
         paymenthub = hub;
     }
 
     function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) public onlyOwner() {
         buyingEnabled = newBuyingEnabled;
         sellingEnabled = newSellingEnabled;
+    }
+    
+    modifier ownerOrHub() {
+        require(owner == msg.sender || paymenthub == msg.sender, "not owner");
+        _;
     }
 }

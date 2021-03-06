@@ -38,7 +38,7 @@ import "./ITokenReceiver.sol";
  * Instead, an allowance needs to be set only once, namely for this contract.
  * Further, it supports automatic conversion from Ether to the payment currency through Uniswap.
  */
-contract PaymentHub {
+contract PaymentRouter {
 
     // immutable variables get integrated into the bytecode at deployment time, constants at compile time
     // Unlike normal variables, changing their values changes the codehash of a contract!
