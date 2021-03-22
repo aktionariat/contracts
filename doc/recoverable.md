@@ -1,5 +1,7 @@
 # Recovery Mechanism
 
+![token recovery](https://aktionariat.com/images/old-keys.jpg)
+
 Documentation for the token recovery mechanism implemented in [ERC20Recoverable.sol](../src/ERC20Recoverable.sol).
 
 ## Motivation
