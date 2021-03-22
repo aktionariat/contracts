@@ -1,5 +1,7 @@
 # Shareholder Registry
 
+![shareholder registry](https://aktionariat.com/images/registry.jpg)
+
 [Aktionariat](http://aktionariat.com) constructs the shareholder registry from two sources of information:
 
 1. The blockchain-based token registry implemented by our ERC-20 contract ['Shares'](../src/Shares.sol).
