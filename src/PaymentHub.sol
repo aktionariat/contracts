@@ -38,7 +38,7 @@ import "./ITokenReceiver.sol";
  * Instead, an allowance needs to be set only once, namely for this contract.
  * Further, it supports automatic conversion from Ether to the payment currency through Uniswap.
  */
-contract PaymentRouter {
+contract PaymentHub {
 
     // immutable variables get integrated into the bytecode at deployment time, constants at compile time
     // Unlike normal variables, changing their values changes the codehash of a contract!
@@ -78,7 +78,7 @@ contract PaymentRouter {
 
     function multiPay(address token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
-            require(IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]));
+            IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]);
         }
     }
 
@@ -104,7 +104,7 @@ contract PaymentRouter {
     }
 
     function payAndNotify(address token, address recipient, uint256 amount, bytes calldata ref) public {
-        require(IERC20(token).transferFrom(msg.sender, recipient, amount));
+        IERC20(token).transferFrom(msg.sender, recipient, amount);
         ITokenReceiver(recipient).onTokenTransfer(token, msg.sender, amount, ref);
     }
 

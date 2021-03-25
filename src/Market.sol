@@ -49,8 +49,13 @@ contract Market is Ownable {
     uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
     int256 public driftIncrement;
 
-    bool public buyingEnabled = true;
-    bool public sellingEnabled = true;
+    uint8 licenseFeeBps;
+
+    uint8 private constant BUYING_ENABLED = 0x1;
+    uint8 private constant SELLING_ENABLED = 0x2;
+
+    // more bits to be used by payment hub
+    uint256 public settings = BUYING_ENABLED | SELLING_ENABLED;
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
@@ -104,47 +109,14 @@ contract Market is Ownable {
         }
     }
 
-    function buy(uint256 numberOfSharesToBuy, bytes calldata ref) public returns (uint256) {
-        uint256 totPrice = getBuyPrice(numberOfSharesToBuy);
-        buy(msg.sender, numberOfSharesToBuy, totPrice, ref);
-        return totPrice;
-    }
-
-    function buy(uint256 numberOfSharesToBuy, uint256 totprice, bytes calldata ref) public {
-        buy(msg.sender, numberOfSharesToBuy, totprice, ref);
-    }
-
-    function buy(address recipient, uint256 numberOfSharesToBuy, uint256 totprice, bytes calldata ref) public {
-        IERC20(base).transferFrom(msg.sender, address(this), totprice);
-        _buy(msg.sender, recipient, numberOfSharesToBuy, totprice, ref);
-    }
-
-    function _buy(address paying, address recipient, uint256 shares, uint256 paid, bytes calldata ref) internal {
-        require(buyingEnabled);
+    function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
+        uint shares = getShares(paid);
+        require(settings & 0x1 == 0x1);
         require(paid == getBuyPrice(shares));
-        IERC20(token).transfer(recipient, shares);
+        IERC20(token).transfer(from, shares);
         price = price + (shares * increment);
-        emit Trade(token, paying, ref, int256(shares), base, paid, 0, getPrice());
-    }
-
-    function _notifyMoneyReceived(address from, uint256 amount, bytes calldata ref) internal returns (uint256) {
-        uint shares = getShares(amount);
-        _buy(from, from, shares, amount, ref);
+        emit Trade(token, from, ref, int256(shares), base, paid, 0, getPrice());
         return shares;
-    }
-
-    function sell(uint256 tokens, bytes calldata ref) public returns (uint256){
-        return sell(msg.sender, tokens, ref);
-    }
-
-    function sell(address recipient, uint256 tokens, bytes calldata ref) public returns (uint256){
-        return _sell(msg.sender, recipient, tokens, ref);
-    }
-
-    function _sell(address seller, address recipient, uint256 shares, bytes calldata ref) internal returns (uint256) {
-        IERC20 shareToken = IERC20(token);
-        shareToken.transferFrom(seller, address(this), shares);
-        return _notifyTokensReceived(recipient, shares, ref);
     }
 
     /**
@@ -153,9 +125,9 @@ contract Market is Ownable {
     function processIncoming(address token_, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
         require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub);
         if (token_ == token){
-            return _notifyTokensReceived(from, amount, ref);
+            return sell(from, amount, ref);
         } else if (token_ == base){
-            return _notifyMoneyReceived(from, amount, ref);
+            return buy(from, amount, ref);
         } else {
             require(false);
             return 0;
@@ -168,11 +140,23 @@ contract Market is Ownable {
         return true;
     }
 
-    function _notifyTokensReceived(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
-        require(sellingEnabled);
+    function buyingEnabled() public view returns (bool){
+        return hasSetting(BUYING_ENABLED);
+    }
+
+    function sellingEnabled() public view returns (bool){
+        return hasSetting(SELLING_ENABLED);
+    }
+
+    function hasSetting(uint256 setting) private view returns (bool) {
+        return settings & setting == setting;
+    }
+
+    function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
+        require(hasSetting(SELLING_ENABLED));
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
-        uint256 fee = getSaleFee(totPrice);
+        uint256 fee = getLicenseFee(totPrice);
         if (fee > 0){
             baseToken.transfer(copyright, fee);
         }
@@ -182,13 +166,14 @@ contract Market is Ownable {
         return totPrice;
     }
 
-    function getSaleFee(uint256 totalPrice) public view returns (uint256) {
-        return totalPrice * licenseFeeBps / 10000;
+    function setLicenseFee(uint8 bps) public {
+        require(msg.sender == copyright);
+        require(bps <= 100);
+        licenseFeeBps = bps;
     }
 
-    function getSaleProceeds(uint256 shares) public view returns (uint256) {
-        uint256 total = getSellPrice(shares);
-        return total - getSaleFee(total);
+    function getLicenseFee(uint256 totPrice) public view returns (uint256) {
+        return totPrice * licenseFeeBps / 10000;
     }
 
     function getSellPrice(uint256 shares) public view returns (uint256) {
@@ -200,7 +185,7 @@ contract Market is Ownable {
     }
 
     function getPrice(uint256 lowest, uint256 shares) internal view returns (uint256){
-        if (shares == 0){
+        if (shares == 0) {
             return 0;
         } else {
             uint256 highest = lowest + (shares - 1) * increment;
@@ -228,18 +213,30 @@ contract Market is Ownable {
         payable(msg.sender).transfer(amount); // return change
     }
 
+    function approve(address erc20, address who, uint256 amount) public onlyOwner() {
+        IERC20(erc20).approve(who, amount);
+    }
+
     function withdraw(address ercAddress, address to, uint256 amount) public ownerOrHub() {
-        IERC20 erc20 = IERC20(ercAddress);
-        require(erc20.transfer(to, amount), "Transfer failed");
+        IERC20(ercAddress).transfer(to, amount);
     }
 
     function setPaymentHub(address hub) public ownerOrHub() {
         paymenthub = hub;
     }
 
+    function setSettings(uint256 settings_) public onlyOwner() {
+        settings = settings_;
+    }
+
+    // deprecated, use setSettings
     function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) public onlyOwner() {
-        buyingEnabled = newBuyingEnabled;
-        sellingEnabled = newSellingEnabled;
+        if (newBuyingEnabled != hasSetting(BUYING_ENABLED)){
+            settings ^= BUYING_ENABLED;
+        }
+        if (newSellingEnabled != hasSetting(SELLING_ENABLED)){
+            settings ^= SELLING_ENABLED;
+        }
     }
     
     modifier ownerOrHub() {
