@@ -29,6 +29,7 @@ pragma solidity >=0.8;
 
 import "./IERC20.sol";
 import "./IERC677Receiver.sol";
+import "./IDraggable.sol";
 import "./IMarket.sol";
 
 /**
@@ -114,8 +115,4 @@ contract FeeCollector is IERC677Receiver {
         }
     }
 
-}
-
-abstract contract IDraggable {
-    function unwrap(uint256 amount) virtual public returns (address, uint256);
 }

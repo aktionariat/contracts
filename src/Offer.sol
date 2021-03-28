@@ -28,6 +28,7 @@
 pragma solidity >=0.8;
 
 import "./IERC20.sol";
+import "./IDraggable.sol";
 
 /**
  * @title Acquisition Attempt
@@ -195,12 +196,5 @@ contract Offer {
         emit OfferEnded(buyer, success, message);
         selfdestruct(payable(buyer));
     }
-
-}
-
-abstract contract IDraggable {
-
-    function drag(address buyer, address currency) public virtual;
-    function notifyOfferEnded() public virtual;
 
 }
