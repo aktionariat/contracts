@@ -140,6 +140,11 @@ contract Market is Ownable {
         return true;
     }
 
+    // ITokenReceiver
+    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) public {
+        processIncoming(token_, from, amount, ref);
+    }
+
     function buyingEnabled() public view returns (bool){
         return hasSetting(BUYING_ENABLED);
     }
@@ -197,13 +202,13 @@ contract Market is Ownable {
         uint256 currentPrice = getPrice();
         uint256 min = 0;
         uint256 max = money / currentPrice;
-        while (min + 1 < max){
+        while (min < max){
             uint256 middle = (min + max)/2;
             uint256 totalPrice = getPrice(currentPrice, middle);
-            if (totalPrice > money){
-                max = middle;
+            if (money > totalPrice){
+                min = middle + 1;
             } else {
-                min = middle;
+                max = middle;
             }
         }
         return min;
