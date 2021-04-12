@@ -34,4 +34,4 @@ While it is relatively easy to implement a drag-along clause in a smart contract
 
 ## License Fee
 
-For this smart contract, we created a new type of software license, the “MIT License with Automated License Fee Payments”. Anyone is free to reuse the code as long as the built-in license fee, paid to Aktionariat AG, is preserved. The license fee is due whenever a new acquisition offer is made and is to be payed by the prospective buyer.
+For this smart contract, we created a new type of software license, the “[MIT License with Automated License Fee Payments](https://github.com/aktionariat/contracts/blob/master/LICENSE)”. Anyone is free to reuse the code as long as the built-in license fee, paid to [Aktionariat AG](https://aktionariat.com/), is preserved. The license fee is due whenever a new acquisition offer is made and is to be payed by the prospective buyer.
