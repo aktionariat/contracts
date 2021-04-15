@@ -1,5 +1,7 @@
 # Infinite ERC-20 Allowances
 
+![infinity symbol](https://aktionariat.com/images/infinity.png)
+
 With ERC-20 tokens, allowances are often set to “infinite” values so that they only need to be set once for a given contract. This is safe under the assumption that the target contract is written in a way that it can only make use of the funds in a pre-determined manner. For example, uniswap sets the allowance by default to (2^256 - 1), which is the maximum integer value supported by the Ethereum. Then, whenever uniswap is used to sell some of the approved tokens, this very high value is adjusted and an event emitted. This works, but uses more gas than necessary given the intended behaviour.
 
 Since gas fees are higher than ever, we adjusted our default ERC-20 contract to support “infinite” allowances. Whenever the allowance is set to 2^255 or higher, the allowance is considered infinite and is not decreased when used. This saves us a small, but not negligible amount of gas on every transaction that makes use of the allowance.

@@ -1,5 +1,7 @@
 # Market
 
+![bazaar marketplace](https://aktionariat.com/images/bazaar.jpg)
+
 Documentation for the market-making smart contract implemented in [Market.sol](../src/Market.sol).
 
 ## Purpose
