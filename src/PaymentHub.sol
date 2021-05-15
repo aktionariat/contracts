@@ -31,6 +31,7 @@ import "./Address.sol";
 import "./IERC20.sol";
 import "./IUniswapV2.sol";
 import "./ITokenReceiver.sol";
+import "./Ownable.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,

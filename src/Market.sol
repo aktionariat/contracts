@@ -111,12 +111,31 @@ contract Market is Ownable {
 
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
         uint shares = getShares(paid);
-        require(settings & 0x1 == 0x1);
-        require(paid == getBuyPrice(shares));
+        uint costs = buyShares(from, shares, ref);
+        if (costs < paid){
+            IERC20(base).transfer(from, paid - costs);
+        }
+        buyShares(from, shares, ref);
+        return shares;
+    }
+
+    function buyShares(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
+        require(hasSetting(BUYING_ENABLED));
+        uint costs = getBuyPrice(shares);
         IERC20(token).transfer(from, shares);
         price = price + (shares * increment);
-        emit Trade(token, from, ref, int256(shares), base, paid, 0, getPrice());
-        return shares;
+        emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
+        return costs;
+    }
+
+    function allocateFromExternalPayment(address buyer, uint256 shares, bytes calldata ref) public onlyOwner {
+        buyShares(buyer, shares, ref);
+    }
+
+    function allocateFromExternalPayments(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) public onlyOwner {
+        for (uint i = 0; i < buyers.length; i++) {
+            buyShares(buyers[i], shares[i], ref[i]);
+        }
     }
 
     /**
