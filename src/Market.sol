@@ -49,7 +49,7 @@ contract Market is Ownable {
     uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
     int256 public driftIncrement;
 
-    uint8 licenseFeeBps;
+    uint8 private constant licenseFeeBps = 90;
 
     uint8 private constant BUYING_ENABLED = 0x1;
     uint8 private constant SELLING_ENABLED = 0x2;
@@ -65,7 +65,6 @@ contract Market is Ownable {
         price = price_;
         increment = increment_;
         paymenthub = address(0x0); // TODO: set default once address known
-        licenseFeeBps = 90;
         transferOwnership(owner);
     }
 
@@ -111,30 +110,40 @@ contract Market is Ownable {
 
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
         uint shares = getShares(paid);
-        uint costs = buyShares(from, shares, ref);
+        uint costs = notifyTraded(from, shares, ref);
         if (costs < paid){
             IERC20(base).transfer(from, paid - costs);
         }
-        buyShares(from, shares, ref);
+        IERC20(token).transfer(from, shares);
         return shares;
     }
 
-    function buyShares(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
+    function notifyTraded(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
         require(hasSetting(BUYING_ENABLED));
         uint costs = getBuyPrice(shares);
-        IERC20(token).transfer(from, shares);
         price = price + (shares * increment);
         emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
         return costs;
     }
 
-    function allocateFromExternalPayment(address buyer, uint256 shares, bytes calldata ref) public onlyOwner {
-        buyShares(buyer, shares, ref);
+    function notifyTrade(address buyer, uint256 shares, bytes calldata ref) public onlyOwner {
+        notifyTraded(buyer, shares, ref);
     }
 
-    function allocateFromExternalPayments(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) public onlyOwner {
+    function notifyTradeAndTransfer(address buyer, uint256 shares, bytes calldata ref) public onlyOwner {
+        notifyTraded(buyer, shares, ref);
+        IERC20(token).transfer(buyer, shares);
+    }
+
+    function notifyTrades(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) public onlyOwner {
         for (uint i = 0; i < buyers.length; i++) {
-            buyShares(buyers[i], shares[i], ref[i]);
+            notifyTraded(buyers[i], shares[i], ref[i]);
+        }
+    }
+
+    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) public onlyOwner {
+        for (uint i = 0; i < buyers.length; i++) {
+            notifyTradeAndTransfer(buyers[i], shares[i], ref[i]);
         }
     }
 
@@ -190,13 +199,7 @@ contract Market is Ownable {
         return totPrice;
     }
 
-    function setLicenseFee(uint8 bps) public {
-        require(msg.sender == copyright);
-        require(bps <= 100);
-        licenseFeeBps = bps;
-    }
-
-    function getLicenseFee(uint256 totPrice) public view returns (uint256) {
+    function getLicenseFee(uint256 totPrice) public pure returns (uint256) {
         return totPrice * licenseFeeBps / 10000;
     }
 
@@ -245,7 +248,7 @@ contract Market is Ownable {
         IERC20(ercAddress).transfer(to, amount);
     }
 
-    function setPaymentHub(address hub) public ownerOrHub() {
+    function setPaymentHub(address hub) public onlyOwner() {
         paymenthub = hub;
     }
 
@@ -253,7 +256,6 @@ contract Market is Ownable {
         settings = settings_;
     }
 
-    // deprecated, use setSettings
     function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) public onlyOwner() {
         if (newBuyingEnabled != hasSetting(BUYING_ENABLED)){
             settings ^= BUYING_ENABLED;
