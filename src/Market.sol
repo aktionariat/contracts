@@ -29,7 +29,6 @@ pragma solidity >=0.8;
 
 import "./Ownable.sol";
 import "./IERC20.sol";
-import "./IUniswapV2.sol";
 import "./ITokenReceiver.sol";
 import "./IERC677Receiver.sol";
 
