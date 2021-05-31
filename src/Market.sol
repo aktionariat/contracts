@@ -63,7 +63,7 @@ contract Market is Ownable {
         token = shareToken;
         price = price_;
         increment = increment_;
-        paymenthub = address(0x0); // TODO: set default once address known
+        paymenthub = address(0x4d99F8e88BAB0BEe8cD840b1Ad3c0bE4f49c293A);
         transferOwnership(owner);
     }
 
