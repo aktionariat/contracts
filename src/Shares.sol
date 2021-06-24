@@ -61,7 +61,6 @@ contract Shares is ERC20Recoverable, Ownable {
 
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
-    event ShareNumberingEvent(address indexed holder, uint256 firstInclusive, uint256 lastInclusive);
     event SubRegisterRecognized(address contractAddress);
 
     constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares) ERC20(0) {
@@ -156,25 +155,6 @@ contract Shares is ERC20Recoverable, Ownable {
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) public {
         mint(callee, amount);
         IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data);
-    }
-
-    /**
-     * Some companies like to number their shares so they can refer to them more explicitely in legal contracts.
-     * A minority of Swiss lawyers even believes that numbering shares is compulsory (which is not true).
-     * Nonetheless, this function allows to signal the numbers of freshly tokenized shares.
-     * In case the shares ever get de-tokenized again, this information might help in deducing their
-     * numbers again - although there might be some room for interpretation of what went where.
-     * By convention, transfers should be considered FIFO (first in, first out) and transactions in
-     * recognized subregisters be taken into account.
-     */
-    function mintNumbered(address shareholder, uint256 firstShareNumber, uint256 lastShareNumber) public onlyOwner() {
-        emit ShareNumberingEvent(shareholder, firstShareNumber, lastShareNumber); // emit mint event before transfer event
-        _mint(shareholder, lastShareNumber - firstShareNumber + 1);
-    }
-
-    function mintNumberedAndCall(address shareholder, address callee, uint256 firstShareNumber, uint256 lastShareNumber, bytes calldata data) public {
-        mintNumbered(shareholder, firstShareNumber, lastShareNumber);
-        IERC677Receiver(callee).onTokenTransfer(shareholder, lastShareNumber - firstShareNumber + 1, data);
     }
 
     function _mint(address account, uint256 amount) internal override {
