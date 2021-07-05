@@ -1,4 +1,4 @@
-# Infinite ERC-20 Allowances
+# Infinite ERC‑20 Allowances
 
 ![infinity symbol](https://aktionariat.com/images/infinity-white.svg)
 
