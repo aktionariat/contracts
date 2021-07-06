@@ -4,7 +4,7 @@
 
 [Aktionariat](http://aktionariat.com) constructs the shareholder registry from two sources of information:
 
-1. The blockchain-based token registry implemented by our ERC-20 contract ['Shares'](../src/Shares.sol).
+1. The blockchain-based token registry implemented by our ERC‑20 contract “[Shares](../src/Shares.sol)”.
 2. A mapping between addresses and shareholders kept in a traditional database.
 
 Shareholders can register themselves by either using the Aktionariat app or a widget the issuer can place on its website. Aktionariat then keeps track of all token transfers for its clients and automatically updates the shareholder registry accordingly. The shareholder registry can be accessed by the board members on the corporate dashboard provided by Aktionariat, from where it also can be exported as a spreadsheet if desired.
@@ -21,4 +21,4 @@ Some companies like to number their shares so they can refer to them more explic
 
 ## Sub-Registers
 
-Sometimes, tokens are held by smart contracts that are ERC20 contracts themselves. For example, our [draggable contract](draggable.md) is an ERC-contract that wraps an existing ERC-20 contract in order to enforce the drag-along clause of typical shareholder agreements. The wrapped shares become draggable shares and are technically represented by a different token, even though they legally still confer ownership in the underlying shares. In this case, we automatically treat the holder of the wrapping token as the shareholder, even though the token is held indirectly through a sub-register.
+Sometimes, tokens are held by smart contracts that are ERC‑20 contracts themselves. For example, our [draggable contract](draggable.md) is an ERC-contract that wraps an existing ERC‑20 contract in order to enforce the drag-along clause of typical shareholder agreements. The wrapped shares become draggable shares and are technically represented by a different token, even though they legally still confer ownership in the underlying shares. In this case, we automatically treat the holder of the wrapping token as the shareholder, even though the token is held indirectly through a sub-register.
