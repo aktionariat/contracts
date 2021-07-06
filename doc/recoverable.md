@@ -6,7 +6,7 @@ Documentation for the token recovery mechanism implemented in [ERC20Recoverable.
 
 ## Motivation
 
-It is desirable that share tokens (which legally represent the company’s equity) do not get ‘lost’ if a shareholder loses the private key to their account or accidentally sends them to an invalid address. While some issuers address this by adding a back-door to their smart contract, giving them full control over all tokens, we prefer following a decentralized approach. This is also what the Swiss Blockchain Federation recommends in their [Security Token Circular](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf). Our decentralized approach allows holders to reclaim their shares without having to rely on a centralized authority.
+It is desirable that share tokens (which legally represent the company’s equity) do not get “lost” if a shareholder loses the private key to their account or accidentally sends them to an invalid address. While some issuers address this by adding a back-door to their smart contract, giving them full control over all tokens, we prefer following a decentralized approach. This is also what the Swiss Blockchain Federation recommends in their [Security Token Circular](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf). Our decentralized approach allows holders to reclaim their shares without having to rely on a centralized authority.
 
 ## Process
 
@@ -26,7 +26,7 @@ Earlier versions of this contract contained a mechanism to guard against front-r
 
 ## Collateral
 
-As a collateral, the share tokens themselves can be used. E.g. if you lost your key, get a friend to stake their shares for you. A custom collateral (ERC20 token) can be set by the issuer. Using a stablecoin like XCHF has the advantage that during the waiting period the amount staked is not subject to the volatility of Ether. Ether is not supported as collateral, but the issuer could decide to accept wrapped ether.
+As a collateral, the share tokens themselves can be used. E.g. if you lost your key, get a friend to stake their shares for you. A custom collateral (ERC‑20 token) can be set by the issuer. Using a stablecoin like XCHF has the advantage that during the waiting period the amount staked is not subject to the volatility of Ether. Ether is not supported as collateral, but the issuer could decide to accept wrapped ether.
 
 ## Example
 
