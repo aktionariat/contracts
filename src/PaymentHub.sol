@@ -62,10 +62,8 @@ contract PaymentHub {
         return path;
     }
 
-    function getPriceInEther(uint256 amountOfXCHF) public payable returns (uint256) {
+    function getPriceInEther(uint256 amountOfXCHF) public returns (uint256) {
         return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
-
-        // return uniswap.getAmountsIn(amountOfXCHF, getPath())[0];
     }
 
     /**
@@ -77,7 +75,7 @@ contract PaymentHub {
             currency,
             3000,
             recipient,
-            block.timestamp + 15,
+            block.timestamp,
             xchfamount,
             msg.value,
             0
@@ -92,13 +90,6 @@ contract PaymentHub {
             uniswapRouter.refundETH();
             payable(msg.sender).transfer(address(this).balance); // return change
         }
-
-        /*
-        uniswap.swapETHForExactTokens{value: msg.value}(xchfamount, getPath(), recipient, block.timestamp);
-        if (address(this).balance > 0){
-            payable(msg.sender).transfer(address(this).balance); // return change
-        }
-        */
     }
 
     function multiPay(address[] calldata recipients, uint256[] calldata amounts) public {
