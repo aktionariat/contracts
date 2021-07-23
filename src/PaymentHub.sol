@@ -29,7 +29,6 @@ pragma solidity >=0.8;
 
 import "./Address.sol";
 import "./IERC20.sol";
-import "./IUniswapV2.sol";
 import "./IUniswapV3.sol";
 import "./ITokenReceiver.sol";
 import "./Ownable.sol";
@@ -42,24 +41,14 @@ import "./Ownable.sol";
  */
 contract PaymentHub {
 
-    // immutable variables get integrated into the bytecode at deployment time, constants at compile time
-    // Unlike normal variables, changing their values changes the codehash of a contract!
-    // IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-    IQuoter constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
-    ISwapRouter constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     address public immutable weth; 
     address public immutable currency;
+    IQuoter constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+    ISwapRouter constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     constructor(address currency_) {
         currency = currency_;
         weth = uniswapQuoter.WETH9();
-    }
-
-    function getPath() private view returns (address[] memory) {
-        address[] memory path = new address[](2);
-        path[0] = address(weth);
-        path[1] = address(currency);
-        return path;
     }
 
     function getPriceInEther(uint256 amountOfXCHF) public returns (uint256) {
@@ -111,12 +100,6 @@ contract PaymentHub {
         }
     }
 
-/*     function approveAndCall(address token, uint256 amount, address target, bytes calldata data, uint256 weiValue) public returns (bytes memory) {
-        require((IERC20(token)).transferFrom(msg.sender, address(this), amount));
-        require((IERC20(token)).approve(target, amount));
-        return Address.functionCallWithValue(target, data, weiValue);
-    } */
-
     // Allows to make a payment from the sender to an address given an allowance to this contract
     // Equivalent to xchf.transferAndCall(recipient, xchfamount)
     function payAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) public {
@@ -140,5 +123,4 @@ contract PaymentHub {
     function recover(address ercAddress, address to, uint256 amount) public {
         IERC20(ercAddress).transfer(to, amount);
     }
-
 }
