@@ -178,7 +178,4 @@ contract Shares is ERC20Recoverable, Ownable {
         _burn(address(this), _amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) override internal {
-    }
-
 }

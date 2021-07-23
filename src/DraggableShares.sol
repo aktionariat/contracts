@@ -62,7 +62,7 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     }
 
-    function transfer(address to, uint256 value) override(ERC20Recoverable, ERC20) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20) public returns (bool) {
         return super.transfer(to, value);
     }
 
@@ -81,6 +81,10 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
             // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
             return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * unwrapConversionFactor;
         }
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {
+        super._beforeTokenTransfer(from, to, amount);
     }
 
 }

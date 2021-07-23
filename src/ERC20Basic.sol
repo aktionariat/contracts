@@ -22,9 +22,6 @@ contract ERC20Basic is ERC20 {
         super._mint(target, amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) override internal{
-    }
-
     function setRecoverable(bool) public pure {
     }
 

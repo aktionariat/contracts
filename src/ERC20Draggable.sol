@@ -149,8 +149,11 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         IBurnable(address(wrapped)).burn(amount * factor);
     }
 
+    event TimeStamp(uint256 time); // TEMP
+
     function makeAcquisitionOffer(bytes32 salt, uint256 pricePerShare, address currency) public payable {
         require(isBinding());
+        emit TimeStamp(block.timestamp);
         address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
         if (offerExists()) {
             require(IOffer(newOffer).isWellFunded());
@@ -188,10 +191,11 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         emit MigrationSucceeded(successor);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) override internal {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override internal {
         if (offerExists()) {
             offer.notifyMoved(from, to, amount);
         }
+        super._beforeTokenTransfer(from, to, amount);
     }
 
     function offerExists() internal view returns (bool) {
