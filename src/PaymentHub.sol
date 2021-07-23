@@ -29,7 +29,7 @@ pragma solidity >=0.8;
 
 import "./Address.sol";
 import "./IERC20.sol";
-import "./IUniswapV2.sol";
+import "./IUniswapV3.sol";
 import "./ITokenReceiver.sol";
 import "./Ownable.sol";
 
@@ -41,34 +41,42 @@ import "./Ownable.sol";
  */
 contract PaymentHub {
 
-    // immutable variables get integrated into the bytecode at deployment time, constants at compile time
-    // Unlike normal variables, changing their values changes the codehash of a contract!
-    IUniswapV2 constant uniswap = IUniswapV2(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-    IERC20 public immutable weth; 
+    address public immutable weth; 
     address public immutable currency;
+    IQuoter constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+    ISwapRouter constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     constructor(address currency_) {
         currency = currency_;
-        weth = IERC20(uniswap.WETH());
+        weth = uniswapQuoter.WETH9();
     }
 
-    function getPath() private view returns (address[] memory) {
-        address[] memory path = new address[](2);
-        path[0] = address(weth);
-        path[1] = address(currency);
-        return path;
-    }
-
-    function getPriceInEther(uint256 amountOfXCHF) public view returns (uint256) {
-        return uniswap.getAmountsIn(amountOfXCHF, getPath())[0];
+    function getPriceInEther(uint256 amountOfXCHF) public returns (uint256) {
+        return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
     }
 
     /**
      * Convenience method to swap ether into currency and pay a target address
      */
     function payFromEther(address recipient, uint256 xchfamount) payable public {
-        uniswap.swapETHForExactTokens{value: msg.value}(xchfamount, getPath(), recipient, block.timestamp);
-        if (address(this).balance > 0){
+        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
+            weth,
+            currency,
+            3000,
+            recipient,
+            block.timestamp,
+            xchfamount,
+            msg.value,
+            0
+        );
+
+        // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
+        uint256 amountIn = uniswapRouter.exactOutputSingle{value: msg.value}(params);
+
+        // For exact output swaps, the amountInMaximum may not have all been spent.
+        // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
+        if (amountIn < msg.value) {
+            uniswapRouter.refundETH();
             payable(msg.sender).transfer(address(this).balance); // return change
         }
     }
@@ -91,12 +99,6 @@ contract PaymentHub {
             payAndNotify(token, recipients[i], amounts[i], ref);
         }
     }
-
-/*     function approveAndCall(address token, uint256 amount, address target, bytes calldata data, uint256 weiValue) public returns (bytes memory) {
-        require((IERC20(token)).transferFrom(msg.sender, address(this), amount));
-        require((IERC20(token)).approve(target, amount));
-        return Address.functionCallWithValue(target, data, weiValue);
-    } */
 
     // Allows to make a payment from the sender to an address given an allowance to this contract
     // Equivalent to xchf.transferAndCall(recipient, xchfamount)
@@ -121,5 +123,4 @@ contract PaymentHub {
     function recover(address ercAddress, address to, uint256 amount) public {
         IERC20(ercAddress).transfer(to, amount);
     }
-
 }
