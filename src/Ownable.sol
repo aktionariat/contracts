@@ -5,8 +5,11 @@
 // Modifications:
 // - Replaced Context._msgSender() with msg.sender
 // - Made leaner
+// - Extracted interface
 
 pragma solidity >=0.8;
+
+import "./IOwnable.sol";
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -20,9 +23,9 @@ pragma solidity >=0.8;
  * `onlyOwner`, which can be applied to your functions to restrict their use to
  * the owner.
  */
-contract Ownable {
+contract Ownable is IOwnable {
 
-    address public owner;
+    address public override owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
@@ -32,14 +35,6 @@ contract Ownable {
     constructor () {
         owner = msg.sender;
         emit OwnershipTransferred(address(0), owner);
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(owner == msg.sender, "not owner");
-        _;
     }
 
     /**
