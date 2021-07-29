@@ -58,13 +58,12 @@ contract Market is Ownable {
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
-    constructor(address shareToken, uint256 price_, uint256 increment_, address baseCurrency, address owner) {
+    constructor(address shareToken, uint256 price_, uint256 increment_, address baseCurrency, address owner) Ownable(owner){
         base = baseCurrency;
         token = shareToken;
         price = price_;
         increment = increment_;
         paymenthub = address(0x4d99F8e88BAB0BEe8cD840b1Ad3c0bE4f49c293A);
-        transferOwnership(owner);
     }
 
     function setPrice(uint256 newPrice, uint256 newIncrement) public onlyOwner {

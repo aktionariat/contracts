@@ -42,6 +42,9 @@ contract AllowlistHook is ITransferHook, Ownable {
     event AllowListed(address target);
     event AllowUnlisted(address target);
 
+    constructor(address owner) Ownable(owner){
+    }
+
     function beforeTokenTransfer(address, address to, uint256) external view override {
         require(allowed[to], "Target address not allowed");
     }

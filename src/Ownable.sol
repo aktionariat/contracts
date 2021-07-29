@@ -32,8 +32,8 @@ contract Ownable is IOwnable {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor () {
-        owner = msg.sender;
+    constructor (address initialOwner) {
+        owner = initialOwner;
         emit OwnershipTransferred(address(0), owner);
     }
 
