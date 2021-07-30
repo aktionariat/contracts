@@ -41,13 +41,15 @@ pragma solidity >=0.8;
  * case of an acquisition. That's why the tokens are called "Draggable CompanyName AG Shares."
  */
 
+import "./Ownable.sol";
 import "./ERC20.sol";
-import "./IOwnable.sol";
 import "./ITransferHook.sol";
 
-abstract contract ERC20Hookable is ERC20, IOwnable {
+abstract contract ERC20Hookable is ERC20, Ownable {
 
     address public hook;
+
+    event HookSet(address hook);
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
         if (hook != address(0)){
@@ -58,6 +60,7 @@ abstract contract ERC20Hookable is ERC20, IOwnable {
 
     function setHook(address _hook) public onlyOwner() {
         hook = _hook;
+        emit HookSet(_hook);
     }
 
 }

@@ -45,7 +45,7 @@ import "./ERC20.sol";
 import "./IERC20.sol";
 import "./IERC677Receiver.sol";
 
-contract ERC20Draggable is ERC20, IERC677Receiver {
+abstract contract ERC20Draggable is ERC20, IERC677Receiver {
 
     IERC20 public wrapped;                              // The wrapped contract
     IOfferFactory public constant factory = IOfferFactory(0xf9f92751F272f0872e2EDb6a280b0990F3e2b8A3);
@@ -67,7 +67,7 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
         address wrappedToken,
         uint256 quorum_,
         uint256 votePeriod_
-    ) ERC20(0) {
+    ) {
         wrapped = IERC20(wrappedToken);
         quorum = quorum_;
         votePeriod = votePeriod_;
@@ -75,22 +75,6 @@ contract ERC20Draggable is ERC20, IERC677Receiver {
 
     function disableRecovery() public {
         IRecoveryDisabler(address(wrapped)).setRecoverable(false);
-    }
-
-    function name() public override view returns (string memory){
-        if (isBinding()){
-            return string(abi.encodePacked("Draggable ", wrapped.name()));
-        } else {
-            return string(abi.encodePacked("Wrapped ", wrapped.name()));
-        }
-    }
-
-    function symbol() public override view returns (string memory){
-        if (isBinding()){
-            return string(abi.encodePacked("D", wrapped.symbol()));
-        } else {
-            return string(abi.encodePacked("W", wrapped.symbol()));
-        }
     }
 
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public returns (bool) {

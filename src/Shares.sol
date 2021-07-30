@@ -27,7 +27,7 @@
 */
 pragma solidity >=0.8;
 
-import "./Ownable.sol";
+import "./ERC20Basic.sol";
 import "./ERC20Recoverable.sol";
 import "./IERC677Receiver.sol";
 
@@ -50,10 +50,8 @@ import "./IERC677Receiver.sol";
  * @notice In order to prevent malicious attempts, a collateral needs to be posted.
  * @notice The contract owner can delete claims in case of disputes.
  */
-contract Shares is ERC20Recoverable, Ownable {
+contract Shares is ERC20Recoverable, ERC20Named {
 
-    string public override name;
-    string public override symbol;
     string public terms;
 
     uint256 public totalShares = 0; // total number of shares, maybe not all tokenized
@@ -63,16 +61,11 @@ contract Shares is ERC20Recoverable, Ownable {
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
     event SubRegisterRecognized(address contractAddress);
 
-    constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares, address owner) ERC20(0) Ownable(owner) {
+    constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares, address owner) ERC20Named(owner, _name, _symbol, 0) {
         symbol = _symbol;
         name = _name;
         totalShares = _totalShares;
         terms = _terms;
-    }
-
-    function setName(string memory _symbol, string memory _name) public onlyOwner {
-        symbol = _symbol;
-        name = _name;
     }
 
     function setTerms(string memory _terms) public onlyOwner {
@@ -148,18 +141,22 @@ contract Shares is ERC20Recoverable, Ownable {
      * Allows the company to tokenize shares. If these shares are newly created, setTotalShares must be
      * called first in order to adjust the total number of shares.
      */
-    function mint(address shareholder, uint256 _amount) public onlyOwner() {
-        _mint(shareholder, _amount);
-    }
-
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) public {
         mint(callee, amount);
         IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data);
     }
 
+    function mint(address target, uint256 amount) public onlyOwner {
+        _mint(target, amount);
+    }
+
     function _mint(address account, uint256 amount) internal override {
         require(totalValidSupply() + amount <= totalShares, "There can't be fewer shares than valid tokens");
         super._mint(account, amount);
+    }
+
+    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20) public returns (bool) {
+        return super.transfer(to, value);
     }
 
     /**

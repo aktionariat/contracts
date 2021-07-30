@@ -2,27 +2,16 @@
 
 pragma solidity >=0.8;
 
-import "./ERC20.sol";
+import "./ERC20Named.sol";
+import "./Ownable.sol";
 
-contract ERC20Basic is ERC20 {
+contract ERC20Basic is ERC20Named {
 
-    string public override name;
-    string public override symbol;
-
-    address owner;
-
-    constructor(string memory name_ , string memory symbol_, uint8 decimals) ERC20(decimals){
-        name = name_;
-        symbol = symbol_;
-        owner = msg.sender;
+    constructor(address admin, string memory name_ , string memory symbol_, uint8 decimals) ERC20Named(admin, name_, symbol_, decimals) {
     }
 
-    function mint(address target, uint256 amount) public {
-        require(msg.sender == owner);
-        super._mint(target, amount);
-    }
-
-    function setRecoverable(bool) public pure {
+    function mint(address target, uint256 amount) public onlyOwner {
+        _mint(target, amount);
     }
 
 }

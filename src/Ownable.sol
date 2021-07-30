@@ -9,8 +9,6 @@
 
 pragma solidity >=0.8;
 
-import "./IOwnable.sol";
-
 /**
  * @dev Contract module which provides a basic access control mechanism, where
  * there is an account (an owner) that can be granted exclusive access to
@@ -23,9 +21,9 @@ import "./IOwnable.sol";
  * `onlyOwner`, which can be applied to your functions to restrict their use to
  * the owner.
  */
-contract Ownable is IOwnable {
+contract Ownable {
 
-    address public override owner;
+    address public owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
@@ -44,5 +42,10 @@ contract Ownable is IOwnable {
     function transferOwnership(address newOwner) public onlyOwner {
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
+    }
+
+    modifier onlyOwner() {
+        require(owner == msg.sender, "not owner");
+        _;
     }
 }

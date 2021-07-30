@@ -58,8 +58,24 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
     string public terms;
 
     constructor(string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds)
-        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds) {
+        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds) ERC20(0) {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
+    }
+
+    function name() public override view returns (string memory){
+        if (isBinding()){
+            return string(abi.encodePacked("Draggable ", wrapped.name()));
+        } else {
+            return string(abi.encodePacked("Wrapped ", wrapped.name()));
+        }
+    }
+
+    function symbol() public override view returns (string memory){
+        if (isBinding()){
+            return string(abi.encodePacked("D", wrapped.symbol()));
+        } else {
+            return string(abi.encodePacked("W", wrapped.symbol()));
+        }
     }
 
     function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20) public returns (bool) {
