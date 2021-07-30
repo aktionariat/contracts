@@ -3,7 +3,6 @@
 pragma solidity >=0.8;
 
 import "./ERC20Named.sol";
-import "./Ownable.sol";
 
 contract ERC20Basic is ERC20Named {
 

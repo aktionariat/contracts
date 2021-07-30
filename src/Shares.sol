@@ -27,7 +27,7 @@
 */
 pragma solidity >=0.8;
 
-import "./ERC20Basic.sol";
+import "./ERC20Named.sol";
 import "./ERC20Recoverable.sol";
 import "./IERC677Receiver.sol";
 
