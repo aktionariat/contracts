@@ -64,18 +64,15 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     function name() public override view returns (string memory){
         if (isBinding()){
-            return string(abi.encodePacked("Draggable ", wrapped.name()));
+            return string(abi.encodePacked(wrapped.name(), " SHA"));
         } else {
-            return string(abi.encodePacked("Wrapped ", wrapped.name()));
+            return string(abi.encodePacked(wrapped.name(), " (Wrapped)"));
         }
     }
 
     function symbol() public override view returns (string memory){
-        if (isBinding()){
-            return string(abi.encodePacked("D", wrapped.symbol()));
-        } else {
-            return string(abi.encodePacked("W", wrapped.symbol()));
-        }
+        // ticker should be less dynamic than name
+        return string(abi.encodePacked(wrapped.symbol(), "S"));
     }
 
     function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20) public returns (bool) {
