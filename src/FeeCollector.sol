@@ -30,7 +30,7 @@ pragma solidity >=0.8;
 import "./IERC20.sol";
 import "./IERC677Receiver.sol";
 import "./IDraggable.sol";
-import "./IMarket.sol";
+import "./IBrokerbot.sol";
 
 /**
  * @title FeeCollector
@@ -43,7 +43,7 @@ import "./IMarket.sol";
  */
 contract FeeCollector is IERC677Receiver {
 
-    IMarket private market;
+    IBrokerbot private market;
     address public recipient;
     uint256 public feeInBips;
     uint256 public acquisitionPrice;
@@ -51,7 +51,7 @@ contract FeeCollector is IERC677Receiver {
     event FeeCollected(address indexed recipient, address indexed seller, address tokens, uint256 amountSold, address currency, uint256 price, uint256 fee);
 
     constructor(address marketAddress, address recipient_, uint256 feeInBips_, uint256 acquisitionPrice_) {
-        market = IMarket(marketAddress);
+        market = IBrokerbot(marketAddress);
         IERC20 shareToken = IERC20(market.token());
         shareToken.approve(marketAddress, 10**50); // more than enough forever :)
         recipient = recipient_;

@@ -27,7 +27,7 @@
 */
 pragma solidity >=0.8;
 
-abstract contract IMarket {
+abstract contract IBrokerbot {
 
     // Base ERC-20 token, e.g. XCHF
     function base() public virtual returns (address);
@@ -48,14 +48,14 @@ abstract contract IMarket {
     function buy(uint256 numberOfSharesToBuy) public virtual returns (uint256);
 
     // Buy numberOfSharesToBuy shares and send them to recipient, paying with the base currency (allowance must be set)
-    // For currencies that support the ERC-677, one can also send them directly to the Market, triggering a buy.
+    // For currencies that support the ERC-677, one can also send them directly to the Brokerbot, triggering a buy.
     function buy(address recipient, uint256 numberOfSharesToBuy) public virtual returns (uint256);
 
     // Sell shares with msg.sender as proceeds recipient
     function sell(uint256 tokens) public virtual returns (uint256);
 
     // Sell tokens shares and send the proceeds to recipient (allowance must be set)
-    // For tokens that support the ERC-677, one can also send them directly to the Market, triggering a sell.
+    // For tokens that support the ERC-677, one can also send them directly to the Brokerbot, triggering a sell.
     function sell(address recipient, uint256 tokens) public virtual returns (uint256);
 
     // The fee that is charged when selling shares worth totalPrice
