@@ -32,7 +32,7 @@ import "./IERC20.sol";
 import "./ITokenReceiver.sol";
 import "./IERC677Receiver.sol";
 
-contract Market is Ownable {
+contract Brokerbot is Ownable {
 
     address public paymenthub;
 
