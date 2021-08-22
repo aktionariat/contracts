@@ -124,4 +124,7 @@ contract PaymentHub {
     function recover(address ercAddress, address to, uint256 amount) public {
         IERC20(ercAddress).transfer(to, amount);
     }
+
+    // Important to receive ETH refund from Uniswap
+    receive() payable external {}
 }
