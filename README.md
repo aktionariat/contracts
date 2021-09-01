@@ -22,7 +22,7 @@ We believe in a modular approach in which functionality is added by composition,
 
 1. The ERC20 equity contract [Shares](src/Shares.sol) is deployed with the desired parameters. This contract supports claims as it inherits from [ERC20Claimable](claimable.md). A currency token such as XCHF can be set as a custom collateral. The issuer is the owner of this contract.
 2. The ERC20 draggable contract [DraggableShares](src/DraggableShares.sol) is deployed. This contract does not have an owner and could in principle be deployed by anyone. It is controlled by the token holders by majority vote.
-3. To issue basic shares, the 'mint' function can be calles on the shares contract. Holders can convert base shares at any time into draggable shares by sending them to the draggable contract or calling the 'wrap' function. Alternatively, it is also possible to directly mint wrapped shares with the 'mintAndCall' function, enabling the issuer to mint, wrap and transfer shares directly to the right owner in one transaction.
+3. To issue basic shares, the 'mint' function can be called^ on the shares contract. Holders can convert base shares at any time into draggable shares by sending them to the draggable contract or calling the 'wrap' function. Alternatively, it is also possible to directly mint wrapped shares with the 'mintAndCall' function, enabling the issuer to mint, wrap and transfer shares directly to the right owner in one transaction.
 
 ## Shareholder Registry
 
