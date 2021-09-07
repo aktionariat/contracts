@@ -1,3 +1,11 @@
 artifacts
 .vscode
+yarn.lock
 soljson-v0.8.4+commit.c7e474f2.js
+
+node_modules
+.env
+
+#Hardhat files
+cache
+artifacts

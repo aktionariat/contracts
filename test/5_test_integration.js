@@ -1,0 +1,171 @@
+// Shared Migration Config
+const config = require("../migrations/migration_config");
+
+// Libraries
+const BN = require('bn.js');
+const Chance = require('chance');
+
+// Import contracts to be tested
+const Shares = artifacts.require("Shares");
+const DraggableShares = artifacts.require("DraggableShares");
+const PaymentHub = artifacts.require("PaymentHub");
+const Brokerbot = artifacts.require("Brokerbot");
+const ERC20 = artifacts.require("ERC20");
+
+contract('Payment Integration', accounts => {
+
+  it('should allow buying shares by sending baseCurrency through PaymentHub', async () => {
+    // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
+    // Transfer is not processed if token sender is not a known currency contract or PaymentHub
+    let brokerbot = await Brokerbot.deployed();
+    let draggableShares = await DraggableShares.deployed();
+    let erc20 = await ERC20.at(config.baseCurrencyAddress);
+    let paymentHub = await PaymentHub.deployed();
+
+    // Random number of shares to buy
+    var sharesToBuy = new BN(new Chance().natural({ min: 2, max: 500 }));
+    let buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
+
+    // Balance before
+    let baseBalanceSenderBefore = await erc20.balanceOf(accounts[0]);
+    let baseBalanceBrokerbotBefore = await erc20.balanceOf(brokerbot.address);
+    let shareBalanceSenderBefore = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotBefore = await draggableShares.balanceOf(brokerbot.address);
+
+    // Pay with base currency and notify Brokerbot
+    await paymentHub.payAndNotify(brokerbot.address, buyPrice, "0x20", { from: accounts[0] });
+
+    // Balance after
+    let baseBalanceSenderAfter = await erc20.balanceOf(accounts[0]);
+    let baseBalanceBrokerbotAfter = await erc20.balanceOf(brokerbot.address);
+    let shareBalanceSenderAfter = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotAfter = await draggableShares.balanceOf(brokerbot.address);
+    
+    // Check Results
+    assert(baseBalanceSenderBefore.sub(buyPrice).eq(baseBalanceSenderAfter))
+    assert(baseBalanceBrokerbotBefore.add(buyPrice).eq(baseBalanceBrokerbotAfter));
+    assert(shareBalanceSenderBefore.add(sharesToBuy).eq(shareBalanceSenderAfter));
+    assert(shareBalanceBrokerbotBefore.sub(sharesToBuy).eq(shareBalanceBrokerbotAfter))
+  })
+
+  it('should allow buying shares by sending ETH through PaymentHub', async () => {
+    // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
+    // Transfer is not processed if token sender is not a known currency contract or PaymentHub
+    let brokerbot = await Brokerbot.deployed();
+    let draggableShares = await DraggableShares.deployed();
+    let erc20 = await ERC20.at(config.baseCurrencyAddress);
+    let paymentHub = await PaymentHub.deployed();
+
+    // Random number of shares to buy
+    var sharesToBuy = new BN(new Chance().natural({ min: 1, max: 500 }));
+    let buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
+    let buyPriceInETH = await paymentHub.getPriceInEther.call(buyPrice);
+
+    // Balance before
+    let balanceSenderBefore = new BN(await web3.eth.getBalance(accounts[0]));
+    let baseBalanceBrokerbotBefore = await erc20.balanceOf(brokerbot.address);
+    let shareBalanceSenderBefore = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotBefore = await draggableShares.balanceOf(brokerbot.address);
+
+    // Pay with base currency and notify Brokerbot. Also get gas cost.
+    let txInfo = await paymentHub.payFromEtherAndNotify(brokerbot.address, buyPrice, "0x20", { from: accounts[0], value: buyPriceInETH });
+    let tx = await web3.eth.getTransaction(txInfo.tx);
+    let gasCost = new BN(tx.gasPrice).mul(new BN(txInfo.receipt.gasUsed));
+
+    // Balance after
+    let balanceSenderAfter = new BN(await web3.eth.getBalance(accounts[0]));
+    let baseBalanceBrokerbotAfter = await erc20.balanceOf(brokerbot.address);
+    let shareBalanceSenderAfter = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotAfter = await draggableShares.balanceOf(brokerbot.address);
+    
+    // Check Results
+    assert(balanceSenderBefore.sub(buyPriceInETH).sub(gasCost).eq(balanceSenderAfter));
+    assert(baseBalanceBrokerbotBefore.add(buyPrice).eq(baseBalanceBrokerbotAfter));
+    assert(shareBalanceSenderBefore.add(sharesToBuy).eq(shareBalanceSenderAfter));
+    assert(shareBalanceBrokerbotBefore.sub(sharesToBuy).eq(shareBalanceBrokerbotAfter))
+  }) 
+  
+  /*
+  it('should allow selling by sending share tokens through PaymentHub - no license fee', async () => {
+    // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
+    // Transfer is not processed if token sender is not a known currency contract or PaymentHub
+    let brokerbot = await Brokerbot.deployed();
+    let draggableShares = await DraggableShares.deployed();
+    let erc20 = await ERC20.at(config.baseCurrencyAddress);
+    let paymentHub = await PaymentHub.deployed();
+
+    // Disable license fee
+    await brokerbot.setLicenseFee(new BN(0), { from: config.brokerbotCopyrightOwnerAddress });
+    
+    // Random number of shares to sell
+    var sharesToSell = new BN(new Chance().natural({ min: 2, max: 500 }));
+    let sellPrice = await brokerbot.getSellPrice(sharesToSell);
+
+    // Balance before
+    let baseBalanceSenderBefore = await erc20.balanceOf(accounts[0]);
+    let baseBalanceBrokerbotBefore = await erc20.balanceOf(brokerbot.address);
+    let shareBalanceSenderBefore = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotBefore = await draggableShares.balanceOf(brokerbot.address);
+
+    // Pay with base currency and notify Brokerbot
+    // Overloaded methods must be called through .methods[], otherwise Truffle doesn't recognize them
+    await paymentHub.methods["payAndNotify(address,address,uint256,bytes)"](draggableShares.address, brokerbot.address, sharesToSell, "0x20", { from: accounts[0] });
+
+    // Balance after
+    let baseBalanceSenderAfter = await erc20.balanceOf(accounts[0]);
+    let baseBalanceBrokerbotAfter = await erc20.balanceOf(brokerbot.address);
+    let shareBalanceSenderAfter = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotAfter = await draggableShares.balanceOf(brokerbot.address);
+    
+    // Check Results
+    assert(baseBalanceSenderBefore.add(sellPrice).eq(baseBalanceSenderAfter))
+    assert(baseBalanceBrokerbotBefore.sub(sellPrice).eq(baseBalanceBrokerbotAfter));
+    assert(shareBalanceBrokerbotBefore.add(sharesToSell).eq(shareBalanceBrokerbotAfter))
+    assert(shareBalanceSenderBefore.sub(sharesToSell).eq(shareBalanceSenderAfter));
+  })
+  */
+
+  it('should allow selling by sending share tokens through PaymentHub - with license fee', async () => {
+    // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
+    // Transfer is not processed if token sender is not a known currency contract or PaymentHub
+    let brokerbot = await Brokerbot.deployed();
+    let draggableShares = await DraggableShares.deployed();
+    let erc20 = await ERC20.at(config.baseCurrencyAddress);
+    let paymentHub = await PaymentHub.deployed();
+
+    // Get license fee (90 bps default)
+    var licenseFeeBps = await brokerbot.getLicenseFee(10000);
+    
+    // Random number of shares to sell
+    var sharesToSell = new BN(new Chance().natural({ min: 1, max: 500 }));
+    let sellPrice = await brokerbot.getSellPrice(sharesToSell);
+
+    // Calculate total fee for transaction
+    let totalFee = sellPrice.mul(licenseFeeBps).div(new BN(10000));
+
+    // Balance before
+    let baseBalanceSenderBefore = await erc20.balanceOf(accounts[0]);
+    let baseBalanceBrokerbotBefore = await erc20.balanceOf(brokerbot.address);
+    let baseBalanceCopyrightBefore = await erc20.balanceOf(config.brokerbotCopyrightOwnerAddress);
+    let shareBalanceSenderBefore = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotBefore = await draggableShares.balanceOf(brokerbot.address);
+
+    // Pay with base currency and notify Brokerbot
+    // Overloaded methods must be called through .methods[], otherwise Truffle doesn't recognize them
+    await paymentHub.methods["payAndNotify(address,address,uint256,bytes)"](draggableShares.address, brokerbot.address, sharesToSell, "0x20", { from: accounts[0] });
+
+    // Balance after
+    let baseBalanceSenderAfter = await erc20.balanceOf(accounts[0]);
+    let baseBalanceBrokerbotAfter = await erc20.balanceOf(brokerbot.address);
+    let baseBalanceCopyrightAfter = await erc20.balanceOf(config.brokerbotCopyrightOwnerAddress);
+    let shareBalanceSenderAfter = await draggableShares.balanceOf(accounts[0]);
+    let shareBalanceBrokerbotAfter = await draggableShares.balanceOf(brokerbot.address);
+    
+    // Check Results
+    assert(baseBalanceSenderBefore.add(sellPrice).sub(totalFee).eq(baseBalanceSenderAfter))
+    assert(baseBalanceBrokerbotBefore.sub(sellPrice).eq(baseBalanceBrokerbotAfter));
+    assert(baseBalanceCopyrightBefore.add(totalFee).eq(baseBalanceCopyrightAfter));
+    assert(shareBalanceBrokerbotBefore.add(sharesToSell).eq(shareBalanceBrokerbotAfter))
+    assert(shareBalanceSenderBefore.sub(sharesToSell).eq(shareBalanceSenderAfter));
+  })
+})
