@@ -98,9 +98,7 @@ module.exports = {
     localArbitrum: {
       url: "http://localhost:8547",
       gasPrice: 0,
-      accounts: {
-        mnemonic: accounts,
-      },
+      accounts,
       companionNetworks: {
         l1: "localArbitrumL1",
       },
@@ -108,9 +106,7 @@ module.exports = {
     localArbitrumL1: {
       url: "http://localhost:7545",
       gasPrice: 0,
-      accounts: {
-        mnemonic: accounts,
-      },
+      accounts,
       companionNetworks: {
         l2: "localArbitrum",
       },
