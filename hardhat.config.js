@@ -145,4 +145,10 @@ module.exports = {
       },
     ],
   },
+  paths: {
+    sources: "./src",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+  },
 };

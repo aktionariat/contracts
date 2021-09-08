@@ -63,7 +63,7 @@ contract Brokerbot is Ownable {
         token = shareToken;
         price = price_;
         increment = increment_;
-        paymenthub = address(0x4d99F8e88BAB0BEe8cD840b1Ad3c0bE4f49c293A);
+        paymenthub = address(0x3eABee781f6569328143C610700A99E9ceE82cba);
     }
 
     function setPrice(uint256 newPrice, uint256 newIncrement) public onlyOwner {
