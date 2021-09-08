@@ -2,7 +2,7 @@
 const config = require("../migrations/migration_config");
 
 // Libraries
-const BN = require('bn.js');
+const BN = require("bn.js");
 
 // Used contracts
 const ERC20 = artifacts.require("ERC20");
