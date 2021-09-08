@@ -1,3 +1,5 @@
+/* global artifacts */
+
 // Shared Migration Config
 const config = require("./migration_config");
 

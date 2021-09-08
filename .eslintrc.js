@@ -27,4 +27,5 @@ module.exports = {
       rules: { "node/no-unpublished-require": "off" },
     },
   ],
+  'max-len': [1, { code: 100 }],
 };
