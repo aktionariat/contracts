@@ -5,6 +5,7 @@ require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
 require("hardhat-deploy");
+require("@nomiclabs/hardhat-truffle5");
 
 const accounts = {
   mnemonic:
