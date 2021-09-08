@@ -38,6 +38,7 @@ module.exports = {
       },
       live: false,
       saveDeployments: true,
+      chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
       tags: ["test", "local"],
     },
     ropsten: {
@@ -111,6 +112,17 @@ module.exports = {
       companionNetworks: {
         l2: "localArbitrum",
       },
+    },
+  },
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
+    dev: {
+      // Default to 1
+      default: 1,
+      // dev address mainnet
+      // 1: "",
     },
   },
   gasReporter: {
