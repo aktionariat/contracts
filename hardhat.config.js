@@ -35,6 +35,7 @@ module.exports = {
       forking: {
         enabled: process.env.FORKING === "true",
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 13191833,
       },
       live: false,
       saveDeployments: true,

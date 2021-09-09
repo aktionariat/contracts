@@ -56,7 +56,7 @@ module.exports = async (deployer) => {
   await forceSend2.send(config.baseCurrencyMinterAddress, {value: 1000000000000000000})
   for (let i = 0; i < 5; i++) {
     await baseCurrency.mint(unAccounts[i], web3.utils.toWei("10000000"), { from: await signer.getAddress()});
-    console.log("account %s chf %s", i, await baseCurrency.balanceOf(unAccounts[i]));
+    // console.log("account %s chf %s", unAccounts[i], await baseCurrency.balanceOf(unAccounts[i]));
   }
   await hre.network.provider.request({
     method: "hardhat_stopImpersonatingAccount",
