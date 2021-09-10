@@ -45,4 +45,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # Required to publish comment, if not present only the output 'parsed_gas_report' of the step will be present
           contracts: Shares,DraggableSahres,Brokerbot,PaymentHub,ForceSend # String of comma-separated contract names to include in the report
-          report_file: './gasReporterOutput.json' # Default if not specified
+          report_file: "./gasReporterOutput.json" # Default if not specified
