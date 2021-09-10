@@ -41,9 +41,9 @@ jobs:
           # Action will fail if the number of Low findings is equal or bigger then this value (0 to disable)
           low-threshold: 1 # optional, default is 1
           # Action will fail if then number of Informative findings is equal or bigger then this value (0 to disable)
-          informative-threshold: 10 # optional, default is 10
+          informative-threshold: 0 # optional, default is 10
           # Action will fail if then number of Optimization findings is equal or bigger then this value (0 to disable)
-          optimization-threshold: 10 # optional, default is 1
+          optimization-threshold: 0 # optional, default is 1
           # THe path for the smart contracts' project.
           projectPath: . # optional, default is .
           # Extra slither parameters to use when running the tool
