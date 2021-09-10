@@ -131,7 +131,6 @@ module.exports = {
       process.env.REPORT_GAS !== undefined ? process.env.REPORT_GAS : true,
     currency: "CHF",
     // url: "http://192.168.0.100:8546",
-    // coinmarketcap: "18b5df57-afee-4cc7-a181-9e095b192e91",
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
   etherscan: {
@@ -140,16 +139,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.4",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.6.7",
+        version: "0.8.7",
         settings: {
           optimizer: {
             enabled: true,
