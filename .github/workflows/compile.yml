@@ -38,6 +38,12 @@ jobs:
       
       - name: Compile contracts
         run: CI=true yarn compile  # When CI environment variable is set to true eth-gas-reporter will create a 'gasReporterOutput.json' file
+
+      - name: Archive compilation artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifacts
+          path: artifacts
       
       - name: Generate gas usage report
         id: gas_report
