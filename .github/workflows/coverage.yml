@@ -33,7 +33,7 @@ jobs:
       - name: Create env file
         run: |
           touch .env
-          echo ${{ secrets.TEST_ENV }} > .env
+          echo "${{ secrets.TEST_ENV }}" > .env
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
