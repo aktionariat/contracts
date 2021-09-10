@@ -44,11 +44,3 @@ jobs:
         with:
           name: artifacts
           path: artifacts
-      
-      - name: Generate gas usage report
-        id: gas_report
-        uses: santiac89/gas-report-action@v1.0.11
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }} # Required to publish comment, if not present only the output 'parsed_gas_report' of the step will be present
-          contracts: Shares,DraggableSahres,Brokerbot,PaymentHub,ForceSend # String of comma-separated contract names to include in the report
-          report_file: "./gasReporterOutput.json" # Default if not specified
