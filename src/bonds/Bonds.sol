@@ -61,6 +61,8 @@ contract Bonds is ERC20Recoverable, ERC20Named {
 
     event Announcement(string message);
     event SubRegisterRecognized(address contractAddress);
+    event TermsChanged(string terms);
+    event BondsBotChanged(address bondsBot);
 
     modifier onlyBot() {
         require(msg.sender == bondsBot, "not bonds bot");
@@ -78,11 +80,13 @@ contract Bonds is ERC20Recoverable, ERC20Named {
         endAmount = _endAmount;
     }
 
-    function setTerms(string memory _terms) public onlyOwner {
+    function setTerms(string memory _terms) external onlyOwner {
+        emit TermsChanged(_terms);
         terms = _terms;
     }
 
-    function setBondsBot(address _bondsBot) public onlyOwner {
+    function setBondsBot(address _bondsBot) external onlyOwner {
+        emit BondsBotChanged(_bondsBot);
         bondsBot = _bondsBot;
     }
 
@@ -122,7 +126,7 @@ contract Bonds is ERC20Recoverable, ERC20Named {
      * Allows the company to tokenize shares. If these shares are newly created, setTotalShares must be
      * called first in order to adjust the total number of shares.
      */
-    function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) public {
+    function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
         IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data);
     }

@@ -31,8 +31,10 @@ import "../Ownable.sol";
 import "../IERC20.sol";
 import "../ITokenReceiver.sol";
 import "../IERC677Receiver.sol";
+import "../utils/SafeERC20.sol";
 
-contract Brokerbot is Ownable {
+contract BondsBot is Ownable {
+    using SafeERC20 for IERC20;
 
     address public paymenthub;
     
@@ -115,9 +117,9 @@ contract Brokerbot is Ownable {
         uint bonds = getBonds(paid);
         uint costs = notifyTraded(from, bonds, ref);
         if (costs < paid){
-            IERC20(base).transfer(from, paid - costs);
+            IERC20(base).safeTransfer(from, paid - costs);
         }
-        IERC20(token).transfer(from, bonds);
+        IERC20(token).safeTransfer(from, bonds);
         return bonds;
     }
 
@@ -134,7 +136,7 @@ contract Brokerbot is Ownable {
 
     function notifyTradeAndTransfer(address buyer, uint256 bonds, bytes calldata ref) public onlyOwner {
         notifyTraded(buyer, bonds, ref);
-        IERC20(token).transfer(buyer, bonds);
+        IERC20(token).safeTransfer(buyer, bonds);
     }
 
     function notifyTrades(address[] calldata buyers, uint256[] calldata bonds, bytes[] calldata ref) public onlyOwner {
@@ -193,9 +195,9 @@ contract Brokerbot is Ownable {
         IERC20 baseToken = IERC20(base);
         uint256 fee = getLicenseFee(totPrice);
         if (fee > 0){
-            baseToken.transfer(copyright, fee);
+            baseToken.safeTransfer(copyright, fee);
         }
-        baseToken.transfer(recipient, totPrice - fee);
+        baseToken.safeTransfer(recipient, totPrice - fee);
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
         return totPrice;
     }
@@ -213,11 +215,11 @@ contract Brokerbot is Ownable {
     }
 
     function approve(address erc20, address who, uint256 amount) public onlyOwner() {
-        IERC20(erc20).approve(who, amount);
+        IERC20(erc20).safeApprove(who, amount);
     }
 
     function withdraw(address ercAddress, address to, uint256 amount) public ownerOrHub() {
-        IERC20(ercAddress).transfer(to, amount);
+        IERC20(ercAddress).safeTransfer(to, amount);
     }
 
     function setPaymentHub(address hub) public onlyOwner() {
