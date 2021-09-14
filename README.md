@@ -62,15 +62,11 @@ yarn install
 
 #### Compile
 
-Compile the contracts
-
 ```bash
 yarn compile
 ```
 
 #### Running unit tests
-
-Run the truffle tests
 
 ```bash
 yarn test
