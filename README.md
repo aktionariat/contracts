@@ -40,6 +40,42 @@ As far as we know, we are the only share tokenization service that supports numb
 
 If you find a new security-relevant bug in our contracts and tell us, we will reward you with 1 Ether. For bugs that could lead to a loss of funds, the bounty is tripled. The bounty can only be claimed for bugs that we are not aware of and that have not been exploited yet. They must be filed directly to bugs@aktionariat.com without opening a publicly visible issue.
 
+## Development Quick Start
+
+### Dependencies
+
+You'll need the following:
+
+* [Git](https://git-scm.com/downloads)
+* [NodeJS](https://nodejs.org/en/download/)
+* [Yarn](https://classic.yarnpkg.com/en/docs/install)
+
+### Setup
+
+Clone the repository, open it, and install nodejs packages with `yarn`:
+
+```bash
+git clone git@github.com:aktionariat/contracts.git
+cd contracts
+yarn install
+```
+
+#### Compile
+
+Compile the contracts
+
+```bash
+yarn compile
+```
+
+#### Running unit tests
+
+Run the truffle tests
+
+```bash
+yarn test
+```
+
 ## License
 
 All our smart contracts are open-source and can be used under a slightly modified [MIT License with Automated License Fee Payments](LICENSE). This means that you are free to use our contracts as long as you do not make any changes to circumvent the built-in license fee payments to our address [0x29Fe8914e76da5cE2d90De98a64d0055f199d06D](https://etherscan.io/address/0x29fe8914e76da5ce2d90de98a64d0055f199d06d), if there are any. Note that some of the source code you find in this repository stems from other sources with other licenses. These are marked accordingly.
