@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* COPYRIGHT (c) 2021 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -12,7 +12,7 @@
 * Software, and to permit persons to whom the Software is furnished to do so,
 * subject to the following conditions:
 *
-* - The above copyright notice and this permission notice shall be included in
+* - The above COPYRIGHT notice and this permission notice shall be included in
 *   all copies or substantial portions of the Software.
 * - All automated license fee payments integrated into this and related Software
 *   are preserved.
@@ -32,6 +32,7 @@ import "../IERC20.sol";
 import "../ITokenReceiver.sol";
 import "../IERC677Receiver.sol";
 import "../utils/SafeERC20.sol";
+import "./Bonds.sol";
 
 contract BondsBot is Ownable {
     using SafeERC20 for IERC20;
@@ -41,14 +42,16 @@ contract BondsBot is Ownable {
     address public immutable base;  // ERC-20 currency
     address public immutable token; // ERC-20 bond token
 
-    address public constant copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
+    uint256 immutable maturity; // the timestamp of maturity
+
+    address public constant COPYRIGHT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
 
     uint256 private price; // current offer price, without drift
     uint256 public driftStart;
     uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
     int256 public driftIncrement;
 
-    uint8 private constant licenseFeeBps = 90;
+    uint8 private constant LICENSE_FEE_BPS = 90;
 
     uint8 private constant BUYING_ENABLED = 0x1;
     uint8 private constant SELLING_ENABLED = 0x2;
@@ -58,11 +61,12 @@ contract BondsBot is Ownable {
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
-    constructor(address bondToken, uint256 price_, address baseCurrency, address owner) Ownable(owner){
+    constructor(address bondToken, uint256 price_, address baseCurrency, uint256 _timeToMaturity, address _owner) Ownable(_owner){
         base = baseCurrency;
         token = bondToken;
         price = price_;
         paymenthub = address(0x3eABee781f6569328143C610700A99E9ceE82cba);
+        maturity = block.timestamp + _timeToMaturity;
     }
 
     modifier ownerOrHub() {
@@ -70,7 +74,7 @@ contract BondsBot is Ownable {
         _;
     }
 
-    function setPrice(uint256 newPrice) public onlyOwner {
+    function setPrice(uint256 newPrice) external onlyOwner {
         anchorPrice(newPrice);
     }
 
@@ -79,7 +83,7 @@ contract BondsBot is Ownable {
     }
 
     // secondsPerStep should be negative for downwards drift
-    function setDrift(uint256 secondsPerStep, int256 newDriftIncrement) public onlyOwner {
+    function setDrift(uint256 secondsPerStep, int256 newDriftIncrement) external onlyOwner {
         anchorPrice(getPrice());
         timeToDrift = secondsPerStep;
         driftIncrement = newDriftIncrement;
@@ -117,9 +121,9 @@ contract BondsBot is Ownable {
         uint bonds = getBonds(paid);
         uint costs = notifyTraded(from, bonds, ref);
         if (costs < paid){
-            IERC20(base).safeTransfer(from, paid - costs);
+            Bonds(base).mint(from, paid - costs);
         }
-        IERC20(token).safeTransfer(from, bonds);
+        Bonds(token).mint(from, bonds);
         return bonds;
     }
 
@@ -130,7 +134,7 @@ contract BondsBot is Ownable {
         return costs;
     }
 
-    function notifyTrade(address buyer, uint256 bonds, bytes calldata ref) public onlyOwner {
+    function notifyTrade(address buyer, uint256 bonds, bytes calldata ref) external onlyOwner {
         notifyTraded(buyer, bonds, ref);
     }
 
@@ -139,13 +143,13 @@ contract BondsBot is Ownable {
         IERC20(token).safeTransfer(buyer, bonds);
     }
 
-    function notifyTrades(address[] calldata buyers, uint256[] calldata bonds, bytes[] calldata ref) public onlyOwner {
+    function notifyTrades(address[] calldata buyers, uint256[] calldata bonds, bytes[] calldata ref) external onlyOwner {
         for (uint i = 0; i < buyers.length; i++) {
             notifyTraded(buyers[i], bonds[i], ref[i]);
         }
     }
 
-    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata bonds, bytes[] calldata ref) public onlyOwner {
+    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata bonds, bytes[] calldata ref) external onlyOwner {
         for (uint i = 0; i < buyers.length; i++) {
             notifyTradeAndTransfer(buyers[i], bonds[i], ref[i]);
         }
@@ -167,21 +171,21 @@ contract BondsBot is Ownable {
     }
 
     // ERC-677 recipient
-    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public returns (bool) {
+    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) external returns (bool) {
         processIncoming(msg.sender, from, amount, ref);
         return true;
     }
 
     // ITokenReceiver
-    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) public {
+    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) external {
         processIncoming(token_, from, amount, ref);
     }
 
-    function buyingEnabled() public view returns (bool){
+    function buyingEnabled() external view returns (bool){
         return hasSetting(BUYING_ENABLED);
     }
 
-    function sellingEnabled() public view returns (bool){
+    function sellingEnabled() external view returns (bool){
         return hasSetting(SELLING_ENABLED);
     }
 
@@ -195,7 +199,7 @@ contract BondsBot is Ownable {
         IERC20 baseToken = IERC20(base);
         uint256 fee = getLicenseFee(totPrice);
         if (fee > 0){
-            baseToken.safeTransfer(copyright, fee);
+            baseToken.safeTransfer(COPYRIGHT, fee);
         }
         baseToken.safeTransfer(recipient, totPrice - fee);
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
@@ -203,34 +207,35 @@ contract BondsBot is Ownable {
     }
 
     function getLicenseFee(uint256 totPrice) public pure returns (uint256) {
-        return totPrice * licenseFeeBps / 10000;
+        return totPrice * LICENSE_FEE_BPS / 10000;
     }
 
     function getBonds(uint256 money) public view returns (uint256) {
         return money / getPrice();
     }
 
-    function withdrawEther(uint256 amount) public ownerOrHub() {
+    function withdrawEther(uint256 amount) external ownerOrHub() {
         payable(msg.sender).transfer(amount); // return change
     }
 
-    function approve(address erc20, address who, uint256 amount) public onlyOwner() {
+    function approve(address erc20, address who, uint256 amount) external onlyOwner() {
         IERC20(erc20).safeApprove(who, amount);
     }
 
-    function withdraw(address ercAddress, address to, uint256 amount) public ownerOrHub() {
+    function withdraw(address ercAddress, address to, uint256 amount) external ownerOrHub() {
         IERC20(ercAddress).safeTransfer(to, amount);
     }
 
-    function setPaymentHub(address hub) public onlyOwner() {
+    function setPaymentHub(address hub) external onlyOwner() {
+        require(hub != address(0), "address must not be 0");
         paymenthub = hub;
     }
 
-    function setSettings(uint256 settings_) public onlyOwner() {
+    function setSettings(uint256 settings_) external onlyOwner() {
         settings = settings_;
     }
 
-    function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) public onlyOwner() {
+    function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) external onlyOwner() {
         if (newBuyingEnabled != hasSetting(BUYING_ENABLED)){
             settings ^= BUYING_ENABLED;
         }
