@@ -32,9 +32,9 @@ import "../IERC20.sol";
 import "../ITokenReceiver.sol";
 import "../IERC677Receiver.sol";
 import "../utils/SafeERC20.sol";
-import "./Bonds.sol";
+import "./Bond.sol";
 
-contract BondsBot is Ownable {
+contract BondBot is Ownable {
     using SafeERC20 for IERC20;
 
     address public paymenthub;
@@ -120,7 +120,7 @@ contract BondsBot is Ownable {
         if (costs < paid){
             IERC20(base).safeTransfer(from, paid - costs);
         }
-        Bonds(token).mint(from, bonds);
+        Bond(token).mint(from, bonds);
         return bonds;
     }
 

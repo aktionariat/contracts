@@ -39,10 +39,10 @@ import "../IERC677Receiver.sol";
  * @notice In order to prevent malicious attempts, a collateral needs to be posted.
  * @notice The contract owner can delete claims in case of disputes.
  */
-contract Bonds is ERC20Recoverable, ERC20Named {
+contract Bond is ERC20Recoverable, ERC20Named {
 
     string public terms;
-    address bondsBot; // addresse of the broker bot which mints/burns
+    address bondBot; // addresse of the broker bot which mints/burns
     uint256 immutable maxSupply; // the max inital tokens
     uint256 immutable deployTimestamp; // the timestamp of the contract deployment
     uint256 immutable termToMaturity; // the duration of the bond
@@ -50,10 +50,10 @@ contract Bonds is ERC20Recoverable, ERC20Named {
 
     event Announcement(string message);
     event TermsChanged(string terms);
-    event BondsBotChanged(address bondsBot);
+    event BondBotChanged(address bondBot);
 
     modifier onlyBotAndOwner() {
-        require(msg.sender == bondsBot || msg.sender == owner, "not bonds bot or owner");
+        require(msg.sender == bondBot || msg.sender == owner, "not bonds bot or owner");
         _;
     }
 
@@ -72,10 +72,10 @@ contract Bonds is ERC20Recoverable, ERC20Named {
         terms = _terms;
     }
 
-    function setBondsBot(address _bondsBot) external onlyOwner {
-        require(_bondsBot != address(0));
-        emit BondsBotChanged(_bondsBot);
-        bondsBot = _bondsBot;
+    function setBondBot(address _bondBot) external onlyOwner {
+        require(_bondBot != address(0));
+        emit BondBotChanged(_bondBot);
+        bondBot = _bondBot;
     }
 
     /**
