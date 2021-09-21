@@ -42,8 +42,6 @@ contract BondsBot is Ownable {
     address public immutable base;  // ERC-20 currency
     address public immutable token; // ERC-20 bond token
 
-    uint256 immutable maturity; // the timestamp of maturity
-
     address public constant COPYRIGHT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
 
     uint256 private price; // current offer price, without drift
@@ -61,12 +59,11 @@ contract BondsBot is Ownable {
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
-    constructor(address bondToken, uint256 price_, address baseCurrency, uint256 _timeToMaturity, address _owner) Ownable(_owner){
+    constructor(address bondToken, uint256 price_, address baseCurrency, address _owner) Ownable(_owner){
         base = baseCurrency;
         token = bondToken;
         price = price_;
         paymenthub = address(0x3eABee781f6569328143C610700A99E9ceE82cba);
-        maturity = block.timestamp + _timeToMaturity;
     }
 
     modifier ownerOrHub() {
@@ -121,7 +118,7 @@ contract BondsBot is Ownable {
         uint bonds = getBonds(paid);
         uint costs = notifyTraded(from, bonds, ref);
         if (costs < paid){
-            Bonds(base).mint(from, paid - costs);
+            IERC20(base).safeTransfer(from, paid - costs);
         }
         Bonds(token).mint(from, bonds);
         return bonds;

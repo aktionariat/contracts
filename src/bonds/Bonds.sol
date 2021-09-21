@@ -46,7 +46,7 @@ contract Bonds is ERC20Recoverable, ERC20Named {
     uint256 immutable maxSupply; // the max inital tokens
     uint256 immutable deployTimestamp; // the timestamp of the contract deployment
     uint256 immutable termToMaturity; // the duration of the bond
-    uint256 immutable mintDecrement; // the decrement of the max mintable supply per ms 
+    uint256 immutable mintDecrement; // the decrement of the max mintable supply per hour 
 
     event Announcement(string message);
     event TermsChanged(string terms);
@@ -57,11 +57,10 @@ contract Bonds is ERC20Recoverable, ERC20Named {
         _;
     }
 
-    constructor(string memory _symbol, string memory _name, string memory _terms, address _bondsBot, uint256 _maxSupply, uint256 _termToMaturity, uint256 _mintDecrement, address _owner) ERC20Named(_owner, _name, _symbol, 0) {
+    constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _maxSupply, uint256 _termToMaturity, uint256 _mintDecrement, address _owner) ERC20Named(_owner, _name, _symbol, 0) {
         symbol = _symbol;
         name = _name;
         terms = _terms;
-        bondsBot = _bondsBot;
         maxSupply = _maxSupply;
         deployTimestamp = block.timestamp;
         termToMaturity = _termToMaturity;
@@ -102,7 +101,8 @@ contract Bonds is ERC20Recoverable, ERC20Named {
     }
 
     function _mint(address account, uint256 amount) internal override {
-        require(totalSupply() + amount <= maxMintable(), "Max mintable supply is already minted");
+        require(block.timestamp - deployTimestamp <= termToMaturity, "Bond already reached maturity.");
+        require(totalSupply() + amount <= maxMintable(), "Max mintable supply is already minted.");
         super._mint(account, amount);
     }
 
@@ -132,7 +132,7 @@ contract Bonds is ERC20Recoverable, ERC20Named {
      * Calculates the the maximum ammount which can be minted, which decreses over the time.
      */
     function maxMintable() public view returns (uint256) {
-        return maxSupply - ((block.timestamp - deployTimestamp) * mintDecrement);
+        return maxSupply - (((block.timestamp - deployTimestamp)/ 3600000) * mintDecrement);
     }
 
 }   
