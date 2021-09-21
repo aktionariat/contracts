@@ -119,12 +119,13 @@ contract Bond is ERC20Recoverable, ERC20Named {
     }
 
     /**
-     * Transfers _amount tokens to the company and burns them.
+     * Burns the tokens. Without agreement to the contrary, the legal meaning
+     * of this shall be that the sender forfeits all his rights in connection
+     * with the burned tokens, rendering them unredeemable.
      */
     function burn(uint256 _amount) public returns (bool) {
         require(_amount <= balanceOf(msg.sender), "Not enough bonds available");
-        _transfer(msg.sender, address(this), _amount);
-        _burn(address(this), _amount);
+        _burn(msg.sender, _amount);
         return true;
     }
 
