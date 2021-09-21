@@ -42,18 +42,18 @@ import "../IERC677Receiver.sol";
 contract Bond is ERC20Recoverable, ERC20Named {
 
     string public terms;
-    address bondBot; // addresse of the broker bot which mints/burns
-    uint256 immutable maxSupply; // the max inital tokens
-    uint256 immutable deployTimestamp; // the timestamp of the contract deployment
-    uint256 immutable termToMaturity; // the duration of the bond
-    uint256 immutable mintDecrement; // the decrement of the max mintable supply per hour 
+    address minter; // addresse of the broker bot which mints/burns
+    uint256 public immutable maxSupply; // the max inital tokens
+    uint256 public immutable deployTimestamp; // the timestamp of the contract deployment
+    uint256 public immutable termToMaturity; // the duration of the bond
+    uint256 public immutable mintDecrement; // the decrement of the max mintable supply per hour 
 
     event Announcement(string message);
     event TermsChanged(string terms);
-    event BondBotChanged(address bondBot);
+    event MinterChanged(address bondBot);
 
-    modifier onlyBotAndOwner() {
-        require(msg.sender == bondBot || msg.sender == owner, "not bonds bot or owner");
+    modifier onlyMinter() {
+        require(msg.sender == minter, "not minter");
         _;
     }
 
@@ -72,10 +72,9 @@ contract Bond is ERC20Recoverable, ERC20Named {
         terms = _terms;
     }
 
-    function setBondBot(address _bondBot) external onlyOwner {
-        require(_bondBot != address(0));
-        emit BondBotChanged(_bondBot);
-        bondBot = _bondBot;
+    function setMinter(address _minter) external onlyOwner {
+        emit MinterChanged(_minter);
+        minter = _minter;
     }
 
     /**
@@ -96,7 +95,7 @@ contract Bond is ERC20Recoverable, ERC20Named {
         return owner;
     }
 
-    function mint(address target, uint256 amount) external onlyBotAndOwner {
+    function mint(address target, uint256 amount) external onlyMinter {
         _mint(target, amount);
     }
 
