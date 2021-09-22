@@ -2,16 +2,12 @@
 const {network, ethers} = require("hardhat");
 const { expect } = require("chai");
 
-// Libraries
-const BN = require("bn.js");
-const { formatEther } = require("@ethersproject/units");
-
 // Shared Migration Config
 const config = {
   symbol: "TEST",
   name: "Test Bond",
   terms: "test.ch/terms",
-  totalBonds: 4000000,
+  totalBonds: 40000000,
   bondPrice: "500000000000000000",
   timeToMarturity: "432000000000", //5000days around 14y
   mintDecrement: 10,
@@ -28,7 +24,6 @@ const config = {
 describe("Bond Contract", () => {
   let BondBotFactory;
   let BondFactory;
-  let BaseCurrencyFactory;
   let PaymentHubFactory;
   let ForceSendFactory;
 
@@ -69,7 +64,7 @@ describe("Bond Contract", () => {
     await paymentHub.deployed();
     await forceSend.deployed();
 
-
+    // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [config.baseCurrencyMinterAddress],
@@ -85,6 +80,17 @@ describe("Bond Contract", () => {
       params: [config.baseCurrencyMinterAddress],
     });
 
+    //Mint bonds to first 5 accounts
+    await bond.setMinter(owner.address);
+    for( let i = 0; i < 5; i++) {
+      await bond.mint(accounts[i], 1000000);
+    }
+
+    //Deposit Bonds and BaseCurrency into BondBot
+    await baseCurrency.transfer(bondBot.address, ethers.utils.parseEther("100000"));
+    await bond.transfer(bondBot.address, 50000);
+
+
   });
 
   describe("Deployment", () => {
@@ -92,7 +98,7 @@ describe("Bond Contract", () => {
       expect(await bond.owner()).to.equal(owner.address);
     });
 
-    it("Should calculate correct max mintalbe supply", async () => {
+    it("Should calculate correct max mintable supply", async () => {
       expect(await bond.maxMintable()).to.equal(config.totalBonds);
     });
 
@@ -108,6 +114,19 @@ describe("Bond Contract", () => {
         const balance = await baseCurrency.balanceOf(accounts[i]);
         assert(!balance.isZero(), "Balance is 0");
       }
+    });
+
+    it("should have some Bonds in first 5 accounts", async () => {
+      for (let i = 0; i < 5; i++) {
+        const balance = await bond.balanceOf(accounts[i]);
+        assert(!balance.isZero(), "Balance is 0");
+      }
+    });
+
+    it("should have Bonds and BaseCurrency deposited into the Brokerbot", async () => {
+      const tokenBalance = await bond.balanceOf(bondBot.address);
+      const baseBalance = await baseCurrency.balanceOf(bondBot.address);
+      assert(!tokenBalance.isZero() && !baseBalance.isZero());
     });
   });
 
