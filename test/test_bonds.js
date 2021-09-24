@@ -31,6 +31,7 @@ describe("Bond Contract", () => {
   let bondBot;
   let baseCurrency;
   let paymentHub;
+  let paymentHubContract
   let forceSend;
 
   let owner;
@@ -83,7 +84,7 @@ describe("Bond Contract", () => {
     //Mint bonds to first 5 accounts
     await bond.setMinter(owner.address);
     for( let i = 0; i < 5; i++) {
-      await bond.mint(accounts[i], 1000000);
+      await bond.mint(accounts[i], 100000);
     }
 
     //Deposit Bonds and BaseCurrency into BondBot
@@ -102,6 +103,63 @@ describe("Bond Contract", () => {
 
      // Set Bond Bot as Minter
      await bond.setMinter(bondBot.address);
+
+
+     //set paymenthub overloading
+     const abi = [
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "xchfamount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "ref",
+            "type": "bytes"
+          }
+        ],
+        "name": "payAndNotify",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "ref",
+            "type": "bytes"
+          }
+        ],
+        "name": "payAndNotify",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+     ];
+     paymentHubContract = new ethers.Contract(paymentHub.address, abi, owner);
 
 
   });
@@ -155,15 +213,16 @@ describe("Bond Contract", () => {
   });
 
   describe("Transctions", () => {
-    it("should mint token when buying bonds", async () => {
-      //console.log(await paymentHub.getPriceInEther(ethers.utils.parseEther("1000")));
+    it("should mint correct amount of token when buying bonds at start", async () => {
+      const balanceBefore = await bond.balanceOf(adr1.address);
       await bond.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
       await baseCurrency.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
-
-      await paymentHub["payAndNotify(address, uint256, bytes calldata)"](bondBot.address, ethers.utils.parseEther("1000"), '0x');
-      //await paymentHub.connect(adr1).multiPayAndNotify(baseCurrency.address, [bondBot.address], [ethers.utils.parseEther("1")], '0x');
-      //await paymentHub.connect(adr1).multiPay([adr1.address], [ethers.utils.parseEther("1")]);
-      console.log(bond.balanceOf(adr1.address));
+      const paymentHubAdr1 = await paymentHubContract.connect(adr1);
+      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](bondBot.address, ethers.utils.parseEther("1000"), '0x');
+      const balanceAfter = await bond.balanceOf(adr1.address);
+      console.log(balanceAfter.toString());
+      // with price of 0.5 (see config) buying with 1000 results in 2000 additional bonds
+      expect(balanceAfter).to.equal(balanceBefore.add(2000));
     })
   });
 });
