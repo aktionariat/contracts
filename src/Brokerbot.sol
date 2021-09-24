@@ -52,9 +52,10 @@ contract Brokerbot is Ownable {
 
     uint8 private constant BUYING_ENABLED = 0x1;
     uint8 private constant SELLING_ENABLED = 0x2;
+    uint8 private constant VERSION = 0x1;
 
     // more bits to be used by payment hub
-    uint256 public settings = BUYING_ENABLED | SELLING_ENABLED;
+    uint256 public settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
@@ -183,6 +184,22 @@ contract Brokerbot is Ownable {
         return settings & setting == setting;
     }
 
+    function isDirectSale(bytes calldata ref) internal returns (bool) {
+        if (ref.length == 0 || ref.length == 20) {
+            return true; // old format
+        } else {
+            if (ref[0] == bytes1(0x01)){
+                return true;
+            } else if (ref[0] == bytes1(0x02)) {
+                return false;
+            } else {
+                require(false, "unknown ref");
+                return true;
+            }
+        }
+    }
+
+
     function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
         require(hasSetting(SELLING_ENABLED));
         uint256 totPrice = getSellPrice(amount);
@@ -191,7 +208,9 @@ contract Brokerbot is Ownable {
         if (fee > 0){
             baseToken.transfer(copyright, fee);
         }
-        baseToken.transfer(recipient, totPrice - fee);
+        if (isDirectSale(ref)){
+            baseToken.transfer(recipient, totPrice - fee);
+        }
         price -= amount * increment;
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
         return totPrice;
