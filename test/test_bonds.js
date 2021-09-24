@@ -87,13 +87,36 @@ describe("Bond Contract", () => {
     }
 
     //Deposit Bonds and BaseCurrency into BondBot
+    //await bond.transfer(bondBot.address, 50000000);
     await baseCurrency.transfer(bondBot.address, ethers.utils.parseEther("100000"));
-    await bond.transfer(bondBot.address, 50000);
+
+
+    // Allow payment hub to spend baseCurrency from accounts[0] and bond from Brokerbot
+    await bond.approve(paymentHub.address, config.infiniteAllowance, { from: owner.address });
+    await baseCurrency.approve(paymentHub.address, config.infiniteAllowance, { from: owner.address });
+    await bondBot.approve(bond.address, paymentHub.address, config.infiniteAllowance);
+    await bondBot.approve(baseCurrency.address, paymentHub.address, config.infiniteAllowance);
+
+     // Set Payment Hub for bondBot
+     await bondBot.setPaymentHub(paymentHub.address);
+
+     // Set Bond Bot as Minter
+     await bond.setMinter(bondBot.address);
 
 
   });
 
   describe("Deployment", () => {
+    it("should deploy", async () => {
+      assert(bond.address !== "");
+    });
+  
+    it("should get constructor params correctly", async () => {
+      assert.equal(await bond.symbol(), config.symbol);
+      assert.equal(await bond.name(), config.name);
+      assert.equal(await bond.terms(), config.terms);
+      assert.equal(await bond.maxSupply(), config.totalBonds);
+    });
     it("Should set the right owner", async () =>{
       expect(await bond.owner()).to.equal(owner.address);
     });
@@ -101,7 +124,9 @@ describe("Bond Contract", () => {
     it("Should calculate correct max mintable supply", async () => {
       expect(await bond.maxMintable()).to.equal(config.totalBonds);
     });
+  });
 
+  describe("Setup", () => {
     it("should have some ETH in first 5 accounts", async () => {  
       for (let i = 0; i < 5; i++) {
         const balance = ethers.BigNumber.from(await ethers.provider.getBalance(accounts[i]));
@@ -123,15 +148,23 @@ describe("Bond Contract", () => {
       }
     });
 
-    it("should have Bonds and BaseCurrency deposited into the Brokerbot", async () => {
-      const tokenBalance = await bond.balanceOf(bondBot.address);
+    it("should have BaseCurrency deposited into the Brokerbot", async () => {
       const baseBalance = await baseCurrency.balanceOf(bondBot.address);
-      assert(!tokenBalance.isZero() && !baseBalance.isZero());
+      assert(!baseBalance.isZero());
     });
   });
 
   describe("Transctions", () => {
+    it("should mint token when buying bonds", async () => {
+      //console.log(await paymentHub.getPriceInEther(ethers.utils.parseEther("1000")));
+      await bond.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
+      await baseCurrency.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
 
+      await paymentHub["payAndNotify(address, uint256, bytes calldata)"](bondBot.address, ethers.utils.parseEther("1000"), '0x');
+      //await paymentHub.connect(adr1).multiPayAndNotify(baseCurrency.address, [bondBot.address], [ethers.utils.parseEther("1")], '0x');
+      //await paymentHub.connect(adr1).multiPay([adr1.address], [ethers.utils.parseEther("1")]);
+      console.log(bond.balanceOf(adr1.address));
+    })
   });
 });
 
