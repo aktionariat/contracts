@@ -1,6 +1,7 @@
 //const { ethers, hre } = require("hardhat");
 const {network, ethers} = require("hardhat");
 const { expect } = require("chai");
+const { extendConfig } = require("hardhat/config");
 
 // Shared Migration Config
 const config = {
@@ -9,7 +10,7 @@ const config = {
   terms: "test.ch/terms",
   totalBonds: 40000000,
   bondPrice: "500000000000000000",
-  timeToMarturity: "432000000000", //5000days around 14y
+  timeToMarturity: "432000000", //5000days around 14y
   mintDecrement: 10,
   baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
@@ -220,10 +221,35 @@ describe("Bond Contract", () => {
       const paymentHubAdr1 = await paymentHubContract.connect(adr1);
       await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](bondBot.address, ethers.utils.parseEther("1000"), '0x');
       const balanceAfter = await bond.balanceOf(adr1.address);
-      console.log(balanceAfter.toString());
       // with price of 0.5 (see config) buying with 1000 results in 2000 additional bonds
       expect(balanceAfter).to.equal(balanceBefore.add(2000));
-    })
+    });
+
+    it("should correctly decrease max mintable amount", async () => {
+      const oneYear = 365 * 24 * 60 * 60;
+      await ethers.provider.send("evm_increaseTime", [oneYear]);
+      await ethers.provider.send("evm_mine");
+      const maxMintable = await bond.maxMintable();
+      expect(await bond.maxMintable()).to.equal(config.totalBonds - (config.mintDecrement * 24 * 365));
+    });
+
+    it("should increase price correctly", async () => {
+      const oneYear = 365 * 24 * 60 * 60;
+      const driftIncrement = ethers.BigNumber.from(config.bondPrice).div(ethers.BigNumber.from(5000));
+      await bondBot.setDrift(86400, driftIncrement);
+      const blockNumStart = await ethers.provider.getBlockNumber();
+      const blockStart= await ethers.provider.getBlock(blockNumStart);
+      expect(await bondBot.getPriceAtTime(blockStart.timestamp)).to.equal(config.bondPrice);
+
+      await ethers.provider.send("evm_increaseTime", [oneYear]);
+      await ethers.provider.send("evm_mine");
+
+      const blockNumAfter = await ethers.provider.getBlockNumber();
+      const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+      const priceAfter = await bondBot.getPriceAtTime(blockAfter.timestamp);
+      expect(priceAfter).to.equal(ethers.BigNumber.from(config.bondPrice).add(driftIncrement.mul(365)));
+
+    });
   });
 });
 
