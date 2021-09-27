@@ -132,7 +132,7 @@ contract Bond is ERC20Recoverable, ERC20Named {
      * Calculates the the maximum ammount which can be minted, which decreses over the time.
      */
     function maxMintable() public view returns (uint256) {
-        return maxSupply - (((block.timestamp - deployTimestamp)/ 3600000) * mintDecrement);
+        return maxSupply - (((block.timestamp - deployTimestamp)/ 3600) * mintDecrement);
     }
 
 }   
