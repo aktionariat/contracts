@@ -30,4 +30,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["bond"];
+module.exports.tags = ["Bond"];
