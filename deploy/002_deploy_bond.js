@@ -4,8 +4,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deployer, dev } = await getNamedAccounts();
   console.log(deployer);
 
-  const { address } = await deploy("MultiSigTest", {
-    contract: "MultiSig",
+  const { address } = await deploy("Bond", {
+    contract: "Bond",
     from: deployer,
     args: [dev],
     gasLimit: 5000000,
@@ -13,4 +13,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["multisig"];
+module.exports.tags = ["bond"];
