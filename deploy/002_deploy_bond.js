@@ -1,11 +1,13 @@
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, dev } = await getNamedAccounts();
-  console.log(deployer);
+  const { deployer, owner } = await getNamedAccounts();
 
-  const symbol = "B59";
-  const name = "Test Bond 1559 ";
+  console.log("deployer: %s", deployer);
+  console.log("owner: %s", owner)
+
+  const symbol = "BOND";
+  const name = "Test Bond ";
   const terms = "wwww.terms.ch";
   const maxSupply = 4000000;
   const termToMaturity = "432000000"; //5000days around 14y
@@ -23,7 +25,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       maxSupply,
       termToMaturity,
       mintDecrement,
-      dev],
+      owner],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas

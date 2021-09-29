@@ -1,7 +1,11 @@
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, dev } = await getNamedAccounts();
+  const { deployer, owner } = await getNamedAccounts();
+
+  console.log("deployer: %s", deployer);
+  console.log("owner: %s", owner)
+
   const bond = await deployments.get('Bond');
 
   const price = "500000000000000000";
@@ -16,7 +20,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       bond.address,
       price,
       baseCurrencyContract,
-      dev],
+      owner],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas

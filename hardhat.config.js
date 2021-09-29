@@ -133,13 +133,16 @@ module.exports = {
     deployer: {
       default: 0,
     },
+    owner: {
+      default: 0,
+    },
     dev: {
       // Default to 1
       default: 1,
       // dev address mainnet
       // 1: "",
     },
-    multiSigDefault: {
+    multiSigDefaultOwner: {
       default: 1,
       1: process.env.MULTISIG_DEFAULT
     }
