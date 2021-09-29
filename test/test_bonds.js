@@ -219,9 +219,10 @@ describe("Bond Contract", () => {
       await bond.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
       await baseCurrency.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
       const paymentHubAdr1 = await paymentHubContract.connect(adr1);
-      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](bondBot.address, ethers.utils.parseEther("1000"), '0x');
+      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](bondBot.address, ethers.utils.parseEther("1000"), "0x");
       const balanceAfter = await bond.balanceOf(adr1.address);
       // with price of 0.5 (see config) buying with 1000 results in 2000 additional bonds
+      expect(await bond.totalSupply()).to.equal(502000);
       expect(balanceAfter).to.equal(balanceBefore.add(2000));
     });
 
@@ -248,7 +249,12 @@ describe("Bond Contract", () => {
       const blockAfter = await ethers.provider.getBlock(blockNumAfter);
       const priceAfter = await bondBot.getPriceAtTime(blockAfter.timestamp);
       expect(priceAfter).to.equal(ethers.BigNumber.from(config.bondPrice).add(driftIncrement.mul(365)));
+    });
 
+    it("should burn on token on sell", async () => {
+      expect(await bond.totalSupply()).to.equal(500000);
+      await bond.connect(adr1).transferAndCall(bondBot.address, 1000, "0x");
+      expect(await bond.totalSupply()).to.equal(499000);
     });
   });
 });
