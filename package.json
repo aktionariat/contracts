@@ -50,5 +50,8 @@
     "coverage": "hardhat coverage",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
     "prettier:solidity": "./node_modules/.bin/prettier --write src/**/*.sol"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.3.2"
   }
 }
