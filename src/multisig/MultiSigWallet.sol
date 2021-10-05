@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../RLPEncode.sol";
 import "../Nonce.sol";
 
-contract MultiSig is Nonce, Initializable {
+contract MultiSigWallet is Nonce, Initializable {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 

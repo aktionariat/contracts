@@ -5,7 +5,7 @@
 
 pragma solidity >=0.8;
 
-import "./MultiSig.sol";
+import "./MultiSigWallet.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract MultiSigCloneFactory {
@@ -14,21 +14,25 @@ contract MultiSigCloneFactory {
 
   event ContractCreated(address contractAddress, string typeName);
 
-  function create(address owner) public returns (address) {
-    address payable instance = payable(Clones.clone(multiSigImplementation);
-    MultiSig(instance).initialize(owner);
-    emit ContractCreated(instance, "MultiSig");
-    return instance;
+  constructor(address _multSigImplementation) {
+    multiSigImplementation = _multSigImplementation;
   }
 
-  function predict(address owner, bytes32 salt) public view returns (address) {
+  /*function create(address owner) public returns (address) {
+    address payable instance = payable(Clones.clone(multiSigImplementation));
+    MultiSigWallet(instance).initialize(owner);
+    emit ContractCreated(instance, "MultiSigWallet");
+    return instance;
+  }*/
+
+  function predict(bytes32 salt) public view returns (address) {
     return Clones.predictDeterministicAddress(multiSigImplementation, salt);
   }
 
   function create(address owner, bytes32 salt) public returns (address) {
     address payable instance = payable(Clones.cloneDeterministic(multiSigImplementation, salt));
-    MultiSig(instance).initialize(owner);
-    emit ContractCreated(instance, "MultiSig");
+    MultiSigWallet(instance).initialize(owner);
+    emit ContractCreated(instance, "MultiSigWallet");
     return instance;
   }
 }
