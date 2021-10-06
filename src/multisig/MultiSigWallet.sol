@@ -28,15 +28,15 @@ contract MultiSigWallet is Nonce, Initializable {
   );
 
   constructor () {
+  }
+
+  function initialize(address owner) public initializer {
     // We use the gas price to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
     // same id, but it practically rules out that someone accidentally creates two
     // two multisig contracts with the same id, and that's all we need to prevent
     // replay-attacks.
     contractId = toBytes(uint32(uint160(address(this))));
-  }
-
-  function initialize(address owner) public initializer {
     _setSigner(owner, 1); // set initial owner
   }
 
