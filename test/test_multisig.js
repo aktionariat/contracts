@@ -4,6 +4,8 @@ const { expect } = require("chai");
 describe("Multisig", () => {
   let multiSigMaster
   let multiSigCloneFactory
+  let multiSigClone
+  let multiSigClone2
 
   let owner;
   let adr1;
@@ -42,11 +44,36 @@ describe("Multisig", () => {
     const tx1 = await multiSigCloneFactory.create(owner.address, salts[0]);
     const { gasUsed: createGasUsed, events } = await tx1.wait();
     const { address } = events.find(Boolean);
+    // log gas usage
     console.log(`multiSigCloneFactory.create: ${createGasUsed.toString()}`);
+    
+    //check is predicted address is created address
     expect(multiSigAddress).to.equal(address);
 
-    const multiSigClone = await ethers.getContractAt("MultiSigWallet",address);
+    multiSigClone = await ethers.getContractAt("MultiSigWallet",address);
 
+    // initialize is already called with create and should revert
     await expect(multiSigClone.initialize(adr1.address)).to.be.revertedWith("Initializable: contract is already initialized");
   });
+
+  it("Should create unique contract id for clone", async () => {
+    const tx2 = await multiSigCloneFactory.create(owner.address, salts[1]);
+    const { events } = await tx2.wait();
+    const { address } = events.find(Boolean);
+    multiSigClone2 = await ethers.getContractAt("MultiSigWallet",address);
+    expect(await multiSigClone.contractId()).not.to.equal(await multiSigClone2.contractId())
+  });
+
+  it("Should add new signer", async () => {
+    multiSigClone.setSigner(adr1.address, 2);
+    expect(await multiSigClone.signerCount()).to.equal(2);
+    /* test multiple calls
+    let tx = [];
+    for(let i = 2; i < 5; i++){
+      tx[i] = await multiSigClone.setSigner(accounts[i], i);
+      const { gasUsed: createGasUsed } = await tx[i].wait();
+      // log gas usage
+      console.log(`multiSigClone.setSigner(${i}): ${createGasUsed.toString()}`);
+    }*/
+  })
 })
