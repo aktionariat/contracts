@@ -3,22 +3,19 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
 
-  const multiSigWalletMaster = await deployments.get('MultiSigWalletMaster');
-
   console.log(`deployer: ${deployer}`);
-  console.log(`multiSigWalletMaster: ${multiSigWalletMaster.address}`);
+  console.log(`multiSigDefaultOwner: ${multiSigDefaultOwner}`);
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("MultiSigCloneFactory", {
-    contract: "MultiSigCloneFactory",
+  const { address } = await deploy("MultiSigWalletMaster", {
+    contract: "MultiSigWallet",
     from: deployer,
-    args: [multiSigWalletMaster.address],
+    args: [],
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas,
     log: true
   });
 };
 
-module.exports.tags = ["MultiSigCloneFactory"];
-module.exports.dependencies = ['MultiSigWalletMaster'];
+module.exports.tags = ["MultiSigWalletMaster"];
