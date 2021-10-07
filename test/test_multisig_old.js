@@ -1,7 +1,7 @@
 const {network, ethers, } = require("hardhat");
 const { expect } = require("chai");
 
-describe("Multisig", () => {
+describe("Multisig_old", () => {
   let multiSig
 
   let owner;
