@@ -86,7 +86,7 @@ yarn hardhat deploy --network ropsten
 ```
 This will run all deployment scripts in the deploy folder. To specify seperate deployments use tags.
 
-### Verify Contract on Etherscn
+#### Verify Contract on Etherscn
 
 ```bash
 yarn hardhat --network ropsten etherscan-verify
@@ -94,7 +94,7 @@ yarn hardhat --network ropsten etherscan-verify
 
 (don't forget to set ETHERSCAN_API_KEY in .env)
 
-### Hardhat tasks
+#### Hardhat tasks
 task to create a multisig clone from the clonefactory: create-multisig-clone
 
 ```bash
