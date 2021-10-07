@@ -60,7 +60,7 @@ cd contracts
 yarn install
 ```
 
-### Local node
+#### Local node
 to run a local node use
 ```bash
 yarn hardhat node
@@ -79,7 +79,7 @@ yarn compile
 yarn test
 ```
 
-### Deploy Contract
+#### Deploy Contract
 
 ```bash
 yarn hardhat deploy --network ropsten
