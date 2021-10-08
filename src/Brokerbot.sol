@@ -52,9 +52,7 @@ contract Brokerbot is Ownable {
 
     uint8 private constant BUYING_ENABLED = 0x1;
     uint8 private constant SELLING_ENABLED = 0x2;
-    uint8 private constant DRIFT_ENABLED = 0x4;
-
-    uint8 private constant VERSION = 0x2;
+    uint8 private constant VERSION = 0x1;
 
     // more bits to be used by payment hub
     uint256 public settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
@@ -75,7 +73,7 @@ contract Brokerbot is Ownable {
     }
 
     function hasDrift() public view returns (bool) {
-        return hasSetting(DRIFT_ENABLED);
+        return timeToDrift != 0;
     }
 
     // secondsPerStep should be negative for downwards drift
@@ -83,10 +81,6 @@ contract Brokerbot is Ownable {
         anchorPrice(getPrice());
         timeToDrift = secondsPerStep;
         driftIncrement = newDriftIncrement;
-        // timeToDrift == 0 indicates drift disabled
-        if ((timeToDrift != 0) != hasSetting(DRIFT_ENABLED)){
-            settings ^= DRIFT_ENABLED;
-        }
     }
 
     function anchorPrice(uint256 currentPrice) private {
@@ -190,9 +184,21 @@ contract Brokerbot is Ownable {
         return settings & setting == setting;
     }
 
-    function isDirectSale(bytes calldata ref) internal pure returns (bool) {
-        return ref.length == 0 || ref.length == 20 || (ref[0] != bytes1(0x02)); // define type 2 as indirect sale, everything else as not
+    function isDirectSale(bytes calldata ref) internal returns (bool) {
+        if (ref.length == 0 || ref.length == 20) {
+            return true; // old format
+        } else {
+            if (ref[0] == bytes1(0x01)){
+                return true;
+            } else if (ref[0] == bytes1(0x02)) {
+                return false;
+            } else {
+                require(false, "unknown ref");
+                return true;
+            }
+        }
     }
+
 
     function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
         require(hasSetting(SELLING_ENABLED));
