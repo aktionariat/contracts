@@ -3,6 +3,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
 
+  console.log("-----------------------")
+  console.log("Deploy Multisig")
+  console.log("-----------------------")
   console.log("deployer: %s", deployer);
   console.log("owner: %s", multiSigDefaultOwner)
 
