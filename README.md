@@ -60,6 +60,13 @@ cd contracts
 yarn install
 ```
 
+#### Local node
+to run a local node use
+```bash
+yarn hardhat node
+```
+(it will use on your default network, to use on a different network use --network <name>)
+
 #### Compile
 
 ```bash
@@ -79,7 +86,7 @@ yarn hardhat deploy --network ropsten
 ```
 This will run all deployment scripts in the deploy folder. To specify seperate deployments use tags.
 
-### Verify Contract on Etherscn
+#### Verify Contract on Etherscn
 
 ```bash
 yarn hardhat --network ropsten etherscan-verify
@@ -87,6 +94,13 @@ yarn hardhat --network ropsten etherscan-verify
 
 (don't forget to set ETHERSCAN_API_KEY in .env)
 
+#### Clone hardhat tasks
+task to create a multisig clone from the clonefactory: create-multisig-clone
+
+```bash
+yarn hardhat create-multisig-clone --factory <multisigCloneFactory_Address> --owner <address> --salt <string_which_gets_formated_in_byte32>
+```
+(it will run on your default network, to run on a different network use --network <name>)
 
 ## License
 

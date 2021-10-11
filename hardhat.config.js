@@ -6,6 +6,7 @@ require("hardhat-gas-reporter");
 require("solidity-coverage");
 require("hardhat-deploy");
 require("@nomiclabs/hardhat-truffle5");
+require("./tasks");
 
 function getMnemonic(networkName) {
   if (networkName) {
