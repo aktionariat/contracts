@@ -28,7 +28,7 @@
 pragma solidity >=0.8;
 
 import "./ERC20Named.sol";
-import "./ERC20Recoverable.sol";
+import "./recovery/ERC20Recoverable.sol";
 import "./IERC677Receiver.sol";
 
 /**
@@ -59,7 +59,6 @@ contract Shares is ERC20Recoverable, ERC20Named {
 
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
-    event SubRegisterRecognized(address contractAddress);
 
     constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares, address owner) ERC20Named(owner, _name, _symbol, 0) {
         symbol = _symbol;
@@ -81,19 +80,6 @@ contract Shares is ERC20Recoverable, ERC20Named {
     function setTotalShares(uint256 _newTotalShares) public onlyOwner() {
         require(_newTotalShares >= totalValidSupply(), "below supply");
         totalShares = _newTotalShares;
-    }
-
-    /**
-     * Sometimes, tokens are held by other smart contracts that serve as registers themselves. These could
-     * be our draggable contract, it could be a bridget to another blockchain, or it could be an address
-     * that belongs to a recognized custodian.
-     * We assume that the number of sub registers stays limited, such that they are safe to iterate.
-     * Subregisters should always have the same number of decimals as the main register and their total
-     * balance must not exceed the number of tokens assigned to the subregister.
-     * In order to preserve FIFO-rules meaningfully, subregisters should be empty when added or removed.
-     */
-    function recognizeSubRegister(address contractAddress) public onlyOwner () {
-        emit SubRegisterRecognized(contractAddress);
     }
 
     /**
@@ -151,11 +137,11 @@ contract Shares is ERC20Recoverable, ERC20Named {
     }
 
     function _mint(address account, uint256 amount) internal override {
-        require(totalValidSupply() + amount <= totalShares, "There can't be fewer shares than valid tokens");
+        require(totalValidSupply() + amount <= totalShares, "total");
         super._mint(account, amount);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
         return super.transfer(to, value);
     }
 
@@ -170,7 +156,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      * having agreed with the company on the further fate of the shares in question.
      */
     function burn(uint256 _amount) public {
-        require(_amount <= balanceOf(msg.sender), "Not enough shares available");
+        require(_amount <= balanceOf(msg.sender), "balance");
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
     }

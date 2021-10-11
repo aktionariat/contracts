@@ -27,8 +27,9 @@
 */
 pragma solidity >=0.8;
 
-import "./ERC20.sol";
-import "./IERC20.sol";
+import "./IRecoveryHub.sol";
+import "./IRecoverable.sol";
+import "../IERC20.sol";
 
 /**
  * @title Recoverable
@@ -46,7 +47,7 @@ import "./IERC20.sol";
  * function.
  */
 
-abstract contract ERC20Recoverable is ERC20 {
+contract RecoveryHub is IRecoveryHub {
 
     // A struct that represents a claim made
     struct Claim {
@@ -56,54 +57,15 @@ abstract contract ERC20Recoverable is ERC20 {
         address currencyUsed; // The currency (XCHF) can be updated, we record the currency used for every request
     }
 
-    uint256 public constant claimPeriod = 180 days;
-
-    mapping(address => Claim) public claims; // there can be at most one claim per address, here address is claimed address
+    mapping(address => mapping (address => Claim)) public claims; // there can be at most one claim per token and claimed address
     mapping(address => bool) public recoveryDisabled; // disable claimability (e.g. for long term storage)
 
-    // ERC-20 token that can be used as collateral or 0x0 if disabled
-    address public customCollateralAddress;
-    uint256 public customCollateralRate;
+    event ClaimMade(address indexed token, address indexed lostAddress, address indexed claimant, uint256 balance);
+    event ClaimCleared(address indexed token, address indexed lostAddress, uint256 collateral);
+    event ClaimDeleted(address indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
+    event ClaimResolved(address indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
 
-    /**
-     * Returns the collateral rate for the given collateral type and 0 if that type
-     * of collateral is not accepted. By default, only the token itself is accepted at
-     * a rate of 1:1.
-     *
-     * Subclasses should override this method if they want to add additional types of
-     * collateral.
-     */
-    function getCollateralRate(address collateralType) public virtual view returns (uint256) {
-        if (collateralType == address(this)) {
-            return 1;
-        } else if (collateralType == customCollateralAddress) {
-            return customCollateralRate;
-        } else {
-            return 0;
-        }
-    }
-
-    /**
-     * Allows subclasses to set a custom collateral besides the token itself.
-     * The collateral must be an ERC-20 token that returns true on successful transfers and
-     * throws an exception or returns false on failure.
-     * Also, do not forget to multiply the rate in accordance with the number of decimals of the collateral.
-     * For example, rate should be 7*10**18 for 7 units of a collateral with 18 decimals.
-     */
-    function _setCustomClaimCollateral(address collateral, uint256 rate) internal {
-        customCollateralAddress = collateral;
-        if (customCollateralAddress == address(0)) {
-            customCollateralRate = 0; // disabled
-        } else {
-            require(rate > 0, "zero");
-            customCollateralRate = rate;
-        }
-        emit CustomClaimCollateralChanged(collateral, rate);
-    }
-
-    function getClaimDeleter() virtual public view returns (address);
-
-    function setRecoverable(bool enabled) public {
+    function setRecoverable(bool enabled) public override {
         recoveryDisabled[msg.sender] = !enabled;
     }
 
@@ -114,12 +76,6 @@ abstract contract ERC20Recoverable is ERC20 {
     function isRecoveryEnabled(address target) public view returns (bool) {
         return !recoveryDisabled[target];
     }
-
-    event ClaimMade(address indexed lostAddress, address indexed claimant, uint256 balance);
-    event ClaimCleared(address indexed lostAddress, uint256 collateral);
-    event ClaimDeleted(address indexed lostAddress, address indexed claimant, uint256 collateral);
-    event ClaimResolved(address indexed lostAddress, address indexed claimant, uint256 collateral);
-    event CustomClaimCollateralChanged(address newCustomCollateralAddress, uint256 newCustomCollareralRate);
 
   /** Anyone can declare that the private key to a certain address was lost by calling declareLost
     * providing a deposit/collateral. There are three possibilities of what can happen with the claim:
@@ -136,61 +92,64 @@ abstract contract ERC20Recoverable is ERC20 {
     * whenever a claim is made for their address (this of course is only possible if they are known to the owner, e.g.
     * through a shareholder register).
     */
-    function declareLost(address collateralType, address lostAddress) public {
+    function declareLost(address token, address collateralType, address lostAddress) public {
         require(isRecoveryEnabled(lostAddress), "disabled");
-        uint256 collateralRate = getCollateralRate(collateralType);
+        uint256 collateralRate = IRecoverable(token).getCollateralRate(collateralType);
         require(collateralRate > 0, "bad collateral");
         address claimant = msg.sender;
-        uint256 balance = balanceOf(lostAddress);
+        uint256 balance = IERC20(token).balanceOf(lostAddress);
         uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
         require(balance > 0, "empty");
-        require(claims[lostAddress].collateral == 0, "already claimed");
+        require(claims[token][lostAddress].collateral == 0, "already claimed");
         require(currency.transferFrom(claimant, address(this), collateral));
 
-        claims[lostAddress] = Claim({
+        claims[token][lostAddress] = Claim({
             claimant: claimant,
             collateral: collateral,
             timestamp: block.timestamp,
             currencyUsed: collateralType
         });
 
-        emit ClaimMade(lostAddress, claimant, balance);
+        emit ClaimMade(token, lostAddress, claimant, balance);
     }
 
-    function getClaimant(address lostAddress) public view returns (address) {
-        return claims[lostAddress].claimant;
+    function getClaimant(address token, address lostAddress) public view returns (address) {
+        return claims[token][lostAddress].claimant;
     }
 
-    function getCollateral(address lostAddress) public view returns (uint256) {
-        return claims[lostAddress].collateral;
+    function getCollateral(address token, address lostAddress) public view returns (uint256) {
+        return claims[token][lostAddress].collateral;
     }
 
-    function getCollateralType(address lostAddress) public view returns (address) {
-        return claims[lostAddress].currencyUsed;
+    function getCollateralType(address token, address lostAddress) public view returns (address) {
+        return claims[token][lostAddress].currencyUsed;
     }
 
-    function getTimeStamp(address lostAddress) public view returns (uint256) {
-        return claims[lostAddress].timestamp;
-    }
-
-    function transfer(address recipient, uint256 amount) override virtual public returns (bool) {
-        require(super.transfer(recipient, amount));
-        clearClaim();
-        return true;
+    function getTimeStamp(address token, address lostAddress) public view returns (uint256) {
+        return claims[token][lostAddress].timestamp;
     }
 
     /**
      * Clears a claim after the key has been found again and assigns the collateral to the "lost" address.
      * This is the price an adverse claimer pays for filing a false claim and makes it risky to do so.
      */
-    function clearClaim() public {
-        if (claims[msg.sender].collateral != 0) {
-            uint256 collateral = claims[msg.sender].collateral;
-            IERC20 currency = IERC20(claims[msg.sender].currencyUsed);
-            delete claims[msg.sender];
-            require(currency.transfer(msg.sender, collateral));
-            emit ClaimCleared(msg.sender, collateral);
+    function clearClaimFromToken(address holder) public override {
+        clearClaim(msg.sender, holder);
+    }
+
+    function clearClaimFromUser(address token) public {
+        clearClaim(token, msg.sender);
+    }
+
+    function clearClaim(address token, address holder) private {
+        Claim memory claim = claims[token][holder];
+        if (claim.collateral != 0) {
+            IERC20 currency = IERC20(claim.currencyUsed);
+            require(currency.transfer(address(this), claim.collateral), "could not return collateral");
+            emit ClaimCleared(token, holder, claim.collateral);
+            delete claims[token][holder];
+            IRecoverable(token).notifyClaimDeleted(holder);
         }
     }
 
@@ -198,31 +157,32 @@ abstract contract ERC20Recoverable is ERC20 {
     * After the claim period has passed, the claimant can call this function to send the
     * tokens on the lost address as well as the collateral to himself.
     */
-    function recover(address lostAddress) public {
-        Claim memory claim = claims[lostAddress];
+    function recover(address token, address lostAddress) public {
+        Claim memory claim = claims[token][lostAddress];
+        address claimant = claim.claimant;
+        require(claimant == msg.sender, "not claimant");
         uint256 collateral = claim.collateral;
         IERC20 currency = IERC20(claim.currencyUsed);
         require(collateral != 0, "not found");
-        require(claim.claimant == msg.sender, "not claimant");
-        require(claim.timestamp + claimPeriod <= block.timestamp, "too early");
-        address claimant = claim.claimant;
-        delete claims[lostAddress];
+        require(claim.timestamp + IRecoverable(token).claimPeriod() <= block.timestamp, "too early");
+        delete claims[token][lostAddress];
         require(currency.transfer(claimant, collateral));
-        _transfer(lostAddress, claimant, balanceOf(lostAddress));
-        emit ClaimResolved(lostAddress, claimant, collateral);
+        IRecoverable(token).recover(lostAddress, claimant);
+        IRecoverable(token).notifyClaimDeleted(lostAddress);
+        emit ClaimResolved(token, lostAddress, claimant, collateral);
     }
 
     /**
      * This function is to be executed by the claim deleter only in case a dispute needs to be resolved manually.
      */
-    function deleteClaim(address lostAddress) public {
-        require(msg.sender == getClaimDeleter(), "no access");
-        Claim memory claim = claims[lostAddress];
+    function deleteClaim(address lostAddress) public override {
+        address token = msg.sender;
+        Claim memory claim = claims[token][lostAddress];
         IERC20 currency = IERC20(claim.currencyUsed);
         require(claim.collateral != 0, "not found");
-        delete claims[lostAddress];
+        delete claims[token][lostAddress];
         require(currency.transfer(claim.claimant, claim.collateral));
-        emit ClaimDeleted(lostAddress, claim.claimant, claim.collateral);
+        emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
     }
 
 }

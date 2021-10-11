@@ -3,8 +3,10 @@ pragma solidity >=0.8;
 
 abstract contract IDraggable {
     
-    function unwrap(uint256 amount) virtual public returns (address, uint256);
+    function getOracle() public virtual returns (address);
     function drag(address buyer, address currency) public virtual;
     function notifyOfferEnded() public virtual;
+    function votingPower(address voter) public virtual returns (uint256);
+    function totalVotingTokens() public virtual view returns (uint256);
 
 }

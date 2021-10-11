@@ -27,7 +27,7 @@
 */
 pragma solidity >=0.8;
 
-import "./IERC20.sol";
+import "../IERC20.sol";
 import "./IDraggable.sol";
 
 /**
@@ -37,18 +37,21 @@ import "./IDraggable.sol";
 
 contract Offer {
 
-    uint256 public quorum;                              // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
+    uint256 immutable public quorum;                    // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
 
-    address public token;
-    address public buyer;                               // who made the offer
+    IDraggable immutable public token;
+    address immutable public buyer;                     // who made the offer
     
-    address public currency;
+    IERC20 immutable public currency;
     uint256 public price;                               // the price offered per share
 
     enum Vote { NONE, YES, NO }                         // Used internally, represents not voted yet or yes/no vote.
     mapping (address => Vote) private votes;            // Who votes what
-    uint256 public noVotes;                             // number of tokens voting for no
-    uint256 public yesVotes;                            // number of tokens voting for yes
+    uint256 public yesVotes;                            // total number of yes votes, including external votes
+    uint256 public noVotes;                             // total number of no votes, including external votes
+    uint256 public noExternal;                          // number of external no votes reported by oracle
+    uint256 public yesExternal;                         // number of external yes votes reported by oracle
+
     uint256 public voteEnd;                             // end of vote period in block time (seconds after 1.1.1970)
 
     event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
@@ -57,21 +60,22 @@ contract Offer {
 
     constructor (address buyer_, address token_, uint256 price_, address currency_, uint256 quorum_, uint256 votePeriod) payable {
         buyer = buyer_;
-        token = token_;
-        currency = currency_;
+        token = IDraggable(token_);
+        currency = IERC20(currency_);
         price = price_;
         quorum = quorum_;
         voteEnd = block.timestamp + votePeriod;
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
-        emit OfferCreated(buyer, token, price, currency);
+        emit OfferCreated(buyer, address(token), price, address(currency));
     }
 
     function contest(address betterOffer) public {
-        require(msg.sender == token);
+        require(msg.sender == address(token));
         Offer better = Offer(betterOffer);
-        require(currency == better.currency() && better.price() > price, "New offer must be better");
+        require(currency == better.currency() && better.price() > price, "old offer better");
+        require(better.isWellFunded());
         kill(false, "replaced");
     }
 
@@ -97,20 +101,19 @@ contract Offer {
     function execute() public {
         require(isAccepted(), "not accepted");
         uint256 totalPrice = getTotalPrice();
-        require(IERC20(currency).transferFrom(buyer, token, totalPrice));
-        IDraggable(token).drag(buyer, currency);
+        require(currency.transferFrom(buyer, address(token), totalPrice));
+        token.drag(buyer, address(currency));
         kill(true, "success");
     }
 
     function getTotalPrice() internal view returns (uint256) {
-        IERC20 tok = IERC20(token);
+        IERC20 tok = IERC20(address(token));
         return (tok.totalSupply() - tok.balanceOf(buyer)) * price;
     }
 
     function isWellFunded() public view returns (bool) {
-        IERC20 cur = IERC20(currency);
-        uint256 buyerBalance = cur.balanceOf(buyer);
-        uint256 buyerAllowance = cur.allowance(buyer, address(this));
+        uint256 buyerBalance = currency.balanceOf(buyer);
+        uint256 buyerAllowance = currency.allowance(buyer, address(this));
         uint256 totalPrice = getTotalPrice();
         return totalPrice <= buyerBalance && totalPrice <= buyerAllowance;
     }
@@ -118,7 +121,7 @@ contract Offer {
     function isAccepted() public view returns (bool) {
         if (isVotingOpen()) {
             // is it already clear that 75% will vote yes even though the vote is not over yet?
-            return yesVotes * 10000  >= quorum * IERC20(token).totalSupply();
+            return yesVotes * 10000  >= quorum * IDraggable(token).totalVotingTokens();
         } else {
             // did 75% of all cast votes say 'yes'?
             return yesVotes * 10000 >= quorum * (yesVotes + noVotes);
@@ -128,7 +131,8 @@ contract Offer {
     function isDeclined() public view returns (bool) {
         if (isVotingOpen()) {
             // is it already clear that 25% will vote no even though the vote is not over yet?
-            return (IERC20(token).totalSupply() - noVotes) * 10000 < quorum * IERC20(token).totalSupply();
+            uint256 supply = token.totalVotingTokens();
+            return (supply - noVotes) * 10000 < quorum * supply;
         } else {
             // did quorum% of all cast votes say 'no'?
             return 10000 * yesVotes < quorum * (yesVotes + noVotes);
@@ -136,7 +140,7 @@ contract Offer {
     }
 
     function notifyMoved(address from, address to, uint256 value) public {
-        require(msg.sender == token);
+        require(msg.sender == address(token));
         if (isVotingOpen()) {
             Vote fromVoting = votes[from];
             Vote toVoting = votes[to];
@@ -169,6 +173,22 @@ contract Offer {
         _;
     }
 
+    /**
+     * Function to allow the oracle to report the votes of external votes (e.g. shares tokenized on other blockchains).
+     * This functions is idempotent and sets the number of external yes and no votes. So when more votes come in, the
+     * oracle should always report the total number of yes and no votes. Abstentions are not counted.
+     */
+    function reportExternalVotes(uint256 yes, uint256 no) public {
+        require(msg.sender == token.getOracle(), "not oracle");
+        require(yes + no + IERC20(address(token)).totalSupply() <= token.totalVotingTokens(), "too many votes");
+        // adjust total votes taking into account that the oralce might have reported different counts before
+        yesVotes = yesVotes - yesExternal + yes;
+        noVotes = noVotes - noExternal + no;
+        // remember how the oracle voted in case the oracle later reports updated numbers
+        yesExternal = yes;
+        noExternal = no;
+    }
+
     function voteYes() public {
         vote(Vote.YES);
     }
@@ -180,7 +200,7 @@ contract Offer {
     function vote(Vote newVote) internal votingOpen() {
         Vote previousVote = votes[msg.sender];
         votes[msg.sender] = newVote;
-        update(previousVote, newVote, IERC20(token).balanceOf(msg.sender));
+        update(previousVote, newVote, IDraggable(token).votingPower(msg.sender));
     }
 
     function hasVotedYes(address voter) public view returns (bool) {
