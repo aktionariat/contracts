@@ -79,7 +79,7 @@ yarn compile
 yarn test
 ```
 
-#### Deploy Contract
+### Deploy Contract
 
 ```bash
 yarn hardhat deploy --network ropsten
@@ -94,7 +94,7 @@ yarn hardhat --network ropsten etherscan-verify
 
 (don't forget to set ETHERSCAN_API_KEY in .env)
 
-#### Hardhat tasks
+#### Clone hardhat tasks
 task to create a multisig clone from the clonefactory: create-multisig-clone
 
 ```bash
