@@ -72,6 +72,22 @@ yarn compile
 yarn test
 ```
 
+### Deploy Contract
+
+```bash
+yarn hardhat deploy --network ropsten
+```
+This will run all deployment scripts in the deploy folder. To specify seperate deployments use tags.
+
+### Verify Contract on Etherscn
+
+```bash
+yarn hardhat --network ropsten etherscan-verify
+```
+
+(don't forget to set ETHERSCAN_API_KEY in .env)
+
+
 ## License
 
 All our smart contracts are open-source and can be used under a slightly modified [MIT License with Automated License Fee Payments](LICENSE). This means that you are free to use our contracts as long as you do not make any changes to circumvent the built-in license fee payments to our address [0x29Fe8914e76da5cE2d90De98a64d0055f199d06D](https://etherscan.io/address/0x29fe8914e76da5ce2d90de98a64d0055f199d06d), if there are any. Note that some of the source code you find in this repository stems from other sources with other licenses. These are marked accordingly.
