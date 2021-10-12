@@ -42,10 +42,10 @@ pragma solidity >=0.8;
  */
 
 import "./Ownable.sol";
-import "./ERC20.sol";
+import "./ERC20Flaggable.sol";
 import "./ITransferHook.sol";
 
-abstract contract ERC20Hookable is ERC20, Ownable {
+abstract contract ERC20Hookable is ERC20Flaggable, Ownable {
 
     address public hook;
 

@@ -1,5 +1,10 @@
 /* global artifacts, web3 */
 
+// Libraries
+const BN = require("bn.js");
+const hre = require("hardhat");
+const { artifacts } = require("hardhat");
+
 // Shared Migration Config
 const config = require("../migrations/migration_config");
 
@@ -7,10 +12,7 @@ const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
 const Brokerbot = artifacts.require("Brokerbot");
 const PaymentHub = artifacts.require("PaymentHub");
-
-// Libraries
-const BN = require("bn.js");
-const hre = require("hardhat");
+const RecoveryHub = artifacts.require("RecoveryHub");
 
 // Import Contracts
 const ForceSend = artifacts.require("ForceSend");
@@ -20,10 +22,13 @@ module.exports = async (deployer) => {
   const accounts = await deployer.getNamedAccounts();
   const unAccounts = await deployer.getUnnamedAccounts();
 
-  const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, accounts.deployer);
+  const recoveryHub = await RecoveryHub.new();
+  RecoveryHub.setAsDeployed(recoveryHub);
+
+  const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, accounts.deployer, recoveryHub.address);
   Shares.setAsDeployed(shares);
 
-  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds);
+  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address);
   DraggableShares.setAsDeployed(draggableShares);
 
   const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer);

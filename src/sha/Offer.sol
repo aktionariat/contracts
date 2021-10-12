@@ -58,17 +58,17 @@ contract Offer {
     event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);
     event OfferEnded(address indexed buyer, bool success, string message);
 
-    constructor (address buyer_, address token_, uint256 price_, address currency_, uint256 quorum_, uint256 votePeriod) payable {
-        buyer = buyer_;
-        token = IDraggable(token_);
-        currency = IERC20(currency_);
-        price = price_;
-        quorum = quorum_;
+    constructor (address _buyer, address _token, uint256 _price, address _currency, uint256 _quorum, uint256 votePeriod) payable {
+        buyer = _buyer;
+        token = IDraggable(_token);
+        currency = IERC20(_currency);
+        price = _price;
+        quorum = _quorum;
         voteEnd = block.timestamp + votePeriod;
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
-        emit OfferCreated(buyer, address(token), price, address(currency));
+        emit OfferCreated(_buyer, address(_token), price, address(_currency));
     }
 
     function contest(address betterOffer) public {

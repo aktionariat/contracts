@@ -28,7 +28,7 @@
 pragma solidity >=0.8;
 
 import "./DraggableShares.sol";
-import "./ERC20Draggable.sol";
+import "./sha/ERC20Draggable.sol";
 
 /**
  * @title Draggable CompanyName AG Shares
@@ -57,8 +57,8 @@ contract DraggableSharesWithPredecessor is DraggableShares {
 
     address immutable newBaseToken;
 
-    constructor(address newBaseToken_, string memory _terms, address predecessor, uint256 quorum, uint256 votePeriod)
-        DraggableShares(_terms, predecessor, quorum, votePeriod) {
+    constructor(address newBaseToken_, string memory _terms, address predecessor, uint256 quorum, uint256 votePeriod, address recoveryHub)
+        DraggableShares(_terms, predecessor, quorum, votePeriod, recoveryHub) {
         newBaseToken = newBaseToken_;
     }
 

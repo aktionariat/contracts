@@ -60,7 +60,17 @@ contract Shares is ERC20Recoverable, ERC20Named {
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
 
-    constructor(string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares, address owner) ERC20Named(owner, _name, _symbol, 0) {
+    constructor(
+        string memory _symbol,
+        string memory _name,
+        string memory _terms,
+        uint256 _totalShares,
+        address owner,
+        address recoveryHub
+    )
+        ERC20Named(owner, _name, _symbol, 0) 
+        ERC20Recoverable(recoveryHub)
+    {
         symbol = _symbol;
         name = _name;
         totalShares = _totalShares;

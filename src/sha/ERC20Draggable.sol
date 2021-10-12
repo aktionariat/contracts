@@ -69,13 +69,14 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 
     constructor(
         address wrappedToken,
-        uint256 quorum_,
-        uint256 votePeriod_
+        uint256 _quorum,
+        uint256 _votePeriod,
+        address recoveryHub
     ) {
         wrapped = IERC20(wrappedToken);
-        quorum = quorum_;
-        votePeriod = votePeriod_;
-        IRecoveryHub(address(0x123123123)).setRecoverable(false); // TODO: insert recovery hub address
+        quorum = _quorum;
+        votePeriod = _votePeriod;
+        IRecoveryHub(address(recoveryHub)).setRecoverable(false); // TODO: insert recovery hub address
     }
 
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public returns (bool) {

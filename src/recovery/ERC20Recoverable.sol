@@ -55,7 +55,15 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     address public customCollateralAddress;
     uint256 public customCollateralRate;
 
-    IRecoveryHub public constant recovery = IRecoveryHub(address(0x123123123123123123)); // TODO
+    IRecoveryHub public immutable recovery; // TODO
+
+    constructor(address recoveryHub){
+        recovery = IRecoveryHub(recoveryHub);
+    }
+
+    function disableRecovery() public {
+        recovery.setRecoverable(false);
+    }
 
     /**
      * Returns the collateral rate for the given collateral type and 0 if that type
