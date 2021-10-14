@@ -135,6 +135,7 @@ abstract contract ERC20Flaggable is IERC20 {
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
         _transfer(sender, recipient, amount);
         uint256 currentAllowance = _allowances[sender][msg.sender];
+        require(currentAllowance >= amount, "transfer amount exceeds allowance");
         if (currentAllowance < (1 << 255)){
             // Only decrease the allowance if it was not set to 'infinite'
             // Documented in /doc/infiniteallowance.md

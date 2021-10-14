@@ -90,7 +90,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
         oldBase.approve(newBaseToken, oldBase.balanceOf(address(this)));
         IBaseToken(newBaseToken).convertOldShares();
         wrapped = IERC20(newBaseToken);
-        disableRecovery();
+        recovery.setRecoverable(false);
         require(totalSupply() == wrapped.balanceOf(address(this)));
     }
 }

@@ -61,10 +61,6 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
         recovery = IRecoveryHub(recoveryHub);
     }
 
-    function disableRecovery() public {
-        recovery.setRecoverable(false);
-    }
-
     /**
      * Returns the collateral rate for the given collateral type and 0 if that type
      * of collateral is not accepted. By default, only the token itself is accepted at
