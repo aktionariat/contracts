@@ -29,20 +29,20 @@ pragma solidity >=0.8;
 
 import "../IERC20.sol";
 import "./IDraggable.sol";
-
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 /**
  * @title Acquisition Attempt
  * @author Luzius Meisser, luzius@aktionariat.com
  */
 
-contract Offer {
+contract Offer is Initializable{
 
-    uint256 immutable public quorum;                    // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
+    uint256 public quorum;                    // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
 
-    IDraggable immutable public token;
-    address immutable public buyer;                     // who made the offer
+    IDraggable public token;
+    address public buyer;                     // who made the offer
     
-    IERC20 immutable public currency;
+    IERC20 public currency;
     uint256 public price;                               // the price offered per share
 
     enum Vote { NONE, YES, NO }                         // Used internally, represents not voted yet or yes/no vote.
@@ -58,7 +58,14 @@ contract Offer {
     event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);
     event OfferEnded(address indexed buyer, bool success, string message);
 
-    constructor (address _buyer, address _token, uint256 _price, address _currency, uint256 _quorum, uint256 votePeriod) payable {
+    function initialize(
+        address _buyer,
+        address _token,
+        uint256 _price,
+        address _currency,
+        uint256 _quorum,
+        uint256 votePeriod
+        ) public payable initializer {
         buyer = _buyer;
         token = IDraggable(_token);
         currency = IERC20(_currency);

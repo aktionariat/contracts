@@ -57,8 +57,8 @@ contract DraggableSharesWithPredecessor is DraggableShares {
 
     address immutable newBaseToken;
 
-    constructor(address newBaseToken_, string memory _terms, address predecessor, uint256 quorum, uint256 votePeriod, address recoveryHub)
-        DraggableShares(_terms, predecessor, quorum, votePeriod, recoveryHub) {
+    constructor(address newBaseToken_, string memory _terms, address predecessor, uint256 quorum, uint256 votePeriod, address recoveryHub, address offerFactory)
+        DraggableShares(_terms, predecessor, quorum, votePeriod, recoveryHub, offerFactory) {
         newBaseToken = newBaseToken_;
     }
 

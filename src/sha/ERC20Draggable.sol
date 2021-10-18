@@ -52,7 +52,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
     uint8 private constant FLAG_VOTED = 1;
 
     IERC20 public wrapped;                              // The wrapped contract
-    IOfferFactory public constant factory = IOfferFactory(address(0x0)); // TODO!!!
+    IOfferFactory public immutable factory; // = IOfferFactory(address(0x0)); // TODO!!!
 
     // If the wrapped tokens got replaced in an acquisition, unwrapping might yield many currency tokens
     uint256 public unwrapConversionFactor = 0;
@@ -68,15 +68,17 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
     event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
 
     constructor(
-        address wrappedToken,
+        address _wrappedToken,
         uint256 _quorum,
         uint256 _votePeriod,
-        address recoveryHub
+        address _recoveryHub,
+        address _offerFactory
     ) {
-        wrapped = IERC20(wrappedToken);
+        wrapped = IERC20(_wrappedToken);
         quorum = _quorum;
         votePeriod = _votePeriod;
-        IRecoveryHub(address(recoveryHub)).setRecoverable(false); // TODO: insert recovery hub address
+        IRecoveryHub(address(_recoveryHub)).setRecoverable(false); // TODO: insert recovery hub address
+        factory = IOfferFactory(_offerFactory);
     }
 
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public returns (bool) {
