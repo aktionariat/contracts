@@ -140,8 +140,9 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
     function makeAcquisitionOffer(bytes32 salt, uint256 pricePerShare, address currency) public payable {
         require(isBinding());
         address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
+       
         if (offerExists()) {
-            offer.contest(newOffer);
+            offer.makeCompetingOffer(newOffer);
         }
         offer = IOffer(newOffer);
     }
@@ -212,6 +213,10 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
         return hasFlagInternal(voter, FLAG_VOTED);
     }
 
+    function toggleVoteFlag(address voter) public override {
+        toggleFlag(voter, FLAG_VOTED);
+    }
+
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override internal {
         if (hasVoted(from) || hasVoted(to)){
             if (offerExists()){
@@ -240,7 +245,7 @@ abstract contract IShares {
 }
 
 abstract contract IOffer {
-    function contest(address newOffer) virtual public;
+    function makeCompetingOffer(address newOffer) virtual public;
     function notifyMoved(address from, address to, uint256 value) virtual public;
 }
 

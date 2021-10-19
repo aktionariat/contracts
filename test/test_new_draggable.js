@@ -12,12 +12,14 @@ describe.only("New Standard", () => {
   let baseCurrency;
   let paymentHub;
   let forceSend;
+  let offerMaster;
+  let offerFactory
 
   let owner;
-  let adr1;
-  let adr2;
-  let adr3;
-  let adr4;
+  let sig1;
+  let sig2;
+  let sig3;
+  let sig4;
   let accounts;
   let signers;
 
@@ -29,9 +31,9 @@ describe.only("New Standard", () => {
 
   before(async () => {
     // get signers and accounts of them
-    [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
-    signers = [owner,adr1,adr2,adr3,adr4] ;
-    accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
+    [owner,sig1,sig2,sig3,sig4] = await ethers.getSigners();
+    signers = [owner,sig1,sig2,sig3,sig4] ;
+    accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address];
     chance = new Chance();
 
     // random test data with chance
@@ -42,25 +44,33 @@ describe.only("New Standard", () => {
 
     // deploy contracts
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    
+    forceSend = await await ethers.getContractFactory("ForceSend")
+      .then(factory => factory.deploy())
+      .then(contract => contract.deployed());
 
     paymentHub = await await ethers.getContractFactory("PaymentHub")
       .then(factory => factory.deploy(config.baseCurrencyAddress))
       .then(contract => contract.deployed());
 
-    forceSend = await await ethers.getContractFactory("ForceSend")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
-
     recoveryHub = await ethers.getContractFactory("RecoveryHub")
       .then(factory => factory.deploy())
       .then(recoveryHub => recoveryHub.deployed());
+      
+    offerMaster = await ethers.getContractFactory("Offer")
+      .then(factory => factory.deploy())
+      .then(contract => contract.deployed());
+
+    offerFactory = await ethers.getContractFactory("OfferFactory")
+      .then(factory => factory.deploy(offerMaster.address))
+      .then(contract => contract.deployed());    
 
     shares = await ethers.getContractFactory("Shares")
      .then(sharesFactory => sharesFactory.deploy(symbol, name, terms, config.totalShares, owner.address, recoveryHub.address))
      .then(shares => shares.deployed());
 
     draggable = await ethers.getContractFactory("DraggableShares")
-      .then(draggableFactory => draggableFactory.deploy(dterms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address))
+      .then(draggableFactory => draggableFactory.deploy(dterms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address))
       .then(draggable => draggable.deployed());
 
     
@@ -70,9 +80,9 @@ describe.only("New Standard", () => {
       params: [config.baseCurrencyMinterAddress],
     });
     const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
-    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.BigNumber.from("1000000000000000000")});
+    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.utils.parseEther("2")});
     for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
+      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("1000000"));
      //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
     }
     await network.provider.request({
@@ -149,34 +159,117 @@ describe.only("New Standard", () => {
   
   });
 
-  describe.only("Reovery", () => {
+  describe("Recovery", () => {
     it("Should able to disable recovery", async () => {
       const recovery = await ethers.getContractAt("RecoveryHub", await draggable.recovery());
-      await recovery.connect(adr1).setRecoverable(false);
-      expect(await recoveryHub.isRecoveryEnabled(adr1.address)).to.equal(false);
+      await recovery.connect(sig1).setRecoverable(false);
+      expect(await recoveryHub.isRecoveryEnabled(sig1.address)).to.equal(false);
     });
 
     it("Should revert declare lost on disabled recovery", async () => {
-      await expect(recoveryHub.connect(adr2).declareLost(draggable.address, draggable.address, adr1.address))
+      await expect(recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig1.address))
         .to.be.revertedWith("disabled");
     });
     it("Should able to recover token", async () => {
-      await draggable.connect(adr2).approve(recoveryHub.address, config.infiniteAllowance);
-      const amountLost = await draggable.balanceOf(adr3.address);
-      const amountClaimer = await draggable.balanceOf(adr2.address);
-      await recoveryHub.connect(adr2).declareLost(draggable.address, draggable.address, adr3.address);
+      await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
+      const amountLost = await draggable.balanceOf(sig3.address);
+      const amountClaimer = await draggable.balanceOf(sig2.address);
+      await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig3.address);
+
+      // check if flag is set
+      // FLAG_CLAIM_PRESENT = 10
+      expect(await draggable.hasFlag(sig3.address, 10)).to.equal(true);
+
       // revert if not the claimer tries to recover
-      await expect(recoveryHub.connect(adr4).recover(draggable.address, adr3.address)).to.be.revertedWith("not claimant");
+      await expect(recoveryHub.connect(sig4).recover(draggable.address, sig3.address)).to.be.revertedWith("not claimant");
+
       // revert if to early
-      await expect(recoveryHub.connect(adr2).recover(draggable.address, adr3.address)).to.be.revertedWith("too early");
+      await expect(recoveryHub.connect(sig2).recover(draggable.address, sig3.address)).to.be.revertedWith("too early");
+
       // add claim period (180 days)
       const claimPeriod = await draggable.claimPeriod().then(p => p.toNumber());
       await ethers.provider.send("evm_increaseTime", [claimPeriod]);
       await ethers.provider.send("evm_mine");
+
       // recover tokens
-      await recoveryHub.connect(adr2).recover(draggable.address, adr3.address);
-      expect(await draggable.balanceOf(adr2.address)).to.equal(await amountLost.add(amountClaimer));
+      await recoveryHub.connect(sig2).recover(draggable.address, sig3.address);
+      expect(await draggable.balanceOf(sig2.address)).to.equal(await amountLost.add(amountClaimer));
+    });
+  });
+
+  describe.only("Offer", () => {
+    beforeEach(async () => {
+      const overrides = {
+        value: ethers.utils.parseEther("5.0")
+      }
+      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("2"), baseCurrency.address, overrides)
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block= await ethers.provider.getBlock(blockNum);
+    });
+    it("Should able to make aquisition offer", async () => {
+      expect(await draggable.offer()).to.exist;
+      expect(await draggable.offer()).to.not.equal("0x0000000000000000000000000000000000000000");
+    });
+    
+    it("Shareholder can vote", async () => {
+      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+      await offer.connect(sig1).voteYes();
+      // FLAG_VOTED = 1
+      expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
     });
 
+    it("Should able to contest offer after expiry", async () => {
+      const threedays = 3*24*60*60;
+      const expiry = await draggable.votePeriod().then(period => period.add(threedays));
+      await ethers.provider.send("evm_increaseTime", [expiry.toNumber()]);
+      await ethers.provider.send("evm_mine");
+      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+      console.log("test");
+      await offer.contest();
+      const offerAfterContest = await ethers.getContractAt("Offer", await draggable.offer());
+      expect(offerAfterContest.address).to.equal("0x0000000000000000000000000000000000000000");
+    });
+
+    it.only("Should able to contest offer if declined", async () => {
+      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+      await offer.connect(owner).voteNo();
+      await offer.connect(sig2).voteNo();
+      await offer.connect(sig3).voteNo();
+      await offer.contest();
+      const offerAfterContest = await ethers.getContractAt("Offer", await draggable.offer());
+      expect(offerAfterContest.address).to.equal("0x0000000000000000000000000000000000000000");
+    });
+    
+    it("Should be able to make better offer", async () => {
+      // offer from sig1
+      const offerBefore = await draggable.offer();
+      expect(offerBefore).to.exist;
+      
+      const overrides = {
+        value: ethers.utils.parseEther("5.0")
+      }
+      await draggable.connect(sig2).makeAcquisitionOffer(ethers.utils.formatBytes32String('4'), 11, baseCurrency.address, overrides)
+      console.log("test");
+      
+      // new offer from sig2
+      const offerAfter = await draggable.offer();
+      expect(offerAfter).to.exist;
+      expect(offerAfter).to.not.equal(offerBefore);
+      
+    });
+    
+
+    it("Should be able to excute offer", async () => {
+      //create offer
+      //vote
+      //(external vote?)
+      //execute
+
+    });
+
+    afterEach(async () => {
+      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+      await offer.connect(sig1).cancel();
+    })
   });
 });

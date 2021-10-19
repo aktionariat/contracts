@@ -30,6 +30,7 @@ pragma solidity >=0.8;
 import "../IERC20.sol";
 import "./IDraggable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 /**
  * @title Acquisition Attempt
  * @author Luzius Meisser, luzius@aktionariat.com
@@ -72,13 +73,14 @@ contract Offer is Initializable{
         price = _price;
         quorum = _quorum;
         voteEnd = block.timestamp + votePeriod;
+        require(isWellFunded());
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
         emit OfferCreated(_buyer, address(_token), price, address(_currency));
     }
 
-    function contest(address betterOffer) public {
+    function makeCompetingOffer(address betterOffer) public {
         require(msg.sender == address(token));
         Offer better = Offer(betterOffer);
         require(currency == better.currency() && better.price() > price, "old offer better");
@@ -95,7 +97,7 @@ contract Offer is Initializable{
             kill(false, "expired");
         } else if (isDeclined()) {
             kill(false, "declined");
-        } else if (!isWellFunded()) {
+        } else if (!isWellFunded()) { // TODO: is that needed? execute only reverts on transferFrom and lets buyer stock up funds
             kill(false, "lack of funds");
         }
     }
@@ -120,9 +122,9 @@ contract Offer is Initializable{
 
     function isWellFunded() public view returns (bool) {
         uint256 buyerBalance = currency.balanceOf(buyer);
-        uint256 buyerAllowance = currency.allowance(buyer, address(this));
+        // uint256 buyerAllowance = currency.allowance(buyer, address(this)); TODO: allowance is needed for transferFrom not for an offer?
         uint256 totalPrice = getTotalPrice();
-        return totalPrice <= buyerBalance && totalPrice <= buyerAllowance;
+        return totalPrice <= buyerBalance;
     }
 
     function isAccepted() public view returns (bool) {
@@ -167,6 +169,7 @@ contract Offer is Initializable{
             } else if (newVote == Vote.YES) {
                 yesVotes = yesVotes + votes_;
             }
+            console.log(noVotes);
             emit VotesChanged(yesVotes, noVotes);
         }
     }
@@ -207,6 +210,9 @@ contract Offer is Initializable{
     function vote(Vote newVote) internal votingOpen() {
         Vote previousVote = votes[msg.sender];
         votes[msg.sender] = newVote;
+        if(previousVote == Vote.NONE){
+            IDraggable(token).toggleVoteFlag(msg.sender);
+        }
         update(previousVote, newVote, IDraggable(token).votingPower(msg.sender));
     }
 

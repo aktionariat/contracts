@@ -111,6 +111,7 @@ contract RecoveryHub is IRecoveryHub {
             currencyUsed: collateralType
         });
 
+        IRecoverable(token).notifyClaimMade(lostAddress);
         emit ClaimMade(token, lostAddress, claimant, balance);
     }
 

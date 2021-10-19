@@ -8,5 +8,7 @@ abstract contract IDraggable {
     function notifyOfferEnded() public virtual;
     function votingPower(address voter) public virtual returns (uint256);
     function totalVotingTokens() public virtual view returns (uint256);
+    function toggleVoteFlag(address voter) public virtual;
+
 
 }

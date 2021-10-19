@@ -119,7 +119,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 
     function notifyClaimDeleted(address target) public override {
         require(msg.sender == address(recovery));
-        if (hasFlag(target, FLAG_CLAIM_PRESENT)){
+        if (hasFlagInternal(target, FLAG_CLAIM_PRESENT)){
             toggleFlag(target, FLAG_CLAIM_PRESENT);
         }
     }
