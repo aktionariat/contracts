@@ -72,13 +72,16 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
         uint256 _quorum,
         uint256 _votePeriod,
         address _recoveryHub,
-        address _offerFactory
-    ) {
+        address _offerFactory,
+        address _oracle
+    ) 
+    {
         wrapped = IERC20(_wrappedToken);
         quorum = _quorum;
         votePeriod = _votePeriod;
         IRecoveryHub(address(_recoveryHub)).setRecoverable(false); // TODO: insert recovery hub address
         factory = IOfferFactory(_offerFactory);
+        oracle = _oracle;
     }
 
     function onTokenTransfer(address from, uint256 amount, bytes calldata) override public returns (bool) {
@@ -173,7 +176,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
     }
 
     function setOracle(address newOracle) public {
-        require(msg.sender == oracle);
+        require(msg.sender == oracle, "not oracle");
         oracle = newOracle;
     }
 

@@ -30,7 +30,6 @@ pragma solidity >=0.8;
 import "../IERC20.sol";
 import "./IDraggable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 /**
  * @title Acquisition Attempt
  * @author Luzius Meisser, luzius@aktionariat.com
@@ -169,7 +168,6 @@ contract Offer is Initializable{
             } else if (newVote == Vote.YES) {
                 yesVotes = yesVotes + votes_;
             }
-            console.log(noVotes);
             emit VotesChanged(yesVotes, noVotes);
         }
     }
