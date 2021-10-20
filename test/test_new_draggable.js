@@ -262,7 +262,7 @@ describe.only("New Standard", () => {
     });
     
 
-    it.only("Should be able to excute offer", async () => {
+    it.only("Should be able to execute offer", async () => {
       //create offr
       //vote
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
@@ -280,16 +280,11 @@ describe.only("New Standard", () => {
       }
       const totalVotingTokens = await draggable.totalVotingTokens();
       const externalTokens = totalVotingTokens.sub(internalTokens);
-      console.log(totalVotingTokens.toString());
-      console.log(internalTokens.toString());
-      console.log(externalTokens.toString());
-      console.log(await baseCurrency.balanceOf(sig1.address).then(bn => bn.toString()));
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
 
       //execute
       await baseCurrency.connect(sig1).approve(offer.address, config.infiniteAllowance);
       await offer.execute();
-      console.log(await shares.balanceOf(sig1.address).then(bal => bal.toString()));
       expect(await shares.balanceOf(sig1.address)).to.equal(await shares.totalSupply());
     });
 
