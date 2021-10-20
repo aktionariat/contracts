@@ -22,6 +22,7 @@ describe.only("New Standard", () => {
   let sig4;
   let accounts;
   let signers;
+  let oracle;
 
   let chance;
   let name;
@@ -31,7 +32,7 @@ describe.only("New Standard", () => {
 
   before(async () => {
     // get signers and accounts of them
-    [owner,sig1,sig2,sig3,sig4] = await ethers.getSigners();
+    [owner,sig1,sig2,sig3,sig4,oracle] = await ethers.getSigners();
     signers = [owner,sig1,sig2,sig3,sig4] ;
     accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address];
     chance = new Chance();
@@ -70,7 +71,7 @@ describe.only("New Standard", () => {
      .then(shares => shares.deployed());
 
     draggable = await ethers.getContractFactory("DraggableShares")
-      .then(draggableFactory => draggableFactory.deploy(dterms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address))
+      .then(draggableFactory => draggableFactory.deploy(dterms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address))
       .then(draggable => draggable.deployed());
 
     
@@ -82,7 +83,7 @@ describe.only("New Standard", () => {
     const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
     await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.utils.parseEther("2")});
     for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("1000000"));
+      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
      //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
     }
     await network.provider.request({
@@ -92,13 +93,13 @@ describe.only("New Standard", () => {
 
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
-      await shares.mint(accounts[i], 100000);
+      await shares.mint(accounts[i], 1000000);
     }
 
      // Convert some Shares to DraggableShares
     for (let i = 0; i < 5; i++) {
       await shares.connect(signers[i]).approve(draggable.address, config.infiniteAllowance);
-      await draggable.connect(signers[i]).wrap(accounts[i], 80000);
+      await draggable.connect(signers[i]).wrap(accounts[i], 1000000);
     }
 
   });
@@ -207,8 +208,9 @@ describe.only("New Standard", () => {
       const block= await ethers.provider.getBlock(blockNum);
     });
     it("Should able to make aquisition offer", async () => {
-      expect(await draggable.offer()).to.exist;
-      expect(await draggable.offer()).to.not.equal("0x0000000000000000000000000000000000000000");
+      const offer = await draggable.offer();
+      expect(offer).to.exist;
+      expect(offer).to.not.equal("0x0000000000000000000000000000000000000000");
     });
     
     it("Shareholder can vote", async () => {
@@ -224,20 +226,19 @@ describe.only("New Standard", () => {
       await ethers.provider.send("evm_increaseTime", [expiry.toNumber()]);
       await ethers.provider.send("evm_mine");
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
-      console.log("test");
       await offer.contest();
-      const offerAfterContest = await ethers.getContractAt("Offer", await draggable.offer());
-      expect(offerAfterContest.address).to.equal("0x0000000000000000000000000000000000000000");
+      const offerAfterContest = await draggable.offer();
+      expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
 
-    it.only("Should able to contest offer if declined", async () => {
+    it("Should able to contest offer if declined", async () => {
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.connect(owner).voteNo();
       await offer.connect(sig2).voteNo();
       await offer.connect(sig3).voteNo();
       await offer.contest();
-      const offerAfterContest = await ethers.getContractAt("Offer", await draggable.offer());
-      expect(offerAfterContest.address).to.equal("0x0000000000000000000000000000000000000000");
+      const offerAfterContest = await draggable.offer();
+      expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
     
     it("Should be able to make better offer", async () => {
@@ -248,28 +249,55 @@ describe.only("New Standard", () => {
       const overrides = {
         value: ethers.utils.parseEther("5.0")
       }
-      await draggable.connect(sig2).makeAcquisitionOffer(ethers.utils.formatBytes32String('4'), 11, baseCurrency.address, overrides)
-      console.log("test");
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('4'), ethers.utils.parseEther("1"), baseCurrency.address, overrides))
+        .to.revertedWith("old offer better");
+      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('4'), ethers.utils.parseEther("3"), baseCurrency.address, overrides);
       
-      // new offer from sig2
+      // new offer from sig1
       const offerAfter = await draggable.offer();
       expect(offerAfter).to.exist;
+      expect(offerAfter).to.not.equal("0x0000000000000000000000000000000000000000");
       expect(offerAfter).to.not.equal(offerBefore);
       
     });
     
 
-    it("Should be able to excute offer", async () => {
-      //create offer
+    it.only("Should be able to excute offer", async () => {
+      //create offr
       //vote
-      //(external vote?)
-      //execute
+      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+      await offer.connect(owner).voteYes();
+      await offer.connect(sig1).voteYes();
+      await offer.connect(sig2).voteYes();
+      await offer.connect(sig3).voteYes();
+      await offer.connect(sig4).voteYes();
 
+      // external vote
+      // check "external tokens"
+      let internalTokens = ethers.BigNumber.from(0);
+      for( let i = 0; i < 5; i++) {
+        internalTokens = internalTokens.add(await draggable.balanceOf(accounts[i]));
+      }
+      const totalVotingTokens = await draggable.totalVotingTokens();
+      const externalTokens = totalVotingTokens.sub(internalTokens);
+      console.log(totalVotingTokens.toString());
+      console.log(internalTokens.toString());
+      console.log(externalTokens.toString());
+      console.log(await baseCurrency.balanceOf(sig1.address).then(bn => bn.toString()));
+      await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
+
+      //execute
+      await baseCurrency.connect(sig1).approve(offer.address, config.infiniteAllowance);
+      await offer.execute();
+      console.log(await shares.balanceOf(sig1.address).then(bal => bal.toString()));
+      expect(await shares.balanceOf(sig1.address)).to.equal(await shares.totalSupply());
     });
 
     afterEach(async () => {
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
-      await offer.connect(sig1).cancel();
+      if(offer.address !== "") { 
+        await offer.connect(sig1).cancel();
+      }
     })
   });
 });
