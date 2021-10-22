@@ -263,7 +263,7 @@ describe.only("New Standard", () => {
     
 
     it.only("Should be able to execute offer", async () => {
-      //create offr
+      //create offer
       //vote
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.connect(owner).voteYes();
@@ -273,13 +273,7 @@ describe.only("New Standard", () => {
       await offer.connect(sig4).voteYes();
 
       // external vote
-      // check "external tokens"
-      let internalTokens = ethers.BigNumber.from(0);
-      for( let i = 0; i < 5; i++) {
-        internalTokens = internalTokens.add(await draggable.balanceOf(accounts[i]));
-      }
-      const totalVotingTokens = await draggable.totalVotingTokens();
-      const externalTokens = totalVotingTokens.sub(internalTokens);
+      const externalTokens = ethers.BigNumber.from(3000000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
 
       //execute
@@ -293,6 +287,6 @@ describe.only("New Standard", () => {
       if(offer.address !== "") { 
         await offer.connect(sig1).cancel();
       }
-    })
+    });
   });
 });
