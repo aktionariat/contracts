@@ -45,7 +45,6 @@ import "./IDraggable.sol";
 import "../ERC20Flaggable.sol";
 import "../IERC20.sol";
 import "../IERC677Receiver.sol";
-import "../recovery/IRecoveryHub.sol";
 
 abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable {
 
@@ -71,7 +70,6 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
         address _wrappedToken,
         uint256 _quorum,
         uint256 _votePeriod,
-        address _recoveryHub,
         address _offerFactory,
         address _oracle
     ) 
@@ -79,7 +77,6 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
         wrapped = IERC20(_wrappedToken);
         quorum = _quorum;
         votePeriod = _votePeriod;
-        IRecoveryHub(address(_recoveryHub)).setRecoverable(false); // TODO: insert recovery hub address
         factory = IOfferFactory(_offerFactory);
         oracle = _oracle;
     }

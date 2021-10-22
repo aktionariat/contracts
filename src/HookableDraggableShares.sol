@@ -40,7 +40,7 @@ contract HookableDraggableShares is ERC20Draggable, ERC20Recoverable, ERC20Hooka
     string public terms;
 
     constructor(address admin, string memory name_, string memory symbol_, string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds, address recoveryHub, address offerFactory, address _oracle) 
-        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds, recoveryHub, offerFactory, _oracle) ERC20Named(admin, name_, symbol_, 0) ERC20Recoverable(recoveryHub) {
+        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds, offerFactory, _oracle) ERC20Named(admin, name_, symbol_, 0) ERC20Recoverable(recoveryHub) {
         terms = _terms;
     }
 

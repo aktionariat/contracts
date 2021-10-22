@@ -58,10 +58,10 @@ contract SharesWithPredecessor is Shares {
         string memory _name,
         string memory _terms,
         uint256 _totalShares,
-        address owner,
-        address recoveryHub
+        address _owner,
+        address _recoveryHub
     )
-        Shares(_symbol, _name, _terms, _totalShares, owner, recoveryHub)
+        Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
     {
         predecessor = Shares(_predecessor);
     }

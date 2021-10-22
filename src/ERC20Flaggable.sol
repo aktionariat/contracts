@@ -45,8 +45,9 @@ abstract contract ERC20Flaggable is IERC20 {
     uint256 private constant BALANCES_MASK = 0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
     // Documentation of flags used by subclasses:
-    // ERC20Recoverable: uint8 private constant FLAG_VOTED = 1;
+    // ERC20Draggable: uint8 private constant FLAG_VOTED = 1;
     // ERC20Recoverable: uint8 private constant FLAG_CLAIM_PRESENT = 10;
+    // ERC20Whitelistable: uint8 private constant FLAG_WHITELIST = 100;
 
     mapping (address => uint256) private _balances; // lower 16 bits reserved for flags
 

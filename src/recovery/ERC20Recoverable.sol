@@ -55,7 +55,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     address public customCollateralAddress;
     uint256 public customCollateralRate;
 
-    IRecoveryHub public immutable recovery; // TODO
+    IRecoveryHub public immutable recovery;
 
     constructor(address recoveryHub){
         recovery = IRecoveryHub(recoveryHub);
