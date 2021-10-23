@@ -6,12 +6,26 @@ require("hardhat-gas-reporter");
 require("solidity-coverage");
 require("hardhat-deploy");
 require("@nomiclabs/hardhat-truffle5");
+require("./tasks");
 
-const accounts = {
-  mnemonic:
-    process.env.MNEMONIC ||
-    "test test test test test test test test test test test junk", // accountsBalance: "990000000000000000000",
-};
+function getMnemonic(networkName) {
+  if (networkName) {
+    const mnemonic = process.env['MNEMONIC_' + networkName.toUpperCase()];
+    if (mnemonic && mnemonic !== '') {
+      return mnemonic;
+    }
+  }
+
+  const mnemonic = process.env.MNEMONIC;
+  if (!mnemonic || mnemonic === '') {
+    return 'test test test test test test test test test test test junk';
+  }
+  return mnemonic;
+}
+
+function accounts(networkName){
+  return {mnemonic: getMnemonic(networkName)};
+}
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -21,7 +35,7 @@ module.exports = {
   networks: {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts,
+      accounts: accounts("mainnet"),
       gasPrice: 120 * 1000000000,
       chainId: 1,
     },
@@ -32,8 +46,9 @@ module.exports = {
     },
     hardhat: {
       initialBaseFeePerGas: 0,
+      accounts: accounts(),
       forking: {
-        enabled: process.env.FORKING === "true",
+        //enabled: process.env.FORKING === "true",
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
         blockNumber: 13191833,
       },
@@ -44,7 +59,7 @@ module.exports = {
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts,
+      accounts: accounts("ropsten"),
       chainId: 3,
       live: true,
       saveDeployments: true,
@@ -54,7 +69,7 @@ module.exports = {
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts,
+      accounts: accounts("rinkeby"),
       chainId: 4,
       live: true,
       saveDeployments: true,
@@ -64,7 +79,7 @@ module.exports = {
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts,
+      accounts: accounts("goerli"),
       chainId: 5,
       live: true,
       saveDeployments: true,
@@ -74,7 +89,7 @@ module.exports = {
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts,
+      accounts: accounts("kovan"),
       chainId: 42,
       live: true,
       saveDeployments: true,
@@ -84,7 +99,7 @@ module.exports = {
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",
-      accounts,
+      accounts: accounts("arbitrum"),
       chainId: 42161,
       live: true,
       saveDeployments: true,
@@ -93,7 +108,7 @@ module.exports = {
     rinkebyArbitrum: {
       url: "https://rinkeby.arbitrum.io/rpc",
       gasPrice: 0,
-      accounts,
+      accounts: accounts("rinkebyArbitrum"),
       companionNetworks: {
         l1: "rinkeby",
       },
@@ -101,7 +116,7 @@ module.exports = {
     localArbitrum: {
       url: "http://localhost:8547",
       gasPrice: 0,
-      accounts,
+      accounts: accounts(),
       companionNetworks: {
         l1: "localArbitrumL1",
       },
@@ -109,7 +124,7 @@ module.exports = {
     localArbitrumL1: {
       url: "http://localhost:7545",
       gasPrice: 0,
-      accounts,
+      accounts: accounts(),
       companionNetworks: {
         l2: "localArbitrum",
       },
@@ -119,12 +134,19 @@ module.exports = {
     deployer: {
       default: 0,
     },
+    owner: {
+      default: 0,
+    },
     dev: {
       // Default to 1
       default: 1,
       // dev address mainnet
       // 1: "",
     },
+    multiSigDefaultOwner: {
+      default: 1,
+      1: process.env.MULTISIG_DEFAULT
+    }
   },
   gasReporter: {
     enabled:
