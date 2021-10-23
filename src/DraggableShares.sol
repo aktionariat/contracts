@@ -63,19 +63,6 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         IRecoveryHub(address(recoveryHub)).setRecoverable(false);
     }
 
-    function name() public override view returns (string memory){
-        if (isBinding()){
-            return string(abi.encodePacked(wrapped.name(), " SHA"));
-        } else {
-            return string(abi.encodePacked(wrapped.name(), " (Wrapped)"));
-        }
-    }
-
-    function symbol() public override view returns (string memory){
-        // ticker should be less dynamic than name
-        return string(abi.encodePacked(wrapped.symbol(), "S"));
-    }
-
     function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
         return super.transfer(to, value);
     }

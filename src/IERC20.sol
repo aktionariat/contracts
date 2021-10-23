@@ -18,6 +18,8 @@ interface IERC20 {
 
     function symbol() external view returns (string memory);
 
+    event NameChanged(string name, string symbol);
+
     function decimals() external view returns (uint8);
 
     /**
@@ -88,4 +90,5 @@ interface IERC20 {
      * a call to `approve`. `value` is the new allowance.
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
+
 }

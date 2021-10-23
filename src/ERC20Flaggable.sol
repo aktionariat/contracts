@@ -45,11 +45,14 @@ abstract contract ERC20Flaggable is IERC20 {
     uint256 private constant BALANCES_MASK = 0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
     // Documentation of flags used by subclasses:
-    // ERC20Draggable: uint8 private constant FLAG_VOTED = 1;
-    // ERC20Recoverable: uint8 private constant FLAG_CLAIM_PRESENT = 10;
-    // ERC20Whitelistable: uint8 private constant FLAG_WHITELIST = 100;
+    // NOTE: flags denote the bit number that is being used and must be smaller than 32
+    // ERC20Draggable: uint8 private constant FLAG_INDEX_VOTED = 1;
+    // ERC20Recoverable: uint8 private constant FLAG_INDEX_CLAIM_PRESENT = 10;
+    // ERCAllowlistable: uint8 private constant FLAG_INDEX_ALLOWLIST = 20;
+    // ERCAllowlistable: uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
+    // ERCAllowlistable: uint8 private constant FLAG_INDEX_POWERLIST = 22;
 
-    mapping (address => uint256) private _balances; // lower 16 bits reserved for flags
+    mapping (address => uint256) private _balances; // lower 32 bits reserved for flags
 
     mapping (address => mapping (address => uint256)) private _allowances;
 
@@ -77,6 +80,15 @@ abstract contract ERC20Flaggable is IERC20 {
 
     function hasFlag(address account, uint8 number) public view returns (bool) {
         return hasFlagInternal(account, number);
+    }
+
+    function setFlag(address account, uint8 index, bool value) internal returns (bool) {
+        if (hasFlagInternal(account, index) != value){
+            toggleFlag(account, index);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     function hasFlagInternal(address account, uint8 number) internal view returns (bool) {
@@ -191,6 +203,7 @@ abstract contract ERC20Flaggable is IERC20 {
     }
 
     function increaseBalance(address recipient, uint256 amount) private {
+        require(recipient != address(0x0)); // use burn instead
         uint256 oldBalance = _balances[recipient];
         uint256 oldSettings = oldBalance & FLAGGING_MASK;
         uint256 newBalance = oldBalance + amount;

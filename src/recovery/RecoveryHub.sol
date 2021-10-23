@@ -167,9 +167,9 @@ contract RecoveryHub is IRecoveryHub {
         require(collateral != 0, "not found");
         require(claim.timestamp + IRecoverable(token).claimPeriod() <= block.timestamp, "too early");
         delete claims[token][lostAddress];
+        IRecoverable(token).notifyClaimDeleted(lostAddress);
         require(currency.transfer(claimant, collateral));
         IRecoverable(token).recover(lostAddress, claimant);
-        IRecoverable(token).notifyClaimDeleted(lostAddress);
         emit ClaimResolved(token, lostAddress, claimant, collateral);
     }
 
@@ -182,6 +182,7 @@ contract RecoveryHub is IRecoveryHub {
         IERC20 currency = IERC20(claim.currencyUsed);
         require(claim.collateral != 0, "not found");
         delete claims[token][lostAddress];
+        IRecoverable(token).notifyClaimDeleted(lostAddress);
         require(currency.transfer(claim.claimant, claim.collateral));
         emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
     }
