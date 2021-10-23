@@ -4,11 +4,12 @@ The public repository for all smart contracts used by Aktionariat.
 
 ## Overview
 
-There are four notable smart contracts in this repository:
+There are five notable smart contracts in this repository:
 1. Our custom [Multisignature Contract](doc/multisig.md), providing the basis for corporate accounts with multiple signers.
 2. The [ERC20Recoverable Contract](doc/recoverable.md), implementing our decentralized claim mechanism for lost tokens.
 3. The [ERC20Draggable Contract](doc/draggable.md), implementing the drag-along clause found in many shareholder agreements.
 4. The [Brokerbot Contract](doc/market.md), providing mechanisms for the selling and repurchasing of shares with automated price adjustments.
+5. The [ERC20Allowlistable Contract](doc/allowlist.md), providing a highly efficient and elaborate way to enforce transfer restrictions.
 
 ## Full User Control
 
