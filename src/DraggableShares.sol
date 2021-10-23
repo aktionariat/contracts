@@ -27,8 +27,8 @@
 */
 pragma solidity >=0.8;
 
-import "./ERC20Recoverable.sol";
-import "./ERC20Draggable.sol";
+import "./recovery/ERC20Recoverable.sol";
+import "./sha/ERC20Draggable.sol";
 
 /**
  * @title Draggable CompanyName AG Shares
@@ -57,30 +57,23 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     string public terms;
 
-    constructor(string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds)
-        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds) ERC20(0) {
+    constructor(string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds, address recoveryHub, address offerFactory, address _oracle)
+        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds, offerFactory, _oracle) ERC20Flaggable(0) ERC20Recoverable(recoveryHub) {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
+        IRecoveryHub(address(recoveryHub)).setRecoverable(false);
     }
 
-    function name() public override view returns (string memory){
-        if (isBinding()){
-            return string(abi.encodePacked(wrapped.name(), " SHA"));
-        } else {
-            return string(abi.encodePacked(wrapped.name(), " (Wrapped)"));
-        }
-    }
-
-    function symbol() public override view returns (string memory){
-        // ticker should be less dynamic than name
-        return string(abi.encodePacked(wrapped.symbol(), "S"));
-    }
-
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
         return super.transfer(to, value);
     }
 
+    /**
+     * Let the oracle act as deleter of invalid claims. In earlier versions, this was referring to the claim deleter
+     * of the wrapped token. But that stops working after a successful acquisition as the acquisition currency most
+     * likely does not have a claim deleter.
+     */
     function getClaimDeleter() public view override returns (address) {
-        return IRecoverable(address(wrapped)).getClaimDeleter();
+        return getOracle();
     }
 
     function getCollateralRate(address collateralType) public view override returns (uint256) {
@@ -96,13 +89,8 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         }
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Draggable, ERC20) internal {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Draggable, ERC20Flaggable) internal {
         super._beforeTokenTransfer(from, to, amount);
     }
 
-}
-
-abstract contract IRecoverable {
-    function getCollateralRate(address) public virtual view returns (uint256);
-    function getClaimDeleter() public virtual view returns (address);
 }

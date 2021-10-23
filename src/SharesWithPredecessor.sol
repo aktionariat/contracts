@@ -52,7 +52,17 @@ contract SharesWithPredecessor is Shares {
 
     Shares private immutable predecessor;
 
-    constructor(address _predecessor, string memory _symbol, string memory _name, string memory _terms, uint256 _totalShares, address owner) Shares(_symbol, _name, _terms, _totalShares, owner) {
+    constructor(
+        address _predecessor,
+        string memory _symbol,
+        string memory _name,
+        string memory _terms,
+        uint256 _totalShares,
+        address _owner,
+        address _recoveryHub
+    )
+        Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
+    {
         predecessor = Shares(_predecessor);
     }
 

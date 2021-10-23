@@ -1,0 +1,303 @@
+{
+    "contracts": {
+        "c:/Users/luziu/Documents/GitHub/contracts/src/sha/IDraggable.sol": {
+            "IDraggable": {
+                "abi": [
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "buyer",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "currency",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "drag",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "notifyOfferEnded",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "totalVotingTokens",
+                        "outputs": [
+                            {
+                                "internalType": "uint256",
+                                "name": "",
+                                "type": "uint256"
+                            }
+                        ],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ],
+                "devdoc": {
+                    "kind": "dev",
+                    "methods": {},
+                    "version": 1
+                },
+                "evm": {
+                    "bytecode": {
+                        "functionDebugData": {},
+                        "generatedSources": [],
+                        "linkReferences": {},
+                        "object": "",
+                        "opcodes": "",
+                        "sourceMap": ""
+                    },
+                    "deployedBytecode": {
+                        "functionDebugData": {},
+                        "generatedSources": [],
+                        "immutableReferences": {},
+                        "linkReferences": {},
+                        "object": "",
+                        "opcodes": "",
+                        "sourceMap": ""
+                    },
+                    "gasEstimates": null,
+                    "methodIdentifiers": {
+                        "drag(address,address)": "fcb79a7e",
+                        "notifyOfferEnded()": "32bc320b",
+                        "totalVotingTokens()": "0a81b2de"
+                    }
+                },
+                "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"currency\",\"type\":\"address\"}],\"name\":\"drag\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"notifyOfferEnded\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalVotingTokens\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"c:/Users/luziu/Documents/GitHub/contracts/src/sha/IDraggable.sol\":\"IDraggable\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"c:/Users/luziu/Documents/GitHub/contracts/src/sha/IDraggable.sol\":{\"keccak256\":\"0x271fc10005c62b248c4faaab494cfbc38a6df17de7605dfa1f8deb9f7ae060a9\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7ab676e724d2283bc9b3eddfc38ee7bb943a9ca180db32b7071b11b3e7775049\",\"dweb:/ipfs/QmZzTWMsXHX9jYCw76jXKe7qqBhN6Woud6GVAG6o1yvrSg\"]}},\"version\":1}",
+                "storageLayout": {
+                    "storage": [],
+                    "types": null
+                },
+                "userdoc": {
+                    "kind": "user",
+                    "methods": {},
+                    "version": 1
+                }
+            }
+        }
+    },
+    "sources": {
+        "c:/Users/luziu/Documents/GitHub/contracts/src/sha/IDraggable.sol": {
+            "ast": {
+                "absolutePath": "c:/Users/luziu/Documents/GitHub/contracts/src/sha/IDraggable.sol",
+                "exportedSymbols": {
+                    "IDraggable": [
+                        17
+                    ]
+                },
+                "id": 18,
+                "license": "MIT",
+                "nodeType": "SourceUnit",
+                "nodes": [
+                    {
+                        "id": 1,
+                        "literals": [
+                            "solidity",
+                            ">=",
+                            "0.8"
+                        ],
+                        "nodeType": "PragmaDirective",
+                        "src": "33:22:0"
+                    },
+                    {
+                        "abstract": true,
+                        "baseContracts": [],
+                        "canonicalName": "IDraggable",
+                        "contractDependencies": [],
+                        "contractKind": "contract",
+                        "fullyImplemented": false,
+                        "id": 17,
+                        "linearizedBaseContracts": [
+                            17
+                        ],
+                        "name": "IDraggable",
+                        "nameLocation": "77:10:0",
+                        "nodeType": "ContractDefinition",
+                        "nodes": [
+                            {
+                                "functionSelector": "fcb79a7e",
+                                "id": 8,
+                                "implemented": false,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "drag",
+                                "nameLocation": "110:4:0",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 6,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 3,
+                                            "mutability": "mutable",
+                                            "name": "buyer",
+                                            "nameLocation": "123:5:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 8,
+                                            "src": "115:13:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_address",
+                                                "typeString": "address"
+                                            },
+                                            "typeName": {
+                                                "id": 2,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "115:7:0",
+                                                "stateMutability": "nonpayable",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        },
+                                        {
+                                            "constant": false,
+                                            "id": 5,
+                                            "mutability": "mutable",
+                                            "name": "currency",
+                                            "nameLocation": "138:8:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 8,
+                                            "src": "130:16:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_address",
+                                                "typeString": "address"
+                                            },
+                                            "typeName": {
+                                                "id": 4,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "130:7:0",
+                                                "stateMutability": "nonpayable",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "114:33:0"
+                                },
+                                "returnParameters": {
+                                    "id": 7,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "162:0:0"
+                                },
+                                "scope": 17,
+                                "src": "101:62:0",
+                                "stateMutability": "nonpayable",
+                                "virtual": true,
+                                "visibility": "public"
+                            },
+                            {
+                                "functionSelector": "32bc320b",
+                                "id": 11,
+                                "implemented": false,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "notifyOfferEnded",
+                                "nameLocation": "178:16:0",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 9,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "194:2:0"
+                                },
+                                "returnParameters": {
+                                    "id": 10,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "211:0:0"
+                                },
+                                "scope": 17,
+                                "src": "169:43:0",
+                                "stateMutability": "nonpayable",
+                                "virtual": true,
+                                "visibility": "public"
+                            },
+                            {
+                                "functionSelector": "0a81b2de",
+                                "id": 16,
+                                "implemented": false,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "totalVotingTokens",
+                                "nameLocation": "227:17:0",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 12,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "244:2:0"
+                                },
+                                "returnParameters": {
+                                    "id": 15,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 14,
+                                            "mutability": "mutable",
+                                            "name": "",
+                                            "nameLocation": "-1:-1:-1",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 16,
+                                            "src": "276:7:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_uint256",
+                                                "typeString": "uint256"
+                                            },
+                                            "typeName": {
+                                                "id": 13,
+                                                "name": "uint256",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "276:7:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_uint256",
+                                                    "typeString": "uint256"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "275:9:0"
+                                },
+                                "scope": 17,
+                                "src": "218:67:0",
+                                "stateMutability": "view",
+                                "virtual": true,
+                                "visibility": "public"
+                            }
+                        ],
+                        "scope": 18,
+                        "src": "59:231:0",
+                        "usedErrors": []
+                    }
+                ],
+                "src": "33:257:0"
+            },
+            "id": 0
+        }
+    }
+}

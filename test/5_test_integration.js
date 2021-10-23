@@ -195,7 +195,7 @@ contract("Payment Integration", (accounts) => {
       draggableShares.address,
       brokerbot.address,
       sharesToSell,
-      "0x20",
+      "0x0",
       { from: accounts[0] }
     );
 

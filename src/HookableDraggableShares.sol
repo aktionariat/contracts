@@ -28,8 +28,8 @@
 pragma solidity >=0.8;
 
 import "./ERC20Hookable.sol";
-import "./ERC20Recoverable.sol";
-import "./ERC20Draggable.sol";
+import "./recovery/ERC20Recoverable.sol";
+import "./sha/ERC20Draggable.sol";
 import "./ERC20Named.sol";
 
 /**
@@ -39,16 +39,16 @@ contract HookableDraggableShares is ERC20Draggable, ERC20Recoverable, ERC20Hooka
 
     string public terms;
 
-    constructor(address admin, string memory name_, string memory symbol_, string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds) 
-        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds) ERC20Named(admin, name_, symbol_, 0) {
+    constructor(address admin, string memory name_, string memory symbol_, string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds, address recoveryHub, address offerFactory, address _oracle) 
+        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds, offerFactory, _oracle) ERC20Named(admin, name_, symbol_, 0) ERC20Recoverable(recoveryHub) {
         terms = _terms;
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
         return super.transfer(to, value);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Draggable, ERC20Hookable, ERC20) internal {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Draggable, ERC20Hookable, ERC20Flaggable) internal {
         super._beforeTokenTransfer(from, to, amount);
     }
 
@@ -68,9 +68,4 @@ contract HookableDraggableShares is ERC20Draggable, ERC20Recoverable, ERC20Hooka
             return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * unwrapConversionFactor;
         }
     }
-}
-
-abstract contract IRecoverable {
-    function getCollateralRate(address) public virtual view returns (uint256);
-    function getClaimDeleter() public virtual view returns (address);
 }

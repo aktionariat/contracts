@@ -6,6 +6,7 @@ const config = require("../migrations/migration_config");
 // Libraries
 const BN = require("bn.js");
 const hre = require("hardhat");
+const { artifacts } = require("hardhat");
 
 // Used contracts
 const ERC20 = artifacts.require("ERC20");
@@ -13,6 +14,7 @@ const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
 const Brokerbot = artifacts.require("Brokerbot");
 const PaymentHub = artifacts.require("PaymentHub");
+const RecoveryHub = artifacts.require("RecoveryHub");
 
 const ForceSend = artifacts.require("ForceSend");
 const ERC20Basic = artifacts.require("ERC20Basic");
@@ -22,6 +24,7 @@ contract("Migration", (accounts) => {
   before(async function () {
     const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
     const brokerbot = await Brokerbot.deployed();
+    const recoveryHub = await RecoveryHub.deployed();
     const draggableShares = await DraggableShares.deployed();
     const shares = await Shares.deployed();
     const paymentHub = await PaymentHub.deployed();
