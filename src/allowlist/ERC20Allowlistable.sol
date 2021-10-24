@@ -39,12 +39,13 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   uint8 private constant TYPE_DEFAULT = 0x0;
   uint8 private constant TYPE_ALLOWLISTED = 0x1;
   uint8 private constant TYPE_FORBIDDEN = 0x2;
+  uint8 private constant TYPE_POWERLISTED = 0x4;
 
   uint8 private constant FLAG_INDEX_ALLOWLIST = 20;
   uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
   uint8 private constant FLAG_INDEX_POWERLIST = 22;
 
-  event AddressTypeUpdate(address indexed whitelistAddress, uint8 addressType);
+  event AddressTypeUpdate(address indexed account, uint8 addressType);
 
   bool public restrictTransfers;
 
@@ -55,7 +56,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   /**
    * Configures whether the allowlisting is applied.
    * Also sets the powerlist and allowlist flags on the null address accordingly.
-   * It is recommended to do the same for any company address that distributes tokens.
+   * It is recommended to also deactivate the powerlist flag on other addresses.
    */
   function setApplicable(bool transferRestrictionsApplicable) public onlyOwner {
     setApplicableInternal(transferRestrictionsApplicable);
@@ -66,29 +67,17 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     // if transfer restrictions are applied, we guess that should also be the case for newly minted tokens
     // if the admin disagrees, it is still possible to change the type of the null address
     if (transferRestrictionsApplicable){
-      setType(address(0x0), TYPE_ALLOWLISTED);
+      setType(address(0x0), TYPE_POWERLISTED);
     } else {
       setType(address(0x0), TYPE_DEFAULT);
     }
-    setFlag(address(0x0), FLAG_INDEX_POWERLIST, transferRestrictionsApplicable);
   }
 
-  /**
-   * Sets the "powerlist" flag for the given address.
-   * Powerlisted addresses can send tokens to any other address and automatically
-   * allowlist them in the process.
-   * 
-   * If you want to enable automatic allowlisting for newly minted tokens, the null address
-   * should be powerlisted.
-   */
-  function powerlist(address account, bool value) public onlyOwner {
-    setFlag(account, FLAG_INDEX_POWERLIST, value);
-  }
-
-  function setType(address newAddress, uint8 typeNumber) public onlyOwner {
-    setFlag(newAddress, FLAG_INDEX_ALLOWLIST, typeNumber == TYPE_ALLOWLISTED);
-    setFlag(newAddress, FLAG_INDEX_FORBIDDEN, typeNumber == TYPE_FORBIDDEN);
-    emit AddressTypeUpdate(newAddress, typeNumber);
+  function setType(address account, uint8 typeNumber) public onlyOwner {
+    setFlag(account, FLAG_INDEX_ALLOWLIST, typeNumber == TYPE_ALLOWLISTED);
+    setFlag(account, FLAG_INDEX_FORBIDDEN, typeNumber == TYPE_FORBIDDEN);
+    setFlag(account, FLAG_INDEX_POWERLIST, typeNumber == TYPE_POWERLISTED);
+    emit AddressTypeUpdate(account, typeNumber);
   }
 
   function setType(address[] calldata addressesToAdd, uint8 value) public onlyOwner {
@@ -98,14 +87,14 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   }
 
   /**
-   * If true, this address is allowlisted.
+   * If true, this address is allowlisted and can only transfer tokens to other allowlisted addresses.
    */
-  function isAllowlisted(address account) public view returns (bool) {
-    return hasFlagInternal(account, FLAG_INDEX_ALLOWLIST);
+  function canReceiveFromAnyone(address account) public view returns (bool) {
+    return hasFlagInternal(account, FLAG_INDEX_ALLOWLIST) || hasFlagInternal(account, FLAG_INDEX_POWERLIST);
   }
 
   /**
-   * If true, this address can only transfer tokens to allowlisted addresses.
+   * If true, this address can only transfer tokens to allowlisted addresses and not receive from anyone.
    */
   function isForbidden(address account) internal view returns (bool){
     return hasFlagInternal(account, FLAG_INDEX_FORBIDDEN);
@@ -122,27 +111,28 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
    * Cleans the allowlist and disallowlist flag under the assumption that the
    * allowlisting is not applicable any more.
    */
-  function cleanup(address account) internal {
-    require(!restrictTransfers && !isForbidden(account), "not allowed");
+  function failOrCleanup(address account) internal {
+    require(!restrictTransfers, "not allowed");
     setType(account, TYPE_DEFAULT);
   }
 
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
     super._beforeTokenTransfer(from, to, amount);
-    require(!isForbidden(to), "forbidden"); // transferring to forbidden addresses is never allowed
-    if (isAllowlisted(to)){
+    if (canReceiveFromAnyone(to)){
       // ok, transfers to allowlisted addresses are always allowed
-    } else if (isAllowlisted(from) || isForbidden(from)){
-      // this is not an allowed transfer, but maybe we can make it one?
-      if (isPowerlisted(from)){
-        setType(to, TYPE_ALLOWLISTED);
-        // yes, we do! Now this is an allowlisted to allowlisted transfer
-      } else {
-        cleanup(from);
-        // yes, we do! Now this is a transfer between free addresses
-      }
+    } else if (isPowerlisted(from)){
+      // it is not allowlisted, but we can make it so
+      setType(to, TYPE_ALLOWLISTED);
     } else {
-      // ok, transfer between free addresses
+      if (isForbidden(to)){
+        // Target is forbidden, but maybe restrictions have been removed and we can clean the flag
+        failOrCleanup(to);
+      }
+      // if we made it to here, the target must be a free address and we are not powerlisted
+      if (hasFlagInternal(from, FLAG_INDEX_ALLOWLIST) || isForbidden(from)){
+        // We cannot send to free addresses, but maybe the restrictions have been removed and we can clean the flag?
+        failOrCleanup(from);
+      }
     }
   }
 
