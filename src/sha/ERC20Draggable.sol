@@ -250,8 +250,8 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		return hasFlagInternal(voter, FLAG_VOTED);
 	}
 
-	function toggleVoteFlag(address voter) public override {
-		toggleFlag(voter, FLAG_VOTED);
+	function notifyVoted(address voter) public override {
+		setFlag(voter, FLAG_VOTED, true);
 	}
 
 	function _beforeTokenTransfer(
@@ -263,12 +263,8 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 			if (offerExists()) {
 				offer.notifyMoved(from, to, amount);
 			} else {
-				if (hasVoted(from)) {
-					toggleFlag(from, FLAG_VOTED);
-				}
-				if (hasVoted(to)) {
-					toggleFlag(to, FLAG_VOTED);
-				}
+				setFlag(from, FLAG_VOTED, false);
+				setFlag(to, FLAG_VOTED, false);
 			}
 		}
 		super._beforeTokenTransfer(from, to, amount);
