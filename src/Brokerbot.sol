@@ -184,7 +184,7 @@ contract Brokerbot is Ownable {
         return settings & setting == setting;
     }
 
-    function isDirectSale(bytes calldata ref) internal returns (bool) {
+    function isDirectSale(bytes calldata ref) internal pure returns (bool) {
         if (ref.length == 0 || ref.length == 20) {
             return true; // old format
         } else {

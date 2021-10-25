@@ -29,21 +29,20 @@ pragma solidity >=0.8;
 
 import "../IERC20.sol";
 import "./IDraggable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 /**
  * @title Acquisition Attempt
  * @author Luzius Meisser, luzius@aktionariat.com
  */
 
-contract Offer is Initializable{
+contract Offer {
 
-    uint256 public quorum;                    // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
+    uint256 public immutable quorum;                    // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
 
-    IDraggable public token;
-    address public buyer;                     // who made the offer
+    IDraggable public immutable token;
+    address public immutable buyer;                     // who made the offer
     
-    IERC20 public currency;
-    uint256 public price;                               // the price offered per share
+    IERC20 public immutable currency;
+    uint256 public immutable price;                               // the price offered per share
 
     enum Vote { NONE, YES, NO }                         // Used internally, represents not voted yet or yes/no vote.
     mapping (address => Vote) private votes;            // Who votes what
@@ -52,20 +51,21 @@ contract Offer is Initializable{
     uint256 public noExternal;                          // number of external no votes reported by oracle
     uint256 public yesExternal;                         // number of external yes votes reported by oracle
 
-    uint256 public voteEnd;                             // end of vote period in block time (seconds after 1.1.1970)
+    uint256 public immutable voteEnd;                             // end of vote period in block time (seconds after 1.1.1970)
 
     event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
     event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);
     event OfferEnded(address indexed buyer, bool success, string message);
 
-    function initialize(
+    // Not checked here, but buyer should make sure it is well funded from the beginning
+    constructor(
         address _buyer,
         address _token,
         uint256 _price,
         address _currency,
         uint256 _quorum,
         uint256 votePeriod
-        ) public payable initializer {
+        ) payable {
         buyer = _buyer;
         token = IDraggable(_token);
         currency = IERC20(_currency);
@@ -75,7 +75,7 @@ contract Offer is Initializable{
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
-        emit OfferCreated(_buyer, address(_token), price, address(_currency));
+        emit OfferCreated(_buyer, address(_token), _price, address(_currency));
     }
 
     function makeCompetingOffer(address betterOffer) public {
@@ -83,7 +83,7 @@ contract Offer is Initializable{
         Offer better = Offer(betterOffer);
         require(!isAccepted(), "old already accepted");
         require(currency == better.currency() && better.price() > price, "old offer better");
-        require(better.isWellFunded());
+        require(better.isWellFunded(), "not funded");
         kill(false, "replaced");
     }
 
@@ -96,7 +96,7 @@ contract Offer is Initializable{
             kill(false, "expired");
         } else if (isDeclined()) {
             kill(false, "declined");
-        } else if (!isWellFunded()) { // TODO: is that needed? execute only reverts on transferFrom and lets buyer stock up funds
+        } else if (!isWellFunded()) {
             kill(false, "lack of funds");
         }
     }
@@ -122,9 +122,8 @@ contract Offer is Initializable{
 
     function isWellFunded() public view returns (bool) {
         uint256 buyerBalance = currency.balanceOf(buyer);
-        uint256 buyerAllowance = currency.allowance(buyer, address(this));
         uint256 totalPrice = getTotalPrice();
-        return totalPrice <= buyerBalance && totalPrice <= buyerAllowance;
+        return totalPrice <= buyerBalance;
     }
 
     function isAccepted() public view returns (bool) {

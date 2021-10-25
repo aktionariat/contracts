@@ -96,7 +96,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   /**
    * If true, this address can only transfer tokens to allowlisted addresses and not receive from anyone.
    */
-  function isForbidden(address account) internal view returns (bool){
+  function isForbidden(address account) public view returns (bool){
     return hasFlagInternal(account, FLAG_INDEX_FORBIDDEN);
   }
 

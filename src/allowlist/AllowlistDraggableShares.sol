@@ -31,7 +31,7 @@ import "../recovery/ERC20Recoverable.sol";
 import "./ERC20Allowlistable.sol";
 import "../DraggableShares.sol";
 
-contract AllowlistDraggableShares is ERC20Allowlistable,  ERC20Draggable, ERC20Recoverable {
+contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Recoverable {
 
   string public terms;
 

@@ -51,7 +51,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	uint8 private constant FLAG_VOTED = 1;
 
 	IERC20 public wrapped; // The wrapped contract
-	IOfferFactory public immutable factory; // = IOfferFactory(address(0x0)); // TODO!!!
+	IOfferFactory public immutable factory;
 
 	// If the wrapped tokens got replaced in an acquisition, unwrapping might yield many currency tokens
 	uint256 public unwrapConversionFactor = 0;
