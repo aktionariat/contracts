@@ -13,6 +13,7 @@ const DraggableShares = artifacts.require("DraggableShares");
 const Brokerbot = artifacts.require("Brokerbot");
 const PaymentHub = artifacts.require("PaymentHub");
 const RecoveryHub = artifacts.require("RecoveryHub");
+const OfferFactory = artifacts.require("OfferFactory");
 
 // Import Contracts
 const ForceSend = artifacts.require("ForceSend");
@@ -25,10 +26,13 @@ module.exports = async (deployer) => {
   const recoveryHub = await RecoveryHub.new();
   RecoveryHub.setAsDeployed(recoveryHub);
 
+  const offerFactory = await OfferFactory.new();
+  OfferFactory.setAsDeployed(offerFactory);
+
   const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, accounts.deployer, recoveryHub.address);
   Shares.setAsDeployed(shares);
 
-  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address);
+  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts.deployer);
   DraggableShares.setAsDeployed(draggableShares);
 
   const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer);
