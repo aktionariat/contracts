@@ -40,9 +40,9 @@ contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Re
     address _wrappedToken,
     uint256 _quorum,
     uint256 _votePeriod,
+    address _recoveryHub,
     address _offerFactory,
     address _oracle,
-    address _recoveryHub,
     address _owner
   )
     ERC20Draggable(_wrappedToken, _quorum, _votePeriod, _offerFactory, _oracle) 

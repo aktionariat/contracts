@@ -107,7 +107,7 @@ contract Offer {
     }
 
     function execute() public {
-        require(msg.sender == buyer);
+        require(msg.sender == buyer, "not buyer");
         require(isAccepted(), "not accepted");
         uint256 totalPrice = getTotalPrice();
         require(currency.transferFrom(buyer, address(token), totalPrice));

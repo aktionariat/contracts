@@ -57,10 +57,19 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     string public terms;
 
-    constructor(string memory _terms, address wrappedToken, uint256 quorumBps, uint256 votePeriodSeconds, address recoveryHub, address offerFactory, address _oracle)
-        ERC20Draggable(wrappedToken, quorumBps, votePeriodSeconds, offerFactory, _oracle) ERC20Flaggable(0) ERC20Recoverable(recoveryHub) {
+    constructor(
+        string memory _terms,
+        address _wrappedToken,
+        uint256 _quorumBps,
+        uint256 _votePeriodSeconds,
+        address _recoveryHub,
+        address _offerFactory,
+        address _oracle
+    )
+        ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle) ERC20Flaggable(0) ERC20Recoverable(_recoveryHub) 
+    {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
-        IRecoveryHub(address(recoveryHub)).setRecoverable(false);
+        IRecoveryHub(address(_recoveryHub)).setRecoverable(false);
     }
 
     function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {

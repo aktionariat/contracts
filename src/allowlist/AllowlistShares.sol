@@ -30,21 +30,20 @@ pragma solidity ^0.8;
 import "../recovery/ERC20Recoverable.sol";
 import "./ERC20Allowlistable.sol";
 import "../ERC20Named.sol";
+import "../Shares.sol";
 
-contract AllowlistShares is ERC20Allowlistable, ERC20Recoverable, ERC20Named {
-
-  string public terms;
+contract AllowlistShares is Shares, ERC20Allowlistable {
 
   constructor(
-    string memory name,
-    string memory symbol,
+    string memory _symbol,
+    string memory _name,
     string memory _terms,
+    uint256 _totalShares,
     address _recoveryHub,
     address _owner
   )
+    Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
     ERC20Allowlistable()
-    ERC20Recoverable(_recoveryHub)
-    ERC20Named(_owner, name, symbol, 0) 
   {
     terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     IRecoveryHub(address(_recoveryHub)).setRecoverable(false); 
@@ -54,8 +53,12 @@ contract AllowlistShares is ERC20Allowlistable, ERC20Recoverable, ERC20Named {
       return owner;
   }
 
-  function transfer(address recipient, uint256 amount) override(ERC20Recoverable, ERC20Flaggable) virtual public returns (bool) {
+  function transfer(address recipient, uint256 amount) override(Shares, ERC20Flaggable) virtual public returns (bool) {
     return super.transfer(recipient, amount); 
+  }
+
+  function _mint(address account, uint256 amount) internal override(Shares, ERC20Flaggable) {
+      super._mint(account, amount);
   }
 
   function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, ERC20Flaggable) internal {

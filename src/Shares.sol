@@ -106,7 +106,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
         super._setCustomClaimCollateral(collateral, rate);
     }
 
-    function getClaimDeleter() public override view returns (address) {
+    function getClaimDeleter() public virtual override view returns (address) {
         return owner;
     }
 
@@ -146,7 +146,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
         _mint(target, amount);
     }
 
-    function _mint(address account, uint256 amount) internal override {
+    function _mint(address account, uint256 amount) internal virtual override {
         require(totalValidSupply() + amount <= totalShares, "total");
         super._mint(account, amount);
     }
