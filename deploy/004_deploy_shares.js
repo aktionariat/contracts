@@ -36,5 +36,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["Shares"];
-module.exports.dependencies = ["multisig"];
-module.exports.dependencies = ["RecoveryHub"];
+module.exports.dependencies = ["multisig", "RecoveryHub"];

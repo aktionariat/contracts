@@ -67,13 +67,17 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     // if transfer restrictions are applied, we guess that should also be the case for newly minted tokens
     // if the admin disagrees, it is still possible to change the type of the null address
     if (transferRestrictionsApplicable){
-      setType(address(0x0), TYPE_POWERLISTED);
+      setTypeInternal(address(0x0), TYPE_POWERLISTED);
     } else {
-      setType(address(0x0), TYPE_DEFAULT);
+      setTypeInternal(address(0x0), TYPE_DEFAULT);
     }
   }
 
   function setType(address account, uint8 typeNumber) public onlyOwner {
+    setTypeInternal(account, typeNumber);
+  }
+
+  function setTypeInternal(address account, uint8 typeNumber) internal {
     setFlag(account, FLAG_INDEX_ALLOWLIST, typeNumber == TYPE_ALLOWLISTED);
     setFlag(account, FLAG_INDEX_FORBIDDEN, typeNumber == TYPE_FORBIDDEN);
     setFlag(account, FLAG_INDEX_POWERLIST, typeNumber == TYPE_POWERLISTED);
