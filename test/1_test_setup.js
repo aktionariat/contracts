@@ -15,6 +15,7 @@ const DraggableShares = artifacts.require("DraggableShares");
 const Brokerbot = artifacts.require("Brokerbot");
 const PaymentHub = artifacts.require("PaymentHub");
 const RecoveryHub = artifacts.require("RecoveryHub");
+const OfferFactory = artifacts.require("OfferFactory");
 
 const ForceSend = artifacts.require("ForceSend");
 const ERC20Basic = artifacts.require("ERC20Basic");
@@ -25,6 +26,7 @@ contract("Migration", (accounts) => {
     const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
     const brokerbot = await Brokerbot.deployed();
     const recoveryHub = await RecoveryHub.deployed();
+    const offerFactory = await OfferFactory.deployed();
     const draggableShares = await DraggableShares.deployed();
     const shares = await Shares.deployed();
     const paymentHub = await PaymentHub.deployed();

@@ -3,7 +3,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer } = await getNamedAccounts();
 
-  const multisig = await deployments.get('MultiSigTest');
+  const multisig = await deployments.get("MultiSigTest");
+  const recoveryHub = await deployments.get("RecoveryHub");
 
   console.log("-----------------------")
   console.log("Deploy Shares")
@@ -26,7 +27,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       name,
       terms,
       totalShares,
-      multisig.address],
+      multisig.address,
+      recoveryHub.address],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -35,3 +37,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
 module.exports.tags = ["Shares"];
 module.exports.dependencies = ["multisig"];
+module.exports.dependencies = ["RecoveryHub"];
