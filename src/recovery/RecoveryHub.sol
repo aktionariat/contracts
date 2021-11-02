@@ -25,11 +25,11 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.8;
+pragma solidity ^0.8;
 
 import "./IRecoveryHub.sol";
 import "./IRecoverable.sol";
-import "../IERC20.sol";
+import "../ERC20/IERC20.sol";
 
 /**
  * @title Recoverable
