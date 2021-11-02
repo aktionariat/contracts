@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity ^0.8;
+pragma solidity ^0.8.0;
 
 import "../ERC20/extensions/ERC20Flaggable.sol";
 import "./IRecoveryHub.sol";

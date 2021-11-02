@@ -10,7 +10,7 @@
 // - use upper 32 bits of balance for flags
 // - add a global settings variable
 
-pragma solidity ^0.8;
+pragma solidity ^0.8.0;
 
 import "../IERC20.sol";
 import "../../interfaces/IERC677Receiver.sol";

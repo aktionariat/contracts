@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity ^0.8;
+pragma solidity ^0.8.0;
 
 import "../utils/Address.sol";
 import "../ERC20/IERC20.sol";
@@ -78,7 +78,7 @@ contract PaymentHub {
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < msg.value) {
             uniswapRouter.refundETH();
-            payable(msg.sender).transfer(address(this).balance); // return change
+            payable(msg.sender).transfer(msg.value - amountIn); // return change
         }
     }
 

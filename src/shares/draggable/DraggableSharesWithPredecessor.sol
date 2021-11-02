@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity 0.8;
+pragma solidity ^0.8.0;
 
 import "./DraggableShares.sol";
 import "./ERC20Draggable.sol";
@@ -57,9 +57,19 @@ contract DraggableSharesWithPredecessor is DraggableShares {
 
     address immutable newBaseToken;
 
-    constructor(address newBaseToken_, string memory _terms, address predecessor, uint256 quorum, uint256 votePeriod, address recoveryHub, address offerFactory, address _oracle)
-        DraggableShares(_terms, predecessor, quorum, votePeriod, recoveryHub, offerFactory, _oracle) {
-        newBaseToken = newBaseToken_;
+    constructor(
+        address _newBaseToken,
+        string memory _terms,
+        address _predecessor,
+        uint256 _quorum,
+        uint256 _votePeriod,
+        address _recoveryHub,
+        address _offerFactory,
+        address _oracle
+    )
+        DraggableShares(_terms, _predecessor, _quorum, _votePeriod, _recoveryHub, _offerFactory, _oracle)
+    {
+        newBaseToken = _newBaseToken;
     }
 
     // custom built convert function for old DSHS contract

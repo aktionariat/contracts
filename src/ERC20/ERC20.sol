@@ -9,7 +9,7 @@
 // - let name() and symbol() be implemented by subclass
 // - infinite allowance support, with 2^255 and above considered infinite
 
-pragma solidity ^0.8;
+pragma solidity ^0.8.0;
 
 import "./IERC20.sol";
 import "../interfaces/IERC677Receiver.sol";

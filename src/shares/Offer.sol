@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity ^0.8;
+pragma solidity ^0.8.0;
 
 import "../ERC20/IERC20.sol";
 import "./draggable/IDraggable.sol";
@@ -64,14 +64,16 @@ contract Offer {
         uint256 _price,
         address _currency,
         uint256 _quorum,
-        uint256 votePeriod
-        ) payable {
+        uint256 _votePeriod
+    ) 
+        payable 
+    {
         buyer = _buyer;
         token = IDraggable(_token);
         currency = IERC20(_currency);
         price = _price;
         quorum = _quorum;
-        voteEnd = block.timestamp + votePeriod;
+        voteEnd = block.timestamp + _votePeriod;
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);

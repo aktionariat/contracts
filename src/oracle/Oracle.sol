@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.0;
 
 contract Oracle {
   mapping (uint256 => Request) requests; //list of requests made to the contract

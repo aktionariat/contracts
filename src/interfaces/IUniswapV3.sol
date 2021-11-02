@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/IQuoter.sol
-pragma solidity ^0.8;
+pragma solidity ^0.8.0;
 
 interface IQuoter {
     function quoteExactOutputSingle(

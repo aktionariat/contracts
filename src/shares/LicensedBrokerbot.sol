@@ -10,7 +10,7 @@
 *
 * Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
 */
-pragma solidity ^0.8;
+pragma solidity ^0.8.0;
 
 import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";
@@ -39,11 +39,19 @@ contract LicensedBrokerbot is Ownable {
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
 
-    constructor(address shareToken, uint256 price_, uint256 increment_, address baseCurrency, address owner) Ownable(owner){
-        base = baseCurrency;
-        token = shareToken;
-        price = price_;
-        increment = increment_;
+    constructor(
+        address _shareToken,
+        uint256 _price,
+        uint256 _increment,
+        address _baseCurrency,
+        address _owner
+    )
+        Ownable(_owner)
+    {
+        base = _baseCurrency;
+        token = _shareToken;
+        price = _price;
+        increment = _increment;
         paymenthub = address(0x4d99F8e88BAB0BEe8cD840b1Ad3c0bE4f49c293A);
     }
 
