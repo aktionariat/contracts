@@ -9,7 +9,7 @@ contract ERC20Basic is ERC20Named {
     constructor(address _admin, string memory _name , string memory _symbol, uint8 _decimals) ERC20Named(_admin, _name, _symbol, _decimals) {
     }
 
-    function mint(address target, uint256 amount) public onlyOwner {
+    function mint(address target, uint256 amount) external onlyOwner {
         _mint(target, amount);
     }
 

@@ -37,7 +37,7 @@ contract Oracle {
     string memory _urlToQuery,
     string memory _attributeToFetch
   )
-  public
+    external
   {
     Request storage r = requests[currentId];
     r.id = currentId;
@@ -64,7 +64,9 @@ contract Oracle {
   function updateRequest (
     uint _id,
     string memory _valueRetrieved
-  ) public {
+  ) 
+    external
+  {
 
     Request storage currRequest = requests[_id];
 

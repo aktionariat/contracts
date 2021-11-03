@@ -25,11 +25,11 @@ contract MultiSigCloneFactory {
     return instance;
   }*/
 
-  function predict(bytes32 salt) public view returns (address) {
+  function predict(bytes32 salt) external view returns (address) {
     return Clones.predictDeterministicAddress(multiSigImplementation, salt);
   }
 
-  function create(address owner, bytes32 salt) public returns (address) {
+  function create(address owner, bytes32 salt) external returns (address) {
     address payable instance = payable(Clones.cloneDeterministic(multiSigImplementation, salt));
     MultiSigWallet(instance).initialize(owner);
     emit ContractCreated(instance, "MultiSigWallet");

@@ -66,7 +66,7 @@ contract SharesWithPredecessor is Shares {
         predecessor = Shares(_predecessor);
     }
 
-    function convertOldShares() public {
+    function convertOldShares() external {
         uint256 balance = predecessor.balanceOf(msg.sender);
         predecessor.transferFrom(msg.sender, address(this), balance);
         predecessor.burn(balance);

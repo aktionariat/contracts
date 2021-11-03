@@ -41,7 +41,7 @@ contract Nonce {
     /**
      * The next recommended nonce, which is the highest nonce ever used plus one.
      */
-    function nextNonce() public view returns (uint256){
+    function nextNonce() external view returns (uint256){
         return getMax() + 1;
     }
 
@@ -50,7 +50,7 @@ contract Nonce {
      * For the 100 nonces in the interval [nextNonce(), nextNonce + 99], this is always true.
      * For the nonces in the interval [nextNonce() - 129, nextNonce() - 1], this is true for the nonces that have not been used yet.
      */ 
-    function isFree(uint128 nonce) public view returns (bool){
+    function isFree(uint128 nonce) external view returns (bool){
         uint128 max = getMax();
         return isValidHighNonce(max, nonce) || isValidLowNonce(max, getRegister(), nonce);
     }

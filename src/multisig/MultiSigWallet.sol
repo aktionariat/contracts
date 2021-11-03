@@ -30,7 +30,7 @@ contract MultiSigWallet is Nonce, Initializable {
   constructor () {
   }
 
-  function initialize(address owner) public initializer {
+  function initialize(address owner) external initializer {
     // We use the gas price to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
     // same id, but it practically rules out that someone accidentally creates two
@@ -50,7 +50,7 @@ contract MultiSigWallet is Nonce, Initializable {
    * Checks if the provided signatures suffice to sign the transaction and if the nonce is correct.
    */
   function checkSignatures(uint128 nonce, address to, uint value, bytes calldata data,
-    uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) public view returns (address[] memory) {
+    uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external view returns (address[] memory) {
     bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     return verifySignatures(transactionHash, v, r, s);
   }
@@ -58,12 +58,12 @@ contract MultiSigWallet is Nonce, Initializable {
   /**
    * Checks if the execution of a transaction would succeed if it was properly signed.
    */
-  function checkExecution(address to, uint value, bytes calldata data) public {
+  function checkExecution(address to, uint value, bytes calldata data) external {
     Address.functionCallWithValue(to, data, value);
     require(false, "Test passed. Reverting.");
   }
 
-  function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) public returns (bytes memory) {
+  function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external returns (bytes memory) {
     bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     address[] memory found = verifySignatures(transactionHash, v, r, s);
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
@@ -139,16 +139,16 @@ contract MultiSigWallet is Nonce, Initializable {
   /**
    * Call this method through execute
    */
-  function setSigner(address signer, uint8 cosignaturesNeeded) public authorized {
+  function setSigner(address signer, uint8 cosignaturesNeeded) external authorized {
     _setSigner(signer, cosignaturesNeeded);
     require(signerCount > 0);
   }
 
-  function migrate(address destination) public {
+  function migrate(address destination) external {
     _migrate(msg.sender, destination);
   }
 
-  function migrate(address source, address destination) public authorized {
+  function migrate(address source, address destination) external authorized {
     _migrate(source, destination);
   }
 

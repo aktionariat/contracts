@@ -65,7 +65,7 @@ contract RecoveryHub is IRecoveryHub {
     event ClaimDeleted(address indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
     event ClaimResolved(address indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
 
-    function setRecoverable(bool enabled) public override {
+    function setRecoverable(bool enabled) external override {
         recoveryDisabled[msg.sender] = !enabled;
     }
 
@@ -92,7 +92,7 @@ contract RecoveryHub is IRecoveryHub {
     * whenever a claim is made for their address (this of course is only possible if they are known to the owner, e.g.
     * through a shareholder register).
     */
-    function declareLost(address token, address collateralType, address lostAddress) public {
+    function declareLost(address token, address collateralType, address lostAddress) external {
         require(isRecoveryEnabled(lostAddress), "disabled");
         uint256 collateralRate = IRecoverable(token).getCollateralRate(collateralType);
         require(collateralRate > 0, "bad collateral");
@@ -115,19 +115,19 @@ contract RecoveryHub is IRecoveryHub {
         emit ClaimMade(token, lostAddress, claimant, balance);
     }
 
-    function getClaimant(address token, address lostAddress) public view returns (address) {
+    function getClaimant(address token, address lostAddress) external view returns (address) {
         return claims[token][lostAddress].claimant;
     }
 
-    function getCollateral(address token, address lostAddress) public view returns (uint256) {
+    function getCollateral(address token, address lostAddress) external view returns (uint256) {
         return claims[token][lostAddress].collateral;
     }
 
-    function getCollateralType(address token, address lostAddress) public view returns (address) {
+    function getCollateralType(address token, address lostAddress) external view returns (address) {
         return claims[token][lostAddress].currencyUsed;
     }
 
-    function getTimeStamp(address token, address lostAddress) public view returns (uint256) {
+    function getTimeStamp(address token, address lostAddress) external view returns (uint256) {
         return claims[token][lostAddress].timestamp;
     }
 
@@ -135,11 +135,11 @@ contract RecoveryHub is IRecoveryHub {
      * Clears a claim after the key has been found again and assigns the collateral to the "lost" address.
      * This is the price an adverse claimer pays for filing a false claim and makes it risky to do so.
      */
-    function clearClaimFromToken(address holder) public override {
+    function clearClaimFromToken(address holder) external override {
         clearClaim(msg.sender, holder);
     }
 
-    function clearClaimFromUser(address token) public {
+    function clearClaimFromUser(address token) external {
         clearClaim(token, msg.sender);
     }
 
@@ -158,7 +158,7 @@ contract RecoveryHub is IRecoveryHub {
     * After the claim period has passed, the claimant can call this function to send the
     * tokens on the lost address as well as the collateral to himself.
     */
-    function recover(address token, address lostAddress) public {
+    function recover(address token, address lostAddress) external {
         Claim memory claim = claims[token][lostAddress];
         address claimant = claim.claimant;
         require(claimant == msg.sender, "not claimant");
@@ -176,7 +176,7 @@ contract RecoveryHub is IRecoveryHub {
     /**
      * This function is to be executed by the claim deleter only in case a dispute needs to be resolved manually.
      */
-    function deleteClaim(address lostAddress) public override {
+    function deleteClaim(address lostAddress) external override {
         address token = msg.sender;
         Claim memory claim = claims[token][lostAddress];
         IERC20 currency = IERC20(claim.currencyUsed);

@@ -75,7 +75,7 @@ contract Brokerbot is Ownable {
         paymenthub = address(0x3eABee781f6569328143C610700A99E9ceE82cba);
     }
 
-    function setPrice(uint256 newPrice, uint256 newIncrement) public onlyOwner {
+    function setPrice(uint256 newPrice, uint256 newIncrement) external onlyOwner {
         anchorPrice(newPrice);
         increment = newIncrement;
     }
@@ -85,7 +85,7 @@ contract Brokerbot is Ownable {
     }
 
     // secondsPerStep should be negative for downwards drift
-    function setDrift(uint256 secondsPerStep, int256 newDriftIncrement) public onlyOwner {
+    function setDrift(uint256 secondsPerStep, int256 newDriftIncrement) external onlyOwner {
         anchorPrice(getPrice());
         timeToDrift = secondsPerStep;
         driftIncrement = newDriftIncrement;
@@ -133,7 +133,7 @@ contract Brokerbot is Ownable {
         return costs;
     }
 
-    function notifyTrade(address buyer, uint256 shares, bytes calldata ref) public onlyOwner {
+    function notifyTrade(address buyer, uint256 shares, bytes calldata ref) external onlyOwner {
         notifyTraded(buyer, shares, ref);
     }
 
@@ -142,13 +142,13 @@ contract Brokerbot is Ownable {
         IERC20(token).transfer(buyer, shares);
     }
 
-    function notifyTrades(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) public onlyOwner {
+    function notifyTrades(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) external onlyOwner {
         for (uint i = 0; i < buyers.length; i++) {
             notifyTraded(buyers[i], shares[i], ref[i]);
         }
     }
 
-    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) public onlyOwner {
+    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) external onlyOwner {
         for (uint i = 0; i < buyers.length; i++) {
             notifyTradeAndTransfer(buyers[i], shares[i], ref[i]);
         }
@@ -170,21 +170,21 @@ contract Brokerbot is Ownable {
     }
 
     // ERC-677 recipient
-    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) public returns (bool) {
+    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) external returns (bool) {
         processIncoming(msg.sender, from, amount, ref);
         return true;
     }
 
     // ITokenReceiver
-    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) public {
+    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) external {
         processIncoming(token_, from, amount, ref);
     }
 
-    function buyingEnabled() public view returns (bool){
+    function buyingEnabled() external view returns (bool){
         return hasSetting(BUYING_ENABLED);
     }
 
-    function sellingEnabled() public view returns (bool){
+    function sellingEnabled() external view returns (bool){
         return hasSetting(SELLING_ENABLED);
     }
 
@@ -273,15 +273,15 @@ contract Brokerbot is Ownable {
         IERC20(ercAddress).transfer(to, amount);
     }
 
-    function setPaymentHub(address hub) public onlyOwner() {
+    function setPaymentHub(address hub) external onlyOwner() {
         paymenthub = hub;
     }
 
-    function setSettings(uint256 settings_) public onlyOwner() {
+    function setSettings(uint256 settings_) external onlyOwner() {
         settings = settings_;
     }
 
-    function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) public onlyOwner() {
+    function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) external onlyOwner() {
         if (newBuyingEnabled != hasSetting(BUYING_ENABLED)){
             settings ^= BUYING_ENABLED;
         }

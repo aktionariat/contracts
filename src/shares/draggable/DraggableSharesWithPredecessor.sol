@@ -73,7 +73,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     }
 
     // custom built convert function for old DSHS contract
-    function convert() public {
+    function convert() external {
         address oldBase = getOldBase();
         fetchTokens();
         switchBase(oldBase);
@@ -106,11 +106,11 @@ contract DraggableSharesWithPredecessor is DraggableShares {
 }
 
 abstract contract IBaseToken {
-    function convertOldShares() virtual public;
+    function convertOldShares() virtual external;
 }
 
 abstract contract IDSHS {
-    function migrate() virtual public;
-    function getWrappedContract() virtual view public returns (address);
-    function totalSupply() virtual public returns (uint256);
+    function migrate() virtual external;
+    function getWrappedContract() virtual view external returns (address);
+    function totalSupply() virtual external returns (uint256);
 }

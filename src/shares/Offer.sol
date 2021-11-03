@@ -80,7 +80,7 @@ contract Offer {
         emit OfferCreated(_buyer, address(_token), _price, address(_currency));
     }
 
-    function makeCompetingOffer(address betterOffer) public {
+    function makeCompetingOffer(address betterOffer) external {
         require(msg.sender == address(token));
         Offer better = Offer(betterOffer);
         require(!isAccepted(), "old already accepted");
@@ -93,7 +93,7 @@ contract Offer {
         return block.timestamp > voteEnd + 30 days; // buyer has thirty days to complete acquisition after voting ends
     }
 
-    function contest() public {
+    function contest() external {
         if (hasExpired()) {
             kill(false, "expired");
         } else if (isDeclined()) {
@@ -103,12 +103,12 @@ contract Offer {
         }
     }
 
-    function cancel() public {
+    function cancel() external {
         require(msg.sender == buyer);
         kill(false, "cancelled");
     }
 
-    function execute() public {
+    function execute() external {
         require(msg.sender == buyer, "not buyer");
         require(isAccepted(), "not accepted");
         uint256 totalPrice = getTotalPrice();
@@ -149,7 +149,7 @@ contract Offer {
         }
     }
 
-    function notifyMoved(address from, address to, uint256 value) public {
+    function notifyMoved(address from, address to, uint256 value) external {
         require(msg.sender == address(token));
         if (isVotingOpen()) {
             Vote fromVoting = votes[from];
@@ -188,7 +188,7 @@ contract Offer {
      * This functions is idempotent and sets the number of external yes and no votes. So when more votes come in, the
      * oracle should always report the total number of yes and no votes. Abstentions are not counted.
      */
-    function reportExternalVotes(uint256 yes, uint256 no) public {
+    function reportExternalVotes(uint256 yes, uint256 no) external {
         require(msg.sender == token.getOracle(), "not oracle");
         require(yes + no + IERC20(address(token)).totalSupply() <= token.totalVotingTokens(), "too many votes");
         // adjust total votes taking into account that the oralce might have reported different counts before
@@ -199,11 +199,11 @@ contract Offer {
         noExternal = no;
     }
 
-    function voteYes() public {
+    function voteYes() external {
         vote(Vote.YES);
     }
 
-    function voteNo() public { 
+    function voteNo() external { 
         vote(Vote.NO);
     }
 
@@ -216,11 +216,11 @@ contract Offer {
         update(previousVote, newVote, IDraggable(token).votingPower(msg.sender));
     }
 
-    function hasVotedYes(address voter) public view returns (bool) {
+    function hasVotedYes(address voter) external view returns (bool) {
         return votes[voter] == Vote.YES;
     }
 
-    function hasVotedNo(address voter) public view returns (bool) {
+    function hasVotedNo(address voter) external view returns (bool) {
         return votes[voter] == Vote.NO;
     }
 

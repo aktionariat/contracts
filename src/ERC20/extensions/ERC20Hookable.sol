@@ -58,7 +58,7 @@ abstract contract ERC20Hookable is ERC20Flaggable, Ownable {
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    function setHook(address _hook) public onlyOwner() {
+    function setHook(address _hook) external onlyOwner() {
         hook = _hook;
         emit HookSet(_hook);
     }

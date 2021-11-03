@@ -49,7 +49,7 @@ contract AllowlistHook is ITransferHook, Ownable {
         require(allowed[to], "Target address not allowed");
     }
 
-    function allow(address[] calldata many) public onlyOwner() {
+    function allow(address[] calldata many) external onlyOwner() {
         for (uint i=0; i<many.length; i++){
             allow(many[i]);
         }
@@ -60,7 +60,7 @@ contract AllowlistHook is ITransferHook, Ownable {
         emit AllowListed(target);
     }
 
-    function disallow(address[] calldata many) public onlyOwner() {
+    function disallow(address[] calldata many) external onlyOwner() {
         for (uint i=0; i<many.length; i++){
             disallow(many[i]);
         }

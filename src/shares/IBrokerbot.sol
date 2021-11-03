@@ -30,47 +30,47 @@ pragma solidity ^0.8.0;
 abstract contract IBrokerbot {
 
     // Base ERC-20 token, e.g. XCHF
-    function base() public virtual returns (address);
+    function base() external virtual returns (address);
 
     // Traded token, e.g. some shares of a company
-    function token() public virtual returns (address);
+    function token() external virtual returns (address);
 
     // Current price in base units per traded token
-    function getPrice() public virtual view returns (uint256);
+    function getPrice() external virtual view returns (uint256);
 
     // Cost of buying shares shares in ether
-    function getPriceInEther(uint256 shares) public virtual view returns (uint256);
+    function getPriceInEther(uint256 shares) external virtual view returns (uint256);
 
     // Buy shares shares with Ether. The ETH will automatically be swapped into the base currency via uniswap
-    function buyWithEther(uint256 shares) public virtual payable returns (uint256);
+    function buyWithEther(uint256 shares) external virtual payable returns (uint256);
 
     // Buy shares with msg.sender as recipient
-    function buy(uint256 numberOfSharesToBuy) public virtual returns (uint256);
+    function buy(uint256 numberOfSharesToBuy) external virtual returns (uint256);
 
     // Buy numberOfSharesToBuy shares and send them to recipient, paying with the base currency (allowance must be set)
     // For currencies that support the ERC-677, one can also send them directly to the Brokerbot, triggering a buy.
-    function buy(address recipient, uint256 numberOfSharesToBuy) public virtual returns (uint256);
+    function buy(address recipient, uint256 numberOfSharesToBuy) external virtual returns (uint256);
 
     // Sell shares with msg.sender as proceeds recipient
-    function sell(uint256 tokens) public virtual returns (uint256);
+    function sell(uint256 tokens) external virtual returns (uint256);
 
     // Sell tokens shares and send the proceeds to recipient (allowance must be set)
     // For tokens that support the ERC-677, one can also send them directly to the Brokerbot, triggering a sell.
-    function sell(address recipient, uint256 tokens) public virtual returns (uint256);
+    function sell(address recipient, uint256 tokens) external virtual returns (uint256);
 
     // The fee that is charged when selling shares worth totalPrice
-    function getSaleFee(uint256 totalPrice) public virtual view returns (uint256);
+    function getSaleFee(uint256 totalPrice) external virtual view returns (uint256);
 
     // The amount of money a seller gets when selling shares shares (after deducting the fee)
-    function getSaleProceeds(uint256 shares) public virtual view returns (uint256);
+    function getSaleProceeds(uint256 shares) external virtual view returns (uint256);
 
     // The amount of money a seller gets when selling shares shares (before deducting the fee)
-    function getSellPrice(uint256 shares) public virtual view returns (uint256);
+    function getSellPrice(uint256 shares) external virtual view returns (uint256);
 
     // What it costs to buy shares shares in the base currency
-    function getBuyPrice(uint256 shares) public virtual view returns (uint256);
+    function getBuyPrice(uint256 shares) external virtual view returns (uint256);
 
     // How many shares one can by for money amount of the base currency
-    function getShares(uint256 money) public virtual view returns (uint256);
+    function getShares(uint256 money) external virtual view returns (uint256);
 
 }

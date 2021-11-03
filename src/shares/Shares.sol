@@ -77,7 +77,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
         terms = _terms;
     }
 
-    function setTerms(string memory _terms) public onlyOwner {
+    function setTerms(string memory _terms) external onlyOwner {
         terms = _terms;
     }
 
@@ -87,7 +87,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      * in case not all shares have been tokenized. Also, it can be lower than totalSupply() in case some
      * tokens have become invalid.
      */
-    function setTotalShares(uint256 _newTotalShares) public onlyOwner() {
+    function setTotalShares(uint256 _newTotalShares) external onlyOwner() {
         require(_newTotalShares >= totalValidSupply(), "below supply");
         totalShares = _newTotalShares;
     }
@@ -102,7 +102,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
     /**
      * See parent method for collateral requirements.
      */
-    function setCustomClaimCollateral(address collateral, uint256 rate) public onlyOwner() {
+    function setCustomClaimCollateral(address collateral, uint256 rate) external onlyOwner() {
         super._setCustomClaimCollateral(collateral, rate);
     }
 
@@ -137,7 +137,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      * Allows the company to tokenize shares. If these shares are newly created, setTotalShares must be
      * called first in order to adjust the total number of shares.
      */
-    function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) public {
+    function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
         IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data);
     }
@@ -165,7 +165,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      * tokens on a different blockchain). It is not recommended to call this function without
      * having agreed with the company on the further fate of the shares in question.
      */
-    function burn(uint256 _amount) public {
+    function burn(uint256 _amount) external {
         require(_amount <= balanceOf(msg.sender), "balance");
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);

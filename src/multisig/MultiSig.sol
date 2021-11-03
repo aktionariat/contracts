@@ -46,7 +46,7 @@ contract MultiSig is Nonce {
    * Checks if the provided signatures suffice to sign the transaction and if the nonce is correct.
    */
   function checkSignatures(uint128 nonce, address to, uint value, bytes calldata data,
-    uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) public view returns (address[] memory) {
+    uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external view returns (address[] memory) {
     bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     return verifySignatures(transactionHash, v, r, s);
   }
@@ -54,12 +54,12 @@ contract MultiSig is Nonce {
   /**
    * Checks if the execution of a transaction would succeed if it was properly signed.
    */
-  function checkExecution(address to, uint value, bytes calldata data) public {
+  function checkExecution(address to, uint value, bytes calldata data) external {
     Address.functionCallWithValue(to, data, value);
     require(false, "Test passed. Reverting.");
   }
 
-  function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) public returns (bytes memory) {
+  function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external returns (bytes memory) {
     bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     address[] memory found = verifySignatures(transactionHash, v, r, s);
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
@@ -135,16 +135,16 @@ contract MultiSig is Nonce {
   /**
    * Call this method through execute
    */
-  function setSigner(address signer, uint8 cosignaturesNeeded) public authorized {
+  function setSigner(address signer, uint8 cosignaturesNeeded) external authorized {
     _setSigner(signer, cosignaturesNeeded);
     require(signerCount > 0);
   }
 
-  function migrate(address destination) public {
+  function migrate(address destination) external {
     _migrate(msg.sender, destination);
   }
 
-  function migrate(address source, address destination) public authorized {
+  function migrate(address source, address destination) external authorized {
     _migrate(source, destination);
   }
 

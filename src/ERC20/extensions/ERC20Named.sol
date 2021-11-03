@@ -14,7 +14,7 @@ contract ERC20Named is ERC20Flaggable, Ownable {
         setNameInternal(_name, _symbol);
     }
 
-    function setName(string memory _symbol, string memory _name) public onlyOwner {
+    function setName(string memory _symbol, string memory _name) external onlyOwner {
         setNameInternal(_symbol, _name);
     }
 

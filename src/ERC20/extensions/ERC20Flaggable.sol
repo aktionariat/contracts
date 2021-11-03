@@ -78,7 +78,7 @@ abstract contract ERC20Flaggable is IERC20 {
         return _balances[account] & BALANCES_MASK;
     }
 
-    function hasFlag(address account, uint8 number) public view returns (bool) {
+    function hasFlag(address account, uint8 number) external view returns (bool) {
         return hasFlagInternal(account, number);
     }
 
@@ -117,7 +117,7 @@ abstract contract ERC20Flaggable is IERC20 {
     /**
      * @dev See `IERC20.allowance`.
      */
-    function allowance(address owner, address spender) public view override returns (uint256) {
+    function allowance(address owner, address spender) external view override returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -128,7 +128,7 @@ abstract contract ERC20Flaggable is IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address spender, uint256 value) public override returns (bool) {
+    function approve(address spender, uint256 value) external override returns (bool) {
         _approve(msg.sender, spender, value);
         return true;
     }
@@ -145,7 +145,7 @@ abstract contract ERC20Flaggable is IERC20 {
      * - the caller must have allowance for `sender`'s tokens of at least
      * `amount`.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _transfer(sender, recipient, amount);
         uint256 currentAllowance = _allowances[sender][msg.sender];
         if (currentAllowance < (1 << 255)){
@@ -178,7 +178,7 @@ abstract contract ERC20Flaggable is IERC20 {
     }
 
     // ERC-677 functionality, can be useful for swapping and wrapping tokens
-    function transferAndCall(address recipient, uint amount, bytes calldata data) public returns (bool) {
+    function transferAndCall(address recipient, uint amount, bytes calldata data) external returns (bool) {
         bool success = transfer(recipient, amount);
         if (success){
             success = IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);

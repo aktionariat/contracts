@@ -58,7 +58,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
    * Also sets the powerlist and allowlist flags on the null address accordingly.
    * It is recommended to also deactivate the powerlist flag on other addresses.
    */
-  function setApplicable(bool transferRestrictionsApplicable) public onlyOwner {
+  function setApplicable(bool transferRestrictionsApplicable) external onlyOwner {
     setApplicableInternal(transferRestrictionsApplicable);
   }
 

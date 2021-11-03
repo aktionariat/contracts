@@ -89,14 +89,14 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		address from,
 		uint256 amount,
 		bytes calldata
-	) public override returns (bool) {
+	) external override returns (bool) {
 		require(msg.sender == address(wrapped));
 		_mint(from, amount);
 		return true;
 	}
 
 	/** Increases the number of drag-along tokens. Requires minter to deposit an equal amount of share tokens */
-	function wrap(address shareholder, uint256 amount) public {
+	function wrap(address shareholder, uint256 amount) external {
 		require(wrapped.transferFrom(msg.sender, address(this), amount));
 		_mint(shareholder, amount);
 	}
@@ -134,7 +134,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	}
 
 	/** Decrease the number of drag-along tokens. The user gets back their shares in return */
-	function unwrap(uint256 amount) public {
+	function unwrap(uint256 amount) external {
 		require(!isBinding());
 		unwrap(msg.sender, amount, unwrapConversionFactor);
 	}
@@ -157,7 +157,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	 * operation might depend on the circumstances. Burning and reussing the wrapped token
 	 * does not free the sender from the legal obligations of the shareholder agreement.
 	 */
-	function burn(uint256 amount) public {
+	function burn(uint256 amount) external {
 		_burn(msg.sender, amount);
 		uint256 factor = isBinding() ? 1 : unwrapConversionFactor;
 		IShares(address(wrapped)).burn(amount * factor);
@@ -167,7 +167,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		bytes32 salt,
 		uint256 pricePerShare,
 		address currency
-	) public payable {
+	) external payable {
 		require(isBinding());
 		address newOffer = factory.create{value: msg.value}(
 			salt,
@@ -184,13 +184,13 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		offer = IOffer(newOffer);
 	}
 
-	function drag(address buyer, address currency) public override {
+	function drag(address buyer, address currency) external override {
 		require(msg.sender == address(offer));
 		unwrap(buyer, balanceOf(buyer), 1);
 		replaceWrapped(currency, buyer);
 	}
 
-	function notifyOfferEnded() public override {
+	function notifyOfferEnded() external override {
 		if (msg.sender == address(offer)) {
 			offer = IOffer(address(0));
 		}
@@ -209,12 +209,12 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		return oracle;
 	}
 
-	function setOracle(address newOracle) public {
+	function setOracle(address newOracle) external {
 		require(msg.sender == oracle, "not oracle");
 		oracle = newOracle;
 	}
 
-	function migrateWithExternalApproval(address target, uint256 externalSupportingVotes) public {
+	function migrateWithExternalApproval(address target, uint256 externalSupportingVotes) external {
 		require(msg.sender == oracle);
 		// Additional votes cannot be higher than the votes not represented by these tokens.
 		// The assumption here is that more shareholders are bound to the shareholder agreement
@@ -224,7 +224,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		migrate(target, externalSupportingVotes);
 	}
 
-	function migrate() public {
+	function migrate() external {
 		migrate(msg.sender, 0);
 	}
 
@@ -238,7 +238,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		emit MigrationSucceeded(successor, yesVotes, additionalVotes, totalVotes);
 	}
 
-	function votingPower(address voter) public view override returns (uint256) {
+	function votingPower(address voter) external view override returns (uint256) {
 		return balanceOf(voter);
 	}
 
@@ -250,7 +250,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		return hasFlagInternal(voter, FLAG_VOTED);
 	}
 
-	function notifyVoted(address voter) public override {
+	function notifyVoted(address voter) external override {
 		setFlag(voter, FLAG_VOTED, true);
 	}
 
@@ -276,19 +276,19 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 }
 
 abstract contract IShares {
-	function burn(uint256) public virtual;
+	function burn(uint256) external virtual;
 
-	function totalShares() public view virtual returns (uint256);
+	function totalShares() external view virtual returns (uint256);
 }
 
 abstract contract IOffer {
-	function makeCompetingOffer(address newOffer) public virtual;
+	function makeCompetingOffer(address newOffer) external virtual;
 
 	function notifyMoved(
 		address from,
 		address to,
 		uint256 value
-	) public virtual;
+	) external virtual;
 }
 
 abstract contract IOfferFactory {
@@ -299,5 +299,5 @@ abstract contract IOfferFactory {
 		address currency,
 		uint256 quorum,
 		uint256 votePeriod
-	) public payable virtual returns (address);
+	) external payable virtual returns (address);
 }

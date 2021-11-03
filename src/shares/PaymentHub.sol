@@ -52,7 +52,7 @@ contract PaymentHub {
         weth = uniswapQuoter.WETH9();
     }
 
-    function getPriceInEther(uint256 amountOfXCHF) public returns (uint256) {
+    function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
         return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
     }
 
@@ -82,7 +82,7 @@ contract PaymentHub {
         }
     }
 
-    function multiPay(address[] calldata recipients, uint256[] calldata amounts) public {
+    function multiPay(address[] calldata recipients, uint256[] calldata amounts) external {
         multiPay(currency, recipients, amounts);
     }
 
@@ -95,7 +95,7 @@ contract PaymentHub {
     /**
      * Can (at least in theory) save some gas as the sender balance only is touched in one transaction.
      */
-    function multiPayAndNotify(address token, address[] calldata recipients, uint256[] calldata amounts, bytes calldata ref) public {
+    function multiPayAndNotify(address token, address[] calldata recipients, uint256[] calldata amounts, bytes calldata ref) external {
         for (uint i=0; i<recipients.length; i++) {
             payAndNotify(token, recipients[i], amounts[i], ref);
         }
@@ -103,7 +103,7 @@ contract PaymentHub {
 
     // Allows to make a payment from the sender to an address given an allowance to this contract
     // Equivalent to xchf.transferAndCall(recipient, xchfamount)
-    function payAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) public {
+    function payAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) external {
         payAndNotify(currency, recipient, xchfamount, ref);
     }
 
@@ -112,7 +112,7 @@ contract PaymentHub {
         ITokenReceiver(recipient).onTokenTransfer(token, msg.sender, amount, ref);
     }
 
-    function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable public {
+    function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
         payFromEther(recipient, xchfamount);
         ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
     }
@@ -121,7 +121,7 @@ contract PaymentHub {
      * In case tokens have been accidentally sent directly to this contract.
      * Make sure to be fast as anyone can call this!
      */
-    function recover(address ercAddress, address to, uint256 amount) public {
+    function recover(address ercAddress, address to, uint256 amount) external {
         IERC20(ercAddress).transfer(to, amount);
     }
 
