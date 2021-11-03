@@ -147,9 +147,9 @@ contract RecoveryHub is IRecoveryHub {
         Claim memory claim = claims[token][holder];
         if (claim.collateral != 0) {
             IERC20 currency = IERC20(claim.currencyUsed);
+            delete claims[token][holder];
             require(currency.transfer(address(this), claim.collateral), "could not return collateral");
             emit ClaimCleared(token, holder, claim.collateral);
-            delete claims[token][holder];
             IRecoverable(token).notifyClaimDeleted(holder);
         }
     }
