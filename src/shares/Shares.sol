@@ -65,11 +65,11 @@ contract Shares is ERC20Recoverable, ERC20Named {
         string memory _name,
         string memory _terms,
         uint256 _totalShares,
-        address owner,
-        address recoveryHub
+        address _owner,
+        address _recoveryHub
     )
-        ERC20Named(owner, _name, _symbol, 0) 
-        ERC20Recoverable(recoveryHub)
+        ERC20Named(_owner, _name, _symbol, 0) 
+        ERC20Recoverable(_recoveryHub)
     {
         symbol = _symbol;
         name = _name;
