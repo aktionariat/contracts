@@ -10,8 +10,8 @@ contract ERC20Named is ERC20Flaggable, Ownable {
     string public override name;
     string public override symbol;
 
-    constructor(address admin, string memory name_ , string memory symbol_, uint8 decimals) ERC20Flaggable(decimals) Ownable(admin) {
-        setNameInternal(name_, symbol_);
+    constructor(address _admin, string memory _name , string memory _symbol, uint8 _decimals) ERC20Flaggable(_decimals) Ownable(_admin) {
+        setNameInternal(_name, _symbol);
     }
 
     function setName(string memory _symbol, string memory _name) public onlyOwner {
