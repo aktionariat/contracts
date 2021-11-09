@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8;
+pragma solidity ^0.8.0;
 
 abstract contract IRecoveryHub {
 
-    function setRecoverable(bool flag) public virtual;
+    function setRecoverable(bool flag) external virtual;
     
-    function deleteClaim(address target) public virtual;
+    function deleteClaim(address target) external virtual;
 
-    function clearClaimFromToken(address holder) public virtual;
+    function clearClaimFromToken(address holder) external virtual;
 
 }

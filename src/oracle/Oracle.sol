@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.0;
 
 contract Oracle {
   mapping (uint256 => Request) requests; //list of requests made to the contract
   uint256 currentId = 0; //increasing request id
-  uint256 minQuorum = 2; //minimum number of responses to receive before declaring final result
-  uint256 totalOracleCount = 3; // Hardcoded oracle count
+  uint256 constant minQuorum = 2; //minimum number of responses to receive before declaring final result
+  uint256 constant totalOracleCount = 3; // Hardcoded oracle count
 
  
   struct Request {
@@ -37,7 +37,7 @@ contract Oracle {
     string memory _urlToQuery,
     string memory _attributeToFetch
   )
-  public
+    external
   {
     Request storage r = requests[currentId];
     r.id = currentId;
@@ -64,7 +64,9 @@ contract Oracle {
   function updateRequest (
     uint _id,
     string memory _valueRetrieved
-  ) public {
+  ) 
+    external
+  {
 
     Request storage currRequest = requests[_id];
 

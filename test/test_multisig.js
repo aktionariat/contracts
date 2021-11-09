@@ -45,7 +45,7 @@ describe("Multisig", () => {
     const { gasUsed: createGasUsed, events } = await tx1.wait();
     const { address } = events.find(Boolean);
     // log gas usage
-    console.log(`multiSigCloneFactory.create: ${createGasUsed.toString()}`);
+    // console.log(`multiSigCloneFactory.create: ${createGasUsed.toString()}`);
     
     //check is predicted address is created address
     expect(multiSigAddress).to.equal(address);
@@ -65,7 +65,7 @@ describe("Multisig", () => {
   });
 
   it("Should add new signer", async () => {
-    multiSigClone.setSigner(adr1.address, 2);
+    await multiSigClone.setSigner(adr1.address, 2);
     expect(await multiSigClone.signerCount()).to.equal(2);
     /* test multiple calls
     let tx = [];

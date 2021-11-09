@@ -25,9 +25,9 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.8;
+pragma solidity ^0.8.0;
 
-import "../ERC20Flaggable.sol";
+import "../ERC20/extensions/ERC20Flaggable.sol";
 import "./IRecoveryHub.sol";
 import "./IRecoverable.sol";
 
@@ -79,7 +79,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
         }
     }
 
-    function claimPeriod() public pure override returns (uint256){
+    function claimPeriod() external pure override returns (uint256){
         return 180 days;
     }
 
@@ -110,22 +110,22 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
         return true;
     }
 
-    function notifyClaimMade(address target) public override {
+    function notifyClaimMade(address target) external override {
         require(msg.sender == address(recovery));
         setFlag(target, FLAG_CLAIM_PRESENT, true);
     }
 
-    function notifyClaimDeleted(address target) public override {
+    function notifyClaimDeleted(address target) external override {
         require(msg.sender == address(recovery));
         setFlag(target, FLAG_CLAIM_PRESENT, false);
     }
 
-    function deleteClaim(address lostAddress) public {
+    function deleteClaim(address lostAddress) external {
         require(msg.sender == getClaimDeleter(), "no access");
         recovery.deleteClaim(lostAddress);
     }
 
-    function recover(address oldAddress, address newAddress) public override {
+    function recover(address oldAddress, address newAddress) external override {
         require(msg.sender == address(recovery));
         _transfer(oldAddress, newAddress, balanceOf(oldAddress));
     }

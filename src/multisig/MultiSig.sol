@@ -4,12 +4,11 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../libraries/RLPEncode.sol";
+import "../utils/Address.sol";
 import "../utils/Nonce.sol";
+import "../libraries/RLPEncode.sol";
 
-contract MultiSigWallet is Nonce, Initializable {
+contract MultiSig is Nonce {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
@@ -27,10 +26,7 @@ contract MultiSigWallet is Nonce, Initializable {
     address[] signers // Addresses of the signers used to initiate the transaction
   );
 
-  constructor () {
-  }
-
-  function initialize(address owner) external initializer {
+  constructor (address owner) {
     // We use the gas price to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
     // same id, but it practically rules out that someone accidentally creates two

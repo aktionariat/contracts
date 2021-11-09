@@ -26,7 +26,7 @@ describe("Multisig_old", () => {
   });
 
   it("Should add new signer", async () => {
-    multiSig.setSigner(adr1.address, 2);
+    await multiSig.setSigner(adr1.address, 2);
     expect(await multiSig.signerCount()).to.equal(2);
     /*let tx = [];
     for(let i = 2; i < 5; i++){
