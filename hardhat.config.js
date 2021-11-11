@@ -130,6 +130,18 @@ module.exports = {
         l2: "localArbitrum",
       },
     },
+    localOptimism: {
+      url: 'http://127.0.0.1:8545',
+      accounts: accounts(),
+    },
+    kovanOptimism: {
+      url: 'https://kovan.optimism.io',
+      accounts: accounts("kovan"),
+      chainId: 69,
+      live: true,
+      saveDeployments: true,
+      tags: ["staging"],
+    }
   },
   namedAccounts: {
     deployer: {
