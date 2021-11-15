@@ -49,8 +49,10 @@ module.exports = {
       accounts: accounts(),
       forking: {
         //enabled: process.env.FORKING === "true",
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 13191833,
+        //url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        //blockNumber: 13191833,
+        url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
+        blockNumber: 654,
       },
       live: false,
       saveDeployments: true,
@@ -133,6 +135,7 @@ module.exports = {
     localOptimism: {
       url: 'http://127.0.0.1:8545',
       accounts: accounts(),
+      deploy: ['deploy_optimism']
     },
     kovanOptimism: {
       url: 'https://kovan.optimism.io',
@@ -141,6 +144,7 @@ module.exports = {
       live: true,
       saveDeployments: true,
       tags: ["staging"],
+      deploy: ['deploy_optimism']
     }
   },
   namedAccounts: {
