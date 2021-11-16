@@ -49,8 +49,10 @@ module.exports = {
       accounts: accounts(),
       forking: {
         //enabled: process.env.FORKING === "true",
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 13191833,
+        //url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        //blockNumber: 13191833,
+        url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_ARBITRUM}`,
+        blockNumber: 3062598
       },
       live: false,
       saveDeployments: true,
@@ -121,6 +123,7 @@ module.exports = {
       companionNetworks: {
         l1: "localArbitrumL1",
       },
+      deploy: ['deploy_arbitrum']
     },
     localArbitrumL1: {
       url: "http://localhost:7545",
