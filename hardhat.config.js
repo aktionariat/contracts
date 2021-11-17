@@ -6,6 +6,7 @@ require("hardhat-gas-reporter");
 require("solidity-coverage");
 require("hardhat-deploy");
 require("@nomiclabs/hardhat-truffle5");
+require("./tasks");
 
 function getMnemonic(networkName) {
   if (networkName) {
@@ -65,6 +66,7 @@ module.exports = {
       tags: ["staging"],
       gasPrice: 5000000000,
       gasMultiplier: 2,
+      gas: 3000000
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,

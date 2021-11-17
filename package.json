@@ -13,8 +13,11 @@
     "url": "https://github.com/aktionariat/contracts/issues"
   },
   "homepage": "https://github.com/aktionariat/contracts#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.3.2"
+  },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-waffle": "^2.0.1",

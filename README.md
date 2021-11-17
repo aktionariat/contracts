@@ -4,11 +4,12 @@ The public repository for all smart contracts used by Aktionariat.
 
 ## Overview
 
-There are four notable smart contracts in this repository:
+There are five notable smart contracts in this repository:
 1. Our custom [Multisignature Contract](doc/multisig.md), providing the basis for corporate accounts with multiple signers.
 2. The [ERC20Recoverable Contract](doc/recoverable.md), implementing our decentralized claim mechanism for lost tokens.
 3. The [ERC20Draggable Contract](doc/draggable.md), implementing the drag-along clause found in many shareholder agreements.
 4. The [Brokerbot Contract](doc/market.md), providing mechanisms for the selling and repurchasing of shares with automated price adjustments.
+5. The [ERC20Allowlistable Contract](doc/allowlist.md), providing a highly efficient and elaborate way to enforce transfer restrictions.
 
 ## Full User Control
 
@@ -60,6 +61,13 @@ cd contracts
 yarn install
 ```
 
+#### Local node
+to run a local node use
+```bash
+yarn hardhat node
+```
+(it will use on your default network, to use on a different network use --network <name>)
+
 #### Compile
 
 ```bash
@@ -79,7 +87,7 @@ yarn hardhat deploy --network ropsten
 ```
 This will run all deployment scripts in the deploy folder. To specify seperate deployments use tags.
 
-### Verify Contract on Etherscn
+#### Verify Contract on Etherscn
 
 ```bash
 yarn hardhat --network ropsten etherscan-verify
@@ -87,6 +95,13 @@ yarn hardhat --network ropsten etherscan-verify
 
 (don't forget to set ETHERSCAN_API_KEY in .env)
 
+#### Clone hardhat tasks
+task to create a multisig clone from the clonefactory: create-multisig-clone
+
+```bash
+yarn hardhat create-multisig-clone --factory <multisigCloneFactory_Address> --owner <address> --salt <string_which_gets_formated_in_byte32>
+```
+(it will run on your default network, to run on a different network use --network <name>)
 
 ## License
 
