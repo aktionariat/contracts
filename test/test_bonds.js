@@ -1,7 +1,6 @@
 //const { ethers, hre } = require("hardhat");
 const {network, ethers} = require("hardhat");
 const { expect } = require("chai");
-const { extendConfig } = require("hardhat/config");
 
 // Shared Migration Config
 const config = {

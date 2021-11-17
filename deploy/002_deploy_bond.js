@@ -3,6 +3,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, owner } = await getNamedAccounts();
 
+  console.log("-----------------------")
+  console.log("Deploy Bond")
+  console.log("-----------------------")
   console.log("deployer: %s", deployer);
   console.log("owner: %s", owner)
 

@@ -25,17 +25,15 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity >=0.8;
+pragma solidity ^0.8.0;
 
 import "../Ownable.sol";
 import "../IERC20.sol";
 import "../ITokenReceiver.sol";
 import "../IERC677Receiver.sol";
-import "../utils/SafeERC20.sol";
 import "./Bond.sol";
 
 contract BondBot is Ownable {
-    using SafeERC20 for IERC20;
 
     address public paymenthub;
     
@@ -118,7 +116,7 @@ contract BondBot is Ownable {
         uint bonds = getBonds(paid);
         uint costs = notifyTraded(from, bonds, ref);
         if (costs < paid){
-            IERC20(base).safeTransfer(from, paid - costs);
+            IERC20(base).transfer(from, paid - costs);
         }
         Bond(token).mint(from, bonds);
         return bonds;
@@ -137,7 +135,7 @@ contract BondBot is Ownable {
 
     function notifyTradeAndTransfer(address buyer, uint256 bonds, bytes calldata ref) public onlyOwner {
         notifyTraded(buyer, bonds, ref);
-        IERC20(token).safeTransfer(buyer, bonds);
+        IERC20(token).transfer(buyer, bonds);
     }
 
     function notifyTrades(address[] calldata buyers, uint256[] calldata bonds, bytes[] calldata ref) external onlyOwner {
@@ -196,9 +194,9 @@ contract BondBot is Ownable {
         IERC20 baseToken = IERC20(base);
         uint256 fee = getLicenseFee(totPrice);
         if (fee > 0){
-            baseToken.safeTransfer(COPYRIGHT, fee);
+            baseToken.transfer(COPYRIGHT, fee);
         }
-        baseToken.safeTransfer(recipient, totPrice - fee);
+        baseToken.transfer(recipient, totPrice - fee);
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
         return totPrice;
     }
@@ -216,11 +214,11 @@ contract BondBot is Ownable {
     }
 
     function approve(address erc20, address who, uint256 amount) external onlyOwner() {
-        IERC20(erc20).safeApprove(who, amount);
+        IERC20(erc20).approve(who, amount);
     }
 
     function withdraw(address ercAddress, address to, uint256 amount) external ownerOrHub() {
-        IERC20(ercAddress).safeTransfer(to, amount);
+        IERC20(ercAddress).transfer(to, amount);
     }
 
     function setPaymentHub(address hub) external onlyOwner() {
