@@ -3,9 +3,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer } = await getNamedAccounts();
 
-  const multisig = await deployments.get('MultiSigTest');
-  const shares = await deployments.get('Shares');
-
   console.log("-----------------------")
   console.log("Deploy Paymenthub")
   console.log("-----------------------")

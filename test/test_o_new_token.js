@@ -68,21 +68,21 @@ describe("New Standard", () => {
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
     
     forceSend = await await ethers.getContractFactory("ForceSend")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
-
+    .then(factory => factory.deploy())
+    .then(contract => contract.deployed());
+    
     paymentHub = await await ethers.getContractFactory("PaymentHub")
-      .then(factory => factory.deploy(config.baseCurrencyAddress))
-      .then(contract => contract.deployed());
-
+    .then(factory => factory.deploy(config.baseCurrencyAddress))
+    .then(contract => contract.deployed());
+    
     recoveryHub = await ethers.getContractFactory("RecoveryHub")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
-
+    .then(factory => factory.deploy())
+    .then(contract => contract.deployed());
+    
     offerFactory = await ethers.getContractFactory("OfferFactory")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());    
-
+    .then(factory => factory.deploy())
+    .then(contract => contract.deployed());    
+    
     shares = await ethers.getContractFactory("Shares")
      .then(factory => factory.deploy(symbol, name, terms, config.totalShares, owner.address, recoveryHub.address))
      .then(contract => contract.deployed());

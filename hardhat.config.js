@@ -58,6 +58,7 @@ module.exports = {
       saveDeployments: true,
       chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
       tags: ["test", "local"],
+      deploy: ['deploy_optimism']
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -133,8 +134,24 @@ module.exports = {
       },
     },
     localOptimism: {
-      url: 'http://127.0.0.1:8545',
+      url: 'http://localhost:8545',
       accounts: accounts(),
+      forking: {
+        enabled: false, // process.env.FORKING === "true",
+        url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
+        blockNumber: 654,
+      },
+      // companionNetworks: {
+      //   l1: "localOptimismL1"
+      // },
+      deploy: ['deploy_optimism']
+    },
+    localOptimismL1: {
+      url: 'https://localhost:9545',
+      accounts: accounts(),
+      companionNetworks: {
+        l2: "localOptimism"
+      },
       deploy: ['deploy_optimism']
     },
     kovanOptimism: {
