@@ -2,7 +2,7 @@
 
 ![bazaar marketplace](https://aktionariat.com/images/bazaar.jpg)
 
-Documentation for the Brokerbot smart contract implemented in [Brokerbot.sol](../src/Brokerbot.sol).
+Documentation for the Brokerbot smart contract implemented in [Brokerbot.sol](../src/shares/Brokerbot.sol).
 
 ## Purpose
 

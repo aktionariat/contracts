@@ -2,7 +2,7 @@
 
 ![token recovery](https://aktionariat.com/images/saver.jpg)
 
-Documentation for the token recovery mechanism implemented in [ERC20Recoverable.sol](../src/ERC20Recoverable.sol).
+Documentation for the token recovery mechanism implemented in [ERC20Recoverable.sol](../src/recovery/ERC20Recoverable.sol).
 
 ## Motivation
 
