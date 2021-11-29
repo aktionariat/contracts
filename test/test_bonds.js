@@ -26,6 +26,7 @@ describe("Bond Contract", () => {
   let BondFactory;
   let PaymentHubFactory;
   let ForceSendFactory;
+  let recoveryHub;
 
   let bond;
   let bondBot;
@@ -46,6 +47,9 @@ describe("Bond Contract", () => {
     BondFactory = await ethers.getContractFactory("Bond");
     PaymentHubFactory = await ethers.getContractFactory("PaymentHub");
     ForceSendFactory = await ethers.getContractFactory("ForceSend");
+    recoveryHub = await ethers.getContractFactory("RecoveryHub")
+    .then(factory => factory.deploy())
+    .then(contract => contract.deployed());
     
   });
   
@@ -55,7 +59,7 @@ describe("Bond Contract", () => {
     //console.log(accounts);
 
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    bond = await BondFactory.deploy(config.symbol, config.name, config.terms, config.totalBonds, config.timeToMarturity, config.mintDecrement, owner.address);
+    bond = await BondFactory.deploy(config.symbol, config.name, config.terms, config.totalBonds, config.timeToMarturity, config.mintDecrement, owner.address, recoveryHub.address);
     bondBot = await BondBotFactory.deploy(bond.address, config.bondPrice, config.baseCurrencyAddress, owner.address);
     paymentHub = await PaymentHubFactory.deploy(config.baseCurrencyAddress);
     forceSend = await ForceSendFactory.deploy();
