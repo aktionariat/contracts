@@ -18,8 +18,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     args: [
       baseCurrencyContract,],
     log: true,
-    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-    maxFeePerGas: feeData.maxFeePerGas
   });
 };
 

@@ -136,18 +136,18 @@ module.exports = {
     localOptimism: {
       url: 'http://localhost:8545',
       accounts: accounts(),
-      forking: {
-        enabled: false, // process.env.FORKING === "true",
-        url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
-        blockNumber: 654,
-      },
+      // forking: {
+      //   enabled: false, // process.env.FORKING === "true",
+      //   url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
+      //   blockNumber: 654,
+      // },
       // companionNetworks: {
       //   l1: "localOptimismL1"
       // },
       deploy: ['deploy_optimism']
     },
     localOptimismL1: {
-      url: 'https://localhost:9545',
+      url: 'http://localhost:9545',
       accounts: accounts(),
       companionNetworks: {
         l2: "localOptimism"
@@ -195,7 +195,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.7",
+        version: "0.8.9",
         settings: {
           optimizer: {
             enabled: true,
