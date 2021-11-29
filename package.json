@@ -14,7 +14,8 @@
   },
   "homepage": "https://github.com/aktionariat/contracts#readme",
   "dependencies": {
-    "@openzeppelin/contracts": "^4.3.2"
+    "@openzeppelin/contracts": "^4.3.2",
+    "@eth-optimism/contracts": "canary"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
@@ -49,6 +50,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "clean": "npx hardhat clean",
+    "deploy": "npx hardhat deploy",
     "test": "hardhat test",
     "coverage": "hardhat coverage",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
