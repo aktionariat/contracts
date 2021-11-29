@@ -27,9 +27,9 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20Named.sol";
-import "../ERC20Recoverable.sol";
-import "../IERC677Receiver.sol";
+import "../ERC20/extensions/ERC20Named.sol";
+import "../recovery/ERC20Recoverable.sol";
+import "../interfaces/IERC677Receiver.sol";
 
 /**
  * @title CompanyName AG Bonds
