@@ -1,13 +1,17 @@
+require("dotenv").config();
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer, multiSigDefaultOwner } = await getNamedAccounts();
 
-  const multisigCloneFactoryDeployment= await deployments.get("MultiSigCloneFactory");
+/*   const multisigCloneFactoryDeployment= await deployments.get("MultiSigCloneFactory");
   const multisigCloneFactory = await ethers.getContractAt("MultiSigCloneFactory", multisigCloneFactoryDeployment.address);
-  const createTx = await multisigCloneFactory.create(multiSigDefaultOwner, ethers.utils.formatBytes32String('11'));
+  const createTx = await multisigCloneFactory.create(multiSigDefaultOwner, ethers.utils.formatBytes32String('111'));
   const { events } = await createTx.wait();
-  const { address:multisigAddress } = events.find(Boolean);
+  const { address:multisigAddress } = events.find(Boolean); */
+
+  const multisigAddress = process.env.MULTISIG_DEPLOY;
 
   const recoveryHub = await deployments.get("RecoveryHub");
 
