@@ -4,7 +4,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deployer } = await getNamedAccounts();
 
   const multisig = await deployments.get('MultiSigTest');
-  const shares = await deployments.get('Shares');
+  const shares = await deployments.get('AllowlistShares');
+  const paymentHub = await deployments.get('PaymentHub');
 
   console.log("-----------------------")
   console.log("Deploy Brokerbot")
@@ -26,7 +27,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       price,
       increment,
       baseCurrencyContract,
-      multisig.address],
+      multisig.address,
+      paymentHub.address],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -34,4 +36,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["Brokerbot"];
-module.exports.dependencies = ["Shares", "multisig"];
+module.exports.dependencies = ["AllowlistShares", "multisig", "PaymentHub"];
