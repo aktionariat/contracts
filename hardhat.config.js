@@ -130,6 +130,21 @@ module.exports = {
         l2: "localArbitrum",
       },
     },
+    polygon: {
+      url: "https://polygon-rpc.com",
+      accounts: accounts("polygon")
+    },
+    mumbai: {
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
+      accounts: accounts("mumbai"),
+      chainId: 80001,
+      live: true,
+      saveDeployments: true,
+      tags: ["staging"],
+      gasPrice: 5000000000,
+      gasMultiplier: 2,
+      gas: 3000000
+    }
   },
   namedAccounts: {
     deployer: {
@@ -157,7 +172,7 @@ module.exports = {
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: "VTBTEUWDU1MVQ11Z5FSW1DQX56389ZFWVQ"
   },
   solidity: {
     compilers: [
