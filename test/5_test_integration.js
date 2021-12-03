@@ -163,10 +163,10 @@ contract("Payment Integration", (accounts) => {
   it("should allow selling by sending share tokens through PaymentHub - with license fee", async () => {
     // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
     // Transfer is not processed if token sender is not a known currency contract or PaymentHub
+    const paymentHub = await PaymentHub.deployed();
     const brokerbot = await Brokerbot.deployed();
     const draggableShares = await DraggableShares.deployed();
     const erc20 = await ERC20.at(config.baseCurrencyAddress);
-    const paymentHub = await PaymentHub.deployed();
 
     // Get license fee (90 bps default)
     const licenseFeeBps = await brokerbot.getLicenseFee(10000);
@@ -188,7 +188,6 @@ contract("Payment Integration", (accounts) => {
     const shareBalanceBrokerbotBefore = await draggableShares.balanceOf(
       brokerbot.address
     );
-
     // Pay with base currency and notify Brokerbot
     // Overloaded methods must be called through .methods[], otherwise Truffle doesn't recognize them
     await paymentHub.methods["payAndNotify(address,address,uint256,bytes)"](
