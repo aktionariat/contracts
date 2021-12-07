@@ -32,6 +32,8 @@ import "../ERC20/IERC20.sol";
 import "../interfaces/IUniswapV3.sol";
 import "../interfaces/ITokenReceiver.sol";
 import "../utils/Ownable.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "hardhat/console.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -46,14 +48,59 @@ contract PaymentHub {
     
     IQuoter constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     ISwapRouter constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    AggregatorV3Interface internal priceFeedCHFUSD;
+    AggregatorV3Interface internal priceFeedETHUSD;
 
-    constructor(address currency_) {
-        currency = currency_;
+    constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
+        currency = _currency;
         weth = uniswapQuoter.WETH9();
+        priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
+        priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
+
     }
 
-    function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
-        return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
+    /**
+     * price in ETH with 18 decimals
+     */
+    function getPriceInEther(uint256 amountOfXCHF) external view returns (uint256) {
+        return getPriceInUSD(amountOfXCHF) / uint256(getLatestPriceETHUSD());
+    }
+
+    /**
+     * price in USD with 8 decimals
+     */
+    function getPriceInUSD(uint256 amountOfCHF) public view returns (uint256) {
+        return uint256(getLatestPriceCHFUSD()) * amountOfCHF;
+    }
+
+    /**
+     * Returns the latest price of eth/usd pair from chainlink
+     */
+    function getLatestPriceETHUSD() public view returns (int256) {
+        (
+            uint80 roundID, 
+            int256 price,
+            uint256 startedAt,
+            uint256 timeStamp,
+            uint80 answeredInRound
+        ) = priceFeedETHUSD.latestRoundData();
+        console.log("price of eth %s", price);
+        return price;
+    }
+
+    /**
+     * Returns the latest price of chf/usd pair from chainlink
+     */
+    function getLatestPriceCHFUSD() public view returns (int) {
+        (
+            uint80 roundID, 
+            int price,
+            uint startedAt,
+            uint timeStamp,
+            uint80 answeredInRound
+        ) = priceFeedCHFUSD.latestRoundData();
+        console.log(price);
+        return price;
     }
 
     /**
