@@ -68,8 +68,13 @@ describe("New PaymentHub", () => {
       }); 
 
       it("Should get price in ETH", async () => {
-        const price = await paymentHub.getPriceInEther(1000);
+        const price = await paymentHub.getLatestPriceETHUSD();
         console.log(await price.toString());
+        const pricechf = await paymentHub.getLatestPriceCHFUSD();
+        console.log(await pricechf.toString());
+        let priceInETH = await paymentHub.getPriceInEther(1000);
+        priceInETH = ethers.utils.formatEther(priceInETH);
+        console.log(await priceInETH.toString());
       });
     });
   });

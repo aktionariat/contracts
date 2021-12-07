@@ -63,7 +63,7 @@ contract PaymentHub {
      * price in ETH with 18 decimals
      */
     function getPriceInEther(uint256 amountOfXCHF) external view returns (uint256) {
-        return getPriceInUSD(amountOfXCHF) / uint256(getLatestPriceETHUSD());
+        return getPriceInUSD(amountOfXCHF) * 10**18 / uint256(getLatestPriceETHUSD());
     }
 
     /**
@@ -84,7 +84,6 @@ contract PaymentHub {
             uint256 timeStamp,
             uint80 answeredInRound
         ) = priceFeedETHUSD.latestRoundData();
-        console.log("price of eth %s", price);
         return price;
     }
 
@@ -99,7 +98,6 @@ contract PaymentHub {
             uint timeStamp,
             uint80 answeredInRound
         ) = priceFeedCHFUSD.latestRoundData();
-        console.log(price);
         return price;
     }
 
