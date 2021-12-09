@@ -51,6 +51,8 @@ contract PaymentHub {
     AggregatorV3Interface internal priceFeedCHFUSD;
     AggregatorV3Interface internal priceFeedETHUSD;
 
+    uint8 private constant KEEP_ETH = 0x4;
+
     constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
         currency = _currency;
         weth = uniswapQuoter.WETH9();
@@ -63,18 +65,18 @@ contract PaymentHub {
      * price in ETH with 18 decimals
      */
     function getPriceInEther(uint256 amountOfXCHF) external view returns (uint256) {
-        return getPriceInUSD(amountOfXCHF) * 10**18 / uint256(getLatestPriceETHUSD());
+        return getPriceInUSD(amountOfXCHF) * 10**8 / uint256(getLatestPriceETHUSD());
     }
 
     /**
-     * price in USD with 8 decimals
+     * price in USD with 18 decimals
      */
     function getPriceInUSD(uint256 amountOfCHF) public view returns (uint256) {
-        return uint256(getLatestPriceCHFUSD()) * amountOfCHF;
+        return (uint256(getLatestPriceCHFUSD()) * amountOfCHF) / 10**8;
     }
 
     /**
-     * Returns the latest price of eth/usd pair from chainlink
+     * Returns the latest price of eth/usd pair from chainlink with 8 decimals
      */
     function getLatestPriceETHUSD() public view returns (int256) {
         (
@@ -88,7 +90,7 @@ contract PaymentHub {
     }
 
     /**
-     * Returns the latest price of chf/usd pair from chainlink
+     * Returns the latest price of chf/usd pair from chainlink with 8 decimals
      */
     function getLatestPriceCHFUSD() public view returns (int) {
         (
