@@ -50,7 +50,7 @@ module.exports = {
       forking: {
         //enabled: process.env.FORKING === "true",
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 13191833,
+        blockNumber: 13759520,
       },
       live: false,
       saveDeployments: true,
@@ -137,6 +137,7 @@ module.exports = {
     },
     owner: {
       default: 0,
+      1: process.env.MULTISIG_DEPLOY // to multisigwallet
     },
     dev: {
       // Default to 1
@@ -145,7 +146,7 @@ module.exports = {
       // 1: "",
     },
     multiSigDefaultOwner: {
-      default: 1,
+      default: 0,
       1: process.env.MULTISIG_DEFAULT
     }
   },
