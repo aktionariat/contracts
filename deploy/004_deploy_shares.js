@@ -1,23 +1,26 @@
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer } = await getNamedAccounts();
+  const { deployer, owner } = await getNamedAccounts();
 
-  const multisig = await deployments.get("MultiSigTest");
   const recoveryHub = await deployments.get("RecoveryHub");
 
   console.log("-----------------------")
   console.log("Deploy Shares")
   console.log("-----------------------")
   console.log("deployer: %s", deployer);
-  console.log("owner: %s", multisig.address)
+  console.log("owner: %s", owner); // don't forget to set it in the hardhat config
 
   const symbol = "SHR";
   const name = "Test Share ";
   const terms = "wwww.terms.ch";
-  const totalShares = 4000000;
+  const totalShares = 10000000;
 
   const feeData = await ethers.provider.getFeeData();
+
+  if (network.name == "mainnet") {
+    await new Confirm("Addresses correct?").run();
+  }
 
   const { address } = await deploy("Shares", {
     contract: "Shares",
@@ -27,7 +30,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       name,
       terms,
       totalShares,
-      multisig.address,
+      owner,
       recoveryHub.address],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
