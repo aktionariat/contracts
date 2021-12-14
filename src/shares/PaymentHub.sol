@@ -33,6 +33,7 @@ import "../interfaces/IUniswapV3.sol";
 import "../interfaces/ITokenReceiver.sol";
 import "../utils/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./Brokerbot.sol";
 import "hardhat/console.sol";
 
 /**
@@ -51,7 +52,7 @@ contract PaymentHub {
     AggregatorV3Interface internal priceFeedCHFUSD;
     AggregatorV3Interface internal priceFeedETHUSD;
 
-    uint8 private constant KEEP_ETH = 0x4;
+    uint8 private constant SETTING_KEEP_ETH = 0x4;
 
     constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
         currency = _currency;
@@ -160,8 +161,12 @@ contract PaymentHub {
     }
 
     function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
-        payFromEther(recipient, xchfamount);
-        ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
+        if (Brokerbot(recipient).settings() & SETTING_KEEP_ETH == SETTING_KEEP_ETH) {
+            Brokerbot(recipient).processIncoming{value: msg.value}(address(currency), msg.sender, xchfamount, ref);
+        } else {
+            payFromEther(recipient, xchfamount);
+            ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
+        }
     }
 
     /**
