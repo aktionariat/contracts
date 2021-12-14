@@ -29,7 +29,6 @@ pragma solidity ^0.8.0;
 
 import "../../recovery/ERC20Recoverable.sol";
 import "./ERC20Allowlistable.sol";
-import "../../ERC20/extensions/ERC20Named.sol";
 import "../Shares.sol";
 
 contract AllowlistShares is Shares, ERC20Allowlistable {
