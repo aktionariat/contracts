@@ -118,19 +118,19 @@ describe("New PaymentHub", () => {
         const priceeth = await paymentHub.getLatestPriceETHUSD();
         // console.log(await priceeth.toString());
         
-        const priceInETH = await paymentHub.getPriceInEther(ethers.utils.parseEther("1000"));
+        const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"));
         // rework to not use static value
         expect(await ethers.utils.formatEther(priceInETH)).to.equal("0.244787563584463807")
       });
 
       it("Should buy shares with ETH and trade it to XCHF", async () => {
-        let priceInETH = await paymentHub.getPriceInEther(xchfamount);
+        const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
 
-        // send a little bit more as price from oracle isn't 1:1 uniswap price
-        priceInETH = priceInETH.mul(11).div(10);
+        // send a little bit more for slippage 
+        const priceInETHWithSlippage = priceInETH.mul(101).div(100);
 
         const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-        await paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH});
+        await paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETHWithSlippage});
         const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
 
         // brokerbot should have after the payment with eth the xchf in the balance
@@ -147,18 +147,23 @@ describe("New PaymentHub", () => {
         await brokerbot.setSettings(newSetting);
         const settingsAfter = await brokerbot.settings();
 
-        expect(settingsBefore).to.not.equal(settingsAfter);
+        expect(settingsAfter).to.not.equal(settingsBefore);
         expect(settingsAfter).to.equal(newSetting);
       });
 
+      it("Should revert if buy with ETH and send to less ETH", async () => {
+        const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
+        const lowerPriceInETH = priceInETH.mul(90).div(100);
+        await expect(paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.revertedWith("not enough ether");
+      });
 
       it("Should buy shares with ETH and keep ETH", async () => {
-        let priceInETH = await paymentHub.getPriceInEther(xchfamount);
+        const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
         // console.log(await ethers.utils.formatEther(priceInETH));
 
-        let brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
+        const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
         await paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH});
-        let brokerbotETHAfter = await ethers.provider.getBalance(brokerbot.address);
+        const brokerbotETHAfter = await ethers.provider.getBalance(brokerbot.address);
         // console.log(await ethers.utils.formatEther(brokerbotETHAfter));
         expect(brokerbotETHBefore.add(priceInETH)).to.equal(brokerbotETHAfter);
       });

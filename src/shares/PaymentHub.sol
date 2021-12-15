@@ -62,15 +62,32 @@ contract PaymentHub {
 
     }
 
+    function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
+        return getPriceInEther(amountOfXCHF, address(0));
+    }
+
     /**
-     * price in ETH with 18 decimals
+     * Get price in Ether depding on brokerbot setting.
+     * If keep ETH is set price is from oracle.
      */
-    function getPriceInEther(uint256 amountOfXCHF) external view returns (uint256) {
+    function getPriceInEther(uint256 amountOfXCHF, address brokerBot) public returns (uint256) {
+        if ((brokerBot != address(0)) &&
+            (Brokerbot(brokerBot).settings() & SETTING_KEEP_ETH == SETTING_KEEP_ETH)) {
+            return getPriceInEtherFromOracle(amountOfXCHF);
+        } else {
+            return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
+        }
+    }
+
+    /**
+     * Price in ETH with 18 decimals
+     */
+    function getPriceInEtherFromOracle(uint256 amountOfXCHF) public view returns (uint256) {
         return getPriceInUSD(amountOfXCHF) * 10**8 / uint256(getLatestPriceETHUSD());
     }
 
     /**
-     * price in USD with 18 decimals
+     * Price in USD with 18 decimals
      */
     function getPriceInUSD(uint256 amountOfCHF) public view returns (uint256) {
         return (uint256(getLatestPriceCHFUSD()) * amountOfCHF) / 10**8;
@@ -161,8 +178,20 @@ contract PaymentHub {
     }
 
     function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
+        // Check if the brokerbot has setting to keep ETH
         if (Brokerbot(recipient).settings() & SETTING_KEEP_ETH == SETTING_KEEP_ETH) {
-            Brokerbot(recipient).processIncoming{value: msg.value}(address(currency), msg.sender, xchfamount, ref);
+            uint256 priceInEther = getPriceInEther(xchfamount, recipient);
+
+            // If ETH send in the transaction is smaller than current price revert
+            require(msg.value >= priceInEther, "not enough ether");
+
+            Brokerbot(recipient).processIncoming{value: priceInEther}(address(currency), msg.sender, xchfamount, ref);
+
+            // Pay back ETH that was overpaid
+            if (priceInEther < msg.value) {
+                payable(msg.sender).transfer(msg.value - priceInEther); // return change
+            }
+
         } else {
             payFromEther(recipient, xchfamount);
             ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
