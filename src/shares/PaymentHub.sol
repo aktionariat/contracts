@@ -52,8 +52,6 @@ contract PaymentHub {
     AggregatorV3Interface internal priceFeedCHFUSD;
     AggregatorV3Interface internal priceFeedETHUSD;
 
-    uint8 private constant SETTING_KEEP_ETH = 0x4;
-
     constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
         currency = _currency;
         weth = uniswapQuoter.WETH9();
@@ -71,8 +69,7 @@ contract PaymentHub {
      * If keep ETH is set price is from oracle.
      */
     function getPriceInEther(uint256 amountOfXCHF, address brokerBot) public returns (uint256) {
-        if ((brokerBot != address(0)) &&
-            (Brokerbot(brokerBot).settings() & SETTING_KEEP_ETH == SETTING_KEEP_ETH)) {
+        if ((brokerBot != address(0)) && hasSettingKeepEther(brokerBot)) {
             return getPriceInEtherFromOracle(amountOfXCHF);
         } else {
             return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
@@ -177,7 +174,7 @@ contract PaymentHub {
 
     function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
         // Check if the brokerbot has setting to keep ETH
-        if (Brokerbot(recipient).settings() & SETTING_KEEP_ETH == SETTING_KEEP_ETH) {
+        if (hasSettingKeepEther(recipient)) {
             uint256 priceInEther = getPriceInEther(xchfamount, recipient);
 
             // If ETH send in the transaction is smaller than current price revert
@@ -194,6 +191,13 @@ contract PaymentHub {
             payFromEther(recipient, xchfamount);
             ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
         }
+    }
+
+    /**
+     * Checks if the recipient(brokerbot) has setting enabled to keep ether
+     */
+    function hasSettingKeepEther(address recipient) public view returns (bool) {
+        return Brokerbot(recipient).settings() & 0x4 == 0x4;
     }
 
     /**
