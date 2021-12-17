@@ -27,9 +27,6 @@ contract MultiSigWallet is Nonce, Initializable {
     address[] signers // Addresses of the signers used to initiate the transaction
   );
 
-  constructor () {
-  }
-
   function initialize(address owner) external initializer {
     // We use the gas price to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
@@ -141,7 +138,7 @@ contract MultiSigWallet is Nonce, Initializable {
    */
   function setSigner(address signer, uint8 cosignaturesNeeded) external authorized {
     _setSigner(signer, cosignaturesNeeded);
-    require(signerCount > 0);
+    require(signerCount > 0, "signer count 0");
   }
 
   function migrate(address destination) external {
@@ -153,7 +150,7 @@ contract MultiSigWallet is Nonce, Initializable {
   }
 
   function _migrate(address source, address destination) private {
-    require(signers[destination] == 0); // do not overwrite existing signer!
+    require(signers[destination] == 0, "destination not new"); // do not overwrite existing signer!
     _setSigner(destination, signers[source]);
     _setSigner(source, 0);
   }

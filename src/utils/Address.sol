@@ -34,8 +34,8 @@ library Address {
     }
 
     function functionCallWithValue(address target, bytes memory data, uint256 weiValue) internal returns (bytes memory) {
-        // solhint-disable-next-line avoid-low-level-calls
         require(data.length == 0 || isContract(target));
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = target.call{ value: weiValue }(data);
         if (success) {
             return returndata;

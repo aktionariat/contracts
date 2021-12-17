@@ -136,7 +136,7 @@ abstract contract ERC20 is IERC20 {
      * - `sender` must have a balance of at least `amount`.
      */
     function _transfer(address sender, address recipient, uint256 amount) internal virtual {
-        require(recipient != address(0));
+        require(recipient != address(0), "recipient not valid");
 
         _beforeTokenTransfer(sender, recipient, amount);
 
@@ -164,7 +164,7 @@ abstract contract ERC20 is IERC20 {
      * - `to` cannot be the zero address.
      */
     function _mint(address recipient, uint256 amount) internal virtual {
-        require(recipient != address(0));
+        require(recipient != address(0), "recipient not valid");
 
         _beforeTokenTransfer(address(0), recipient, amount);
 

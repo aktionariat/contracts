@@ -42,7 +42,7 @@ import "../interfaces/IERC677Receiver.sol";
 contract Bond is ERC20Recoverable, ERC20Named {
 
     string public terms;
-    address minter; // addresse of the broker bot which mints/burns
+    address public minter; // addresse of the broker bot which mints/burns
     uint256 public immutable maxSupply; // the max inital tokens
     uint256 public immutable deployTimestamp; // the timestamp of the contract deployment
     uint256 public immutable termToMaturity; // the duration of the bond
@@ -112,8 +112,8 @@ contract Bond is ERC20Recoverable, ERC20Named {
     }
 
     function _mint(address account, uint256 amount) internal override {
-        require(block.timestamp - deployTimestamp <= termToMaturity, "Bond already reached maturity.");
-        require(totalSupply() + amount <= maxMintable(), "Max mintable supply is already minted.");
+        require(block.timestamp - deployTimestamp <= termToMaturity, "Bond reached maturity");
+        require(totalSupply() + amount <= maxMintable(), "Max mintable supply");
         super._mint(account, amount);
     }
 

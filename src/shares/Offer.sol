@@ -73,6 +73,8 @@ contract Offer {
         currency = IERC20(_currency);
         price = _price;
         quorum = _quorum;
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         voteEnd = block.timestamp + _votePeriod;
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
@@ -81,7 +83,7 @@ contract Offer {
     }
 
     function makeCompetingOffer(address betterOffer) external {
-        require(msg.sender == address(token));
+        require(msg.sender == address(token), "invalid caller");
         Offer better = Offer(betterOffer);
         require(!isAccepted(), "old already accepted");
         require(currency == better.currency() && better.price() > price, "old offer better");
@@ -90,6 +92,8 @@ contract Offer {
     }
 
     function hasExpired() internal view returns (bool) {
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         return block.timestamp > voteEnd + 30 days; // buyer has thirty days to complete acquisition after voting ends
     }
 
@@ -104,7 +108,7 @@ contract Offer {
     }
 
     function cancel() external {
-        require(msg.sender == buyer);
+        require(msg.sender == buyer, "invalid caller");
         kill(false, "cancelled");
     }
 
@@ -112,7 +116,7 @@ contract Offer {
         require(msg.sender == buyer, "not buyer");
         require(isAccepted(), "not accepted");
         uint256 totalPrice = getTotalPrice();
-        require(currency.transferFrom(buyer, address(token), totalPrice));
+        require(currency.transferFrom(buyer, address(token), totalPrice), "transfer failed");
         token.drag(buyer, address(currency));
         kill(true, "success");
     }
@@ -150,7 +154,7 @@ contract Offer {
     }
 
     function notifyMoved(address from, address to, uint256 value) external {
-        require(msg.sender == address(token));
+        require(msg.sender == address(token), "invalid caller");
         if (isVotingOpen()) {
             Vote fromVoting = votes[from];
             Vote toVoting = votes[to];
@@ -175,6 +179,8 @@ contract Offer {
     }
 
     function isVotingOpen() public view returns (bool) {
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         return block.timestamp <= voteEnd;
     }
 

@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* COPYRIGHT (c) 2020 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -12,7 +12,7 @@
 * Software, and to permit persons to whom the Software is furnished to do so,
 * subject to the following conditions:
 *
-* - The above copyright notice and this permission notice shall be included in
+* - The above COPYRIGHT notice and this permission notice shall be included in
 *   all copies or substantial portions of the Software.
 * - All automated license fee payments integrated into this and related Software
 *   are preserved.
@@ -39,7 +39,7 @@ contract Brokerbot is Ownable {
     address public immutable base;  // ERC-20 currency
     address public immutable token; // ERC-20 share token
 
-    address public constant copyright = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
+    address public constant COPYRIGHT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
 
     uint256 private price; // current offer price, without drift
     uint256 public increment; // increment
@@ -48,7 +48,7 @@ contract Brokerbot is Ownable {
     uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
     int256 public driftIncrement;
 
-    uint8 private constant licenseFeeBps = 90;
+    uint8 private constant LICENSEFEEBPS = 90;
 
     uint8 private constant BUYING_ENABLED = 0x1;
     uint8 private constant SELLING_ENABLED = 0x2;
@@ -64,7 +64,8 @@ contract Brokerbot is Ownable {
         uint256 _price,
         uint256 _increment,
         address _baseCurrency,
-        address _owner
+        address _owner,
+        address _paymentHub
     )
         Ownable(_owner)
     {
@@ -72,7 +73,7 @@ contract Brokerbot is Ownable {
         token = _shareToken;
         price = _price;
         increment = _increment;
-        paymenthub = address(0x3eABee781f6569328143C610700A99E9ceE82cba);
+        paymenthub = _paymentHub;
     }
 
     function setPrice(uint256 newPrice, uint256 newIncrement) external onlyOwner {
@@ -126,7 +127,7 @@ contract Brokerbot is Ownable {
     }
 
     function notifyTraded(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(BUYING_ENABLED));
+        require(hasSetting(BUYING_ENABLED), "buying disabled");
         uint costs = getBuyPrice(shares);
         price = price + (shares * increment);
         emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
@@ -158,13 +159,13 @@ contract Brokerbot is Ownable {
      * Payment hub might actually have sent another accepted token, including Ether.
      */
     function processIncoming(address token_, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
-        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub);
+        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub, "invalid calle");
         if (token_ == token){
             return sell(from, amount, ref);
         } else if (token_ == base){
             return buy(from, amount, ref);
         } else {
-            require(false);
+            require(false, "invalid token");
             return 0;
         }
     }
@@ -209,23 +210,23 @@ contract Brokerbot is Ownable {
 
 
     function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(SELLING_ENABLED));
+        require(hasSetting(SELLING_ENABLED), "selling disabled");
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
         uint256 fee = getLicenseFee(totPrice);
+        price -= amount * increment;
         if (fee > 0){
-            baseToken.transfer(copyright, fee);
+            baseToken.transfer(COPYRIGHT, fee);
         }
         if (isDirectSale(ref)){
             baseToken.transfer(recipient, totPrice - fee);
         }
-        price -= amount * increment;
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
         return totPrice;
     }
 
     function getLicenseFee(uint256 totPrice) public pure returns (uint256) {
-        return totPrice * licenseFeeBps / 10000;
+        return totPrice * LICENSEFEEBPS / 10000;
     }
 
     function getSellPrice(uint256 shares) public view returns (uint256) {

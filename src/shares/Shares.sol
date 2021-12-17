@@ -113,7 +113,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      */
     function declareInvalid(address holder, uint256 amount, string calldata message) external onlyOwner() {
         uint256 holderBalance = balanceOf(holder);
-        require(amount <= holderBalance);
+        require(amount <= holderBalance, "amount too high");
         invalidTokens += amount;
         emit TokensDeclaredInvalid(holder, amount, message);
     }

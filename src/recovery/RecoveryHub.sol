@@ -102,11 +102,13 @@ contract RecoveryHub is IRecoveryHub {
         IERC20 currency = IERC20(collateralType);
         require(balance > 0, "empty");
         require(claims[token][lostAddress].collateral == 0, "already claimed");
-        require(currency.transferFrom(claimant, address(this), collateral));
+        require(currency.transferFrom(claimant, address(this), collateral), "transfer failed");
 
         claims[token][lostAddress] = Claim({
             claimant: claimant,
             collateral: collateral,
+            // rely on time stamp is ok, no exact time stamp needed
+            // solhint-disable-next-line not-rely-on-time
             timestamp: block.timestamp,
             currencyUsed: collateralType
         });
@@ -165,10 +167,12 @@ contract RecoveryHub is IRecoveryHub {
         uint256 collateral = claim.collateral;
         IERC20 currency = IERC20(claim.currencyUsed);
         require(collateral != 0, "not found");
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         require(claim.timestamp + IRecoverable(token).claimPeriod() <= block.timestamp, "too early");
         delete claims[token][lostAddress];
         IRecoverable(token).notifyClaimDeleted(lostAddress);
-        require(currency.transfer(claimant, collateral));
+        require(currency.transfer(claimant, collateral), "transfer failed");
         IRecoverable(token).recover(lostAddress, claimant);
         emit ClaimResolved(token, lostAddress, claimant, collateral);
     }
@@ -183,7 +187,7 @@ contract RecoveryHub is IRecoveryHub {
         require(claim.collateral != 0, "not found");
         delete claims[token][lostAddress];
         IRecoverable(token).notifyClaimDeleted(lostAddress);
-        require(currency.transfer(claim.claimant, claim.collateral));
+        require(currency.transfer(claim.claimant, claim.collateral), "transfer failed");
         emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
     }
 

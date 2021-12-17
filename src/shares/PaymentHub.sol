@@ -44,22 +44,22 @@ contract PaymentHub {
     address public immutable weth; 
     address public immutable currency;
     
-    IQuoter constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
-    ISwapRouter constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    IQuoter private constant UNISWAP_QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+    ISwapRouter private constant UNISWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     constructor(address currency_) {
         currency = currency_;
-        weth = uniswapQuoter.WETH9();
+        weth = UNISWAP_QUOTER.WETH9();
     }
 
     function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
-        return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
+        return UNISWAP_QUOTER.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
     }
 
     /**
      * Convenience method to swap ether into currency and pay a target address
      */
-    function payFromEther(address recipient, uint256 xchfamount) payable public {
+    function payFromEther(address recipient, uint256 xchfamount) public payable {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
             weth,
             currency,
@@ -72,12 +72,12 @@ contract PaymentHub {
         );
 
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = uniswapRouter.exactOutputSingle{value: msg.value}(params);
+        uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < msg.value) {
-            uniswapRouter.refundETH();
+            UNISWAP_ROUTER.refundETH();
             payable(msg.sender).transfer(msg.value - amountIn); // return change
         }
     }
@@ -112,7 +112,7 @@ contract PaymentHub {
         ITokenReceiver(recipient).onTokenTransfer(token, msg.sender, amount, ref);
     }
 
-    function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
+    function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) external payable {
         payFromEther(recipient, xchfamount);
         ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
     }
@@ -126,5 +126,5 @@ contract PaymentHub {
     }
 
     // Important to receive ETH refund from Uniswap
-    receive() payable external {}
+    receive() external payable {}
 }

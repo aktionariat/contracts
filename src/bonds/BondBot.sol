@@ -123,7 +123,7 @@ contract BondBot is Ownable {
     }
 
     function notifyTraded(address from, uint256 bonds, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(BUYING_ENABLED));
+        require(hasSetting(BUYING_ENABLED), "buying disabled");
         uint costs = getPrice(bonds);
         emit Trade(token, from, ref, int256(bonds), base, costs, 0, getPrice());
         return costs;
@@ -154,13 +154,13 @@ contract BondBot is Ownable {
      * Payment hub might actually have sent another accepted token, including Ether.
      */
     function processIncoming(address token_, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
-        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub);
+        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub, "no valid calle");
         if (token_ == token){
             return sell(from, amount, ref);
         } else if (token_ == base){
             return buy(from, amount, ref);
         } else {
-            require(false);
+            require(false, "token invalid");
             return 0;
         }
     }
@@ -189,7 +189,7 @@ contract BondBot is Ownable {
     }
 
     function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(SELLING_ENABLED));
+        require(hasSetting(SELLING_ENABLED), "selling disabled");
         uint256 totPrice = getPrice(amount);
         IERC20 baseToken = IERC20(base);
         uint256 fee = getLicenseFee(totPrice);

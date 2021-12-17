@@ -106,7 +106,7 @@ contract LicensedBrokerbot is Ownable {
     }
 
     function notifyTraded(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(BUYING_ENABLED));
+        require(hasSetting(BUYING_ENABLED), "buying disabled");
         uint costs = getBuyPrice(shares);
         price = price + (shares * increment);
         emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
@@ -138,13 +138,13 @@ contract LicensedBrokerbot is Ownable {
      * Payment hub might actually have sent another accepted token, including Ether.
      */
     function processIncoming(address token_, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
-        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub);
+        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub, "invalid calle");
         if (token_ == token){
             return sell(from, amount, ref);
         } else if (token_ == base){
             return buy(from, amount, ref);
         } else {
-            require(false);
+            require(false, "invalid token");
             return 0;
         }
     }
@@ -173,11 +173,11 @@ contract LicensedBrokerbot is Ownable {
     }
 
     function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(SELLING_ENABLED));
+        require(hasSetting(SELLING_ENABLED), "selling disabled");
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
-        baseToken.transfer(recipient, totPrice);
         price -= amount * increment;
+        baseToken.transfer(recipient, totPrice);
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, 0, getPrice());
         return totPrice;
     }
