@@ -98,11 +98,10 @@ contract PaymentHub {
      */
     function getLatestPriceETHUSD() public view returns (int256) {
         (
-            uint80 roundID, 
+            , 
             int256 price,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
+            ,
+            , 
         ) = priceFeedETHUSD.latestRoundData();
         return price;
     }
@@ -112,11 +111,10 @@ contract PaymentHub {
      */
     function getLatestPriceCHFUSD() public view returns (int) {
         (
-            uint80 roundID, 
+            , 
             int price,
-            uint startedAt,
-            uint timeStamp,
-            uint80 answeredInRound
+            ,
+            ,
         ) = priceFeedCHFUSD.latestRoundData();
         return price;
     }
