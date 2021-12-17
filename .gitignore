@@ -10,3 +10,7 @@ node_modules
 #Hardhat files
 cache
 artifacts
+
+# Unit test / coverage reports
+coverage
+coverage.*
