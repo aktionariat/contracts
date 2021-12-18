@@ -59,10 +59,10 @@ contract PaymentHub {
         priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
     }
 
-    // I would remove that function. It is equivalent to calling getPriceInEtherFromOracle, but more costly.
-    //function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
-      //  return getPriceInEther(amountOfXCHF, address(0));
-    //}
+    // Deprecated. Kept for compatibility with old hub
+    function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
+        return getPriceInEther(amountOfXCHF, address(0));
+    }
 
     /**
      * Get price in Ether depding on brokerbot setting.
