@@ -66,8 +66,6 @@ contract Shares is ERC20Recoverable, ERC20Named {
         ERC20Named(_owner, _name, _symbol, 0) 
         ERC20Recoverable(_recoveryHub)
     {
-        symbol = _symbol;
-        name = _name;
         totalShares = _totalShares;
         terms = _terms;
     }

@@ -27,10 +27,10 @@
 */
 pragma solidity ^0.8.0;
 
-import "../Ownable.sol";
-import "../IERC20.sol";
-import "../ITokenReceiver.sol";
-import "../IERC677Receiver.sol";
+import "../utils/Ownable.sol";
+import "../ERC20/IERC20.sol";
+import "../interfaces/ITokenReceiver.sol";
+import "../interfaces/IERC677Receiver.sol";
 import "./Bond.sol";
 
 contract BondBot is Ownable {
