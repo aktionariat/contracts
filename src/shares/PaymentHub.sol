@@ -57,16 +57,17 @@ contract PaymentHub {
         weth = uniswapQuoter.WETH9();
         priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
         priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
-
     }
 
-    function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
-        return getPriceInEther(amountOfXCHF, address(0));
-    }
+    // I would remove that function. It is equivalent to calling getPriceInEtherFromOracle, but more costly.
+    //function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
+      //  return getPriceInEther(amountOfXCHF, address(0));
+    //}
 
     /**
      * Get price in Ether depding on brokerbot setting.
      * If keep ETH is set price is from oracle.
+     * This is the method that the Brokerbot widget should use to quote the price to the user.
      */
     function getPriceInEther(uint256 amountOfXCHF, address brokerBot) public returns (uint256) {
         if ((brokerBot != address(0)) && hasSettingKeepEther(brokerBot)) {
@@ -175,10 +176,11 @@ contract PaymentHub {
     function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(recipient)) {
-            uint256 priceInEther = getPriceInEther(xchfamount, recipient);
+            uint256 priceInEther = getPriceInEtherFromOracle(xchfamount);
 
             // If ETH send in the transaction is smaller than current price revert
-            require(msg.value >= priceInEther, "not enough ether");
+            // Note Luzius: this require statement is unnecessary, as the subsequent call would fail anyway
+            // require(msg.value >= priceInEther, "not enough ether");
 
             Brokerbot(recipient).processIncoming{value: priceInEther}(address(currency), msg.sender, xchfamount, ref);
 
