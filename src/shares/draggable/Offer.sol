@@ -27,8 +27,8 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/IERC20.sol";
-import "./draggable/IDraggable.sol";
+import "../../ERC20/IERC20.sol";
+import "./IDraggable.sol";
 /**
  * @title Acquisition Attempt
  * @author Luzius Meisser, luzius@aktionariat.com
