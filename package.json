@@ -51,7 +51,7 @@
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "test": "hardhat test",
-    "coverage": "hardhat coverage && cat coverage/lcov.info | coveralls",
+    "coverage": "hardhat coverage && cat coverage/lcov.info",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
     "prettier:solidity": "./node_modules/.bin/prettier --write src/**/*.sol"
   }
