@@ -36,7 +36,7 @@ jobs:
           echo "${{ secrets.TEST_ENV }}" > .env
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Run tests
         run: yarn coverage
