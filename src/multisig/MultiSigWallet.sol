@@ -40,6 +40,7 @@ contract MultiSigWallet is Nonce, Initializable {
   /**
    * It should be possible to store ether on this address.
    */
+   // solhint-disable-next-line no-empty-blocks
   receive() external payable {
   }
 

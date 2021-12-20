@@ -126,5 +126,6 @@ contract PaymentHub {
     }
 
     // Important to receive ETH refund from Uniswap
+    // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 }

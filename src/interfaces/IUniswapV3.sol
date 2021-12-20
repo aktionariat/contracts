@@ -11,6 +11,7 @@ interface IQuoter {
         uint160 sqrtPriceLimitX96
     ) external returns (uint256 amountIn);
     
+    // solhint-disable-next-line func-name-mixedcase
     function WETH9() external view returns (address);
 }
 
