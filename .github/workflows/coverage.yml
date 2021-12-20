@@ -39,7 +39,7 @@ jobs:
         run: yarn install
 
       - name: Run tests
-        run: yarn coverage && cat coverage/lcov.info | coveralls
+        run: yarn coverage
         
       - name: Coveralls
         uses: coverallsapp/github-action@master
