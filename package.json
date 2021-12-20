@@ -25,6 +25,7 @@
     "bn.js": "^4.12.0",
     "chai": "^4.3.4",
     "chance": "^1.1.8",
+    "coveralls": "^3.1.1",
     "dotenv": "^10.0.0",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
@@ -48,9 +49,9 @@
   },
   "scripts": {
     "compile": "hardhat compile",
-    "clean": "npx hardhat clean",
+    "clean": "hardhat clean",
     "test": "hardhat test",
-    "coverage": "npx hardhat coverage && cat coverage/lcov.info | coveralls",
+    "coverage": "hardhat coverage && cat coverage/lcov.info | coveralls",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
     "prettier:solidity": "./node_modules/.bin/prettier --write src/**/*.sol"
   }
