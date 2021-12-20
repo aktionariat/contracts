@@ -5,6 +5,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const multiSigWalletMaster = await deployments.get('MultiSigWalletMaster');
 
+  console.log("------------------------------")
+  console.log("Deploy MultiSig Clone Factory")
+  console.log("------------------------------")
   console.log(`deployer: ${deployer}`);
   console.log(`multiSigWalletMaster: ${multiSigWalletMaster.address}`);
 

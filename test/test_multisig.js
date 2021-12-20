@@ -19,13 +19,17 @@ describe("Multisig", () => {
     [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
 
-    multiSigMaster = await ethers.getContractFactory("MultiSigWallet")
+    await deployments.fixture(["MultiSigCloneFactory"]);
+    multiSigMaster = await ethers.getContract("MultiSigWalletMaster");
+    multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
+
+    /*multiSigMaster = await ethers.getContractFactory("MultiSigWallet")
                       .then(multiSigMasterFactory => multiSigMasterFactory.deploy())
                       .then(multiSigMaster => multiSigMaster.deployed());
 
     multiSigCloneFactory = await ethers.getContractFactory("MultiSigCloneFactory")
                             .then(multiSigFactory => multiSigFactory.deploy(multiSigMaster.address))
-                            .then(multiSigCloneFactory => multiSigCloneFactory.deployed());
+                            .then(multiSigCloneFactory => multiSigCloneFactory.deployed());*/
 
   });
 
