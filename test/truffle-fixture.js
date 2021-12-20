@@ -34,12 +34,12 @@ module.exports = async (deployer) => {
 
   const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts.deployer);
   DraggableShares.setAsDeployed(draggableShares);
-
-  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer);
-  Brokerbot.setAsDeployed(brokerbot);
-
+  
   const paymentHub = await PaymentHub.new(config.baseCurrencyAddress);
   PaymentHub.setAsDeployed(paymentHub);
+
+  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer, paymentHub.address);
+  Brokerbot.setAsDeployed(brokerbot);
 
   const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
   // Set Payment Hub for Brokerbot

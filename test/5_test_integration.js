@@ -13,7 +13,7 @@ const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
 const PaymentHub = artifacts.require("PaymentHub");
 const Brokerbot = artifacts.require("Brokerbot");
-const ERC20 = artifacts.require("ERC20");
+const ERC20 = artifacts.require("ERC20Basic");
 
 contract("Payment Integration", (accounts) => {
   it("should allow buying shares by sending baseCurrency through PaymentHub", async () => {

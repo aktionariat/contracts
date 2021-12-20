@@ -14,7 +14,6 @@ const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
 const PaymentHub = artifacts.require("PaymentHub");
 const Brokerbot = artifacts.require("Brokerbot");
-const ERC20 = artifacts.require("ERC20");
 
 // Contract hardcoded variables
 const BUYING_ENABLED = 0x1;

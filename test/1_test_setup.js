@@ -9,7 +9,6 @@ const hre = require("hardhat");
 const { artifacts } = require("hardhat");
 
 // Used contracts
-const ERC20 = artifacts.require("ERC20");
 const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
 const Brokerbot = artifacts.require("Brokerbot");
@@ -82,9 +81,9 @@ contract("Migration", (accounts) => {
   });
 
   it("should have some BaseCurrency in first 5 accounts", async () => {
-    const erc20 = await ERC20.at(config.baseCurrencyAddress);
+    const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
     for (let i = 0; i < 5; i++) {
-      const balance = await erc20.balanceOf(accounts[i]);
+      const balance = await baseCurrency.balanceOf(accounts[i]);
       assert(!balance.isZero(), "Balance is 0");
     }
   });
@@ -107,10 +106,10 @@ contract("Migration", (accounts) => {
 
   it("should have DraggableShares and BaseCurrency deposited into the Brokerbot", async () => {
     const draggableShares = await DraggableShares.deployed();
-    const erc20 = await ERC20.at(config.baseCurrencyAddress);
     const brokerbot = await Brokerbot.deployed();
+    const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
     const tokenBalance = await draggableShares.balanceOf(brokerbot.address);
-    const baseBalance = await erc20.balanceOf(brokerbot.address);
+    const baseBalance = await baseCurrency.balanceOf(brokerbot.address);
     assert(!tokenBalance.isZero() && !baseBalance.isZero());
   });
 });
