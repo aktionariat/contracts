@@ -154,7 +154,7 @@ describe("New PaymentHub", () => {
       it("Should revert if buy with ETH and send to less ETH", async () => {
         const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
         const lowerPriceInETH = priceInETH.mul(90).div(100);
-        await expect(paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.revertedWith("not enough ether");
+        await expect(paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.revertedWith("function call failed to execute");
       });
 
       it("Should buy shares with ETH and keep ETH", async () => {

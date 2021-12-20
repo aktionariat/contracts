@@ -177,11 +177,6 @@ contract PaymentHub {
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(recipient)) {
             uint256 priceInEther = getPriceInEtherFromOracle(xchfamount);
-
-            // If ETH send in the transaction is smaller than current price revert
-            // Note Luzius: this require statement is unnecessary, as the subsequent call would fail anyway
-            // require(msg.value >= priceInEther, "not enough ether");
-
             Brokerbot(recipient).processIncoming{value: priceInEther}(address(currency), msg.sender, xchfamount, ref);
 
             // Pay back ETH that was overpaid
