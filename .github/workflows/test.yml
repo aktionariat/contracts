@@ -6,9 +6,9 @@ name: Test
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main, hardhat ]
+    branches: [ master ]
   pull_request:
-    branches: [ main, hardhat ]
+    branches: [ master ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -43,5 +43,5 @@ jobs:
         uses: santiac89/gas-report-action@v1.0.11
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # Required to publish comment, if not present only the output 'parsed_gas_report' of the step will be present
-          contracts: Shares,DraggableSahres,Brokerbot,PaymentHub,ForceSend # String of comma-separated contract names to include in the report
+          contracts: Shares,DraggableShares,AllowlistShares,AllowlistDraggableShares,RecoveryHub,Brokerbot,PaymentHub,OfferFactory,MultiSigWallet,Bond,BondBot # String of comma-separated contract names to include in the report
           report_file: './gasReporterOutput.json' # Default if not specified

@@ -3,15 +3,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer } = await getNamedAccounts();
 
-  const multisig = await deployments.get('MultiSigTest');
-  const shares = await deployments.get('Shares');
-
   console.log("-----------------------")
   console.log("Deploy Paymenthub")
   console.log("-----------------------")
   console.log("deployer: %s", deployer);
 
   const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
+  const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
+  const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
+
+  if (network.name == "mainnet") {
+    await new Confirm("Addresses correct?").run();
+  }
 
   const feeData = await ethers.provider.getFeeData();
 
@@ -19,7 +22,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     contract: "PaymentHub",
     from: deployer,
     args: [
-      baseCurrencyContract,],
+      baseCurrencyContract,
+      priceFeedCHFUSD,
+      priceFeedETHUSD],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas

@@ -32,6 +32,9 @@ import "../ERC20/IERC20.sol";
 import "../interfaces/IUniswapV3.sol";
 import "../interfaces/ITokenReceiver.sol";
 import "../utils/Ownable.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./Brokerbot.sol";
+import "hardhat/console.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -46,14 +49,72 @@ contract PaymentHub {
     
     IQuoter constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     ISwapRouter constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    AggregatorV3Interface internal priceFeedCHFUSD;
+    AggregatorV3Interface internal priceFeedETHUSD;
 
-    constructor(address currency_) {
-        currency = currency_;
+    constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
+        currency = _currency;
         weth = uniswapQuoter.WETH9();
+        priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
+        priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
     }
 
+    // Deprecated. Kept for compatibility with old hub
     function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
-        return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
+        return getPriceInEther(amountOfXCHF, address(0));
+    }
+
+    /**
+     * Get price in Ether depding on brokerbot setting.
+     * If keep ETH is set price is from oracle.
+     * This is the method that the Brokerbot widget should use to quote the price to the user.
+     */
+    function getPriceInEther(uint256 amountOfXCHF, address brokerBot) public returns (uint256) {
+        if ((brokerBot != address(0)) && hasSettingKeepEther(brokerBot)) {
+            return getPriceInEtherFromOracle(amountOfXCHF);
+        } else {
+            return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
+        }
+    }
+
+    /**
+     * Price in ETH with 18 decimals
+     */
+    function getPriceInEtherFromOracle(uint256 amountOfXCHF) public view returns (uint256) {
+        return getPriceInUSD(amountOfXCHF) * 10**8 / uint256(getLatestPriceETHUSD());
+    }
+
+    /**
+     * Price in USD with 18 decimals
+     */
+    function getPriceInUSD(uint256 amountOfCHF) public view returns (uint256) {
+        return (uint256(getLatestPriceCHFUSD()) * amountOfCHF) / 10**8;
+    }
+
+    /**
+     * Returns the latest price of eth/usd pair from chainlink with 8 decimals
+     */
+    function getLatestPriceETHUSD() public view returns (int256) {
+        (
+            , 
+            int256 price,
+            ,
+            , 
+        ) = priceFeedETHUSD.latestRoundData();
+        return price;
+    }
+
+    /**
+     * Returns the latest price of chf/usd pair from chainlink with 8 decimals
+     */
+    function getLatestPriceCHFUSD() public view returns (int) {
+        (
+            , 
+            int price,
+            ,
+            ,
+        ) = priceFeedCHFUSD.latestRoundData();
+        return price;
     }
 
     /**
@@ -113,8 +174,27 @@ contract PaymentHub {
     }
 
     function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
-        payFromEther(recipient, xchfamount);
-        ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
+        // Check if the brokerbot has setting to keep ETH
+        if (hasSettingKeepEther(recipient)) {
+            uint256 priceInEther = getPriceInEtherFromOracle(xchfamount);
+            Brokerbot(recipient).processIncoming{value: priceInEther}(address(currency), msg.sender, xchfamount, ref);
+
+            // Pay back ETH that was overpaid
+            if (priceInEther < msg.value) {
+                payable(msg.sender).transfer(msg.value - priceInEther); // return change
+            }
+
+        } else {
+            payFromEther(recipient, xchfamount);
+            ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
+        }
+    }
+
+    /**
+     * Checks if the recipient(brokerbot) has setting enabled to keep ether
+     */
+    function hasSettingKeepEther(address recipient) public view returns (bool) {
+        return Brokerbot(recipient).settings() & 0x4 == 0x4;
     }
 
     /**

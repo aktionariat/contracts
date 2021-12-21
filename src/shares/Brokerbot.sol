@@ -50,8 +50,11 @@ contract Brokerbot is Ownable {
 
     uint8 private constant licenseFeeBps = 90;
 
+    // Note that these settings might be hard-coded in various places, so better not change these values.
     uint8 private constant BUYING_ENABLED = 0x1;
     uint8 private constant SELLING_ENABLED = 0x2;
+    // note that in the UI, we call the setting "convert ether", which is the opposite
+    uint8 private constant KEEP_ETHER = 0x4;
     uint8 private constant VERSION = 0x1;
 
     // more bits to be used by payment hub
@@ -64,7 +67,8 @@ contract Brokerbot is Ownable {
         uint256 _price,
         uint256 _increment,
         address _baseCurrency,
-        address _owner
+        address _owner,
+        address _paymentHub
     )
         Ownable(_owner)
     {
@@ -72,7 +76,7 @@ contract Brokerbot is Ownable {
         token = _shareToken;
         price = _price;
         increment = _increment;
-        paymenthub = address(0x3eABee781f6569328143C610700A99E9ceE82cba);
+        paymenthub = _paymentHub;
     }
 
     function setPrice(uint256 newPrice, uint256 newIncrement) external onlyOwner {
