@@ -45,8 +45,17 @@ describe("Bond Contract", () => {
   before(async () =>{
     BondBotFactory = await ethers.getContractFactory("BondBot");
     BondFactory = await ethers.getContractFactory("Bond");
-    PaymentHubFactory = await ethers.getContractFactory("PaymentHub");
-    ForceSendFactory = await ethers.getContractFactory("ForceSend");
+
+    forceSend = await await ethers.getContractFactory("ForceSend")
+    .then(factory => factory.deploy())
+    .then(contract => contract.deployed());
+
+    const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
+    const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
+    paymentHub = await await ethers.getContractFactory("PaymentHub")
+      .then(factory => factory.deploy(config.baseCurrencyAddress, priceFeedCHFUSD, priceFeedETHUSD))
+      .then(contract => contract.deployed());
+
     recoveryHub = await ethers.getContractFactory("RecoveryHub")
     .then(factory => factory.deploy())
     .then(contract => contract.deployed());
@@ -61,13 +70,9 @@ describe("Bond Contract", () => {
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
     bond = await BondFactory.deploy(config.symbol, config.name, config.terms, config.totalBonds, config.timeToMarturity, config.mintDecrement, owner.address, recoveryHub.address);
     bondBot = await BondBotFactory.deploy(bond.address, config.bondPrice, config.baseCurrencyAddress, owner.address);
-    paymentHub = await PaymentHubFactory.deploy(config.baseCurrencyAddress);
-    forceSend = await ForceSendFactory.deploy();
 
     await bond.deployed();
     await bondBot.deployed();
-    await paymentHub.deployed();
-    await forceSend.deployed();
 
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await network.provider.request({
