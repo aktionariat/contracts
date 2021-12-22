@@ -14,7 +14,11 @@ describe("Multisig", () => {
   let adr4;
   let accounts;
 
-  const salts = [ethers.utils.formatBytes32String('1'), ethers.utils.formatBytes32String('2')]
+  const salts = [
+      ethers.utils.formatBytes32String('1'),
+      ethers.utils.formatBytes32String('2'),
+      ethers.utils.formatBytes32String('3')]
+
   before(async () => {
     [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
@@ -22,15 +26,6 @@ describe("Multisig", () => {
     await deployments.fixture(["MultiSigCloneFactory"]);
     multiSigMaster = await ethers.getContract("MultiSigWalletMaster");
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
-
-    /*multiSigMaster = await ethers.getContractFactory("MultiSigWallet")
-                      .then(multiSigMasterFactory => multiSigMasterFactory.deploy())
-                      .then(multiSigMaster => multiSigMaster.deployed());
-
-    multiSigCloneFactory = await ethers.getContractFactory("MultiSigCloneFactory")
-                            .then(multiSigFactory => multiSigFactory.deploy(multiSigMaster.address))
-                            .then(multiSigCloneFactory => multiSigCloneFactory.deployed());*/
-
   });
 
   it("Should deploy multiSig master contract", async () => {
@@ -57,7 +52,8 @@ describe("Multisig", () => {
     multiSigClone = await ethers.getContractAt("MultiSigWallet",address);
 
     // initialize is already called with create and should revert
-    await expect(multiSigClone.initialize(adr1.address)).to.be.revertedWith("Initializable: contract is already initialized");
+    await expect(multiSigClone.initialize(adr1.address)).to.be
+        .revertedWith("Initializable: contract is already initialized");
   });
 
   it("Should create unique contract id for clone", async () => {
@@ -79,5 +75,15 @@ describe("Multisig", () => {
       // log gas usage
       console.log(`multiSigClone.setSigner(${i}): ${createGasUsed.toString()}`);
     }*/
-  })
+  });
+
+  it("Should execute ETH transfer", async () => {
+    const tx = await multiSigCloneFactory.create(owner.address, salts[2]);
+    const { gasUsed: createGasUsed, events } = await tx.wait();
+    const { address } = events.find(Boolean);
+    const multiSig = await ethers.getContractAt("MultiSigWallet",address);
+    const msBlanceBefore = await ethers.providers.getBalance(address);
+    console.log("multisig balance: %s", msBlanceBefore);
+    //await multiSig.checkExecution(owner.address, )
+  });
 })
