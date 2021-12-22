@@ -1,3 +1,5 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
@@ -12,8 +14,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
   const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
 
-  if (network.name == "mainnet") {
-    await new Confirm("Addresses correct?").run();
+  let prompt;
+  if (network.name != "hardhat") {
+    prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
   }
 
   const feeData = await ethers.provider.getFeeData();
