@@ -40,6 +40,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   uint8 private constant TYPE_ALLOWLISTED = 0x1;
   uint8 private constant TYPE_FORBIDDEN = 0x2;
   uint8 private constant TYPE_POWERLISTED = 0x4;
+  // I think TYPE_POWERLISTED should have been 0x3. :) But MOP was deployed like this so we keep it. Does not hurt.
 
   uint8 private constant FLAG_INDEX_ALLOWLIST = 20;
   uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
