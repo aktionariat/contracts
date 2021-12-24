@@ -4,10 +4,11 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Address.sol";
+import "../utils/Address.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libraries/RLPEncode.sol";
 import "../utils/Nonce.sol";
+import "hardhat/console.sol";
 
 contract MultiSigWallet is Nonce, Initializable {
 
@@ -117,7 +118,10 @@ contract MultiSigWallet is Nonce, Initializable {
     public view returns (address[] memory) {
     address[] memory found = new address[](r.length);
     for (uint i = 0; i < r.length; i++) {
+      console.log("v: %s, r: %s, s: %s",string(abi.encodePacked(v[i])), string(abi.encodePacked(r[i])), string(abi.encodePacked(s[i])));
+      console.log(string(abi.encodePacked(transactionHash)));
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
+      console.log("signer: %s", signer);
       uint8 cosignaturesNeeded = signers[signer];
       require(cosignaturesNeeded > 0 && cosignaturesNeeded <= r.length, "cosigner error");
       found[i] = signer;
