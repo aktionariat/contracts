@@ -95,12 +95,7 @@ contract PaymentHub {
      * Returns the latest price of eth/usd pair from chainlink with 8 decimals
      */
     function getLatestPriceETHUSD() public view returns (int256) {
-        (
-            , 
-            int256 price,
-            ,
-            , 
-        ) = priceFeedETHUSD.latestRoundData();
+        (, int256 price, , , ) = priceFeedETHUSD.latestRoundData();
         return price;
     }
 
@@ -108,12 +103,7 @@ contract PaymentHub {
      * Returns the latest price of chf/usd pair from chainlink with 8 decimals
      */
     function getLatestPriceCHFUSD() public view returns (int) {
-        (
-            , 
-            int price,
-            ,
-            ,
-        ) = priceFeedCHFUSD.latestRoundData();
+        (, int price, , , ) = priceFeedCHFUSD.latestRoundData();
         return price;
     }
 
@@ -122,15 +112,7 @@ contract PaymentHub {
      */
     function payFromEther(address recipient, uint256 xchfamount) payable public {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
-            weth,
-            currency,
-            3000,
-            recipient,
-            block.timestamp,
-            xchfamount,
-            msg.value,
-            0
-        );
+            weth, currency, 3000, recipient, block.timestamp, xchfamount, msg.value, 0);
 
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
         uint256 amountIn = uniswapRouter.exactOutputSingle{value: msg.value}(params);
