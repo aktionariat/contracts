@@ -42,9 +42,9 @@ pragma solidity ^0.8.0;
  */
 
 import "./IDraggable.sol";
-import "../../ERC20/extensions/ERC20Flaggable.sol";
-import "../../ERC20/IERC20.sol";
-import "../../interfaces/IERC677Receiver.sol";
+import "../ERC20/ERC20Flaggable.sol";
+import "../ERC20/IERC20.sol";
+import "../ERC20/IERC677Receiver.sol";
 
 abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable {
     

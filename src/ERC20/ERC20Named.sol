@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "./ERC20Flaggable.sol";
-import "../../utils/Ownable.sol";
+import "../utils/Ownable.sol";
 
 contract ERC20Named is ERC20Flaggable, Ownable {
 

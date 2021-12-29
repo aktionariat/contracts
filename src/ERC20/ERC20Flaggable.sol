@@ -203,7 +203,7 @@ abstract contract ERC20Flaggable is IERC20 {
     }
 
     function increaseBalance(address recipient, uint256 amount) private {
-        require(recipient != address(0x0)); // use burn instead
+        require(recipient != address(0x0), "0x0"); // use burn instead
         uint256 oldBalance = _balances[recipient];
         uint256 oldSettings = oldBalance & FLAGGING_MASK;
         uint256 newBalance = oldBalance + amount;
@@ -265,4 +265,5 @@ abstract contract ERC20Flaggable is IERC20 {
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal {
     }
+
 }

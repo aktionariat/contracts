@@ -27,7 +27,7 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/extensions/ERC20Flaggable.sol";
+import "../ERC20/ERC20Flaggable.sol";
 import "./IRecoveryHub.sol";
 import "./IRecoverable.sol";
 
@@ -46,7 +46,6 @@ import "./IRecoverable.sol";
  * delete claims, returning the collateral. This can help to prevent obvious cases of abuse of the claim
  * function.
  */
-
 abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 
     uint8 private constant FLAG_CLAIM_PRESENT = 10;

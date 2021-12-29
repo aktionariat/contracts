@@ -27,46 +27,40 @@
 */
 pragma solidity ^0.8.0;
 
-import "../../recovery/ERC20Recoverable.sol";
-import "./ERC20Allowlistable.sol";
-import "../draggable/DraggableShares.sol";
+import "../recovery/ERC20Recoverable.sol";
+import "../ERC20/ERC20Allowlistable.sol";
+import "./Shares.sol";
 
-contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Recoverable {
-
-  string public terms;
+contract AllowlistShares is Shares, ERC20Allowlistable {
 
   constructor(
+    string memory _symbol,
+    string memory _name,
     string memory _terms,
-    address _wrappedToken,
-    uint256 _quorum,
-    uint256 _votePeriod,
+    uint256 _totalShares,
     address _recoveryHub,
-    address _offerFactory,
-    address _oracle,
     address _owner
   )
-    ERC20Draggable(_wrappedToken, _quorum, _votePeriod, _offerFactory, _oracle) 
-    ERC20Flaggable(0)
-    ERC20Recoverable(_recoveryHub)
-    Ownable(_owner)
+    Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
+    ERC20Allowlistable()
   {
     terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     IRecoveryHub(address(_recoveryHub)).setRecoverable(false); 
   }
 
-  /**
-  * Let the oracle act as deleter of invalid claims. In earlier versions, this was referring to the claim deleter
-  * of the wrapped token. But that stops working after a successful acquisition as the acquisition currency most
-  * likely does not have a claim deleter.
-  */
-  function getClaimDeleter() public view override returns (address) {
-      return getOracle();
+  function getClaimDeleter() public override view returns (address) {
+      return owner;
   }
 
-  function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
-      return super.transfer(to, value);
+  function transfer(address recipient, uint256 amount) override(Shares, ERC20Flaggable) virtual public returns (bool) {
+    return super.transfer(recipient, amount); 
   }
-  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, ERC20Draggable, ERC20Flaggable) internal {
+
+  function _mint(address account, uint256 amount) internal override(Shares, ERC20Flaggable) {
+      super._mint(account, amount);
+  }
+
+  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, ERC20Flaggable) internal {
     super._beforeTokenTransfer(from, to, amount);
   }
 

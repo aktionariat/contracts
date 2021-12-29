@@ -29,8 +29,7 @@ pragma solidity ^0.8.0;
 
 import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";
-import "../interfaces/ITokenReceiver.sol";
-import "../interfaces/IERC677Receiver.sol";
+import "../ERC20/IERC677Receiver.sol";
 import "./Bond.sol";
 
 contract BondBot is Ownable {
@@ -172,7 +171,6 @@ contract BondBot is Ownable {
         return true;
     }
 
-    // ITokenReceiver
     function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) external {
         processIncoming(token_, from, amount, ref);
     }

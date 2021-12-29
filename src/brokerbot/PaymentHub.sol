@@ -29,12 +29,10 @@ pragma solidity ^0.8.0;
 
 import "../utils/Address.sol";
 import "../ERC20/IERC20.sol";
-import "../interfaces/IUniswapV3.sol";
-import "../interfaces/ITokenReceiver.sol";
+import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./IBrokerbot.sol";
-import "hardhat/console.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -152,7 +150,7 @@ contract PaymentHub {
 
     function payAndNotify(address token, address recipient, uint256 amount, bytes calldata ref) public {
         IERC20(token).transferFrom(msg.sender, recipient, amount);
-        ITokenReceiver(recipient).onTokenTransfer(token, msg.sender, amount, ref);
+        IBrokerbot(recipient).processIncoming(token, msg.sender, amount, ref);
     }
 
     function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
@@ -168,7 +166,7 @@ contract PaymentHub {
 
         } else {
             payFromEther(recipient, xchfamount);
-            ITokenReceiver(recipient).onTokenTransfer(address(currency), msg.sender, xchfamount, ref);
+            IBrokerbot(recipient).processIncoming(address(currency), msg.sender, xchfamount, ref);
         }
     }
 

@@ -28,8 +28,8 @@
 pragma solidity ^0.8.0;
 
 
-import "../../ERC20/extensions/ERC20Flaggable.sol";
-import "../../utils/Ownable.sol";
+import "./ERC20Flaggable.sol";
+import "../utils/Ownable.sol";
 
 /**
  * 

@@ -27,8 +27,8 @@
 */
 pragma solidity ^0.8.0;
 
-import "../../recovery/ERC20Recoverable.sol";
-import "./ERC20Draggable.sol";
+import "../recovery/ERC20Recoverable.sol";
+import "../draggable/ERC20Draggable.sol";
 
 /**
  * @title Draggable CompanyName AG Shares

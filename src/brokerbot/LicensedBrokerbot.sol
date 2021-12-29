@@ -23,10 +23,7 @@ contract LicensedBrokerbot is Brokerbot {
         address _baseCurrency,
         address _owner,
         address _paymentHub
-    )
-        Brokerbot (_shareToken, _price, _increment, _baseCurrency, _owner, _paymentHub)
-    {
-    }
+    ) Brokerbot (_shareToken, _price, _increment, _baseCurrency, _owner, _paymentHub) {}
 
     function getLicenseFee(uint256) public pure override returns (uint256) {
         return 0;
