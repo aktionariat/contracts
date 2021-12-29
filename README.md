@@ -33,10 +33,6 @@ This approach reflects how paper certificates are handled, with the paper corres
 
 This approach corresponds to the [recommendations of the Swiss Blockchain Federation](http://blockchainfederation.ch/wp-content/uploads/2019/12/SBF-Circular-2019-01-Tokenized-Equity-4.pdf).
 
-## Numbered Shares
-
-As far as we know, we are the only share tokenization service that supports numbered shares. Many Swiss companies number their shares so they can be individually identified. When issuing numbered shares, the 'mintNumbered' function must be used, which lets the smart contract emit a public event to signal the numbers of the newly minted tokens. The numbers are not tracked on-chain, but by our server according to the FIFO (first in, first out) principle and automatically recflected in the shareholder registry.
-
 ## Bug Bounty
 
 If you find a new security-relevant bug in our contracts and tell us, we will reward you with 1 Ether. For bugs that could lead to a loss of funds, the bounty is tripled. The bounty can only be claimed for bugs that we are not aware of and that have not been exploited yet. They must be filed directly to bugs@aktionariat.com without opening a publicly visible issue.

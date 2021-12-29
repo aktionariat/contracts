@@ -12,8 +12,8 @@
 
 pragma solidity ^0.8.0;
 
-import "../IERC20.sol";
-import "../../interfaces/IERC677Receiver.sol";
+import "./IERC20.sol";
+import "./IERC677Receiver.sol";
 
 /**
  * @dev Implementation of the `IERC20` interface.
@@ -264,6 +264,7 @@ abstract contract ERC20Flaggable is IERC20 {
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal {
+        // intentionally left blank
     }
 
 }

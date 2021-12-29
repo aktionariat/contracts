@@ -6,8 +6,8 @@ pragma solidity ^0.8.0;
 
 import "../utils/Address.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../libraries/RLPEncode.sol";
-import "../utils/Nonce.sol";
+import "./RLPEncode.sol";
+import "./Nonce.sol";
 
 contract MultiSigWallet is Nonce, Initializable {
 
