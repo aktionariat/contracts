@@ -37,14 +37,14 @@ import "./IRecoverable.sol";
  * to handle lost private keys. With physical certificates, courts can declare share certificates as
  * invalid so the company can issue replacements. Here, we want a solution that does not depend on
  * third parties to resolve such cases. Instead, when someone has lost a private key, he can use the
- * declareLost function to post a deposit and claim that the shares assigned to a specific address are
- * lost. To prevent front running, a commit reveal scheme is used. If he actually is the owner of the shares,
- * he needs to wait for a certain period and can then reclaim the lost shares as well as the deposit.
- * If he is an attacker trying to claim shares belonging to someone else, he risks losing the deposit
+ * declareLost function on the recovery hub to post a deposit and claim that the shares assigned to a
+ * specific address are lost.
+ * If an attacker trying to claim shares belonging to someone else, they risk losing the deposit
  * as it can be claimed at anytime by the rightful owner.
  * Furthermore, if "getClaimDeleter" is defined in the subclass, the returned address is allowed to
  * delete claims, returning the collateral. This can help to prevent obvious cases of abuse of the claim
- * function.
+ * function, e.g. cases of front-running.
+ * Most functionality is implemented in a shared RecoveryHub.
  */
 abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 

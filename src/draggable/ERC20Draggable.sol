@@ -106,6 +106,10 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		return unwrapConversionFactor == 0;
 	}
 
+    /**
+	 * Current recommended naming convention is to add the postfix "SHA" to the plain shares
+	 * in order to indicate that this token represents shares bound to a shareholder agreement.
+	 */
 	function name() public view override returns (string memory) {
 		if (isBinding()) {
 			return string(abi.encodePacked(wrapped.name(), " SHA"));

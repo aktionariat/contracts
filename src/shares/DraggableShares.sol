@@ -31,28 +31,12 @@ import "../recovery/ERC20Recoverable.sol";
 import "../draggable/ERC20Draggable.sol";
 
 /**
- * @title Draggable CompanyName AG Shares
+ * @title CompanyName AG Shares SHA
  * @author Luzius Meisser, luzius@aktionariat.com
  *
- * This is an ERC-20 token representing shares of CompanyName AG that are bound to
+ * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
- * The shareholder agreement is partially enforced through this smart contract. The agreement
- * is designed to facilitate a complete acquisition of the firm even if a minority of shareholders
- * disagree with the acquisition, to protect the interest of the minority shareholders by requiring
- * the acquirer to offer the same conditions to everyone when acquiring the company, and to
- * facilitate an update of the shareholder agreement even if a minority of the shareholders that
- * are bound to this agreement disagree. The name "draggable" stems from the convention of calling
- * the right to drag a minority along with a sale of the company "drag-along" rights. The name is
- * chosen to ensure that token holders are aware that they are bound to such an agreement.
- *
- * The percentage of token holders that must agree with an update of the terms is defined by the
- * constant UPDATE_QUORUM. The percentage of yes-votes that is needed to successfully complete an
- * acquisition is defined in the constant ACQUISITION_QUORUM. Note that the update quorum is based
- * on the total number of tokens in circulation. In contrast, the acquisition quorum is based on the
- * number of votes cast during the voting period, not taking into account those who did not bother
- * to vote.
  */
-
 contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     string public terms;
