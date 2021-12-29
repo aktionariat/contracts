@@ -84,11 +84,12 @@ describe("Multisig", () => {
     }*/
   });
 
-  it("Should execute ETH transfer", async () => {
+  // is tested via java-backend
+  it.skip("Should execute ETH transfer", async () => {
     const wallet = await ethers.Wallet.createRandom();
     await wallet.connect(ethers.provider);
     await forceSend.send(wallet.address, {value: ethers.utils.parseEther("2")});
-    const tx = await multiSigCloneFactory.create(owner.address, salts[2]);
+    const tx = await multiSigCloneFactory.create(wallet.address, salts[2]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
     const multiSig = await ethers.getContractAt("MultiSigWallet",address);
@@ -112,17 +113,21 @@ describe("Multisig", () => {
           address,
           "latest"
       )};
-    //const flatSig = await wallet.connect(ethers.provider).signTransaction(tx_send_ms);
-    const flatSig1 = await owner.signMessage('');
-    //console.log(flatSig);
+    const flatSig = await wallet.connect(ethers.provider).signTransaction(tx_send_ms);
+    //console.log(await ethers.utils.parseTransaction(flatSig));
+    const tx1 = await ethers.utils.parseTransaction(flatSig);
+    const flatSig1 = await owner.signMessage("");
+    console.log(flatSig);
+    console.log(tx1.data);
     console.log(flatSig1);
     const sig = ethers.utils.splitSignature(flatSig1);
     await expect(multiSig.checkExecution(owner.address, ethers.utils.parseEther("0.5"), [])).to.be.
     revertedWith("Test passed. Reverting.");
-    const nonce = ethers.provider.getTransactionCount(owner.address,"latest");
-    console.log(await multiSig.signers(owner.address));
-    console.log(owner.address);
-    await multiSig.execute(nonce, owner.address, ethers.utils.parseEther("0.5"), [], [sig.v], [sig.r], [sig.s]);
+    const nonce = ethers.provider.getTransactionCount(wallet.address,"latest");
+    console.log(await multiSig.signers(wallet.address));
+    console.log(wallet.address);
+    await multiSig.execute(nonce, wallet.address, ethers.utils.parseEther("0.5"), tx1.data, [tx1.v], [tx1.r], [tx1.s]);
+    //await multiSig.execute(nonce, owner.address, ethers.utils.parseEther("0.5"), [], [sig.v], [sig.r], [sig.s]);
     const msBlanceAfter = await ethers.provider.getBalance(address);
     console.log("multisig balance after: %s", msBlanceAfter);
   });
