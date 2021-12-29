@@ -102,7 +102,6 @@ contract RecoveryHub is IRecoveryHub {
         IERC20 currency = IERC20(collateralType);
         require(balance > 0, "empty");
         require(claims[token][lostAddress].collateral == 0, "already claimed");
-        require(currency.transferFrom(claimant, address(this), collateral), "transfer failed");
 
         claims[token][lostAddress] = Claim({
             claimant: claimant,
@@ -112,6 +111,8 @@ contract RecoveryHub is IRecoveryHub {
             timestamp: block.timestamp,
             currencyUsed: collateralType
         });
+        
+        require(currency.transferFrom(claimant, address(this), collateral), "transfer failed");
 
         IRecoverable(token).notifyClaimMade(lostAddress);
         emit ClaimMade(token, lostAddress, claimant, balance);
