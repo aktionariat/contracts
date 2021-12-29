@@ -33,7 +33,7 @@ import "../interfaces/IUniswapV3.sol";
 import "../interfaces/ITokenReceiver.sol";
 import "../utils/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "./Brokerbot.sol";
+import "./IBrokerbot.sol";
 import "hardhat/console.sol";
 
 /**
@@ -159,7 +159,7 @@ contract PaymentHub {
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(recipient)) {
             uint256 priceInEther = getPriceInEtherFromOracle(xchfamount);
-            Brokerbot(recipient).processIncoming{value: priceInEther}(address(currency), msg.sender, xchfamount, ref);
+            IBrokerbot(recipient).processIncoming{value: priceInEther}(address(currency), msg.sender, xchfamount, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
@@ -176,7 +176,7 @@ contract PaymentHub {
      * Checks if the recipient(brokerbot) has setting enabled to keep ether
      */
     function hasSettingKeepEther(address recipient) public view returns (bool) {
-        return Brokerbot(recipient).settings() & 0x4 == 0x4;
+        return IBrokerbot(recipient).settings() & 0x4 == 0x4;
     }
 
     /**

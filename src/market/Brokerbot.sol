@@ -228,7 +228,7 @@ contract Brokerbot is Ownable {
         return totPrice;
     }
 
-    function getLicenseFee(uint256 totPrice) public pure returns (uint256) {
+    function getLicenseFee(uint256 totPrice) public virtual pure returns (uint256) {
         return totPrice * LICENSEFEEBPS / 10000;
     }
 
