@@ -31,6 +31,7 @@ contract Ownable {
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
     constructor (address initialOwner) {
+        require(initialOwner != address(0), "0 address");
         owner = initialOwner;
         emit OwnershipTransferred(address(0), owner);
     }
@@ -40,8 +41,9 @@ contract Ownable {
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) external onlyOwner {
-        emit OwnershipTransferred(owner, newOwner);
+        require(newOwner != address(0), "0 address");
         owner = newOwner;
+        emit OwnershipTransferred(owner, newOwner);
     }
 
     modifier onlyOwner() {
