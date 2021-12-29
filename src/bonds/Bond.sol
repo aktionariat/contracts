@@ -67,7 +67,7 @@ contract Bond is ERC20Recoverable, ERC20Named {
         address _owner,
         address _recoveryHub
     ) 
-        ERC20Named(_owner, _name, _symbol, 0)
+        ERC20Named(_symbol, _name, 0, _owner)
         ERC20Recoverable(_recoveryHub)
     {
         symbol = _symbol;

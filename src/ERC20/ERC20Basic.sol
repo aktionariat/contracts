@@ -6,7 +6,7 @@ import "./ERC20Named.sol";
 
 contract ERC20Basic is ERC20Named {
 
-    constructor(address _admin, string memory _name , string memory _symbol, uint8 _decimals) ERC20Named(_admin, _name, _symbol, _decimals) {
+    constructor(string memory _symbol, string memory _name, uint8 _decimals, address _admin) ERC20Named(_symbol, _name, _decimals, _admin) {
         // intentially left empty
     }
 

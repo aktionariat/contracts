@@ -30,7 +30,7 @@ pragma solidity ^0.8.0;
 import "../ERC20/IERC20.sol";
 import "./IDraggable.sol";
 /**
- * @title Acquisition Attempt
+ * @title A public offer to acquire all tokens
  * @author Luzius Meisser, luzius@aktionariat.com
  */
 

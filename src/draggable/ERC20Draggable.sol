@@ -28,17 +28,17 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title CompanyName Shareholder Agreement
+ * @title ERC-20 tokens subject to a drag-along agreement
  * @author Luzius Meisser, luzius@aktionariat.com
- * @dev These tokens are based on the ERC20 standard and the open-zeppelin library.
  *
- * This is an ERC-20 token representing shares of CompanyName AG that are bound to
- * a shareholder agreement that can be found at the URL defined in the constant 'terms'
- * of the 'DraggableCompanyNameShares' contract. The agreement is partially enforced
- * through the Swiss legal system, and partially enforced through this smart contract.
- * In particular, this smart contract implements a drag-along clause which allows the
- * majority of token holders to force the minority sell their shares along with them in
- * case of an acquisition. That's why the tokens are called "Draggable CompanyName AG Shares."
+ * This is an ERC-20 token that is bound to a shareholder or other agreement that contains
+ * a drag-along clause. The smart contract can help enforce this drag-along clause in case
+ * an acquirer makes an offer using the provided functionality. If a large enough quorum of
+ * token holders agree, the remaining token holders can be automatically "dragged along" or
+ * squeezed out. For shares non-tokenized shares, the contract relies on an external Oracle
+ * to provide the votes of those.
+ *
+ * Subclasses should provide a link to a human-readable form of the agreement.
  */
 
 import "./IDraggable.sol";
@@ -60,7 +60,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	IOffer public offer;
 
 	uint256 public immutable quorum; // BPS (out of 10'000)
-	uint256 public immutable votePeriod; // Seconds
+	uint256 public immutable votePeriod; // In seconds
 
 	address private oracle;
 
@@ -90,7 +90,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		return true;
 	}
 
-	/** Increases the number of drag-along tokens. Requires minter to deposit an equal amount of share tokens */
+	/** Wraps additional tokens, thereby creating more ERC20Draggable tokens. */
 	function wrap(address shareholder, uint256 amount) external {
 		require(wrapped.transferFrom(msg.sender, address(this), amount));
 		_mint(shareholder, amount);
@@ -98,8 +98,8 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 
 	/**
 	 * Indicates that the token holders are bound to the token terms and that:
-	 * - Conversions back to the wrapped token (unwrap) are not allowed
-	 * - The drag-along can be performed by making an according offer
+	 * - Conversion back to the wrapped token (unwrap) is not allowed
+	 * - A drag-along can be performed by making an according offer
 	 * - They can be migrated to a new version of this contract in accordance with the terms
 	 */
 	function isBinding() public view returns (bool) {

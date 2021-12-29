@@ -38,7 +38,8 @@ import "./IBrokerbot.sol";
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
  * namely interacting with a token-handling smart contract in one transaction, without having to set an allowance first.
  * Instead, an allowance needs to be set only once, namely for this contract.
- * Further, it supports automatic conversion from Ether to the payment currency through Uniswap.
+ * Further, it supports automatic conversion from Ether to the payment currency through Uniswap or the reception of Ether
+ * using the current exchange rate as found in the chainlink oracle.
  */
 contract PaymentHub {
 
