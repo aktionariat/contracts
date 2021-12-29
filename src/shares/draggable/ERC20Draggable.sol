@@ -64,12 +64,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 
 	address private oracle;
 
-	event MigrationSucceeded(
-		address newContractAddress,
-		uint256 yesVotes,
-		uint256 oracleVotes,
-		uint256 totalVotingPower
-	);
+	event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
 
 	constructor(
 		address _wrappedToken,
