@@ -61,6 +61,7 @@ contract Brokerbot is Ownable {
     uint256 public settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
+    event ChangePaymentHub(address newPaymentHub, address who);
 
     constructor(
         address _shareToken,
@@ -279,6 +280,7 @@ contract Brokerbot is Ownable {
 
     function setPaymentHub(address hub) external onlyOwner() {
         paymenthub = hub;
+        emit ChangePaymentHub(paymenthub, msg.sender);
     }
 
     function setSettings(uint256 settings_) external onlyOwner() {

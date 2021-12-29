@@ -56,6 +56,7 @@ contract BondBot is Ownable {
     uint256 public settings = BUYING_ENABLED | SELLING_ENABLED;
 
     event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
+    event ChangePaymentHub(address newPaymentHub, address who);
 
     constructor(address bondToken, uint256 price_, address baseCurrency, address _owner) Ownable(_owner){
         base = baseCurrency;
@@ -222,8 +223,8 @@ contract BondBot is Ownable {
     }
 
     function setPaymentHub(address hub) external onlyOwner() {
-        require(hub != address(0), "address must not be 0");
         paymenthub = hub;
+        emit ChangePaymentHub(paymenthub, msg.sender);
     }
 
     function setSettings(uint256 settings_) external onlyOwner() {
