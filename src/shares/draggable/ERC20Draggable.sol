@@ -158,20 +158,9 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		IShares(address(wrapped)).burn(amount * factor);
 	}
 
-	function makeAcquisitionOffer(
-		bytes32 salt,
-		uint256 pricePerShare,
-		address currency
-	) external payable {
+	function makeAcquisitionOffer(bytes32 salt, uint256 pricePerShare, address currency) external payable {
 		require(isBinding());
-		address newOffer = factory.create{value: msg.value}(
-			salt,
-			msg.sender,
-			pricePerShare,
-			currency,
-			quorum,
-			votePeriod
-		);
+		address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
 
 		if (offerExists()) {
 			offer.makeCompetingOffer(newOffer);
