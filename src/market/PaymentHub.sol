@@ -47,14 +47,14 @@ contract PaymentHub {
     address public immutable weth; 
     address public immutable currency;
     
-    IQuoter constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
-    ISwapRouter constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    IQuoter private constant UNISWAP_QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+    ISwapRouter private constant UNISWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     AggregatorV3Interface internal priceFeedCHFUSD;
     AggregatorV3Interface internal priceFeedETHUSD;
 
     constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
         currency = _currency;
-        weth = uniswapQuoter.WETH9();
+        weth = UNISWAP_QUOTER.WETH9();
         priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
         priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
     }
@@ -73,7 +73,7 @@ contract PaymentHub {
         if ((brokerBot != address(0)) && hasSettingKeepEther(brokerBot)) {
             return getPriceInEtherFromOracle(amountOfXCHF);
         } else {
-            return uniswapQuoter.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
+            return UNISWAP_QUOTER.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
         }
     }
 
@@ -115,12 +115,12 @@ contract PaymentHub {
             weth, currency, 3000, recipient, block.timestamp, xchfamount, msg.value, 0);
 
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = uniswapRouter.exactOutputSingle{value: msg.value}(params);
+        uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < msg.value) {
-            uniswapRouter.refundETH();
+            UNISWAP_ROUTER.refundETH();
             payable(msg.sender).transfer(msg.value - amountIn); // return change
         }
     }
