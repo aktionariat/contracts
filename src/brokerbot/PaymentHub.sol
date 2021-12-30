@@ -109,8 +109,10 @@ contract PaymentHub {
     /**
      * Convenience method to swap ether into currency and pay a target address
      */
-    function payFromEther(address recipient, uint256 xchfamount) payable public {
+    function payFromEther(address recipient, uint256 xchfamount) public payable {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
+            // rely on time stamp is ok, no exact time stamp needed
+            // solhint-disable-next-line not-rely-on-time
             weth, currency, 3000, recipient, block.timestamp, xchfamount, msg.value, 0);
 
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
@@ -154,7 +156,7 @@ contract PaymentHub {
         IBrokerbot(recipient).processIncoming(token, msg.sender, amount, ref);
     }
 
-    function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) payable external {
+    function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) external payable {
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(recipient)) {
             uint256 priceInEther = getPriceInEtherFromOracle(xchfamount);
@@ -187,5 +189,6 @@ contract PaymentHub {
     }
 
     // Important to receive ETH refund from Uniswap
-    receive() payable external {}
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {}
 }

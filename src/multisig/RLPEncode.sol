@@ -52,6 +52,7 @@ library RLPEncode {
      */
     function encodeAddress(address self) internal pure returns (bytes memory) {
         bytes memory inputBytes;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             let m := mload(0x40)
             mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, self))
@@ -131,6 +132,7 @@ library RLPEncode {
      */
     function toBinary(uint _x) private pure returns (bytes memory) {
         bytes memory b = new bytes(32);
+        // solhint-disable-next-line no-inline-assembly
         assembly { 
             mstore(add(b, 32), _x) 
         }
@@ -160,6 +162,7 @@ library RLPEncode {
         uint len = _len;
 
         for(; len >= 32; len -= 32) {
+            // solhint-disable-next-line no-inline-assembly
             assembly {
                 mstore(dest, mload(src))
             }
@@ -168,6 +171,7 @@ library RLPEncode {
         }
 
         uint mask = 256 ** (32 - len) - 1;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             let srcpart := and(mload(src), not(mask))
             let destpart := and(mload(dest), mask)
@@ -194,12 +198,14 @@ library RLPEncode {
 
         bytes memory flattened = new bytes(len);
         uint flattenedPtr;
+        // solhint-disable-next-line no-inline-assembly
         assembly { flattenedPtr := add(flattened, 0x20) }
 
         for(i = 0; i < _list.length; i++) {
             bytes memory item = _list[i];
             
             uint listPtr;
+            // solhint-disable-next-line no-inline-assembly
             assembly { listPtr := add(item, 0x20)}
 
             memcpy(flattenedPtr, listPtr, item.length);
@@ -219,6 +225,7 @@ library RLPEncode {
     function concat(bytes memory _preBytes, bytes memory _postBytes) private pure returns (bytes memory) {
         bytes memory tempBytes;
 
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             tempBytes := mload(0x40)
 

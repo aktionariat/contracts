@@ -97,10 +97,14 @@ contract Brokerbot is Ownable {
 
     function anchorPrice(uint256 currentPrice) private {
         price = currentPrice;
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         driftStart = block.timestamp;
     }
 
     function getPrice() public view returns (uint256) {
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         return getPriceAtTime(block.timestamp);
     }
 

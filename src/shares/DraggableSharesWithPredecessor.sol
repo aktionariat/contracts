@@ -55,7 +55,7 @@ import "../draggable/ERC20Draggable.sol";
 
 contract DraggableSharesWithPredecessor is DraggableShares {
 
-    address immutable newBaseToken;
+    address private immutable newBaseToken;
 
     constructor(
         address _newBaseToken,
@@ -111,6 +111,6 @@ abstract contract IBaseToken {
 
 abstract contract IDSHS {
     function migrate() virtual external;
-    function getWrappedContract() virtual view external returns (address);
+    function getWrappedContract() virtual external view returns (address);
     function totalSupply() virtual external returns (uint256);
 }

@@ -124,6 +124,8 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
 
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
     super._beforeTokenTransfer(from, to, amount);
+    // empty block for gas saving fall through
+    // solhint-disable-next-line no-empty-blocks
     if (canReceiveFromAnyone(to)){
       // ok, transfers to allowlisted addresses are always allowed
     } else if (isForbidden(to)){

@@ -263,6 +263,7 @@ abstract contract ERC20Flaggable is IERC20 {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
+     // solhint-disable-next-line no-empty-blocks
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal {
         // intentionally left blank
     }

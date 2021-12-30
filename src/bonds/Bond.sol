@@ -74,6 +74,8 @@ contract Bond is ERC20Recoverable, ERC20Named {
         name = _name;
         terms = _terms;
         maxSupply = _maxSupply;
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         deployTimestamp = block.timestamp;
         termToMaturity = _termToMaturity;
         mintDecrement = _mintDecrement;
@@ -112,6 +114,8 @@ contract Bond is ERC20Recoverable, ERC20Named {
     }
 
     function _mint(address account, uint256 amount) internal override {
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         require(block.timestamp - deployTimestamp <= termToMaturity, "Bond reached maturity");
         require(totalSupply() + amount <= maxMintable(), "Max mintable supply");
         super._mint(account, amount);
@@ -144,6 +148,8 @@ contract Bond is ERC20Recoverable, ERC20Named {
      * Calculates the the maximum ammount which can be minted, which decreses over the time.
      */
     function maxMintable() public view returns (uint256) {
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         return maxSupply - ((block.timestamp - deployTimestamp) * mintDecrement / 3600);
     }
 
