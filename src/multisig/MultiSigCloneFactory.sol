@@ -17,14 +17,7 @@ contract MultiSigCloneFactory {
   constructor(address _multSigImplementation) {
     multiSigImplementation = _multSigImplementation;
   }
-
-  /*function create(address owner) public returns (address) {
-    address payable instance = payable(Clones.clone(multiSigImplementation));
-    MultiSigWallet(instance).initialize(owner);
-    emit ContractCreated(instance, "MultiSigWallet");
-    return instance;
-  }*/
-
+  
   function predict(bytes32 salt) external view returns (address) {
     return Clones.predictDeterministicAddress(multiSigImplementation, salt);
   }
