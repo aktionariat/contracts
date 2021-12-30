@@ -80,7 +80,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     }
 
     function fetchTokens() internal {
-        require(address(wrapped) != newBaseToken);
+        require(address(wrapped) != newBaseToken, "already changed");
         IDSHS predecessor = IDSHS(address(wrapped));
         uint256 supply = predecessor.totalSupply();
         uint256 present = totalSupply();
@@ -101,7 +101,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
         IBaseToken(newBaseToken).convertOldShares();
         wrapped = IERC20(newBaseToken);
         recovery.setRecoverable(false);
-        require(totalSupply() == wrapped.balanceOf(address(this)));
+        require(totalSupply() == wrapped.balanceOf(address(this)), "balance");
     }
 }
 

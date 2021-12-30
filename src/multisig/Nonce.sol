@@ -67,7 +67,7 @@ contract Nonce {
         } else if (isValidLowNonce(max, reg, nonce)){
             setBoth(max, uint128(reg | 0x1 << (max - nonce - 1)));
         } else {
-            require(false);
+            require(false, "used");
         }
     }
     

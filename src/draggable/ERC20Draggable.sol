@@ -81,18 +81,18 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	}
 
 	function onTokenTransfer(
-		address from,
-		uint256 amount,
+		address from, 
+		uint256 amount, 
 		bytes calldata
 	) external override returns (bool) {
-		require(msg.sender == address(wrapped));
+		require(msg.sender == address(wrapped), "sender");
 		_mint(from, amount);
 		return true;
 	}
 
 	/** Wraps additional tokens, thereby creating more ERC20Draggable tokens. */
 	function wrap(address shareholder, uint256 amount) external {
-		require(wrapped.transferFrom(msg.sender, address(this), amount));
+		require(wrapped.transferFrom(msg.sender, address(this), amount), "transfer");
 		_mint(shareholder, amount);
 	}
 
@@ -134,17 +134,13 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 
 	/** Decrease the number of drag-along tokens. The user gets back their shares in return */
 	function unwrap(uint256 amount) external {
-		require(!isBinding());
+		require(!isBinding(), "factor");
 		unwrap(msg.sender, amount, unwrapConversionFactor);
 	}
 
-	function unwrap(
-		address owner,
-		uint256 amount,
-		uint256 factor
-	) internal {
+	function unwrap(address owner, uint256 amount, uint256 factor) internal {
 		_burn(owner, amount);
-		require(wrapped.transfer(owner, amount * factor));
+		require(wrapped.transfer(owner, amount * factor), "transfer");
 	}
 
 	/**
@@ -162,9 +158,14 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		IShares(address(wrapped)).burn(amount * factor);
 	}
 
-	function makeAcquisitionOffer(bytes32 salt, uint256 pricePerShare, address currency) external payable {
-		require(isBinding());
-		address newOffer = factory.create{value: msg.value}(salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
+	function makeAcquisitionOffer(
+		bytes32 salt, 
+		uint256 pricePerShare, 
+		address currency
+	) external payable {
+		require(isBinding(), "factor");
+		address newOffer = factory.create{value: msg.value}(
+			salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
 
 		if (offerExists()) {
 			offer.makeCompetingOffer(newOffer);
@@ -173,7 +174,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	}
 
 	function drag(address buyer, address currency) external override {
-		require(msg.sender == address(offer));
+		require(msg.sender == address(offer), "sender");
 		unwrap(buyer, balanceOf(buyer), 1);
 		replaceWrapped(currency, buyer);
 	}
@@ -185,9 +186,9 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	}
 
 	function replaceWrapped(address newWrapped, address oldWrappedDestination) internal {
-		require(isBinding());
+		require(isBinding(), "factor");
 		// Free all old wrapped tokens we have
-		require(wrapped.transfer(oldWrappedDestination, wrapped.balanceOf(address(this))));
+		require(wrapped.transfer(oldWrappedDestination, wrapped.balanceOf(address(this))), "transfer");
 		// Count the new wrapped tokens
 		wrapped = IERC20(newWrapped);
 		deactivate(wrapped.balanceOf(address(this)) / totalSupply());
@@ -203,12 +204,12 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	}
 
 	function migrateWithExternalApproval(address target, uint256 externalSupportingVotes) external {
-		require(msg.sender == oracle);
+		require(msg.sender == oracle, "not oracle");
 		// Additional votes cannot be higher than the votes not represented by these tokens.
 		// The assumption here is that more shareholders are bound to the shareholder agreement
 		// that this contract helps enforce and a vote among all parties is necessary to change
 		// it, with an oracle counting and reporting the votes of the others.
-		require(totalSupply() + externalSupportingVotes <= totalVotingTokens());
+		require(totalSupply() + externalSupportingVotes <= totalVotingTokens(), "votes");
 		migrate(target, externalSupportingVotes);
 	}
 
@@ -219,8 +220,8 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	function migrate(address successor, uint256 additionalVotes) internal {
 		uint256 yesVotes = additionalVotes + balanceOf(successor);
 		uint256 totalVotes = totalVotingTokens();
-		require(yesVotes < totalVotes);
-		require(!offerExists()); // if you have the quorum, you can cancel the offer first if necessary
+		require(yesVotes < totalVotes, "votes");
+		require(!offerExists(), "no offer"); // if you have the quorum, you can cancel the offer first if necessary
 		require(yesVotes * 10000 >= totalVotes * quorum, "quorum");
 		replaceWrapped(successor, successor);
 		emit MigrationSucceeded(successor, yesVotes, additionalVotes, totalVotes);
@@ -242,11 +243,7 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		setFlag(voter, FLAG_VOTED, true);
 	}
 
-	function _beforeTokenTransfer(
-		address from,
-		address to,
-		uint256 amount
-	) internal virtual override {
+	function _beforeTokenTransfer(address from, address to,	uint256 amount) internal virtual override {
 		if (hasVoted(from) || hasVoted(to)) {
 			if (offerExists()) {
 				offer.notifyMoved(from, to, amount);
@@ -272,20 +269,11 @@ abstract contract IShares {
 abstract contract IOffer {
 	function makeCompetingOffer(address newOffer) external virtual;
 
-	function notifyMoved(
-		address from,
-		address to,
-		uint256 value
-	) external virtual;
+	function notifyMoved(address from, address to, uint256 value) external virtual;
 }
 
 abstract contract IOfferFactory {
 	function create(
-		bytes32 salt,
-		address buyer,
-		uint256 pricePerShare,
-		address currency,
-		uint256 quorum,
-		uint256 votePeriod
+		bytes32 salt, address buyer, uint256 pricePerShare,	address currency,	uint256 quorum,	uint256 votePeriod
 	) external payable virtual returns (address);
 }

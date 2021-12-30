@@ -102,7 +102,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     function getClaimDeleter() virtual public view returns (address);
 
     function transfer(address recipient, uint256 amount) override virtual public returns (bool) {
-        require(super.transfer(recipient, amount));
+        require(super.transfer(recipient, amount), "transfer");
         if (hasFlagInternal(msg.sender, FLAG_CLAIM_PRESENT)){
             recovery.clearClaimFromToken(msg.sender);
         }
@@ -110,22 +110,22 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     }
 
     function notifyClaimMade(address target) external override {
-        require(msg.sender == address(recovery), "sender invalid");
+        require(msg.sender == address(recovery), "sender");
         setFlag(target, FLAG_CLAIM_PRESENT, true);
     }
 
     function notifyClaimDeleted(address target) external override {
-        require(msg.sender == address(recovery), "sender invalid");
+        require(msg.sender == address(recovery), "sender");
         setFlag(target, FLAG_CLAIM_PRESENT, false);
     }
 
     function deleteClaim(address lostAddress) external {
-        require(msg.sender == getClaimDeleter(), "no access");
+        require(msg.sender == getClaimDeleter(), "sender");
         recovery.deleteClaim(lostAddress);
     }
 
     function recover(address oldAddress, address newAddress) external override {
-        require(msg.sender == address(recovery), "sender invalid");
+        require(msg.sender == address(recovery), "sender");
         _transfer(oldAddress, newAddress, balanceOf(oldAddress));
     }
 
