@@ -8,8 +8,8 @@ node_modules
 
 #Hardhat files
 cache
-artifacts/*
-!artifacts/ext
+artifacts/src
+artifacts/build-info
 
 # Unit test / coverage reports
 coverage
