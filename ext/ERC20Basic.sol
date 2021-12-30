@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./ERC20Named.sol";
+import "../src/ERC20/ERC20Named.sol";
 
 contract ERC20Basic is ERC20Named {
 
