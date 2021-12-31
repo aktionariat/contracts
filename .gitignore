@@ -9,7 +9,6 @@ node_modules
 #Hardhat files
 cache
 artifacts/*
-!artifacts/ext
 
 # Unit test / coverage reports
 coverage
