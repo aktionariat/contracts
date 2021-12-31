@@ -28,8 +28,9 @@
 pragma solidity ^0.8.0;
 
 import "./Offer.sol";
+import "./IOfferFactory.sol";
 
-contract OfferFactory {
+contract OfferFactory is IOfferFactory{
     
     event OfferCreated(address contractAddress, string typeName);
 
@@ -41,7 +42,7 @@ contract OfferFactory {
     }
 
     // Do not call directly, msg.sender must be the token to be acquired
-    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod) external payable returns (address) {
+    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod) override external payable returns (address) {
         Offer offer = new Offer{value: msg.value, salt: salt}(buyer, msg.sender, pricePerShare, currency, quorum, votePeriod);
         return address(offer);
     }

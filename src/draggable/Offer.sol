@@ -29,12 +29,13 @@ pragma solidity ^0.8.0;
 
 import "../ERC20/IERC20.sol";
 import "./IDraggable.sol";
+import "./IOffer.sol";
 /**
  * @title A public offer to acquire all tokens
  * @author Luzius Meisser, luzius@aktionariat.com
  */
 
-contract Offer {
+contract Offer is IOffer {
 
     uint256 public immutable quorum;                    // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
 
@@ -76,13 +77,13 @@ contract Offer {
         // rely on time stamp is ok, no exact time stamp needed
         // solhint-disable-next-line not-rely-on-time
         voteEnd = block.timestamp + _votePeriod;
+        emit OfferCreated(_buyer, address(_token), _price, address(_currency));
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
-        emit OfferCreated(_buyer, address(_token), _price, address(_currency));
     }
 
-    function makeCompetingOffer(address betterOffer) external {
+    function makeCompetingOffer(address betterOffer) external override {
         require(msg.sender == address(token), "invalid caller");
         Offer better = Offer(betterOffer);
         require(!isAccepted(), "old already accepted");
@@ -153,7 +154,7 @@ contract Offer {
         }
     }
 
-    function notifyMoved(address from, address to, uint256 value) external {
+    function notifyMoved(address from, address to, uint256 value) external override {
         require(msg.sender == address(token), "invalid caller");
         if (isVotingOpen()) {
             Vote fromVoting = votes[from];
@@ -231,8 +232,8 @@ contract Offer {
     }
 
     function kill(bool success, string memory message) internal {
-        IDraggable(token).notifyOfferEnded();
         emit OfferEnded(buyer, success, message);
+        IDraggable(token).notifyOfferEnded();
         selfdestruct(payable(buyer));
     }
 

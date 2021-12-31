@@ -95,11 +95,11 @@ contract RecoveryHub is IRecoveryHub {
             timestamp: block.timestamp,
             currencyUsed: collateralType
         });
+        emit ClaimMade(token, lostAddress, claimant, balance);
         
         require(currency.transferFrom(claimant, address(this), collateral), "transfer failed");
 
         IRecoverable(token).notifyClaimMade(lostAddress);
-        emit ClaimMade(token, lostAddress, claimant, balance);
     }
 
     function getClaimant(address token, address lostAddress) external view returns (address) {
@@ -135,8 +135,8 @@ contract RecoveryHub is IRecoveryHub {
         if (claim.collateral != 0) {
             IERC20 currency = IERC20(claim.currencyUsed);
             delete claims[token][holder];
-            require(currency.transfer(address(this), claim.collateral), "could not return collateral");
             emit ClaimCleared(token, holder, claim.collateral);
+            require(currency.transfer(address(this), claim.collateral), "could not return collateral");
             IRecoverable(token).notifyClaimDeleted(holder);
         }
     }
@@ -156,10 +156,10 @@ contract RecoveryHub is IRecoveryHub {
         // solhint-disable-next-line not-rely-on-time
         require(claim.timestamp + IRecoverable(token).claimPeriod() <= block.timestamp, "too early");
         delete claims[token][lostAddress];
+        emit ClaimResolved(token, lostAddress, claimant, collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
         require(currency.transfer(claimant, collateral), "transfer failed");
         IRecoverable(token).recover(lostAddress, claimant);
-        emit ClaimResolved(token, lostAddress, claimant, collateral);
     }
 
     /**
@@ -172,9 +172,9 @@ contract RecoveryHub is IRecoveryHub {
         IERC20 currency = IERC20(claim.currencyUsed);
         require(claim.collateral != 0, "not found");
         delete claims[token][lostAddress];
+        emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
         require(currency.transfer(claim.claimant, claim.collateral), "transfer failed");
-        emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
     }
 
 }

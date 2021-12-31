@@ -14,8 +14,8 @@ contract MultiSigCloneFactory {
 
   event ContractCreated(address contractAddress, string typeName);
 
-  constructor(address _multSigImplementation) {
-    multiSigImplementation = _multSigImplementation;
+  constructor(address _multiSigImplementation) {
+    multiSigImplementation = _multiSigImplementation;
   }
   
   function predict(bytes32 salt) external view returns (address) {
