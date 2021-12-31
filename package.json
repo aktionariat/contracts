@@ -15,7 +15,7 @@
   "homepage": "https://github.com/aktionariat/contracts#readme",
   "dependencies": {
     "@chainlink/contracts": "^0.2.2",
-    "@openzeppelin/contracts": "^4.3.2"
+    "@openzeppelin/contracts": "4.3.3"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
@@ -38,16 +38,17 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.6",
     "hardhat": "^2.7.0",
+    "hardhat-dependency-compiler": "^1.1.2",
     "hardhat-deploy": "^0.9.14",
     "hardhat-gas-reporter": "^1.0.6",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "prompt-confirm": "^2.0.4",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.17",
     "truffle-assertions": "^0.9.2",
-    "web3": "^1.6.1",
-    "prompt-confirm": "^2.0.4"
+    "web3": "^1.6.1"
   },
   "scripts": {
     "compile": "hardhat compile",
