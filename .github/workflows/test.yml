@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get -y install tree
           which tree
-          tree /artifacts
+          tree .
 
       - name: Create env file
         run: echo "${{ secrets.TEST_ENV }}" > .env
