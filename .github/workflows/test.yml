@@ -30,6 +30,12 @@ jobs:
         with:
           node-version: 14
 
+      - name: Install package
+        run: |
+          sudo apt-get -y install tree
+          which tree
+          tree .
+
       - name: Create env file
         run: echo "${{ secrets.TEST_ENV }}" > .env
         

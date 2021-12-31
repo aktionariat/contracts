@@ -1,10 +1,12 @@
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
+  const { deployer, dev } = await getNamedAccounts();
 
+  console.log("------------------------------")
+  console.log("Deploy MultiSigWallet Master")
+  console.log("------------------------------")
   console.log(`deployer: ${deployer}`);
-  console.log(`multiSigDefaultOwner: ${multiSigDefaultOwner}`);
 
   const feeData = await ethers.provider.getFeeData();
 

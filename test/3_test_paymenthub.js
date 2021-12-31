@@ -8,7 +8,7 @@ const BN = require("bn.js");
 
 // Import contracts to be tested
 const PaymentHub = artifacts.require("PaymentHub");
-const ERC20 = artifacts.require("ERC20");
+const ERC20 = artifacts.require("ERC20Basic");
 
 // Test parameters
 const paymentAmountInBase = new BN("1000000000000000");

@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2021 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -27,9 +27,9 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/extensions/ERC20Named.sol";
+import "../ERC20/ERC20Named.sol";
 import "../recovery/ERC20Recoverable.sol";
-import "../interfaces/IERC677Receiver.sol";
+import "../ERC20/IERC677Receiver.sol";
 
 /**
  * @title CompanyName AG Bonds
@@ -42,7 +42,7 @@ import "../interfaces/IERC677Receiver.sol";
 contract Bond is ERC20Recoverable, ERC20Named {
 
     string public terms;
-    address minter; // addresse of the broker bot which mints/burns
+    address public minter; // addresse of the broker bot which mints/burns
     uint256 public immutable maxSupply; // the max inital tokens
     uint256 public immutable deployTimestamp; // the timestamp of the contract deployment
     uint256 public immutable termToMaturity; // the duration of the bond
@@ -67,13 +67,15 @@ contract Bond is ERC20Recoverable, ERC20Named {
         address _owner,
         address _recoveryHub
     ) 
-        ERC20Named(_owner, _name, _symbol, 0)
+        ERC20Named(_symbol, _name, 0, _owner)
         ERC20Recoverable(_recoveryHub)
     {
         symbol = _symbol;
         name = _name;
         terms = _terms;
         maxSupply = _maxSupply;
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         deployTimestamp = block.timestamp;
         termToMaturity = _termToMaturity;
         mintDecrement = _mintDecrement;
@@ -112,8 +114,10 @@ contract Bond is ERC20Recoverable, ERC20Named {
     }
 
     function _mint(address account, uint256 amount) internal override {
-        require(block.timestamp - deployTimestamp <= termToMaturity, "Bond already reached maturity.");
-        require(totalSupply() + amount <= maxMintable(), "Max mintable supply is already minted.");
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
+        require(block.timestamp - deployTimestamp <= termToMaturity, "Bond reached maturity");
+        require(totalSupply() + amount <= maxMintable(), "Max mintable supply");
         super._mint(account, amount);
     }
 
@@ -144,7 +148,9 @@ contract Bond is ERC20Recoverable, ERC20Named {
      * Calculates the the maximum ammount which can be minted, which decreses over the time.
      */
     function maxMintable() public view returns (uint256) {
-        return maxSupply - (((block.timestamp - deployTimestamp)/ 3600) * mintDecrement);
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
+        return maxSupply - ((block.timestamp - deployTimestamp) * mintDecrement / 3600);
     }
 
 }   
