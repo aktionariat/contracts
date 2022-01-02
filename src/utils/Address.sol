@@ -40,7 +40,6 @@ library Address {
         if (success) {
             return returndata;
         } else {
-            // TODO: I think this does not lead to correct error messages.
             revert(string(returndata));
         }
     }
