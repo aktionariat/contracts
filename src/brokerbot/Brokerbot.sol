@@ -77,6 +77,8 @@ contract Brokerbot is Ownable {
         price = _price;
         increment = _increment;
         paymenthub = _paymentHub;
+        // Should we disabled recoverability in the recovery hub here?
+        // No, if someone attacks us, we can always trigger a transfer and recover the tokens as well as the collateral.
     }
 
     function setPrice(uint256 newPrice, uint256 newIncrement) external onlyOwner {
