@@ -48,8 +48,8 @@ contract PaymentHub {
     
     IQuoter private constant UNISWAP_QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     ISwapRouter private constant UNISWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-    AggregatorV3Interface internal priceFeedCHFUSD;
-    AggregatorV3Interface internal priceFeedETHUSD;
+    AggregatorV3Interface internal immutable priceFeedCHFUSD;
+    AggregatorV3Interface internal immutable priceFeedETHUSD;
 
     constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
         currency = _currency;
