@@ -95,10 +95,6 @@ describe("New PaymentHub", () => {
       it("Should deploy contract", async () => {
         expect(paymentHub.address).to.exist;
       });
-  
-      it("Should have params specified at the constructor", async() => {
-        expect(await paymentHub.currency()).to.equal("0xB4272071eCAdd69d933AdcD19cA99fe80664fc08");
-      }); 
     });
 
     describe("BrokerBot", () => {
@@ -118,7 +114,7 @@ describe("New PaymentHub", () => {
         const priceeth = await paymentHub.getLatestPriceETHUSD();
         // console.log(await priceeth.toString());
         
-        const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"));
+        const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"), brokerbot.address);
         // rework to not use static value
         expect(await ethers.utils.formatEther(priceInETH)).to.equal("0.244787563584463807")
       });
@@ -154,12 +150,13 @@ describe("New PaymentHub", () => {
       it("Should revert if buy with ETH and send to less ETH", async () => {
         const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
         const lowerPriceInETH = priceInETH.mul(90).div(100);
-        await expect(paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.revertedWith("function call failed to execute");
+        await expect(paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.reverted;
       });
 
       it("Should buy shares with ETH and keep ETH", async () => {
         const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
-        // console.log(await ethers.utils.formatEther(priceInETH));
+         console.log(await ethers.utils.formatEther(priceInETH));
+         console.log(await priceInETH.toString());
 
         const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
         await paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH});

@@ -38,7 +38,7 @@ module.exports = async (deployer) => {
   const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts.deployer);
   DraggableShares.setAsDeployed(draggableShares);
 
-  const paymentHub = await PaymentHub.new(config.baseCurrencyAddress, priceFeedCHFUSD, priceFeedETHUSD);
+  const paymentHub = await PaymentHub.new(priceFeedCHFUSD, priceFeedETHUSD);
   PaymentHub.setAsDeployed(paymentHub);
 
   const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer, paymentHub.address);
