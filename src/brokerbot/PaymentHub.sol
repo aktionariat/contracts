@@ -50,7 +50,6 @@ contract PaymentHub {
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
 
-    enum Currency { CHF, USD } 
 
     constructor(address _aggregatorCHFUSD, address _aggregatorETHUSD) {
         weth = UNISWAP_QUOTER.WETH9();
@@ -80,7 +79,7 @@ contract PaymentHub {
      * Price in ETH with 18 decimals
      */
     function getPriceInEtherFromOracle(uint256 amountInBase, address recipient) public view returns (uint256) {
-        if(getBaseCurrency(recipient) == Currency.CHF) {
+        if(isBaseCurrencyCHF(recipient)) {
             return getPriceInUSD(amountInBase) * 10**8 / uint256(getLatestPriceETHUSD());
         }
         return amountInBase * 10**8 / uint256(getLatestPriceETHUSD());
@@ -179,11 +178,11 @@ contract PaymentHub {
         return IBrokerbot(recipient).settings() & 0x4 == 0x4;
     }
 
-    function getBaseCurrency(address recipient) private view returns (Currency) {
+    function isBaseCurrencyCHF(address recipient) private view returns (bool) {
         if (IBrokerbot(recipient).base() == address(0xB4272071eCAdd69d933AdcD19cA99fe80664fc08)) {
-            return Currency.CHF;
+            return true;
         }
-        return Currency.USD;
+        return false;
     }
 
     /**
