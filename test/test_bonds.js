@@ -22,12 +22,6 @@ const config = {
 }
 
 describe("Bond Contract", () => {
-  let BondBotFactory;
-  let BondFactory;
-  let PaymentHubFactory;
-  let ForceSendFactory;
-  let recoveryHub;
-
   let bond;
   let bondBot;
   let baseCurrency;
@@ -43,23 +37,16 @@ describe("Bond Contract", () => {
   let accounts;
 
   before(async () =>{
-    BondBotFactory = await ethers.getContractFactory("BondBot");
-    BondFactory = await ethers.getContractFactory("Bond");
+    await deployments.fixture(["Bond", "PaymentHub", "BondbotDAI"]);
+    bond = await ethers.getContract("Bond");
+    bondBot = await ethers.getContract("BondbotDAI");
+    paymentHub = await ethers.getContract("PaymentHub");
 
     forceSend = await await ethers.getContractFactory("ForceSend")
     .then(factory => factory.deploy())
     .then(contract => contract.deployed());
-
-    const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
-    const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
-    paymentHub = await await ethers.getContractFactory("PaymentHub")
-      .then(factory => factory.deploy(config.baseCurrencyAddress, priceFeedCHFUSD, priceFeedETHUSD))
-      .then(contract => contract.deployed());
-
-    recoveryHub = await ethers.getContractFactory("RecoveryHub")
-    .then(factory => factory.deploy())
-    .then(contract => contract.deployed());
     
+    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
   });
   
   beforeEach(async () => {
@@ -67,7 +54,6 @@ describe("Bond Contract", () => {
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
     //console.log(accounts);
 
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
     bond = await BondFactory.deploy(config.symbol, config.name, config.terms, config.totalBonds, config.timeToMarturity, config.mintDecrement, owner.address, recoveryHub.address);
     bondBot = await BondBotFactory.deploy(bond.address, config.bondPrice, config.baseCurrencyAddress, owner.address);
 
