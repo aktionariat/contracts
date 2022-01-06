@@ -1,20 +1,31 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer, owner } = await getNamedAccounts();
 
-  console.log("-----------------------")
-  console.log("Deploy Bond")
-  console.log("-----------------------")
+  console.log("-----------------------");
+  console.log("Deploy Bond");
+  console.log("-----------------------");
   console.log("deployer: %s", deployer);
-  console.log("owner: %s", owner)
+  console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
 
   const symbol = "BOND";
   const name = "Test Bond ";
-  const terms = "wwww.terms.ch";
+  const terms = "test.ch/terms";
   const maxSupply = 4000000;
   const termToMaturity = "432000000"; //5000days around 14y
   const mintDecrement = 10;
+
+  let prompt;
+  if (network.name != "hardhat") {
+    prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
 

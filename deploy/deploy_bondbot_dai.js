@@ -5,20 +5,20 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const { deployer, owner } = await getNamedAccounts();
 
-  const shares = await deployments.get('Shares');
+  const bond = await deployments.get('Bond');
   const paymentHub = await deployments.get('PaymentHub');
   
-  const price = "500000000000000000";
-  const increment = 10;
-  const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
-  
+    const price = "500000000000000000";
+    const increment = 0;
+    const baseCurrencyContract = "0x6b175474e89094c44da98b954eedeac495271d0f"; // DAI Contract
+
   console.log("-----------------------");
-  console.log("Deploy Brokerbot");
+  console.log("Deploy Bondbot DAI");
   console.log("-----------------------");
   console.log("deployer: %s", deployer);
-  console.log("shares: %s", shares.address);
+  console.log("bond: %s", bond.address);
   console.log("paymentHub: %s", paymentHub.address);
-  console.log("base xchf: %s", baseCurrencyContract);
+  console.log("base dai: %s", baseCurrencyContract);
   console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
 
   let prompt;
@@ -32,11 +32,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("Brokerbot", {
+  const { address } = await deploy("BondbotDAI", {
     contract: "Brokerbot",
     from: deployer,
     args: [
-      shares.address,
+      bond.address,
       price,
       increment,
       baseCurrencyContract,
@@ -48,5 +48,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   });
 };
 
-module.exports.tags = ["Brokerbot"];
-module.exports.dependencies = ["Shares", "PaymentHub"];
+module.exports.tags = ["BondbotDAI"];
+module.exports.dependencies = ["Bond", "PaymentHub"];

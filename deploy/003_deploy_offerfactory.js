@@ -1,3 +1,5 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
@@ -8,7 +10,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   console.log("-----------------------")
   console.log("deployer: %s", deployer);
 
-  const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
+  let prompt;
+  if (network.name != "hardhat") {
+    prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
 
