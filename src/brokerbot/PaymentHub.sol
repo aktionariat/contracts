@@ -57,11 +57,6 @@ contract PaymentHub {
         priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
     }
 
-    // Deprecated. Kept for compatibility with old hub
-    function getPriceInEther(uint256 amountInBase) external returns (uint256) {
-        return getPriceInEther(amountInBase, address(0));
-    }
-
     /**
      * Get price in Ether depding on brokerbot setting.
      * If keep ETH is set price is from oracle.
@@ -69,7 +64,7 @@ contract PaymentHub {
      */
     function getPriceInEther(uint256 amountInBase, address brokerBot) public returns (uint256) {
         if ((brokerBot != address(0)) && hasSettingKeepEther(brokerBot)) {
-            return getPriceInEtherFromOracle(amountInBase, brokerBot);
+            return getPriceInEtherFromOracle(amountInBase, IBrokerbot(brokerBot).base());
         } else {
             return UNISWAP_QUOTER.quoteExactOutputSingle(weth, IBrokerbot(brokerBot).base(), 3000, amountInBase, 0);
         }
@@ -78,8 +73,8 @@ contract PaymentHub {
     /**
      * Price in ETH with 18 decimals
      */
-    function getPriceInEtherFromOracle(uint256 amountInBase, address recipient) public view returns (uint256) {
-        if(isBaseCurrencyCHF(recipient)) {
+    function getPriceInEtherFromOracle(uint256 amountInBase, address base) public view returns (uint256) {
+        if(isBaseCurrencyCHF(base)) {
             return getPriceInUSD(amountInBase) * 10**8 / uint256(getLatestPriceETHUSD());
         }
         return amountInBase * 10**8 / uint256(getLatestPriceETHUSD());
@@ -111,11 +106,11 @@ contract PaymentHub {
     /**
      * Convenience method to swap ether into currency and pay a target address
      */
-    function payFromEther(address recipient, uint256 amountInBase) public payable {
+    function payFromEther(address recipient, uint256 amountInBase, address base) public payable {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
             // rely on time stamp is ok, no exact time stamp needed
             // solhint-disable-next-line not-rely-on-time
-            weth, IBrokerbot(recipient).base(), 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
+            weth, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
 
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
         uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
@@ -155,10 +150,11 @@ contract PaymentHub {
     }
 
     function payFromEtherAndNotify(address recipient, uint256 amountInBase, bytes calldata ref) external payable {
+        address base = IBrokerbot(recipient).base();
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(recipient)) {
-            uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, recipient);
-            IBrokerbot(recipient).processIncoming{value: priceInEther}(address(IBrokerbot(recipient).base()), msg.sender, amountInBase, ref);
+            uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, base);
+            IBrokerbot(recipient).processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
@@ -166,8 +162,8 @@ contract PaymentHub {
             }
 
         } else {
-            payFromEther(recipient, amountInBase);
-            IBrokerbot(recipient).processIncoming(address(IBrokerbot(recipient).base()), msg.sender, amountInBase, ref);
+            payFromEther(recipient, amountInBase, base);
+            IBrokerbot(recipient).processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
 
@@ -178,8 +174,8 @@ contract PaymentHub {
         return IBrokerbot(recipient).settings() & 0x4 == 0x4;
     }
 
-    function isBaseCurrencyCHF(address recipient) private view returns (bool) {
-        if (IBrokerbot(recipient).base() == address(0xB4272071eCAdd69d933AdcD19cA99fe80664fc08)) {
+    function isBaseCurrencyCHF(address base) private pure returns (bool) {
+        if (base == address(0xB4272071eCAdd69d933AdcD19cA99fe80664fc08)) {
             return true;
         }
         return false;
