@@ -1,6 +1,6 @@
-//const { ethers, hre } = require("hardhat");
 const {network, ethers} = require("hardhat");
 const { expect } = require("chai");
+const Chance = require("chance");
 
 // Shared Migration Config
 const config = {
@@ -40,6 +40,8 @@ describe("Bond Contract", () => {
     [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
     //console.log(accounts);
+
+    chance = new Chance();
 
     await deployments.fixture(["Bond", "PaymentHub", "BondbotDAI"]);
     bond = await ethers.getContract("Bond");
@@ -160,6 +162,10 @@ describe("Bond Contract", () => {
     it("Should set the right owner", async () =>{
       expect(await bond.owner()).to.equal(owner.address);
     });
+
+    it("Should get right claim deleter", async () => {
+      expect(await bond.getClaimDeleter()).to.equal(owner.address);
+    });
   });
 
   describe("Setup", () => {
@@ -207,6 +213,61 @@ describe("Bond Contract", () => {
       const blockAfter = await ethers.provider.getBlock(blockNumAfter);
       const priceAfter = await bondBot.getPriceAtTime(blockAfter.timestamp);
       expect(priceAfter).to.equal(ethers.BigNumber.from(config.bondPrice).add(driftIncrement.mul(365)));
+    });
+
+    it("Should be able to transfer bond tokens", async () => {
+      const randomAmount = chance.natural({ min: 500, max: 50000 });
+      // get balance of adr1 before transfer
+      const balanceBefore = await bond.balanceOf(adr1.address);
+      //transfer random ammount
+      await bond.transfer(adr1.address, randomAmount);
+      // check balance of adr1 after transfer
+      const balanceAfter = await bond.balanceOf(adr1.address);
+
+      expect(balanceBefore.add(randomAmount)).to.equal(balanceAfter)
+    });
+
+    it("Should be able to burn bond tokens", async () => {
+      const randomAmount = chance.natural({ min: 500, max: 50000 });
+      // get balance of owner before transfer
+      const balanceBefore = await bond.balanceOf(owner.address);
+      //burn random ammount
+      await bond.burn(randomAmount);
+      // check balance of adr1 after transfer
+      const balanceAfter = await bond.balanceOf(owner.address);
+
+      expect(balanceBefore.sub(randomAmount)).to.equal(balanceAfter)
+    });
+
+    it("Should custom claim collateral", async () => {
+      const collateralAddress = config.baseCurrencyAddress;
+      const collateralRate = 10;
+      // test that only owenr can set
+      await expect(bond.connect(adr1).setCustomClaimCollateral(collateralAddress, collateralRate))
+        .to.be.revertedWith("not owner");
+      // test with owner
+      await bond.setCustomClaimCollateral(collateralAddress, collateralRate);
+      expect(await bond.customCollateralAddress()).to.equal(collateralAddress);
+      expect(await bond.customCollateralRate()).to.equal(collateralRate);
+    });
+  });
+
+  describe("Events", () => {
+    it("Should emit event for announcment", async () => {
+      const message = "Test";
+      await expect(bond.announcement(message))
+        .to.emit(bond, 'Announcement')
+        .withArgs(message);
+    });
+
+    it("Should change terms and emit event", async () => {
+      const newTerms = "www.test.com/newterms";
+      await expect(bond.setTerms(newTerms))
+        .to.emit(bond, 'TermsChanged')
+        .withArgs(newTerms);
+
+      // check if terms set correct
+      expect(await bond.terms()).to.equal(newTerms);
     });
   });
 });
