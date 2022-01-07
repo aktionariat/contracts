@@ -4,7 +4,7 @@ const { expect } = require("chai");
 
 // Shared Migration Config
 const config = {
-  symbol: "TEST",
+  symbol: "BOND",
   name: "Test Bond",
   terms: "test.ch/terms",
   totalBonds: 40000000,
@@ -35,8 +35,12 @@ describe("Bond Contract", () => {
   let adr3;
   let adr4;
   let accounts;
+  
+  before(async () => {
+    [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
+    accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
+    //console.log(accounts);
 
-  before(async () =>{
     await deployments.fixture(["Bond", "PaymentHub", "BondbotDAI"]);
     bond = await ethers.getContract("Bond");
     bondBot = await ethers.getContract("BondbotDAI");
@@ -47,18 +51,6 @@ describe("Bond Contract", () => {
     .then(contract => contract.deployed());
     
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-  });
-  
-  beforeEach(async () => {
-    [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
-    accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
-    //console.log(accounts);
-
-    bond = await BondFactory.deploy(config.symbol, config.name, config.terms, config.totalBonds, config.timeToMarturity, config.mintDecrement, owner.address, recoveryHub.address);
-    bondBot = await BondBotFactory.deploy(bond.address, config.bondPrice, config.baseCurrencyAddress, owner.address);
-
-    await bond.deployed();
-    await bondBot.deployed();
 
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await network.provider.request({
@@ -77,7 +69,6 @@ describe("Bond Contract", () => {
     });
 
     //Mint bonds to first 5 accounts
-    await bond.setMinter(owner.address);
     for( let i = 0; i < 5; i++) {
       await bond.mint(accounts[i], 100000);
     }
@@ -95,9 +86,6 @@ describe("Bond Contract", () => {
 
      // Set Payment Hub for bondBot
      await bondBot.setPaymentHub(paymentHub.address);
-
-     // Set Bond Bot as Minter
-     await bond.setMinter(bondBot.address);
 
 
      //set paymenthub overloading
@@ -168,14 +156,9 @@ describe("Bond Contract", () => {
       assert.equal(await bond.symbol(), config.symbol);
       assert.equal(await bond.name(), config.name);
       assert.equal(await bond.terms(), config.terms);
-      assert.equal(await bond.maxSupply(), config.totalBonds);
     });
     it("Should set the right owner", async () =>{
       expect(await bond.owner()).to.equal(owner.address);
-    });
-
-    it("Should calculate correct max mintable supply", async () => {
-      expect(await bond.maxMintable()).to.equal(config.totalBonds);
     });
   });
 
@@ -208,25 +191,6 @@ describe("Bond Contract", () => {
   });
 
   describe("Transctions", () => {
-    it("should mint correct amount of token when buying bonds at start", async () => {
-      const balanceBefore = await bond.balanceOf(adr1.address);
-      await bond.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
-      await baseCurrency.connect(adr1).approve(paymentHub.address, config.infiniteAllowance);
-      const paymentHubAdr1 = await paymentHubContract.connect(adr1);
-      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](bondBot.address, ethers.utils.parseEther("1000"), "0x");
-      const balanceAfter = await bond.balanceOf(adr1.address);
-      // with price of 0.5 (see config) buying with 1000 results in 2000 additional bonds
-      expect(await bond.totalSupply()).to.equal(502000);
-      expect(balanceAfter).to.equal(balanceBefore.add(2000));
-    });
-
-    it("should correctly decrease max mintable amount", async () => {
-      const oneYear = 365 * 24 * 60 * 60;
-      await ethers.provider.send("evm_increaseTime", [oneYear]);
-      await ethers.provider.send("evm_mine");
-      const maxMintable = await bond.maxMintable();
-      expect(await bond.maxMintable()).to.equal(config.totalBonds - (config.mintDecrement * 24 * 365));
-    });
 
     it("should increase price correctly", async () => {
       const oneYear = 365 * 24 * 60 * 60;
@@ -243,12 +207,6 @@ describe("Bond Contract", () => {
       const blockAfter = await ethers.provider.getBlock(blockNumAfter);
       const priceAfter = await bondBot.getPriceAtTime(blockAfter.timestamp);
       expect(priceAfter).to.equal(ethers.BigNumber.from(config.bondPrice).add(driftIncrement.mul(365)));
-    });
-
-    it("should burn on token on sell", async () => {
-      expect(await bond.totalSupply()).to.equal(500000);
-      await bond.connect(adr1).transferAndCall(bondBot.address, 1000, "0x");
-      expect(await bond.totalSupply()).to.equal(499000);
     });
   });
 });

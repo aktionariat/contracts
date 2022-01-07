@@ -8,32 +8,31 @@ const BN = require("bn.js");
 
 // Import contracts to be tested
 const PaymentHub = artifacts.require("PaymentHub");
+const Brokerbot = artifacts.require("Brokerbot");
 const ERC20 = artifacts.require("ERC20Basic");
 
 // Test parameters
 const paymentAmountInBase = new BN("1000000000000000");
 
 contract("PaymentHub", (accounts) => {
+  let paymentHub;
+  let brokerbot;
+
+  beforeEach(async () => {
+    paymentHub = await PaymentHub.deployed();
+    brokerbot = await Brokerbot.deployed();
+  });
   it("should deploy", async () => {
-    const paymentHub = await PaymentHub.deployed();
     assert(paymentHub.address !== "");
   });
 
-  it("should have correct base currency set", async () => {
-    const paymentHub = await PaymentHub.deployed();
-    const currency = await paymentHub.currency.call();
-    assert.equal(currency, config.baseCurrencyAddress);
-  });
-
   it("should get price in ether", async () => {
-    const paymentHub = await PaymentHub.deployed();
-    const priceInETH = await paymentHub.getPriceInEther.call(paymentAmountInBase);
+    const priceInETH = await paymentHub.getPriceInEther.call(paymentAmountInBase, brokerbot.address);
     assert(priceInETH > 0);
   });
 
   it("should pay using Ether to recipient in baseCurrency", async () => {
     // Used contracts: PaymentHub, Base
-    const paymentHub = await PaymentHub.deployed();
     const base = await ERC20.at(config.baseCurrencyAddress);
 
     // Get balances before
@@ -41,10 +40,11 @@ contract("PaymentHub", (accounts) => {
     const baseBalanceRecipientBefore = new BN(await base.balanceOf(accounts[1]));
 
     // Execute payment
-    const priceInETH = await paymentHub.getPriceInEther.call(paymentAmountInBase);
+    const priceInETH = await paymentHub.getPriceInEther.call(paymentAmountInBase, brokerbot.address);
     const txInfo = await paymentHub.payFromEther(
       accounts[1],
       paymentAmountInBase,
+      await brokerbot.base(),
       { from: accounts[0], value: priceInETH }
     );
     const tx = await web3.eth.getTransaction(txInfo.tx);
@@ -70,7 +70,6 @@ contract("PaymentHub", (accounts) => {
 
   it("should return unspent ETH to spender", async () => {
     // Used contracts: PaymentHub, Base
-    const paymentHub = await PaymentHub.deployed();
     const base = await ERC20.at(config.baseCurrencyAddress);
 
     // Get balances before
@@ -79,7 +78,7 @@ contract("PaymentHub", (accounts) => {
 
     // Calculate required ETH and set a slippage
     const priceInETH = new BN(
-      await paymentHub.getPriceInEther.call(paymentAmountInBase)
+      await paymentHub.getPriceInEther.call(paymentAmountInBase, brokerbot.address)
     );
     const priceInEthWithSlippage = priceInETH.mul(new BN(103)).div(new BN(100));
 
@@ -87,6 +86,7 @@ contract("PaymentHub", (accounts) => {
     const txInfo = await paymentHub.payFromEther(
       accounts[1],
       paymentAmountInBase,
+      await brokerbot.base(),
       { from: accounts[0], value: priceInEthWithSlippage }
     );
     const tx = await web3.eth.getTransaction(txInfo.tx);
@@ -120,7 +120,6 @@ contract("PaymentHub", (accounts) => {
 
   it("should make multiple payments in baseCurrency in single transaction", async () => {
     // Used contracts: PaymentHub, Erc20
-    const paymentHub = await PaymentHub.deployed();
     const erc20 = await ERC20.at(config.baseCurrencyAddress);
 
     // Get 1/100 of accounts[0] token balance. Send 1, 3, 20 units to accounts[1],[2],[3] respectively.

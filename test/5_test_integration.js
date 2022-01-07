@@ -75,7 +75,7 @@ contract("Payment Integration", (accounts) => {
     // Random number of shares to buy
     const sharesToBuy = new BN(new Chance().natural({ min: 1, max: 500 }));
     const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-    const buyPriceInETH = await paymentHub.getPriceInEther.call(buyPrice);
+    const buyPriceInETH = await paymentHub.getPriceInEther.call(buyPrice,  brokerbot.address);
 
     // Balance before
     const balanceSenderBefore = new BN(await web3.eth.getBalance(accounts[0]));
