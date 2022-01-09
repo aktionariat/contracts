@@ -1,6 +1,6 @@
 # Brokerbot
 
-![bazaar marketplace](https://aktionariat.com/images/bazaar.jpg)
+![bazaar marketplace](https://hub.aktionariat.com/images/contracts/bazaar.jpg)
 
 Documentation for the Brokerbot smart contract implemented in [Brokerbot.sol](../src/shares/Brokerbot.sol).
 

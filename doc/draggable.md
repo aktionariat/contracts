@@ -1,6 +1,6 @@
 # Drag-Along Mechanism
 
-![drag-along](https://aktionariat.com/images/draggable.jpg)
+![drag-along](https://hub.aktionariat.com/images/contracts/draggable.jpg)
 
 ## Overview and Motivation
 
