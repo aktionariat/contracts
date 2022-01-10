@@ -109,9 +109,9 @@ describe("New PaymentHub", () => {
       });
       it("Should get price in ETH", async () => {
         const priceusd = await paymentHub.getPriceInUSD(ethers.utils.parseEther("100"));
-         console.log(await ethers.utils.formatEther(priceusd));
+        // console.log(await ethers.utils.formatEther(priceusd));
         const priceeth = await paymentHub.getLatestPriceETHUSD();
-         console.log(await priceeth.toString());
+        // console.log(await priceeth.toString());
         
         const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"), await brokerbot.base());
         // rework to not use static value

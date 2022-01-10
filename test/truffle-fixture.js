@@ -3,7 +3,7 @@
 // Libraries
 const BN = require("bn.js");
 const hre = require("hardhat");
-const { artifacts } = require("hardhat");
+const { artifacts, getUnnamedAccounts} = require("hardhat");
 
 // Shared Migration Config
 const config = require("../migrations/migration_config");
@@ -24,7 +24,7 @@ const ERC20Basic = artifacts.require("ERC20Basic");
 
 module.exports = async (deployer) => {
   const accounts = await deployer.getNamedAccounts();
-  const unAccounts = await deployer.getUnnamedAccounts();
+  const unAccounts = await getUnnamedAccounts();
 
   const recoveryHub = await RecoveryHub.new();
   RecoveryHub.setAsDeployed(recoveryHub);
@@ -35,7 +35,7 @@ module.exports = async (deployer) => {
   const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, accounts.deployer, recoveryHub.address);
   Shares.setAsDeployed(shares);
 
-  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts.deployer);
+  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, unAccounts[0]);
   DraggableShares.setAsDeployed(draggableShares);
 
   const paymentHub = await PaymentHub.new(priceFeedCHFUSD, priceFeedETHUSD);
@@ -50,8 +50,8 @@ module.exports = async (deployer) => {
   await brokerbot.setPaymentHub(paymentHub.address);
 
   // Allow payment hub to spend baseCurrency from accounts[0] and draggableShares from Brokerbot
-  await draggableShares.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: accounts.deployer });
-  await baseCurrency.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: accounts.deployer });
+  await draggableShares.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: unAccounts[0] });
+  await baseCurrency.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: unAccounts[0] });
   await brokerbot.approve(draggableShares.address, paymentHub.address, new BN(config.infiniteAllowance));
   await brokerbot.approve(baseCurrency.address, paymentHub.address, new BN(config.infiniteAllowance));
 

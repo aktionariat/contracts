@@ -5,6 +5,7 @@ const config = require("../migrations/migration_config");
 
 // Libraries
 const BN = require("bn.js");
+const { artifacts, getUnnamedAccounts} = require("hardhat");
 
 // Import contracts to be tested
 const PaymentHub = artifacts.require("PaymentHub");
@@ -14,14 +15,17 @@ const ERC20 = artifacts.require("ERC20Basic");
 // Test parameters
 const paymentAmountInBase = new BN("1000000000000000");
 
-contract("PaymentHub", (accounts) => {
+contract("PaymentHub", () => {
   let paymentHub;
   let brokerbot;
+  let accounts;
 
-  beforeEach(async () => {
+  before( async () => {
+    accounts =  await getUnnamedAccounts();
     paymentHub = await PaymentHub.deployed();
     brokerbot = await Brokerbot.deployed();
   });
+
   it("should deploy", async () => {
     assert(paymentHub.address !== "");
   });
@@ -130,7 +134,7 @@ contract("PaymentHub", (accounts) => {
     const toSend3 = toSendUnit.mul(new BN(20));
 
     // Set allowance for paymentHub to spend baseCurrency tokens of account[0]
-    await erc20.approve(paymentHub.address, new BN(config.infiniteAllowance));
+    await erc20.approve(paymentHub.address, new BN(config.infiniteAllowance), {from: accounts[0]});
 
     // Get balances before
     const balanceBefore0 = new BN(await erc20.balanceOf(accounts[0]));
