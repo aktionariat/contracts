@@ -8,22 +8,22 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const bond = await deployments.get('Bond');
   const paymentHub = await deployments.get('PaymentHub');
   
-    const price = "500000000000000000";
-    const increment = 0;
-    const baseCurrencyContract = "0x6b175474e89094c44da98b954eedeac495271d0f"; // DAI Contract
-
-  console.log("-----------------------");
-  console.log("Deploy Bondbot DAI");
-  console.log("-----------------------");
-  console.log("deployer: %s", deployer);
-  console.log("bond: %s", bond.address);
-  console.log("paymentHub: %s", paymentHub.address);
-  console.log("base dai: %s", baseCurrencyContract);
-  console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
-
-  let prompt;
+  const price = "500000000000000000";
+  const increment = 0;
+  const baseCurrencyContract = "0x6b175474e89094c44da98b954eedeac495271d0f"; // DAI Contract
+  
+  
   if (network.name != "hardhat") {
-    prompt = await new Confirm("Addresses correct?").run();
+    console.log("-----------------------");
+    console.log("Deploy Bondbot DAI");
+    console.log("-----------------------");
+    console.log("deployer: %s", deployer);
+    console.log("bond: %s", bond.address);
+    console.log("paymentHub: %s", paymentHub.address);
+    console.log("base dai: %s", baseCurrencyContract);
+    console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
+  
+    const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
       console.log("exiting");
       process.exit();

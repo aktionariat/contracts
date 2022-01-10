@@ -6,14 +6,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deployer, owner } = await getNamedAccounts();
 
   const recoveryHub = await deployments.get("RecoveryHub");
-
-  console.log("-----------------------");
-  console.log("Deploy Bond");
-  console.log("-----------------------");
-  console.log("deployer: %s", deployer);
-  console.log("recoveryHub: %s", recoveryHub.address);
-  console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
-
+  
   const symbol = "BOND";
   const name = "Test Bond";
   const terms = "test.ch/terms";
@@ -21,9 +14,16 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const termToMaturity = "432000000"; //5000days around 14y
   const mintDecrement = 10;
 
-  let prompt;
+  
   if (network.name != "hardhat") {
-    prompt = await new Confirm("Addresses correct?").run();
+  console.log("-----------------------");
+  console.log("Deploy Bond");
+  console.log("-----------------------");
+  console.log("deployer: %s", deployer);
+  console.log("recoveryHub: %s", recoveryHub.address);
+  console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
+  
+    const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
       console.log("exiting");
       process.exit();

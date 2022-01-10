@@ -4,15 +4,15 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
-
-  console.log("-----------------------")
-  console.log("Deploy OfferFactory")
-  console.log("-----------------------")
-  console.log("deployer: %s", deployer);
-
-  let prompt;
+  
   if (network.name != "hardhat") {
-    prompt = await new Confirm("Addresses correct?").run();
+    console.log("-----------------------")
+    console.log("Deploy OfferFactory")
+    console.log("-----------------------")
+    console.log("deployer: %s", deployer);
+
+  
+    const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
       console.log("exiting");
       process.exit();
