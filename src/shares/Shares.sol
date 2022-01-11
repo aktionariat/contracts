@@ -127,8 +127,8 @@ contract Shares is ERC20Recoverable, ERC20Named {
     }
 
     /**
-     * Allows the company to tokenize shares. If these shares are newly created, setTotalShares must be
-     * called first in order to adjust the total number of shares.
+     * Allows the company to tokenize shares and transfer them e.g to the draggable contract and wrap them.
+     * If these shares are newly created, setTotalShares must be called first in order to adjust the total number of shares.
      */
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
