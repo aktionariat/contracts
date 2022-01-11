@@ -1,3 +1,5 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
