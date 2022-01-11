@@ -8,6 +8,8 @@ const config = require("../migrations/migration_config");
 const BN = require("bn.js");
 const Chance = require("chance");
 
+const {getUnnamedAccounts} = require("hardhat");
+
 // Import contracts to be tested
 const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
@@ -15,7 +17,12 @@ const PaymentHub = artifacts.require("PaymentHub");
 const Brokerbot = artifacts.require("Brokerbot");
 const ERC20 = artifacts.require("ERC20Basic");
 
-contract("Payment Integration", (accounts) => {
+contract("Payment Integration", () => {
+  let accounts;
+
+  before(async () => {
+    accounts =  await getUnnamedAccounts();
+  });
   it("should allow buying shares by sending baseCurrency through PaymentHub", async () => {
     // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
     // Transfer is not processed if token sender is not a known currency contract or PaymentHub
@@ -75,7 +82,7 @@ contract("Payment Integration", (accounts) => {
     // Random number of shares to buy
     const sharesToBuy = new BN(new Chance().natural({ min: 1, max: 500 }));
     const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-    const buyPriceInETH = await paymentHub.getPriceInEther.call(buyPrice);
+    const buyPriceInETH = await paymentHub.getPriceInEther.call(buyPrice,  brokerbot.address);
 
     // Balance before
     const balanceSenderBefore = new BN(await web3.eth.getBalance(accounts[0]));
@@ -169,14 +176,14 @@ contract("Payment Integration", (accounts) => {
     const paymentHub = await PaymentHub.deployed();
 
     // Get license fee (90 bps default)
-    const licenseFeeBps = await brokerbot.getLicenseFee(10000);
+    //const licenseFeeBps = await brokerbot.getLicenseFee(10000);
 
     // Random number of shares to sell
     const sharesToSell = new BN(new Chance().natural({ min: 1, max: 500 }));
     const sellPrice = await brokerbot.getSellPrice(sharesToSell);
 
     // Calculate total fee for transaction
-    const totalFee = sellPrice.mul(licenseFeeBps).div(new BN(10000));
+    const totalFee = await brokerbot.getLicenseFee(sellPrice);;
 
     // Balance before
     const baseBalanceSenderBefore = await erc20.balanceOf(accounts[0]);
@@ -188,6 +195,9 @@ contract("Payment Integration", (accounts) => {
     const shareBalanceBrokerbotBefore = await draggableShares.balanceOf(
       brokerbot.address
     );
+
+    // approve sending draggableShares to sell
+    await draggableShares.approve(paymentHub.address, sharesToSell, { from: accounts[0] });
 
     // Pay with base currency and notify Brokerbot
     // Overloaded methods must be called through .methods[], otherwise Truffle doesn't recognize them

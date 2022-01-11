@@ -3,21 +3,17 @@ const { expect } = require("chai");
 const Chance = require("chance");
 
 // Shared  Config
-const config = require("../migrations/migration_config");
-const { brokerbotOwnerAddress } = require("../migrations/migration_config");
+const config = require("../migrations/migration_config")
 
 describe("New PaymentHub", () => {
   let draggable;
   let shares;
-  let recoveryHub;
   let baseCurrency;
   let paymentHub;
   let forceSend;
-  let offerFactory;
-  let allowlistShares;
-  let allowlistDraggable;
   let brokerbot;
-  let multisig;
+  let brokerbotDAI;
+  let daiContract;
 
   let owner;
   let sig1;
@@ -55,14 +51,16 @@ describe("New PaymentHub", () => {
 
     // deploy contracts
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    daiContract = await ethers.getContractAt("ERC20Basic", "0x6b175474e89094c44da98b954eedeac495271d0f");
     forceSend = await await ethers.getContractFactory("ForceSend")
       .then(factory => factory.deploy())
       .then(contract => contract.deployed());
 
-    await deployments.fixture(["Shares", "PaymentHub", "Brokerbot"]);
+    await deployments.fixture(["Shares", "PaymentHub", "Brokerbot", "BrokerbotDAI"]);
     paymentHub = await ethers.getContract("PaymentHub");
     shares = await ethers.getContract("Shares");
     brokerbot = await ethers.getContract("Brokerbot");
+    brokerbotDAI = await ethers.getContract("BrokerbotDAI");
 
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await network.provider.request({
@@ -87,6 +85,7 @@ describe("New PaymentHub", () => {
 
     // Deposit some shares to Brokerbot
     await shares.transfer(brokerbot.address, 500000, { from: accounts[0]});
+    await shares.transfer(brokerbotDAI.address, 500000, { from: accounts[0]});
     await baseCurrency.transfer(brokerbot.address, web3.utils.toWei("100000"), { from: accounts[0] });
   });
 
@@ -95,10 +94,6 @@ describe("New PaymentHub", () => {
       it("Should deploy contract", async () => {
         expect(paymentHub.address).to.exist;
       });
-  
-      it("Should have params specified at the constructor", async() => {
-        expect(await paymentHub.currency()).to.equal("0xB4272071eCAdd69d933AdcD19cA99fe80664fc08");
-      }); 
     });
 
     describe("BrokerBot", () => {
@@ -109,7 +104,7 @@ describe("New PaymentHub", () => {
 
     describe("Trading", () => {
       beforeEach(async () => {
-        const randomAmount = chance.natural({ min: 50000, max: 50000 });
+        const randomAmount = chance.natural({ min: 500, max: 50000 });
         xchfamount = await brokerbot.getBuyPrice(randomAmount);
       });
       it("Should get price in ETH", async () => {
@@ -118,7 +113,7 @@ describe("New PaymentHub", () => {
         const priceeth = await paymentHub.getLatestPriceETHUSD();
         // console.log(await priceeth.toString());
         
-        const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"));
+        const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"), await brokerbot.base());
         // rework to not use static value
         expect(await ethers.utils.formatEther(priceInETH)).to.equal("0.244787563584463807")
       });
@@ -154,18 +149,48 @@ describe("New PaymentHub", () => {
       it("Should revert if buy with ETH and send to less ETH", async () => {
         const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
         const lowerPriceInETH = priceInETH.mul(90).div(100);
-        await expect(paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.revertedWith("function call failed to execute");
+        await expect(paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.reverted;
       });
 
       it("Should buy shares with ETH and keep ETH", async () => {
         const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
         // console.log(await ethers.utils.formatEther(priceInETH));
+        // console.log(await priceInETH.toString());
 
         const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
         await paymentHub.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH});
         const brokerbotETHAfter = await ethers.provider.getBalance(brokerbot.address);
         // console.log(await ethers.utils.formatEther(brokerbotETHAfter));
         expect(brokerbotETHBefore.add(priceInETH)).to.equal(brokerbotETHAfter);
+      });
+    });
+
+    describe("Trading with DAI base", () => {
+      before(async () => {
+        const randomAmountt = chance.natural({ min: 5000, max: 50000 });
+        daiAmount = await brokerbotDAI.getBuyPrice(randomAmountt);
+      });
+      it("Should get right ETH price ", async () => {
+        const priceeth = await paymentHub.getLatestPriceETHUSD();
+        // console.log(await priceeth.toString());
+        // console.log(await daiAmount.toString());
+        const priceInETH = await paymentHub.getPriceInEtherFromOracle(daiAmount, brokerbotDAI.address);
+        await expect(ethers.utils.formatEther(priceInETH)).to.equal(
+          ethers.utils.formatEther(daiAmount.mul(await ethers.BigNumber.from(10).pow(8)).div(priceeth)));
+      });
+
+      it("Should buy shares with ETH and trade it to DAI", async () => {
+        const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](daiAmount, brokerbotDAI.address);
+
+        // send a little bit more for slippage 
+        const priceInETHWithSlippage = priceInETH.mul(101).div(100);
+
+        const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
+        await paymentHub.payFromEtherAndNotify(brokerbotDAI.address, daiAmount, "0x01", {value: priceInETHWithSlippage});
+        const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
+
+        // brokerbot should have after the payment with eth the dai in the balance
+        expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
       });
     });
   });
