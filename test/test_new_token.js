@@ -320,8 +320,25 @@ describe("New Standard", () => {
       await draggable.setOracle(newOracle);
       //expect(await draggable.oracle()).to.equal(newOracle);
       // reset oracle for for offer testing
-      await draggable.setOracle(owner);
+      await draggable.connect(sig1).setOracle(owner.address);
     });
+
+    it("Should burn draggable shares", async () => {
+      const randomAmountToBurn = chance.natural({min:1, max: 5000});
+      const balanceBefore = await shares.balanceOf(draggable.address);
+      const balanceBeforeDraggable = await draggable.balanceOf(sig3.address);
+      const totalSupplyBefore = await shares.totalSupply();
+      
+      // burn token which burns also shares which are in the drraggable contract 
+      // and reduces supply from shares
+      await draggable.connect(sig3).burn(randomAmountToBurn);
+      const balanceAfter = await shares.balanceOf(draggable.address);
+      const balanceAfterDraggable = await draggable.balanceOf(sig3.address);
+      const totalSupplyArfter= await shares.totalSupply();
+      expect(balanceBeforeDraggable.sub(randomAmountToBurn)).to.equal(balanceAfterDraggable);
+      expect(balanceBefore.sub(randomAmountToBurn)).to.equal(balanceAfter);
+      expect(totalSupplyBefore.sub(randomAmountToBurn)).to.equal(totalSupplyArfter);
+    })
   });
 
   describe("Recovery", () => {
