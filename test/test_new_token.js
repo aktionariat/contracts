@@ -58,7 +58,7 @@ describe("New Standard", () => {
       "Shares",
       "DraggableShares", 
       "AllowlistShares", 
-      "AllowlistDraggableShares", 
+      //"AllowlistDraggableShares", 
       "PaymentHub", 
       "Brokerbot"
     ]);
@@ -69,44 +69,14 @@ describe("New Standard", () => {
     shares = await ethers.getContract("Shares");
     draggable = await ethers.getContract("DraggableShares");
     allowlistShares = await ethers.getContract("AllowlistShares");
-    allowlistDraggable = await ethers.getContract("AllowlistDraggableShares");
+    //allowlistDraggable = await ethers.getContract("AllowlistDraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
 
-/*
-
-    const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
-    const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
-    paymentHub = await ethers.getContractFactory("PaymentHub")
-      .then(factory => factory.deploy(priceFeedCHFUSD, priceFeedETHUSD))
-      .then(contract => contract.deployed());
-
-    recoveryHub = await ethers.getContractFactory("RecoveryHub")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
-
-    offerFactory = await ethers.getContractFactory("OfferFactory")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());    
-
-    shares = await ethers.getContractFactory("Shares")
-     .then(factory => factory.deploy(symbol, name, terms, config.totalShares, owner.address, recoveryHub.address))
-     .then(contract => contract.deployed());
-
-    draggable = await ethers.getContractFactory("DraggableShares")
-      .then(factory => factory.deploy(dterms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address))
-      .then(contract => contract.deployed());
-
-    allowlistShares = await ethers.getContractFactory("AllowlistShares")
-      .then(factory => factory.deploy(symbol, name, terms, config.totalShares, recoveryHub.address, owner.address))
-      .then(contract => contract.deployed());
-    // use for gas usage calc
-    // const { gasUsed: createGasUsed } = await allowlistShares.deployTransaction.wait();
-    // console.log("Deployment gas usage: %s", await createGasUsed.toString());
-
+    // coverage has a problem with deplyoing this contract via hardhat-deploy
     allowlistDraggable = await ethers.getContractFactory("AllowlistDraggableShares")
-      .then(factory => factory.deploy(dterms, allowlistShares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address, owner.address))
+      .then(factory => factory.deploy(config.allowlist_terms, allowlistShares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address, owner.address))
       .then(contract => contract.deployed());
-*/
+
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await network.provider.request({
@@ -342,6 +312,16 @@ describe("New Standard", () => {
       const balanceAfter = await draggable.balanceOf(sig1.address);
       expect(balanceBefore.add(randomAmountToWrap)).to.equal(balanceAfter);
     })
+  });
+
+  describe("Draggable Shares", () => {
+    it("Should set new oracle", async () => {
+      const newOracle = sig1.address;
+      await draggable.setOracle(newOracle);
+      //expect(await draggable.oracle()).to.equal(newOracle);
+      // reset oracle for for offer testing
+      await draggable.setOracle(owner);
+    });
   });
 
   describe("Recovery", () => {
