@@ -5,18 +5,19 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer } = await getNamedAccounts();
 
-  console.log("-----------------------")
-  console.log("Deploy Paymenthub")
-  console.log("-----------------------")
-  console.log("deployer: %s", deployer);
-
-  const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
+  
   const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
   const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
-
-  let prompt;
+  
   if (network.name != "hardhat") {
-    prompt = await new Confirm("Addresses correct?").run();
+    console.log("-----------------------");
+    console.log("Deploy Paymenthub");
+    console.log("-----------------------");
+    console.log("deployer: %s", deployer);
+    console.log("chainlink chf usd: %s", priceFeedCHFUSD);
+    console.log("chainlink eth usd", priceFeedETHUSD);
+
+    const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
       console.log("exiting");
       process.exit();
@@ -29,7 +30,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     contract: "PaymentHub",
     from: deployer,
     args: [
-      baseCurrencyContract,
       priceFeedCHFUSD,
       priceFeedETHUSD],
     log: true,

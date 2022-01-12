@@ -1,12 +1,23 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
+  
+  if (network.name != "hardhat") {
+    console.log("-----------------------")
+    console.log("Deploy OfferFactory")
+    console.log("-----------------------")
+    console.log("deployer: %s", deployer);
 
-  console.log("-----------------------")
-  console.log("Deploy OfferFactory")
-  console.log("-----------------------")
-  console.log("deployer: %s", deployer);
+  
+    const prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
 

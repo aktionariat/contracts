@@ -27,7 +27,7 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/extensions/ERC20Flaggable.sol";
+import "../ERC20/ERC20Flaggable.sol";
 import "./IRecoveryHub.sol";
 import "./IRecoverable.sol";
 
@@ -37,16 +37,15 @@ import "./IRecoverable.sol";
  * to handle lost private keys. With physical certificates, courts can declare share certificates as
  * invalid so the company can issue replacements. Here, we want a solution that does not depend on
  * third parties to resolve such cases. Instead, when someone has lost a private key, he can use the
- * declareLost function to post a deposit and claim that the shares assigned to a specific address are
- * lost. To prevent front running, a commit reveal scheme is used. If he actually is the owner of the shares,
- * he needs to wait for a certain period and can then reclaim the lost shares as well as the deposit.
- * If he is an attacker trying to claim shares belonging to someone else, he risks losing the deposit
+ * declareLost function on the recovery hub to post a deposit and claim that the shares assigned to a
+ * specific address are lost.
+ * If an attacker trying to claim shares belonging to someone else, they risk losing the deposit
  * as it can be claimed at anytime by the rightful owner.
  * Furthermore, if "getClaimDeleter" is defined in the subclass, the returned address is allowed to
  * delete claims, returning the collateral. This can help to prevent obvious cases of abuse of the claim
- * function.
+ * function, e.g. cases of front-running.
+ * Most functionality is implemented in a shared RecoveryHub.
  */
-
 abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 
     uint8 private constant FLAG_CLAIM_PRESENT = 10;
@@ -103,7 +102,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     function getClaimDeleter() virtual public view returns (address);
 
     function transfer(address recipient, uint256 amount) override virtual public returns (bool) {
-        require(super.transfer(recipient, amount));
+        require(super.transfer(recipient, amount), "transfer");
         if (hasFlagInternal(msg.sender, FLAG_CLAIM_PRESENT)){
             recovery.clearClaimFromToken(msg.sender);
         }
@@ -111,22 +110,22 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     }
 
     function notifyClaimMade(address target) external override {
-        require(msg.sender == address(recovery));
+        require(msg.sender == address(recovery), "sender");
         setFlag(target, FLAG_CLAIM_PRESENT, true);
     }
 
     function notifyClaimDeleted(address target) external override {
-        require(msg.sender == address(recovery));
+        require(msg.sender == address(recovery), "sender");
         setFlag(target, FLAG_CLAIM_PRESENT, false);
     }
 
     function deleteClaim(address lostAddress) external {
-        require(msg.sender == getClaimDeleter(), "no access");
+        require(msg.sender == getClaimDeleter(), "sender");
         recovery.deleteClaim(lostAddress);
     }
 
     function recover(address oldAddress, address newAddress) external override {
-        require(msg.sender == address(recovery));
+        require(msg.sender == address(recovery), "sender");
         _transfer(oldAddress, newAddress, balanceOf(oldAddress));
     }
 

@@ -27,9 +27,9 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/extensions/ERC20Named.sol";
+import "../ERC20/ERC20Named.sol";
+import "../ERC20/IERC677Receiver.sol";
 import "../recovery/ERC20Recoverable.sol";
-import "../interfaces/IERC677Receiver.sol";
 
 /**
  * @title CompanyName AG Shares
@@ -63,7 +63,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
         address _owner,
         address _recoveryHub
     )
-        ERC20Named(_owner, _name, _symbol, 0) 
+        ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
     {
         totalShares = _totalShares;
@@ -113,7 +113,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      */
     function declareInvalid(address holder, uint256 amount, string calldata message) external onlyOwner() {
         uint256 holderBalance = balanceOf(holder);
-        require(amount <= holderBalance);
+        require(amount <= holderBalance, "amount too high");
         invalidTokens += amount;
         emit TokensDeclaredInvalid(holder, amount, message);
     }
@@ -127,8 +127,8 @@ contract Shares is ERC20Recoverable, ERC20Named {
     }
 
     /**
-     * Allows the company to tokenize shares. If these shares are newly created, setTotalShares must be
-     * called first in order to adjust the total number of shares.
+     * Allows the company to tokenize shares and transfer them e.g to the draggable contract and wrap them.
+     * If these shares are newly created, setTotalShares must be called first in order to adjust the total number of shares.
      */
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);

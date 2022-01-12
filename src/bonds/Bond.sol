@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2021 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -27,9 +27,9 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/extensions/ERC20Named.sol";
+import "../ERC20/ERC20Named.sol";
 import "../recovery/ERC20Recoverable.sol";
-import "../interfaces/IERC677Receiver.sol";
+import "../ERC20/IERC677Receiver.sol";
 
 /**
  * @title CompanyName AG Bonds
@@ -42,51 +42,35 @@ import "../interfaces/IERC677Receiver.sol";
 contract Bond is ERC20Recoverable, ERC20Named {
 
     string public terms;
-    address minter; // addresse of the broker bot which mints/burns
-    uint256 public immutable maxSupply; // the max inital tokens
     uint256 public immutable deployTimestamp; // the timestamp of the contract deployment
     uint256 public immutable termToMaturity; // the duration of the bond
-    uint256 public immutable mintDecrement; // the decrement of the max mintable supply per hour 
 
     event Announcement(string message);
     event TermsChanged(string terms);
-    event MinterChanged(address bondBot);
-
-    modifier onlyMinter() {
-        require(msg.sender == minter, "not minter");
-        _;
-    }
 
     constructor(
         string memory _symbol,
         string memory _name,
         string memory _terms,
-        uint256 _maxSupply,
         uint256 _termToMaturity,
-        uint256 _mintDecrement,
         address _owner,
         address _recoveryHub
     ) 
-        ERC20Named(_owner, _name, _symbol, 0)
+        ERC20Named(_symbol, _name, 0, _owner)
         ERC20Recoverable(_recoveryHub)
     {
         symbol = _symbol;
         name = _name;
         terms = _terms;
-        maxSupply = _maxSupply;
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         deployTimestamp = block.timestamp;
         termToMaturity = _termToMaturity;
-        mintDecrement = _mintDecrement;
     }
 
     function setTerms(string memory _terms) external onlyOwner {
         emit TermsChanged(_terms);
         terms = _terms;
-    }
-
-    function setMinter(address _minter) external onlyOwner {
-        emit MinterChanged(_minter);
-        minter = _minter;
     }
 
     /**
@@ -107,26 +91,12 @@ contract Bond is ERC20Recoverable, ERC20Named {
         return owner;
     }
 
-    function mint(address target, uint256 amount) external onlyMinter {
+    function mint(address target, uint256 amount) external onlyOwner {
         _mint(target, amount);
-    }
-
-    function _mint(address account, uint256 amount) internal override {
-        require(block.timestamp - deployTimestamp <= termToMaturity, "Bond already reached maturity.");
-        require(totalSupply() + amount <= maxMintable(), "Max mintable supply is already minted.");
-        super._mint(account, amount);
     }
 
     function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
         return super.transfer(to, value);
-    }
-
-    function transferAndCall(address recipient, uint amount, bytes calldata data) override(ERC20Flaggable) external returns (bool) {
-        bool success = burn(amount);
-        if (success){
-            success = IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);
-        }
-        return success;
     }
 
     /**
@@ -134,17 +104,8 @@ contract Bond is ERC20Recoverable, ERC20Named {
      * of this shall be that the sender forfeits all his rights in connection
      * with the burned tokens, rendering them unredeemable.
      */
-    function burn(uint256 _amount) public returns (bool) {
-        require(_amount <= balanceOf(msg.sender), "Not enough bonds available");
+    function burn(uint256 _amount) external {
         _burn(msg.sender, _amount);
-        return true;
-    }
-
-    /**
-     * Calculates the the maximum ammount which can be minted, which decreses over the time.
-     */
-    function maxMintable() public view returns (uint256) {
-        return maxSupply - (((block.timestamp - deployTimestamp)/ 3600) * mintDecrement);
     }
 
 }   

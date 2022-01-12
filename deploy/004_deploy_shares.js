@@ -1,3 +1,5 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
@@ -5,22 +7,27 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const recoveryHub = await deployments.get("RecoveryHub");
 
-  console.log("-----------------------")
-  console.log("Deploy Shares")
-  console.log("-----------------------")
-  console.log("deployer: %s", deployer);
-  console.log("owner: %s", owner); // don't forget to set it in the hardhat config
-
   const symbol = "SHR";
-  const name = "Test Share ";
-  const terms = "wwww.terms.ch";
+  const name = "Test Shares";
+  const terms = "test.ch/terms";
   const totalShares = 10000000;
+  
+  if (network.name != "hardhat") {
+    console.log("-----------------------")
+    console.log("Deploy Shares")
+    console.log("-----------------------")
+    console.log("deployer: %s", deployer);
+    console.log("recoveryHub: %s", recoveryHub.address);
+    console.log("owner: %s", owner); // don't forget to set it in the hardhat config
+
+    const prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
-
-  if (network.name == "mainnet") {
-    await new Confirm("Addresses correct?").run();
-  }
 
   const { address } = await deploy("Shares", {
     contract: "Shares",
@@ -39,4 +46,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["Shares"];
-module.exports.dependencies = ["multisig", "RecoveryHub"];
+module.exports.dependencies = ["RecoveryHub"];
