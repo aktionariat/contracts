@@ -31,22 +31,6 @@ import "./IRecoveryHub.sol";
 import "./IRecoverable.sol";
 import "../ERC20/IERC20.sol";
 
-/**
- * @title Recoverable
- * In case of tokens that represent real-world assets such as shares of a company, one needs a way
- * to handle lost private keys. With physical certificates, courts can declare share certificates as
- * invalid so the company can issue replacements. Here, we want a solution that does not depend on
- * third parties to resolve such cases. Instead, when someone has lost a private key, he can use the
- * declareLost function to post a deposit and claim that the shares assigned to a specific address are
- * lost. To prevent front running, a commit reveal scheme is used. If he actually is the owner of the shares,
- * he needs to wait for a certain period and can then reclaim the lost shares as well as the deposit.
- * If he is an attacker trying to claim shares belonging to someone else, he risks losing the deposit
- * as it can be claimed at anytime by the rightful owner.
- * Furthermore, if "getClaimDeleter" is defined in the subclass, the returned address is allowed to
- * delete claims, returning the collateral. This can help to prevent obvious cases of abuse of the claim
- * function.
- */
-
 contract RecoveryHub is IRecoveryHub {
 
     // A struct that represents a claim made
@@ -102,14 +86,17 @@ contract RecoveryHub is IRecoveryHub {
         IERC20 currency = IERC20(collateralType);
         require(balance > 0, "empty");
         require(claims[token][lostAddress].collateral == 0, "already claimed");
-        require(currency.transferFrom(claimant, address(this), collateral));
 
         claims[token][lostAddress] = Claim({
             claimant: claimant,
             collateral: collateral,
+            // rely on time stamp is ok, no exact time stamp needed
+            // solhint-disable-next-line not-rely-on-time
             timestamp: block.timestamp,
             currencyUsed: collateralType
         });
+        
+        require(currency.transferFrom(claimant, address(this), collateral), "transfer failed");
 
         IRecoverable(token).notifyClaimMade(lostAddress);
         emit ClaimMade(token, lostAddress, claimant, balance);
@@ -165,16 +152,19 @@ contract RecoveryHub is IRecoveryHub {
         uint256 collateral = claim.collateral;
         IERC20 currency = IERC20(claim.currencyUsed);
         require(collateral != 0, "not found");
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
         require(claim.timestamp + IRecoverable(token).claimPeriod() <= block.timestamp, "too early");
         delete claims[token][lostAddress];
         IRecoverable(token).notifyClaimDeleted(lostAddress);
-        require(currency.transfer(claimant, collateral));
+        require(currency.transfer(claimant, collateral), "transfer failed");
         IRecoverable(token).recover(lostAddress, claimant);
         emit ClaimResolved(token, lostAddress, claimant, collateral);
     }
 
     /**
-     * This function is to be executed by the claim deleter only in case a dispute needs to be resolved manually.
+     * The token contract can delete claims. It is the responsibility of the token contract to make sure
+     * only authorized parties can trigger such a call.
      */
     function deleteClaim(address lostAddress) external override {
         address token = msg.sender;
@@ -183,7 +173,7 @@ contract RecoveryHub is IRecoveryHub {
         require(claim.collateral != 0, "not found");
         delete claims[token][lostAddress];
         IRecoverable(token).notifyClaimDeleted(lostAddress);
-        require(currency.transfer(claim.claimant, claim.collateral));
+        require(currency.transfer(claim.claimant, claim.collateral), "transfer failed");
         emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
     }
 

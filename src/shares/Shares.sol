@@ -27,28 +27,23 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/extensions/ERC20Named.sol";
+import "../ERC20/ERC20Named.sol";
+import "../ERC20/IERC677Receiver.sol";
 import "../recovery/ERC20Recoverable.sol";
-import "../interfaces/IERC677Receiver.sol";
 
 /**
  * @title CompanyName AG Shares
  * @author Luzius Meisser, luzius@aktionariat.com
  *
- * These tokens are uncertified shares (Wertrechte according to the Swiss code of obligations),
- * with this smart contract serving as onwership registry (Wertrechtebuch), but not as shareholder
- * registry, which is kept separate and run by the company. This is equivalent to the traditional system
+ * These tokens represent ledger-based securities according to article 973d of the Swiss Code of Obligations.
+ * This smart contract serves as an ownership registry, enabling the token holders to register them as
+ * shareholders in the issuer's shareholder registry. This is equivalent to the traditional system
  * of having physical share certificates kept at home by the shareholders and a shareholder registry run by
  * the company. Just like with physical certificates, the owners of the tokens are the owners of the shares.
  * However, in order to exercise their rights (for example receive a dividend), shareholders must register
- * with the company. For example, in case the company pays out a dividend to a previous shareholder because
+ * themselves. For example, in case the company pays out a dividend to a previous shareholder because
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
- * Registration requires setting up an account with ledgy.com providing your name and address and proving
- * ownership over your addresses.
- * @notice The main addition is a functionality that allows the user to claim that the key for a certain address is lost.
- * @notice In order to prevent malicious attempts, a collateral needs to be posted.
- * @notice The contract owner can delete claims in case of disputes.
  */
 contract Shares is ERC20Recoverable, ERC20Named {
 
@@ -68,11 +63,9 @@ contract Shares is ERC20Recoverable, ERC20Named {
         address _owner,
         address _recoveryHub
     )
-        ERC20Named(_owner, _name, _symbol, 0) 
+        ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
     {
-        symbol = _symbol;
-        name = _name;
         totalShares = _totalShares;
         terms = _terms;
     }
@@ -120,7 +113,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      */
     function declareInvalid(address holder, uint256 amount, string calldata message) external onlyOwner() {
         uint256 holderBalance = balanceOf(holder);
-        require(amount <= holderBalance);
+        require(amount <= holderBalance, "amount too high");
         invalidTokens += amount;
         emit TokensDeclaredInvalid(holder, amount, message);
     }
@@ -134,8 +127,8 @@ contract Shares is ERC20Recoverable, ERC20Named {
     }
 
     /**
-     * Allows the company to tokenize shares. If these shares are newly created, setTotalShares must be
-     * called first in order to adjust the total number of shares.
+     * Allows the company to tokenize shares and transfer them e.g to the draggable contract and wrap them.
+     * If these shares are newly created, setTotalShares must be called first in order to adjust the total number of shares.
      */
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);

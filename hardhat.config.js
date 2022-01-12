@@ -58,7 +58,6 @@ module.exports = {
       saveDeployments: true,
       chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
       tags: ["test", "local"],
-      deploy: ['deploy_optimism']
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -170,6 +169,7 @@ module.exports = {
     },
     owner: {
       default: 0,
+      1: process.env.MULTISIG_DEPLOY // to multisigwallet
     },
     dev: {
       // Default to 1
@@ -178,7 +178,7 @@ module.exports = {
       // 1: "",
     },
     multiSigDefaultOwner: {
-      default: 1,
+      default: 0,
       1: process.env.MULTISIG_DEFAULT
     }
   },
@@ -195,7 +195,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.9",
+        version: "0.8.7",
         settings: {
           optimizer: {
             enabled: true,

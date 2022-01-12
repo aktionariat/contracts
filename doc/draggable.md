@@ -1,6 +1,6 @@
 # Drag-Along Mechanism
 
-![drag-along](https://aktionariat.com/images/draggable.jpg)
+![drag-along](https://hub.aktionariat.com/images/contracts/draggable.jpg)
 
 ## Overview and Motivation
 
@@ -8,7 +8,7 @@ Typical shareholder agreements contain “drag-along” and “tag-along” clau
 
 ## Functionality
 
-The ERC‑20 contract [ERC20Draggable](../src/ERC20Draggable.sol) can be used to convert any existing ERC‑20 token (referred to as base token) into a draggable token by wrapping it. Once deployed, the contract offers the following functionality:
+The ERC‑20 contract [ERC20Draggable](../src/shares/draggable/ERC20Draggable.sol) can be used to convert any existing ERC‑20 token (referred to as base token) into a draggable token by wrapping it. Once deployed, the contract offers the following functionality:
 
 - Anyone owning base tokens can wrap them at any time, thereby converting these base tokens into draggable tokens. The base tokens still exist, but are now under control of the draggable contract. Think of this process as taking a traditional paper certificate and putting it into a sealed envelope. For each outstanding draggable token, the draggable contract holds exactly one base token as backing. A draggable token legally represents a base token that is bound to a shareholder agreement.
 - A majority of shareholders holding 75% of the shares can update the shareholder agreement and migrate all the base tokens to a new contract that represents a different shareholder agreement or even end the shareholder agreement completely. Once the agreement has ended, token holders are free to unwrap their base tokens again – or to break the seal and open the envelope when thinking in terms of the paper analogy.

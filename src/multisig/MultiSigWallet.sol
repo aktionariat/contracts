@@ -4,11 +4,14 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Address.sol";
+import "../utils/Address.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../libraries/RLPEncode.sol";
-import "../utils/Nonce.sol";
+import "./RLPEncode.sol";
+import "./Nonce.sol";
 
+/**
+ * Documented in ../../doc/multisig.md
+ */
 contract MultiSigWallet is Nonce, Initializable {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
@@ -27,9 +30,6 @@ contract MultiSigWallet is Nonce, Initializable {
     address[] signers // Addresses of the signers used to initiate the transaction
   );
 
-  constructor () {
-  }
-
   function initialize(address owner) external initializer {
     // We use the gas price to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
@@ -43,6 +43,7 @@ contract MultiSigWallet is Nonce, Initializable {
   /**
    * It should be possible to store ether on this address.
    */
+   // solhint-disable-next-line no-empty-blocks
   receive() external payable {
   }
 
@@ -141,7 +142,7 @@ contract MultiSigWallet is Nonce, Initializable {
    */
   function setSigner(address signer, uint8 cosignaturesNeeded) external authorized {
     _setSigner(signer, cosignaturesNeeded);
-    require(signerCount > 0);
+    require(signerCount > 0, "signer count 0");
   }
 
   function migrate(address destination) external {
@@ -153,7 +154,7 @@ contract MultiSigWallet is Nonce, Initializable {
   }
 
   function _migrate(address source, address destination) private {
-    require(signers[destination] == 0); // do not overwrite existing signer!
+    require(signers[destination] == 0, "destination not new"); // do not overwrite existing signer!
     _setSigner(destination, signers[source]);
     _setSigner(source, 0);
   }
