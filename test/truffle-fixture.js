@@ -15,6 +15,9 @@ const PaymentHub = artifacts.require("PaymentHub");
 const RecoveryHub = artifacts.require("RecoveryHub");
 const OfferFactory = artifacts.require("OfferFactory");
 
+const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
+const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
+
 // Import Contracts
 const ForceSend = artifacts.require("ForceSend");
 const ERC20Basic = artifacts.require("ERC20Basic");
@@ -35,11 +38,12 @@ module.exports = async (deployer) => {
   const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts.deployer);
   DraggableShares.setAsDeployed(draggableShares);
 
-  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer);
+  const paymentHub = await PaymentHub.new(config.baseCurrencyAddress, priceFeedCHFUSD, priceFeedETHUSD);
+  PaymentHub.setAsDeployed(paymentHub);
+
+  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer, paymentHub.address);
   Brokerbot.setAsDeployed(brokerbot);
 
-  const paymentHub = await PaymentHub.new(config.baseCurrencyAddress);
-  PaymentHub.setAsDeployed(paymentHub);
 
   const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
   // Set Payment Hub for Brokerbot

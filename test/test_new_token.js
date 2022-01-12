@@ -56,8 +56,10 @@ describe("New Standard", () => {
       .then(factory => factory.deploy())
       .then(contract => contract.deployed());
 
+    const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
+    const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
     paymentHub = await await ethers.getContractFactory("PaymentHub")
-      .then(factory => factory.deploy(config.baseCurrencyAddress))
+      .then(factory => factory.deploy(config.baseCurrencyAddress, priceFeedCHFUSD, priceFeedETHUSD))
       .then(contract => contract.deployed());
 
     recoveryHub = await ethers.getContractFactory("RecoveryHub")

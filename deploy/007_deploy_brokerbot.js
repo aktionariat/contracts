@@ -1,16 +1,22 @@
-module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
+const Confirm = require('prompt-confirm');
+
+module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
 
-  const { deployer } = await getNamedAccounts();
+  const { deployer, owner } = await getNamedAccounts();
 
-  const multisig = await deployments.get('MultiSigTest');
   const shares = await deployments.get('Shares');
+  const paymentHub = await deployments.get('PaymentHub');
 
   console.log("-----------------------")
   console.log("Deploy Brokerbot")
   console.log("-----------------------")
   console.log("deployer: %s", deployer);
-  console.log("owner: %s", multisig.address)
+  console.log("owner: %s", owner)
+
+  if (network.name == "mainnet") {
+    await new Confirm("Addresses correct?").run();
+  }
 
   const price = "500000000000000000";
   const increment = 10;
@@ -26,7 +32,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       price,
       increment,
       baseCurrencyContract,
-      multisig.address],
+      owner,
+      paymentHub.address],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -34,4 +41,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["Brokerbot"];
-module.exports.dependencies = ["Shares", "multisig"];
+module.exports.dependencies = ["Shares", "multisig", "PaymentHub"];

@@ -170,6 +170,7 @@ module.exports = {
     },
     owner: {
       default: 0,
+      1: process.env.MULTISIG_DEPLOY // to multisigwallet
     },
     dev: {
       // Default to 1
@@ -178,7 +179,7 @@ module.exports = {
       // 1: "",
     },
     multiSigDefaultOwner: {
-      default: 1,
+      default: 0,
       1: process.env.MULTISIG_DEFAULT
     }
   },
