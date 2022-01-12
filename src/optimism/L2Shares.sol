@@ -27,9 +27,9 @@
 */
 pragma solidity ^0.8.0;
 
-import "../ERC20/extensions/ERC20Named.sol";
+import "../ERC20/ERC20Named.sol";
 import "../recovery/ERC20Recoverable.sol";
-import "../interfaces/IERC677Receiver.sol";
+import "../ERC20/IERC677Receiver.sol";
 import { L2StandardERC20 } from "@eth-optimism/contracts/standards/L2StandardERC20.sol";
 
 /**
