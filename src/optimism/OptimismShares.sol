@@ -28,9 +28,11 @@
 pragma solidity ^0.8.0;
 
 import "../shares/Shares.sol";
-import "../ERC20/L2StandardERC20.sol";
+ import { IL2StandardERC20 } from "../ERC20/IL2StandardERC20.sol";
 
-contract OptimismShares is Shares, L2StandardERC20 {
+contract OptimismShares is Shares, IL2StandardERC20 {
+    address public l1Token;
+    address public l2Bridge;
 
     constructor(
     address _l2Bridge,
@@ -41,11 +43,39 @@ contract OptimismShares is Shares, L2StandardERC20 {
     uint256 _totalShares,
     address _recoveryHub,
     address _owner
-  )
-    Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
-    L2StandardERC20(_l2Bridge, _l1Token)
-  {
-    IRecoveryHub(address(_recoveryHub)).setRecoverable(false); 
-  }
+    )
+      Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
+    {
+      l2Bridge = _l2Bridge;
+      l1Token = _l1Token;
+    }
+
+    modifier onlyL2Bridge() {
+      require(msg.sender == l2Bridge, "Only L2 Bridge can mint and burn");
+      _;
+    }
+
+    // slither-disable-next-line external-function
+    function supportsInterface(bytes4 _interfaceId) public pure override returns (bool) {
+        bytes4 firstSupportedInterface = bytes4(keccak256("supportsInterface(bytes4)")); // ERC165
+        bytes4 secondSupportedInterface = IL2StandardERC20.l1Token.selector ^
+            IL2StandardERC20.mint.selector ^
+            IL2StandardERC20.burn.selector;
+        return _interfaceId == firstSupportedInterface || _interfaceId == secondSupportedInterface;
+    }
+
+    // slither-disable-next-line external-function
+    function mint(address _to, uint256 _amount) public virtual override(Shares, IL2StandardERC20) onlyL2Bridge {
+        _mint(_to, _amount);
+
+        emit Mint(_to, _amount);
+    }
+
+    // slither-disable-next-line external-function
+    function burn(address _from, uint256 _amount) public virtual override onlyL2Bridge {
+        _burn(_from, _amount);
+
+        emit Burn(_from, _amount);
+    }
 
 }
