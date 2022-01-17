@@ -1,5 +1,8 @@
+// Shared  Config
+const config = require("../deploy/deploy_config");
+
 async function main() {
-  const l2CustomERC20Factory = await ethers.getContractFactory("L2CustomERC20");
+  const l2CustomERC20Factory = await ethers.getContractFactory("OptimismShares");
 
   console.log('deploying L2CustomERC20 to', hre.network.name)
 
@@ -7,7 +10,11 @@ async function main() {
 
   const l2CustomERC20 = await l2CustomERC20Factory.deploy(
     '0x4200000000000000000000000000000000000010',  // L2 Standard Bridge
-    l1Token);                                      // L1 token
+    l1Token,
+    config.name,
+    config.symbol,
+    config.terms,
+    );                                      // L1 token
 
   console.log("L2 CustomERC20 deployed to:", l2CustomERC20.address);
 }

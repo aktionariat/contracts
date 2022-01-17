@@ -16,7 +16,8 @@
   "dependencies": {
     "@chainlink/contracts": "^0.2.2",
     "@openzeppelin/contracts": "4.3.3",
-    "@eth-optimism/contracts": "0.5.5"
+    "@eth-optimism/contracts": "0.5.7",
+    "@eth-optimism/core-utils": "0.7.3"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",

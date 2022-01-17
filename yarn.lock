@@ -59,10 +59,10 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@eth-optimism/contracts@0.5.5":
-  version "0.5.5"
-  resolved "https://registry.yarnpkg.com/@eth-optimism/contracts/-/contracts-0.5.5.tgz#7a58d11a4f0586eb5d4df5a71ffa45f9a3623d27"
-  integrity sha512-s1qLXx70hjIt83uJZPM7sqU3jLfC4+U+W9la2HVeMP2G4csn5eYJlSux+TQxTzZMnMgQ7Y4f3Y0xcKKGEXbMlw==
+"@eth-optimism/contracts@0.5.7":
+  version "0.5.7"
+  resolved "https://registry.yarnpkg.com/@eth-optimism/contracts/-/contracts-0.5.7.tgz#1e0b59d0a0f689ab947ed9aced2ea514a104b0af"
+  integrity sha512-/+qsYTuHSvSbmqBwakmxjmh1X2z7A3Q/bpv8YN/Mu/wNvehXD7RrmEpd6UMrI5Rov4Fsaa8LSS7D1IXpZzso7w==
   dependencies:
     "@eth-optimism/core-utils" "0.7.3"
     "@ethersproject/abstract-provider" "^5.4.1"
