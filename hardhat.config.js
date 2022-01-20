@@ -147,7 +147,10 @@ module.exports = {
     },
     multiSigDefaultOwner: {
       default: 0,
-      1: process.env.MULTISIG_DEFAULT
+      1: process.env.MULTISIG_DEFAULT,
+      3: process.env.MULTISIG_DEFAULT,
+      4: process.env.MULTISIG_DEFAULT,
+      42: process.env.MULTISIG_DEFAULT
     }
   },
   gasReporter: {
