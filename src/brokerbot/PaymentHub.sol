@@ -44,6 +44,7 @@ import "./IBrokerbot.sol";
 contract PaymentHub {
 
     address public immutable weth;
+    address public constant wbtc = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     
     IQuoter private constant UNISWAP_QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     ISwapRouter private constant UNISWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -55,6 +56,14 @@ contract PaymentHub {
         weth = UNISWAP_QUOTER.WETH9();
         priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
         priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
+    }
+
+    /*  
+     * Get price in WBTC
+     * This is the method that the Brokerbot widget should use to quote the price to the user.
+     */
+    function getPriceInWBTC(uint256 amountInBase, address brokerBot) public returns (uint256) {
+        return UNISWAP_QUOTER.quoteExactOutputSingle(wbtc, IBrokerbot(brokerBot).base(), 3000, amountInBase, 0);
     }
 
     /**
@@ -104,16 +113,11 @@ contract PaymentHub {
     }
 
     /**
-     * Convenience method to swap ether into currency and pay a target address
+     * Convenience method to swap ether into base and pay a target address
      */
     function payFromEther(address recipient, uint256 amountInBase, address base) public payable {
-        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
-            // rely on time stamp is ok, no exact time stamp needed
-            // solhint-disable-next-line not-rely-on-time
-            weth, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
-
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
+        uint256 amountIn = swapToRecipient(recipient, amountInBase, base, weth);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
@@ -121,6 +125,23 @@ contract PaymentHub {
             UNISWAP_ROUTER.refundETH();
             payable(msg.sender).transfer(msg.value - amountIn); // return change
         }
+    }
+
+    /**
+     * Convenience method to swap wbtc into base and pay a target address
+     */
+    function payFromWBTC(address recipient, uint256 amountInBase, address base) public payable {
+        swapToRecipient(recipient, amountInBase, base, wbtc);
+    }
+
+    function swapToRecipient(address recipient, uint256 amountInBase, address base, address quote) internal returns (uint256) {
+        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
+            // rely on time stamp is ok, no exact time stamp needed
+            // solhint-disable-next-line not-rely-on-time
+            quote, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
+
+        // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
+        return UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
     }
 
     function multiPay(address token, address[] calldata recipients, uint256[] calldata amounts) public {

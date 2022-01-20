@@ -193,5 +193,14 @@ describe("New PaymentHub", () => {
         expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
       });
     });
+
+    describe("Using WBTC", () => {
+      it("Should get price in WBTC", async () => {
+        const baseAmount = await ethers.utils.parseEther("1000");
+        console.log("amount: %s", baseAmount);
+        const price = await paymentHub.getPriceInWBTC(baseAmount, brokerbot.address);
+        console.log("price: %s", await ethers.utils.formatEther(price));
+      });
+    });
   });
 });
