@@ -26,13 +26,17 @@
 * SOFTWARE.
 */
 pragma solidity ^0.8.0;
+pragma abicoder v2;
 
 import "../utils/Address.sol";
-import "../ERC20/IERC20.sol";
+//import "../ERC20/IERC20.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./IBrokerbot.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
+//import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
+//import '@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol';
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -44,7 +48,6 @@ import "./IBrokerbot.sol";
 contract PaymentHub {
 
     address public immutable weth;
-    address public constant wbtc = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     
     IQuoter private constant UNISWAP_QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     ISwapRouter private constant UNISWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -62,8 +65,12 @@ contract PaymentHub {
      * Get price in WBTC
      * This is the method that the Brokerbot widget should use to quote the price to the user.
      */
-    function getPriceInWBTC(uint256 amountInBase, address brokerBot) public returns (uint256) {
-        return UNISWAP_QUOTER.quoteExactOutputSingle(wbtc, IBrokerbot(brokerBot).base(), 3000, amountInBase, 0);
+    function getPriceInERC20(uint256 amountInBase, address base, address erc20In) public returns (uint256) {
+        uint24 poolFee = 3000;
+        return UNISWAP_QUOTER.quoteExactOutput(
+            abi.encodePacked(base, poolFee, weth, poolFee, erc20In),
+            amountInBase
+        );
     }
 
     /**
@@ -116,8 +123,13 @@ contract PaymentHub {
      * Convenience method to swap ether into base and pay a target address
      */
     function payFromEther(address recipient, uint256 amountInBase, address base) public payable {
+        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
+        weth, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
+
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = swapToRecipient(recipient, amountInBase, base, weth);
+        uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
@@ -127,21 +139,39 @@ contract PaymentHub {
         }
     }
 
-    /**
-     * Convenience method to swap wbtc into base and pay a target address
-     */
-    function payFromWBTC(address recipient, uint256 amountInBase, address base) public payable {
-        swapToRecipient(recipient, amountInBase, base, wbtc);
-    }
+    /// @dev The calling address must approve this contract to spend its ERC20 for this function to succeed. As the amount of input ERC20 is variable,
+    /// the calling address will need to approve for a slightly higher amount, anticipating some variance.
+    /// @param amountOut The desired amount of baseCurrency.
+    /// @param amountInMaximum The maximum amount of ERC20 willing to be swapped for the specified amountOut of baseCurrency.
+    /// @param erc20In The address of the erc20 token to pay with
+    /// @param recipient The reciving address - brokerbot
+    /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
+    function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, address recipient) external returns (uint256 amountIn) {
+        // Transfer the specified `amountInMaximum` to this contract.
+        TransferHelper.safeTransferFrom(erc20In, msg.sender, address(this), amountInMaximum);
+        // Approve the router to spend  `amountInMaximum`.
+        TransferHelper.safeApprove(erc20In, address(UNISWAP_ROUTER), amountInMaximum);
 
-    function swapToRecipient(address recipient, uint256 amountInBase, address base, address quote) internal returns (uint256) {
-        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
-            // rely on time stamp is ok, no exact time stamp needed
-            // solhint-disable-next-line not-rely-on-time
-            quote, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
+        uint24 poolFee = 3000;
 
-        // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        return UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
+        // The parameter path is encoded as (tokenOut, fee, tokenIn/tokenOut, fee, tokenIn)
+        ISwapRouter.ExactOutputParams memory params =
+            ISwapRouter.ExactOutputParams({
+                path: abi.encodePacked(IBrokerbot(recipient), poolFee, weth, poolFee, erc20In),
+                recipient: msg.sender,
+                deadline: block.timestamp,
+                amountOut: amountOut,
+                amountInMaximum: amountInMaximum
+            });
+
+        // Executes the swap, returning the amountIn actually spent.
+        amountIn = UNISWAP_ROUTER.exactOutput(params);
+
+        // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
+        if (amountIn < amountInMaximum) {
+            TransferHelper.safeApprove(erc20In, address(UNISWAP_ROUTER), 0);
+            TransferHelper.safeTransferFrom(erc20In, address(this), msg.sender, amountInMaximum - amountIn);
+        }
     }
 
     function multiPay(address token, address[] calldata recipients, uint256[] calldata amounts) public {

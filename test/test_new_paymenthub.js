@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const Chance = require("chance");
 
 // Shared  Config
-const config = require("../migrations/migration_config")
+const config = require("../deploy/deploy_config.js")
 
 describe("New PaymentHub", () => {
   let draggable;
@@ -197,9 +197,9 @@ describe("New PaymentHub", () => {
     describe("Using WBTC", () => {
       it("Should get price in WBTC", async () => {
         const baseAmount = await ethers.utils.parseEther("1000");
-        console.log("amount: %s", baseAmount);
-        const price = await paymentHub.getPriceInWBTC(baseAmount, brokerbot.address);
-        console.log("price: %s", await ethers.utils.formatEther(price));
+        const base = await brokerbot.base();
+        const price = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](baseAmount, base, config.wbtcAddress);
+        expect(price).to.be.above(0);
       });
     });
   });

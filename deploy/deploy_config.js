@@ -20,4 +20,6 @@ module.exports = {
   allowlist_totalshares: 4000000,
   allowlist_quorumBps: 10,
   allowlist_votePeriodSeconds: 36000,
+
+  wbtcAddress: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
 };
