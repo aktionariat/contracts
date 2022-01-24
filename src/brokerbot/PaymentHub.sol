@@ -156,6 +156,7 @@ contract PaymentHub {
             ISwapRouter.ExactOutputParams({
                 path: abi.encodePacked(base, poolFee, weth, poolFee, erc20In),
                 recipient: recipient,
+                // solhint-disable-next-line not-rely-on-time
                 deadline: block.timestamp,
                 amountOut: amountOut,
                 amountInMaximum: amountInMaximum
