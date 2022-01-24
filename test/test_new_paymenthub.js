@@ -1,9 +1,10 @@
 const {network, ethers, deployments, } = require("hardhat");
 const { expect } = require("chai");
 const Chance = require("chance");
+const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
 
 // Shared  Config
-const config = require("../deploy/deploy_config.js")
+const config = require("../deploy/deploy_config.js");
 
 describe("New PaymentHub", () => {
   let draggable;
@@ -14,6 +15,7 @@ describe("New PaymentHub", () => {
   let brokerbot;
   let brokerbotDAI;
   let daiContract;
+  let wbtcContract;
 
   let owner;
   let sig1;
@@ -30,6 +32,7 @@ describe("New PaymentHub", () => {
   let terms;
   let dterms;
   let xchfamount
+  let daiAmount
 
   const TYPE_DEFAULT = 0;
   const TYPE_ALLOWLISTED = 1;
@@ -51,7 +54,9 @@ describe("New PaymentHub", () => {
 
     // deploy contracts
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    daiContract = await ethers.getContractAt("ERC20Basic", "0x6b175474e89094c44da98b954eedeac495271d0f");
+    daiContract = await ethers.getContractAt("ERC20Basic", config.daiAddress);
+    wbtcContract = await ethers.getContractAt("ERC20Basic", config.wbtcAddress);
+
     forceSend = await await ethers.getContractFactory("ForceSend")
       .then(factory => factory.deploy())
       .then(contract => contract.deployed());
@@ -63,20 +68,11 @@ describe("New PaymentHub", () => {
     brokerbotDAI = await ethers.getContract("BrokerbotDAI");
 
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
-    const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
-    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.utils.parseEther("2")});
-    for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
-      //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-    }
-    await network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
+    await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
+    // Set (manipulate local) DAI balance for first 5 accounts
+    await setBalance(daiContract, config.daiBalanceSlot, accounts);
+    // Set (manipulate local) WBTC balance for first 5 accounts
+    await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
 
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
@@ -86,7 +82,7 @@ describe("New PaymentHub", () => {
     // Deposit some shares to Brokerbot
     await shares.transfer(brokerbot.address, 500000, { from: accounts[0]});
     await shares.transfer(brokerbotDAI.address, 500000, { from: accounts[0]});
-    await baseCurrency.transfer(brokerbot.address, web3.utils.toWei("100000"), { from: accounts[0] });
+    await baseCurrency.transfer(brokerbot.address, ethers.utils.parseEther("100000"), { from: accounts[0] });
   });
 
   describe("Deployment", () => {
@@ -192,15 +188,45 @@ describe("New PaymentHub", () => {
         // brokerbot should have after the payment with eth the dai in the balance
         expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
       });
+
+      it("Should buy shares and pay with DAI"), async () => {
+        //TODO: mint dai and buy shares
+      }
     });
 
-    describe("Using WBTC", () => {
+    describe("Trading Using WBTC", () => {
+      beforeEach(async () => {
+        const randomAmount = chance.natural({ min: 500, max: 50000 });
+        xchfamount = await brokerbot.getBuyPrice(randomAmount);
+      });
+
       it("Should get price in WBTC", async () => {
-        const baseAmount = await ethers.utils.parseEther("1000");
         const base = await brokerbot.base();
-        const price = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](baseAmount, base, config.wbtcAddress);
+        const price = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](xchfamount, base, config.wbtcAddress);
         expect(price).to.be.above(0);
       });
+
+      it("Should buy shares with WBTC and trade it to XCHF", async () => {
+        const base = await brokerbot.base();
+        const priceInWBTC = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](xchfamount, base, config.wbtcAddress);
+
+        // send a little bit more for slippage 
+        const priceInWBTCWithSlippage = priceInWBTC.mul(101).div(100);
+
+        // approve wbtc
+        await wbtcContract.approve(paymentHub.address, priceInWBTCWithSlippage, { from: accounts[0] });
+
+        //trade and log balance change
+        const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+        console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
+        await paymentHub.payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, "0x01");
+        const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+        console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
+
+        // brokerbot should have after the payment with eth the xchf in the balance
+        expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+      });
+
     });
   });
 });
