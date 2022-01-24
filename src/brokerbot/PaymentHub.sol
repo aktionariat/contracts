@@ -29,11 +29,11 @@ pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import "../utils/Address.sol";
+import "../ERC20/IERC20.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -145,9 +145,9 @@ contract PaymentHub {
     /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
     function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, address base, address recipient) public returns (uint256 amountIn) {
         // Transfer the specified `amountInMaximum` to this contract.
-        TransferHelper.safeTransferFrom(erc20In, msg.sender, address(this), amountInMaximum);
+        IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
         // Approve the router to spend  `amountInMaximum`.
-        TransferHelper.safeApprove(erc20In, address(UNISWAP_ROUTER), amountInMaximum);
+        IERC20(erc20In).approve(address(UNISWAP_ROUTER), amountInMaximum);
 
         uint24 poolFee = 3000;
 
@@ -166,8 +166,8 @@ contract PaymentHub {
 
         // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
         if (amountIn < amountInMaximum) {
-            TransferHelper.safeApprove(erc20In, address(UNISWAP_ROUTER), 0);
-            TransferHelper.safeTransfer(erc20In, msg.sender, amountInMaximum - amountIn);
+            IERC20(erc20In).approve(address(UNISWAP_ROUTER), 0);
+            IERC20(erc20In).transfer(msg.sender, amountInMaximum - amountIn);
 
         }
     }
