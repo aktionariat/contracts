@@ -1,5 +1,5 @@
 const {network, ethers, deployments, } = require("hardhat");
-const config = require("../../deploy/deploy_config.js")
+const config = require("../../scripts/deploy_config.js")
 
 const toBytes32 = (bn) => {
   return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));

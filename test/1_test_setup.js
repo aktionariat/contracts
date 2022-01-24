@@ -1,7 +1,7 @@
 /* global artifacts, contract, web3, assert */
 
-// Shared Migration Config
-const config = require("../migrations/migration_config");
+// Shared Config
+const config = require("../scripts/deploy_config.js");
 
 // Libraries
 const BN = require("bn.js");

@@ -4,7 +4,7 @@ const Chance = require("chance");
 const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
 
 // Shared  Config
-const config = require("../deploy/deploy_config.js");
+const config = require("../scripts/deploy_config.js");
 
 describe("New PaymentHub", () => {
   let draggable;

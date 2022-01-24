@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const Chance = require("chance");
 
 // Shared  Config
-const config = require("../deploy/deploy_config");
+const config = require("../scripts/deploy_config.js");
 
 describe("New Standard", () => {
   let draggable
