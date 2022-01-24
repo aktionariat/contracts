@@ -15,7 +15,9 @@
   "homepage": "https://github.com/aktionariat/contracts#readme",
   "dependencies": {
     "@chainlink/contracts": "^0.2.2",
-    "@openzeppelin/contracts": "4.3.3"
+    "@openzeppelin/contracts": "4.3.3",
+    "@eth-optimism/contracts": "0.5.7",
+    "@eth-optimism/core-utils": "0.7.3"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
@@ -54,7 +56,7 @@
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "test": "hardhat test",
-    "coverage": "hardhat coverage && cat coverage/lcov.info",
+    "coverage": "hardhat coverage",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
     "prettier:solidity": "./node_modules/.bin/prettier --write src/**/*.sol"
   }

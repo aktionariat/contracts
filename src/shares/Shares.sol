@@ -135,7 +135,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
         IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data);
     }
 
-    function mint(address target, uint256 amount) public onlyOwner {
+    function mint(address target, uint256 amount) public virtual onlyOwner {
         _mint(target, amount);
     }
 
