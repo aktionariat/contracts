@@ -29,14 +29,11 @@ pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import "../utils/Address.sol";
-//import "../ERC20/IERC20.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
-//import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
-//import '@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol';
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -146,7 +143,7 @@ contract PaymentHub {
     /// @param erc20In The address of the erc20 token to pay with
     /// @param recipient The reciving address - brokerbot
     /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
-    function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, address recipient) external returns (uint256 amountIn) {
+    function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, address base, address recipient) public returns (uint256 amountIn) {
         // Transfer the specified `amountInMaximum` to this contract.
         TransferHelper.safeTransferFrom(erc20In, msg.sender, address(this), amountInMaximum);
         // Approve the router to spend  `amountInMaximum`.
@@ -157,8 +154,8 @@ contract PaymentHub {
         // The parameter path is encoded as (tokenOut, fee, tokenIn/tokenOut, fee, tokenIn)
         ISwapRouter.ExactOutputParams memory params =
             ISwapRouter.ExactOutputParams({
-                path: abi.encodePacked(IBrokerbot(recipient), poolFee, weth, poolFee, erc20In),
-                recipient: msg.sender,
+                path: abi.encodePacked(base, poolFee, weth, poolFee, erc20In),
+                recipient: recipient,
                 deadline: block.timestamp,
                 amountOut: amountOut,
                 amountInMaximum: amountInMaximum
@@ -170,7 +167,8 @@ contract PaymentHub {
         // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
         if (amountIn < amountInMaximum) {
             TransferHelper.safeApprove(erc20In, address(UNISWAP_ROUTER), 0);
-            TransferHelper.safeTransferFrom(erc20In, address(this), msg.sender, amountInMaximum - amountIn);
+            TransferHelper.safeTransfer(erc20In, msg.sender, amountInMaximum - amountIn);
+
         }
     }
 
@@ -216,6 +214,16 @@ contract PaymentHub {
             payFromEther(recipient, amountInBase, base);
             IBrokerbot(recipient).processIncoming(base, msg.sender, amountInBase, ref);
         }
+    }
+
+    /*** 
+     * Pay from any ERC20 token (which has Uniswapv3 ERC20-ETH pool) and send swapped base currency to brokerbot.
+     * The needed amount needs to be approved at the ERC20 contract beforehand
+     */
+    function payFromERC20AndNotify(address recipient, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes calldata ref) external {
+        address base = IBrokerbot(recipient).base();
+        payFromERC20(amountBase, amountInMaximum, erc20, base, recipient);
+        IBrokerbot(recipient).processIncoming(base, msg.sender, amountBase, ref);
     }
 
     /**
