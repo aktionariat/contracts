@@ -33,6 +33,7 @@ describe("New PaymentHub", () => {
   let dterms;
   let xchfamount
   let daiAmount
+  let randomShareAmount
 
   const TYPE_DEFAULT = 0;
   const TYPE_ALLOWLISTED = 1;
@@ -196,8 +197,8 @@ describe("New PaymentHub", () => {
 
     describe("Trading Using WBTC", () => {
       beforeEach(async () => {
-        const randomAmount = chance.natural({ min: 500, max: 50000 });
-        xchfamount = await brokerbot.getBuyPrice(randomAmount);
+        randomShareAmount = chance.natural({ min: 500, max: 50000 });
+        xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
       });
 
       it("Should get price in WBTC", async () => {
@@ -218,13 +219,18 @@ describe("New PaymentHub", () => {
 
         //trade and log balance change
         const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-        console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
+        const sharesBefore = await shares.balanceOf(accounts[0]);
+        //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
         await paymentHub.payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, "0x01");
+        const sharesAfter = await shares.balanceOf(accounts[0]);
         const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
-        console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
+        //console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
 
         // brokerbot should have after the payment with eth the xchf in the balance
         expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+
+        // user should get the amount of shares
+        expect(sharesBefore.add(randomShareAmount)).to.equal(sharesAfter);
       });
 
     });
