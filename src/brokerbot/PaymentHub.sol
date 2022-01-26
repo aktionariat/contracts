@@ -125,13 +125,14 @@ contract PaymentHub {
         // solhint-disable-next-line not-rely-on-time
         weth, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
 
+        ISwapRouter swapRouter = UNISWAP_ROUTER;
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
+        uint256 amountIn = swapRouter.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < msg.value) {
-            UNISWAP_ROUTER.refundETH();
+            swapRouter.refundETH();
             payable(msg.sender).transfer(msg.value - amountIn); // return change
         }
     }
@@ -144,6 +145,7 @@ contract PaymentHub {
     /// @param recipient The reciving address - brokerbot
     /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
     function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, address base, address recipient) public returns (uint256 amountIn) {
+        ISwapRouter swapRouter = UNISWAP_ROUTER;
         // Transfer the specified `amountInMaximum` to this contract.
         IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
         // Approve the router to spend  `amountInMaximum`.
@@ -163,11 +165,11 @@ contract PaymentHub {
             });
 
         // Executes the swap, returning the amountIn actually spent.
-        amountIn = UNISWAP_ROUTER.exactOutput(params);
+        amountIn = swapRouter.exactOutput(params);
 
         // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
         if (amountIn < amountInMaximum) {
-            IERC20(erc20In).approve(address(UNISWAP_ROUTER), 0);
+            IERC20(erc20In).approve(address(swapRouter), 0);
             IERC20(erc20In).transfer(msg.sender, amountInMaximum - amountIn);
 
         }
