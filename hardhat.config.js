@@ -161,6 +161,14 @@ module.exports = {
       saveDeployments: true,
       tags: ["staging"],
       deploy: ['deploy_optimism']
+    },
+    optimism: {
+        url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}}`,
+        accounts: accounts("mainnet"),
+        chainId: 10,
+        live: true,
+        saveDeployments: true,
+        deploy: ['deploy_optimism']
     }
   },
   namedAccounts: {
@@ -169,7 +177,14 @@ module.exports = {
     },
     owner: {
       default: 0,
-      1: process.env.MULTISIG_DEPLOY // to multisigwallet
+      1: process.env.MULTISIG_DEPLOY, // to multisigwallet
+      10: process.env.MULTISIG_DEPLOY, // optimism
+      3: process.env.MULTISIG_DEPLOY, // ropsten
+      4: process.env.MULTISIG_DEPLOY, // rinkeby
+      5: process.env.MULTISIG_DEPLOY, // goerli
+      42: 0, // kovan
+      69: 0, // optimism kovan
+      42161: process.env.MULTISIG_DEPLOY // arb1
     },
     dev: {
       // Default to 1
@@ -179,7 +194,14 @@ module.exports = {
     },
     multiSigDefaultOwner: {
       default: 0,
-      1: process.env.MULTISIG_DEFAULT
+      1: process.env.MULTISIG_DEFAULT,
+      10: process.env.MULTISIG_DEFAULT,
+      3: process.env.MULTISIG_DEFAULT,
+      4: process.env.MULTISIG_DEFAULT,
+      5: process.env.MULTISIG_DEFAULT,
+      42: process.env.MULTISIG_DEFAULT,
+      69: process.env.MULTISIG_DEFAULT,
+      42161: process.env.MULTISIG_DEFAULT,
     }
   },
   gasReporter: {
