@@ -5,8 +5,8 @@ const BN = require("bn.js");
 const hre = require("hardhat");
 const { artifacts, getUnnamedAccounts} = require("hardhat");
 
-// Shared Migration Config
-const config = require("../migrations/migration_config");
+// Shared Config
+const config = require("../scripts/deploy_config.js");
 
 const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");

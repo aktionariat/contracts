@@ -1,6 +1,6 @@
 const {network, ethers, deployments } = require("hardhat");
 const { expect } = require("chai");
-const config = require("../migrations/migration_config");
+const config = require("../scripts/deploy_config.js");
 
 describe("Multisig", () => {
   let multiSigMaster;

@@ -26,13 +26,14 @@
 * SOFTWARE.
 */
 pragma solidity ^0.8.0;
+pragma abicoder v2;
 
 import "../utils/Address.sol";
 import "../ERC20/IERC20.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./IBrokerbot.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -55,6 +56,18 @@ contract PaymentHub {
         weth = UNISWAP_QUOTER.WETH9();
         priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
         priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
+    }
+
+    /*  
+     * Get price in WBTC
+     * This is the method that the Brokerbot widget should use to quote the price to the user.
+     */
+    function getPriceInERC20(uint256 amountInBase, address base, address erc20In) public returns (uint256) {
+        uint24 poolFee = 3000;
+        return UNISWAP_QUOTER.quoteExactOutput(
+            abi.encodePacked(base, poolFee, weth, poolFee, erc20In),
+            amountInBase
+        );
     }
 
     /**
@@ -104,23 +117,67 @@ contract PaymentHub {
     }
 
     /**
-     * Convenience method to swap ether into currency and pay a target address
+     * Convenience method to swap ether into base and pay a target address
      */
     function payFromEther(address recipient, uint256 amountInBase, address base) public payable {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
-            // rely on time stamp is ok, no exact time stamp needed
-            // solhint-disable-next-line not-rely-on-time
-            weth, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
+        // rely on time stamp is ok, no exact time stamp needed
+        // solhint-disable-next-line not-rely-on-time
+        weth, base, 3000, recipient, block.timestamp, amountInBase, msg.value, 0);
 
+        ISwapRouter swapRouter = UNISWAP_ROUTER;
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
+        uint256 amountIn = swapRouter.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < msg.value) {
-            UNISWAP_ROUTER.refundETH();
+            swapRouter.refundETH();
             payable(msg.sender).transfer(msg.value - amountIn); // return change
         }
+    }
+
+    /// @dev The calling address must approve this contract to spend its ERC20 for this function to succeed. As the amount of input ERC20 is variable,
+    /// the calling address will need to approve for a slightly higher or infinit amount, anticipating some variance.
+    /// @param amountOut The desired amount of baseCurrency.
+    /// @param amountInMaximum The maximum amount of ERC20 willing to be swapped for the specified amountOut of baseCurrency.
+    /// @param erc20In The address of the erc20 token to pay with
+    /// @param recipient The reciving address - brokerbot
+    /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
+    function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, address base, address recipient) public returns (uint256 amountIn) {
+        ISwapRouter swapRouter = UNISWAP_ROUTER;
+        // Transfer the specified `amountInMaximum` to this contract.
+        IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
+
+        uint24 poolFee = 3000;
+
+        // The parameter path is encoded as (tokenOut, fee, tokenIn/tokenOut, fee, tokenIn)
+        ISwapRouter.ExactOutputParams memory params =
+            ISwapRouter.ExactOutputParams({
+                path: abi.encodePacked(base, poolFee, weth, poolFee, erc20In),
+                recipient: recipient,
+                // solhint-disable-next-line not-rely-on-time
+                deadline: block.timestamp,
+                amountOut: amountOut,
+                amountInMaximum: amountInMaximum
+            });
+
+        // Executes the swap, returning the amountIn actually spent.
+        amountIn = swapRouter.exactOutput(params);
+
+        // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
+        if (amountIn < amountInMaximum) {
+            IERC20(erc20In).approve(address(swapRouter), 0);
+            IERC20(erc20In).transfer(msg.sender, amountInMaximum - amountIn);
+
+        }
+    }
+
+    ///This function appoves infinit allowance for the Paymenthub.
+    ///@dev This function needs to be called before using the PaymentHub the first time with a new ERC20 token.
+    ///@param erc20In The erc20 addresse to approve.
+    function approveERC20(address erc20In) external {
+        IERC20(erc20In).approve(address(UNISWAP_ROUTER), 0x8000000000000000000000000000000000000000000000000000000000000000);
     }
 
     function multiPay(address token, address[] calldata recipients, uint256[] calldata amounts) public {
@@ -165,6 +222,16 @@ contract PaymentHub {
             payFromEther(recipient, amountInBase, base);
             IBrokerbot(recipient).processIncoming(base, msg.sender, amountInBase, ref);
         }
+    }
+
+    /*** 
+     * Pay from any ERC20 token (which has Uniswapv3 ERC20-ETH pool) and send swapped base currency to brokerbot.
+     * The needed amount needs to be approved at the ERC20 contract beforehand
+     */
+    function payFromERC20AndNotify(address recipient, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes calldata ref) external {
+        address base = IBrokerbot(recipient).base();
+        payFromERC20(amountBase, amountInMaximum, erc20, base, recipient);
+        IBrokerbot(recipient).processIncoming(base, msg.sender, amountBase, ref);
     }
 
     /**

@@ -20,4 +20,11 @@ module.exports = {
   allowlist_totalshares: 4000000,
   allowlist_quorumBps: 10,
   allowlist_votePeriodSeconds: 36000,
+
+  daiAddress: "0x6b175474e89094c44da98b954eedeac495271d0f",
+  daiBalanceSlot: 2,
+
+  wbtcAddress: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+  wbtcBalanceSlot: 0,
+  wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7"
 };
