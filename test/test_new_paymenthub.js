@@ -5,6 +5,7 @@ const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
+const { wbtcAddress } = require("../scripts/deploy_config.js");
 
 describe("New PaymentHub", () => {
   let draggable;
@@ -209,12 +210,16 @@ describe("New PaymentHub", () => {
 
       it("Should buy shares with WBTC and trade it to XCHF", async () => {
         const base = await brokerbot.base();
+        //approve WBTC in the paymenthub
+        await paymentHub.approveERC20(config.wbtcAddress);
+        
+        // get approximate price 
         const priceInWBTC = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](xchfamount, base, config.wbtcAddress);
 
-        // send a little bit more for slippage 
+        // little bit more for slippage 
         const priceInWBTCWithSlippage = priceInWBTC.mul(101).div(100);
 
-        // approve wbtc
+        // approve wbtc for the user
         await wbtcContract.approve(paymentHub.address, priceInWBTCWithSlippage, { from: accounts[0] });
 
         //trade and log balance change

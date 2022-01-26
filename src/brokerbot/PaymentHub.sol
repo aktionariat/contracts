@@ -138,7 +138,7 @@ contract PaymentHub {
     }
 
     /// @dev The calling address must approve this contract to spend its ERC20 for this function to succeed. As the amount of input ERC20 is variable,
-    /// the calling address will need to approve for a slightly higher amount, anticipating some variance.
+    /// the calling address will need to approve for a slightly higher or infinit amount, anticipating some variance.
     /// @param amountOut The desired amount of baseCurrency.
     /// @param amountInMaximum The maximum amount of ERC20 willing to be swapped for the specified amountOut of baseCurrency.
     /// @param erc20In The address of the erc20 token to pay with
@@ -148,8 +148,6 @@ contract PaymentHub {
         ISwapRouter swapRouter = UNISWAP_ROUTER;
         // Transfer the specified `amountInMaximum` to this contract.
         IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
-        // Approve the router to spend  `amountInMaximum`.
-        IERC20(erc20In).approve(address(UNISWAP_ROUTER), amountInMaximum);
 
         uint24 poolFee = 3000;
 
@@ -173,6 +171,13 @@ contract PaymentHub {
             IERC20(erc20In).transfer(msg.sender, amountInMaximum - amountIn);
 
         }
+    }
+
+    ///This function appoves infinit allowance for the Paymenthub.
+    ///@dev This function needs to be called before using the PaymentHub the first time with a new ERC20 token.
+    ///@param erc20In The erc20 addresse to approve.
+    function approveERC20(address erc20In) external {
+        IERC20(erc20In).approve(address(UNISWAP_ROUTER), 0x8000000000000000000000000000000000000000000000000000000000000000);
     }
 
     function multiPay(address token, address[] calldata recipients, uint256[] calldata amounts) public {
