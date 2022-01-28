@@ -588,8 +588,8 @@ describe("New Standard", () => {
       expect(await allowlistDraggable.isForbidden(defaultAddress)).to.equal(false);
 
       // set allowance
-      await allowlistShares.connect(sig2).approve(allowlistDraggable.address, config.infiniteAllowance);
-      await allowlistDraggable.connect(sig2).wrap(defaultAddress, "10");
+      await allowlistShares.connect(owner).approve(allowlistDraggable.address, config.infiniteAllowance);
+      await allowlistDraggable.connect(owner).wrap(defaultAddress, "10");
       expect(await allowlistDraggable.canReceiveFromAnyone(defaultAddress)).to.equal(true);     
     });
   });
@@ -612,20 +612,32 @@ describe("New Standard", () => {
     it("Should clean forbidden address after removed restriction", async () => {
       //use sig2 for blacklist
       const forbiddenAddress = sig2.address;
-      expect(allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
 
-      await allowlistShares.connect(owner).mint()
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1000");
 
       //check if is now default
-      expect(allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
-      expect(allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
-      expect(allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
-
-
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
 
     });
 
     it("Should clean allowlist address after removed restriction", async () => {
+      //use sig1 for allowlist
+      const allowlistAddress = sig1.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
+      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
+
+      //use sig3 as default
+      const defaultAddress = sig3.address
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+
+      await allowlistShares.connect(sig1).transfer(sig3.address, "10");
+      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(allowlistAddress)).to.equal(false);
 
     });
   })
