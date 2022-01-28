@@ -122,7 +122,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
    */
   function failOrCleanup(address account) internal {
     require(!restrictTransfers, "not allowed");
-    setType(account, TYPE_DEFAULT);
+    setTypeInternal(account, TYPE_DEFAULT);
   }
 
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
