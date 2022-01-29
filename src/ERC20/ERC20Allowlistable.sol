@@ -65,7 +65,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   }
 
   function setApplicableInternal(bool transferRestrictionsApplicable) internal {
-    restrictTransfers = true;
+    restrictTransfers = transferRestrictionsApplicable;
     // if transfer restrictions are applied, we guess that should also be the case for newly minted tokens
     // if the admin disagrees, it is still possible to change the type of the null address
     if (transferRestrictionsApplicable){
@@ -79,6 +79,9 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     setTypeInternal(account, typeNumber);
   }
 
+  /**
+   * If TYPE_DEFAULT all flags are set to 0
+   */
   function setTypeInternal(address account, uint8 typeNumber) internal {
     setFlag(account, FLAG_INDEX_ALLOWLIST, typeNumber == TYPE_ALLOWLISTED);
     setFlag(account, FLAG_INDEX_FORBIDDEN, typeNumber == TYPE_FORBIDDEN);
@@ -119,7 +122,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
    */
   function failOrCleanup(address account) internal {
     require(!restrictTransfers, "not allowed");
-    setType(account, TYPE_DEFAULT);
+    setTypeInternal(account, TYPE_DEFAULT);
   }
 
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
@@ -134,7 +137,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     } else {
       if (isPowerlisted(from)){
         // it is not allowlisted, but we can make it so
-        setType(to, TYPE_ALLOWLISTED);
+        setTypeInternal(to, TYPE_ALLOWLISTED);
       }
       // if we made it to here, the target must be a free address and we are not powerlisted
       else if (hasFlagInternal(from, FLAG_INDEX_ALLOWLIST) || isForbidden(from)){
