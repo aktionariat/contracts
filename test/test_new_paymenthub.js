@@ -215,13 +215,13 @@ describe("New PaymentHub", () => {
         
         // get approximate price 
         const priceInWBTC = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](xchfamount, base, config.wbtcAddress);
-
+        
         // little bit more for slippage 
         const priceInWBTCWithSlippage = priceInWBTC.mul(101).div(100);
-
+        
         // approve wbtc for the user
         await wbtcContract.approve(paymentHub.address, priceInWBTCWithSlippage, { from: accounts[0] });
-
+        
         //trade and log balance change
         const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
         const sharesBefore = await shares.balanceOf(accounts[0]);
@@ -230,12 +230,15 @@ describe("New PaymentHub", () => {
         const sharesAfter = await shares.balanceOf(accounts[0]);
         const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
         //console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
-
+        
         // brokerbot should have after the payment with eth the xchf in the balance
         expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
-
+        
         // user should get the amount of shares
         expect(sharesBefore.add(randomShareAmount)).to.equal(sharesAfter);
+        
+        // allowance for payment - uniswaprouter is infinit and always above 0
+        expect(await wbtcContract.allowance(paymentHub.address, "0xE592427A0AEce92De3Edee1F18E0157C05861564")).to.be.above(0);
       });
 
     });
