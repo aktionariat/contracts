@@ -167,13 +167,12 @@ contract PaymentHub {
 
         // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
         if (amountIn < amountInMaximum) {
-            IERC20(erc20In).approve(address(swapRouter), 0);
             IERC20(erc20In).transfer(msg.sender, amountInMaximum - amountIn);
 
         }
     }
 
-    ///This function appoves infinit allowance for the Paymenthub.
+    ///This function appoves infinit allowance for Uniswap, this is safe as the paymenthub should never hold any token (see also recove() ).
     ///@dev This function needs to be called before using the PaymentHub the first time with a new ERC20 token.
     ///@param erc20In The erc20 addresse to approve.
     function approveERC20(address erc20In) external {
