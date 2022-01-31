@@ -62,10 +62,9 @@ contract PaymentHub {
      * Get price in WBTC
      * This is the method that the Brokerbot widget should use to quote the price to the user.
      */
-    function getPriceInERC20(uint256 amountInBase, address base, address erc20In) public returns (uint256) {
-        uint24 poolFee = 3000;
+    function getPriceInERC20(uint256 amountInBase, bytes memory path) public returns (uint256) {
         return UNISWAP_QUOTER.quoteExactOutput(
-            abi.encodePacked(base, poolFee, weth, poolFee, erc20In),
+            path,
             amountInBase
         );
     }
@@ -141,20 +140,19 @@ contract PaymentHub {
     /// the calling address will need to approve for a slightly higher or infinit amount, anticipating some variance.
     /// @param amountOut The desired amount of baseCurrency.
     /// @param amountInMaximum The maximum amount of ERC20 willing to be swapped for the specified amountOut of baseCurrency.
-    /// @param erc20In The address of the erc20 token to pay with
-    /// @param recipient The reciving address - brokerbot
+    /// @param erc20In The address of the erc20 token to pay with.
+    /// @param path The path of the swap from erc20 to base.
+    /// @param recipient The reciving address - brokerbot.
     /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
-    function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, address base, address recipient) public returns (uint256 amountIn) {
+    function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, bytes memory path, address recipient) public returns (uint256 amountIn) {
         ISwapRouter swapRouter = UNISWAP_ROUTER;
         // Transfer the specified `amountInMaximum` to this contract.
         IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
 
-        uint24 poolFee = 3000;
-
         // The parameter path is encoded as (tokenOut, fee, tokenIn/tokenOut, fee, tokenIn)
         ISwapRouter.ExactOutputParams memory params =
             ISwapRouter.ExactOutputParams({
-                path: abi.encodePacked(base, poolFee, weth, poolFee, erc20In),
+                path: path,
                 recipient: recipient,
                 // solhint-disable-next-line not-rely-on-time
                 deadline: block.timestamp,
@@ -227,9 +225,9 @@ contract PaymentHub {
      * Pay from any ERC20 token (which has Uniswapv3 ERC20-ETH pool) and send swapped base currency to brokerbot.
      * The needed amount needs to be approved at the ERC20 contract beforehand
      */
-    function payFromERC20AndNotify(address recipient, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes calldata ref) external {
+    function payFromERC20AndNotify(address recipient, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external {
         address base = IBrokerbot(recipient).base();
-        payFromERC20(amountBase, amountInMaximum, erc20, base, recipient);
+        payFromERC20(amountBase, amountInMaximum, erc20, path, recipient);
         IBrokerbot(recipient).processIncoming(base, msg.sender, amountBase, ref);
     }
 
