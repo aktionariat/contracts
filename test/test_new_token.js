@@ -1,7 +1,7 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
 const { expect } = require("chai");
 const Chance = require("chance");
-
+const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
 
@@ -17,11 +17,13 @@ describe("New Standard", () => {
   let allowlistShares;
   let allowlistDraggable;
 
+  let deployer
   let owner;
   let sig1;
   let sig2;
   let sig3;
   let sig4;
+  let sig5;
   let accounts;
   let signers;
   let oracle;
@@ -35,13 +37,13 @@ describe("New Standard", () => {
   const TYPE_DEFAULT = 0;
   const TYPE_ALLOWLISTED = 1;
   const TYPE_FORBIDDEN = 2;
-  const TYPE_POWERLISTED = 3;
+  const TYPE_POWERLISTED = 4;
 
   before(async () => {
     // get signers and accounts of them
-    [owner,sig1,sig2,sig3,sig4,] = await ethers.getSigners();
-    signers = [owner,sig1,sig2,sig3,sig4];
-    accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address];
+    [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
+    signers = [owner,sig1,sig2,sig3,sig4,sig5];
+    accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
     oracle = owner;
     chance = new Chance();
 
@@ -79,24 +81,11 @@ describe("New Standard", () => {
 
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
-    const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
-    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.utils.parseEther("2")});
-    for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
-     //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-    }
-    await network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
+    await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
 
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
-      await shares.mint(accounts[i], 1000000);
+      await shares.connect(owner).mint(accounts[i], 1000000);
     }
 
      // Convert some Shares to DraggableShares
@@ -203,14 +192,14 @@ describe("New Standard", () => {
       await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
       .to.be.revertedWith("not owner");
       // test with owner
-      await shares.setCustomClaimCollateral(collateralAddress, collateralRate);
+      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
       expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
       expect(await shares.customCollateralRate()).to.equal(collateralRate);
     });
     
     it("Should change terms for shares", async () => {
       const newTerms = "www.test.com/newterms";
-      await shares.setTerms(newTerms);
+      await shares.connect(owner).setTerms(newTerms);
       
       // check if terms set correct
       expect(await shares.terms()).to.equal(newTerms);
@@ -218,7 +207,7 @@ describe("New Standard", () => {
 
     it("Should emit event for shares announcment", async () => {
       const message = "Test";
-      await expect(shares.announcement(message))
+      await expect(shares.connect(owner).announcement(message))
         .to.emit(shares, 'Announcement')
         .withArgs(message);
     });
@@ -226,7 +215,7 @@ describe("New Standard", () => {
     it("Should set new name", async () => {
       const newName = "New Shares";
       const newSymbol = "NSHR"
-      await shares.setName(newSymbol, newName);
+      await shares.connect(owner).setName(newSymbol, newName);
       expect(await shares.name()).to.equal(newName);
       expect(await shares.symbol()).to.equal(newSymbol);
     })
@@ -238,14 +227,14 @@ describe("New Standard", () => {
       await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
         .to.be.revertedWith("not owner");
       // test with owner
-      await shares.setCustomClaimCollateral(collateralAddress, collateralRate);
+      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
       expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
       expect(await shares.customCollateralRate()).to.equal(collateralRate);
     });
 
     it("Should change terms for shares", async () => {
       const newTerms = "www.test.com/newterms";
-      await shares.setTerms(newTerms);
+      await shares.connect(owner).setTerms(newTerms);
 
       // check if terms set correct
       expect(await shares.terms()).to.equal(newTerms);
@@ -257,11 +246,11 @@ describe("New Standard", () => {
       let newTotalShares = await totalSupply.add(randomChange);
 
       // should revert if new total shares is < than valid supply
-      await expect(shares.setTotalShares(await totalSupply.sub(randomChange)))
+      await expect(shares.connect(owner).setTotalShares(await totalSupply.sub(randomChange)))
       .to.be.revertedWith("below supply");
 
       // set correct new total and check if set correct
-      await shares.setTotalShares(totalSupply.add(randomChange));
+      await shares.connect(owner).setTotalShares(totalSupply.add(randomChange));
       const totalShares = await shares.totalShares();
       expect(totalShares).to.equal(totalSupply.add(randomChange));
     });
@@ -272,10 +261,10 @@ describe("New Standard", () => {
       const holderBalance = await shares.balanceOf(sig4.address);
 
       // try to declare too many tokens invalid
-      await expect(shares.declareInvalid(sig4.address, holderBalance.add(1), "more than I have"))
+      await expect(shares.connect(owner).declareInvalid(sig4.address, holderBalance.add(1), "more than I have"))
         .to.be.revertedWith("amount too high");
       
-      await expect(shares.declareInvalid(sig4.address, randomdAmount, "test"))
+      await expect(shares.connect(owner).declareInvalid(sig4.address, randomdAmount, "test"))
         .to.emit(shares, "TokensDeclaredInvalid")
         .withArgs(sig4.address, randomdAmount, "test");
       
@@ -296,10 +285,10 @@ describe("New Standard", () => {
       const totalShares = await shares.totalShares();
 
       //set new total shares as we mint more
-      await shares.setTotalShares(totalShares.add(randomAmountToMint));
+      await shares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint));
       const balanceBefore = await draggable.balanceOf(sig2.address);
       // mint shares and wrap them in draggable
-      await shares.mintAndCall(sig2.address, draggable.address, randomAmountToMint, "0x01");
+      await shares.connect(owner).mintAndCall(sig2.address, draggable.address, randomAmountToMint, "0x01");
       const balanceAfter = await draggable.balanceOf(sig2.address);
 
       expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
@@ -317,7 +306,7 @@ describe("New Standard", () => {
   describe("Draggable Shares", () => {
     it("Should set new oracle", async () => {
       const newOracle = sig1.address;
-      await draggable.setOracle(newOracle);
+      await draggable.connect(oracle).setOracle(newOracle);
       //expect(await draggable.oracle()).to.equal(newOracle);
       // reset oracle for for offer testing
       await draggable.connect(sig1).setOracle(owner.address);
@@ -480,9 +469,9 @@ describe("New Standard", () => {
     it("Should allowlist address and mint", async () => {
       // use sig1 for allowlist
       const allowlistAddress = sig1.address;
-      await allowlistShares["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
+      await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
       expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
-      await allowlistShares.mint(allowlistAddress, "1000");
+      await allowlistShares.connect(owner).mint(allowlistAddress, "1000");
       const balanceAllow = await allowlistShares.balanceOf(allowlistAddress);
       expect(balanceAllow).to.equal(ethers.BigNumber.from(1000));
     });
@@ -490,25 +479,65 @@ describe("New Standard", () => {
     it("Should set forbidden and revert mint", async () => {
       //use sig2 for blacklist
       const forbiddenAddress = sig2.address;
-      await allowlistShares["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
       expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
 
-      await expect(allowlistShares.mint(forbiddenAddress, "1000")).to.be.revertedWith("not allowed");
+      await expect(allowlistShares.connect(owner).mint(forbiddenAddress, "1000")).to.be.revertedWith("not allowed");
       const balanceForbidden = await allowlistShares.balanceOf(forbiddenAddress);
       expect(balanceForbidden).to.equal(ethers.BigNumber.from(0));
     });
 
-    it("Should set allowlist for default address when minted from powerlisted", async () => {
+    it("Should set allowlist for default address when minted from 0 (powerlisted)", async () => {
       //use sig3 for default address
       const defaultAddress = sig3.address
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
 
-      await allowlistShares.mint(defaultAddress, "1000");
+      await allowlistShares.connect(owner).mint(defaultAddress, "1000");
       const balancedef = await allowlistShares.balanceOf(defaultAddress);
       expect(balancedef).to.equal(ethers.BigNumber.from(1000));
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
+    });
+
+    it("Should set powerlist to not owner and transfer token to default", async () => {
+      //set adr/sig1 as powerlist
+      const powerlistAddress = sig1.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](powerlistAddress, TYPE_POWERLISTED);
+      expect(await allowlistShares.isPowerlisted(powerlistAddress)).to.equal(true);
+
+      // powerlist can't mint
+      await expect(allowlistShares.connect(sig1).mint(powerlistAddress, "1000")).to.be.revertedWith("not owner");
+
+      // mint to powerlist
+      await await allowlistShares.connect(owner).mint(powerlistAddress, "1000");
+
+      //use sig4 for default address
+      const defaultAddress = sig4.address
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isPowerlisted(defaultAddress)).to.equal(false);
+
+      // transfer from powerlist to default(sig4)
+      const balanceBefore = await allowlistShares.balanceOf(defaultAddress);
+      await allowlistShares.connect(sig1).transfer(defaultAddress, "1000");
+      const balanceAfter = await allowlistShares.balanceOf(defaultAddress);
+      expect(balanceBefore.add(1000)).to.equal(balanceAfter);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
+    });
+
+    it("Should mint and call on allowlistShares to allowlistDraggable", async () => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const totalShares = await allowlistShares.totalShares();
+
+      //set new total shares as we mint more
+      await allowlistShares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint));
+      const balanceBefore = await allowlistDraggable.balanceOf(sig5.address);
+      // mint shares and wrap them in draggable
+      await allowlistShares.connect(owner).mintAndCall(sig5.address, allowlistDraggable.address, randomAmountToMint, "0x01");
+      const balanceAfter = await allowlistDraggable.balanceOf(sig5.address);
+
+      expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
     });
   });
 
@@ -516,17 +545,11 @@ describe("New Standard", () => {
     it("Should allow wrap on allowlist", async () => {
       // use sig1 for allowlist
       const allowlistAddress = sig1.address;
-      await allowlistDraggable["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
+      await allowlistDraggable.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
       expect(await allowlistDraggable.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
-
-      // wrap w/o permission should revert
-      await expect(allowlistDraggable.connect(sig1).wrap(allowlistAddress, "10"))
-        .to.be.revertedWith("not allowed");
-
-      // set allowlist on shares
-      await allowlistShares["setType(address,uint8)"](allowlistDraggable.address, TYPE_ALLOWLISTED);
       // set allowance
       await allowlistShares.connect(sig1).approve(allowlistDraggable.address, config.infiniteAllowance);
+
       // wrap w/ permisson 
       await allowlistDraggable.connect(sig1).wrap(allowlistAddress, "10");
       const balanceAllow = await allowlistDraggable.balanceOf(allowlistAddress);
@@ -538,11 +561,11 @@ describe("New Standard", () => {
       const forbiddenAddress = sig2.address;
 
       // mint shares
-      await allowlistShares["setType(address,uint8)"](forbiddenAddress, TYPE_ALLOWLISTED);
-      await allowlistShares.mint(forbiddenAddress, "1000");
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_ALLOWLISTED);
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1000");
 
       // set forbidden on draggable
-      await allowlistDraggable["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      await allowlistDraggable.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
       
       // set allowance
       await allowlistShares.connect(sig2).approve(allowlistDraggable.address, config.infiniteAllowance);
@@ -556,8 +579,8 @@ describe("New Standard", () => {
 
     it("Should set allowlist for default address when wrapped from powerlisted", async () => {
       // mint for powerlisted
-      await allowlistShares["setType(address,uint8)"](owner.address, TYPE_POWERLISTED);
-      await allowlistShares.mint(owner.address, "1000");
+      await allowlistShares.connect(owner)["setType(address,uint8)"](owner.address, TYPE_POWERLISTED);
+      await allowlistShares.connect(owner).mint(owner.address, "1000");
 
       //use sig3 for default address
       const defaultAddress = sig3.address
@@ -565,10 +588,58 @@ describe("New Standard", () => {
       expect(await allowlistDraggable.isForbidden(defaultAddress)).to.equal(false);
 
       // set allowance
-      await allowlistShares.approve(allowlistDraggable.address, config.infiniteAllowance);
-      await allowlistDraggable.wrap(defaultAddress, "10");
+      await allowlistShares.connect(owner).approve(allowlistDraggable.address, config.infiniteAllowance);
+      await allowlistDraggable.connect(owner).wrap(defaultAddress, "10");
       expect(await allowlistDraggable.canReceiveFromAnyone(defaultAddress)).to.equal(true);     
     });
   });
+
+  describe("Remove restriction", () => {
+    it("Should remove restriction", async () => {
+      // restrict should be true
+      expect(await allowlistShares.restrictTransfers()).to.equal(true);
+
+      // can only be set by owner
+      await expect(allowlistShares.setApplicable(false)).to.be.revertedWith("not owner");
+
+      await allowlistShares.connect(owner).setApplicable(false);
+
+      // restrict should be false
+      expect(await allowlistShares.restrictTransfers()).to.equal(false);
+
+    });
+
+    it("Should clean forbidden address after removed restriction", async () => {
+      //use sig2 for blacklist
+      const forbiddenAddress = sig2.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1000");
+
+      //check if is now default
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
+
+    });
+
+    it("Should clean allowlist address after removed restriction", async () => {
+      //use sig1 for allowlist
+      const allowlistAddress = sig1.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
+      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
+
+      //use sig3 as default
+      const defaultAddress = sig3.address
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+
+      await allowlistShares.connect(sig1).transfer(sig3.address, "10");
+      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(allowlistAddress)).to.equal(false);
+
+    });
+  })
 
 });

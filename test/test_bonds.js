@@ -1,6 +1,7 @@
 const {network, ethers} = require("hardhat");
 const { expect } = require("chai");
 const Chance = require("chance");
+const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
 
 // Shared Migration Config
 const config = {
@@ -29,6 +30,7 @@ describe("Bond Contract", () => {
   let paymentHubContract
   let forceSend;
 
+  let deployer;
   let owner;
   let adr1;
   let adr2;
@@ -37,57 +39,44 @@ describe("Bond Contract", () => {
   let accounts;
   
   before(async () => {
-    [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
+    [deployer,owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
     //console.log(accounts);
-
+    
     chance = new Chance();
-
+    
     await deployments.fixture(["Bond", "PaymentHub", "BondbotDAI"]);
     bond = await ethers.getContract("Bond");
     bondBot = await ethers.getContract("BondbotDAI");
     paymentHub = await ethers.getContract("PaymentHub");
-
+    
     forceSend = await await ethers.getContractFactory("ForceSend")
     .then(factory => factory.deploy())
     .then(contract => contract.deployed());
     
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-
+    
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
-    const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
-    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.BigNumber.from("1000000000000000000")});
-    for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
-     //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-    }
-    await network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
-
+    await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
+    
     //Mint bonds to first 5 accounts
     for( let i = 0; i < 5; i++) {
-      await bond.mint(accounts[i], 100000);
+      await bond.connect(owner).mint(accounts[i], 100000);
     }
-
+    
     //Deposit Bonds and BaseCurrency into BondBot
     //await bond.transfer(bondBot.address, 50000000);
-    await baseCurrency.transfer(bondBot.address, ethers.utils.parseEther("100000"));
-
-
+    await baseCurrency.connect(owner).transfer(bondBot.address, ethers.utils.parseEther("100000"));
+    
+    
     // Allow payment hub to spend baseCurrency from accounts[0] and bond from Brokerbot
-    await bond.approve(paymentHub.address, config.infiniteAllowance, { from: owner.address });
-    await baseCurrency.approve(paymentHub.address, config.infiniteAllowance, { from: owner.address });
-    await bondBot.approve(bond.address, paymentHub.address, config.infiniteAllowance);
-    await bondBot.approve(baseCurrency.address, paymentHub.address, config.infiniteAllowance);
+    await bond.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
+    await baseCurrency.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
+    await bondBot.connect(owner).approve(bond.address, paymentHub.address, config.infiniteAllowance);
+    await bondBot.connect(owner).approve(baseCurrency.address, paymentHub.address, config.infiniteAllowance);
 
      // Set Payment Hub for bondBot
-     await bondBot.setPaymentHub(paymentHub.address);
+     await bondBot.connect(owner).setPaymentHub(paymentHub.address);
 
 
      //set paymenthub overloading
@@ -201,7 +190,7 @@ describe("Bond Contract", () => {
     it("should increase price correctly", async () => {
       const oneYear = 365 * 24 * 60 * 60;
       const driftIncrement = ethers.BigNumber.from(config.bondPrice).div(ethers.BigNumber.from(5000));
-      await bondBot.setDrift(86400, driftIncrement);
+      await bondBot.connect(owner).setDrift(86400, driftIncrement);
       const blockNumStart = await ethers.provider.getBlockNumber();
       const blockStart= await ethers.provider.getBlock(blockNumStart);
       expect(await bondBot.getPriceAtTime(blockStart.timestamp)).to.equal(config.bondPrice);
@@ -220,7 +209,7 @@ describe("Bond Contract", () => {
       // get balance of adr1 before transfer
       const balanceBefore = await bond.balanceOf(adr1.address);
       //transfer random ammount
-      await bond.transfer(adr1.address, randomAmount);
+      await bond.connect(owner).transfer(adr1.address, randomAmount);
       // check balance of adr1 after transfer
       const balanceAfter = await bond.balanceOf(adr1.address);
 
@@ -232,21 +221,21 @@ describe("Bond Contract", () => {
       // get balance of owner before transfer
       const balanceBefore = await bond.balanceOf(owner.address);
       //burn random ammount
-      await bond.burn(randomAmount);
+      await bond.connect(owner).burn(randomAmount);
       // check balance of adr1 after transfer
       const balanceAfter = await bond.balanceOf(owner.address);
 
       expect(balanceBefore.sub(randomAmount)).to.equal(balanceAfter)
     });
 
-    it("Should custom claim collateral", async () => {
+    it("Should set custom claim collateral", async () => {
       const collateralAddress = config.baseCurrencyAddress;
       const collateralRate = 10;
       // test that only owenr can set
       await expect(bond.connect(adr1).setCustomClaimCollateral(collateralAddress, collateralRate))
         .to.be.revertedWith("not owner");
       // test with owner
-      await bond.setCustomClaimCollateral(collateralAddress, collateralRate);
+      await bond.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
       expect(await bond.customCollateralAddress()).to.equal(collateralAddress);
       expect(await bond.customCollateralRate()).to.equal(collateralRate);
     });
@@ -255,14 +244,14 @@ describe("Bond Contract", () => {
   describe("Events", () => {
     it("Should emit event for announcment", async () => {
       const message = "Test";
-      await expect(bond.announcement(message))
+      await expect(bond.connect(owner).announcement(message))
         .to.emit(bond, 'Announcement')
         .withArgs(message);
     });
 
     it("Should change terms and emit event", async () => {
       const newTerms = "www.test.com/newterms";
-      await expect(bond.setTerms(newTerms))
+      await expect(bond.connect(owner).setTerms(newTerms))
         .to.emit(bond, 'TermsChanged')
         .withArgs(newTerms);
 
