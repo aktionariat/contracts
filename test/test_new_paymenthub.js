@@ -206,6 +206,7 @@ describe("New PaymentHub", () => {
     });
 
     describe("Trading with DAI base", () => {
+      this.timeout(100000);
       beforeEach(async () => {
         const randomAmount = chance.natural({ min: 500, max: 5000 });
         daiAmount = await brokerbotDAI.getBuyPrice(randomAmount);
