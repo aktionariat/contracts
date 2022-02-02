@@ -59,8 +59,11 @@ contract PaymentHub {
     }
 
     /*  
-     * Get price in WBTC
+     * Get price in ERC20
      * This is the method that the Brokerbot widget should use to quote the price to the user.
+     * @param amountInBase The amount of the base currency for the exact output.
+     * @param path The encoded path of the swap from erc20 to base.
+     * @return amount quoted to pay
      */
     function getPriceInERC20(uint256 amountInBase, bytes memory path) public returns (uint256) {
         return UNISWAP_QUOTER.quoteExactOutput(
@@ -141,7 +144,7 @@ contract PaymentHub {
     /// @param amountOut The desired amount of baseCurrency.
     /// @param amountInMaximum The maximum amount of ERC20 willing to be swapped for the specified amountOut of baseCurrency.
     /// @param erc20In The address of the erc20 token to pay with.
-    /// @param path The path of the swap from erc20 to base.
+    /// @param path The encoded path of the swap from erc20 to base.
     /// @param recipient The reciving address - brokerbot.
     /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
     function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, bytes memory path, address recipient) public returns (uint256 amountIn) {
