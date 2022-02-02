@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
       
-      - run: CI=true yarn test --timeout 100000 # When CI environment variable is set to true eth-gas-reporter will create a 'gasReporterOutput.json' file
+      - run: CI=true yarn test  # When CI environment variable is set to true eth-gas-reporter will create a 'gasReporterOutput.json' file
       
       - name: Generate gas usage report
         id: gas_report
