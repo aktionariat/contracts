@@ -1,6 +1,10 @@
 const {network, ethers, deployments, } = require("hardhat");
 const { expect } = require("chai");
 const Chance = require("chance");
+const { AlphaRouter } = require('@uniswap/smart-order-router');
+const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
+const { encodeRouteToPath } = require("@uniswap/v3-sdk");
+
 const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
 
 // Shared  Config
@@ -8,6 +12,41 @@ const config = require("../scripts/deploy_config.js");
 const { wbtcAddress } = require("../scripts/deploy_config.js");
 
 describe("New PaymentHub", () => {
+  const ethersProvider = new ethers.providers.Web3Provider(network.provider);
+  const router = new AlphaRouter({ chainId: 1, provider: ethersProvider });
+  const WETH = new Token(
+    1,
+    config.wethAddress,
+    18,
+    'WETH',
+    'Wrapped Ether'
+  );
+
+  const DAI = new Token(
+    1,
+    config.daiAddress,
+    18,
+    'DAI',
+    'DAI'
+  );
+
+  const XCHF = new Token(
+    1,
+    config.baseCurrencyAddress,
+    18,
+    'XCHF',
+    'CryptoFranc'
+  );
+
+  const WBTC = new Token(
+    1,
+    config.wbtcAddress,
+    8,
+    "WBTC",
+    "Wrapped Bitcoin"
+  );
+
+
   let draggable;
   let shares;
   let baseCurrency;
@@ -36,6 +75,7 @@ describe("New PaymentHub", () => {
   let xchfamount
   let daiAmount
   let randomShareAmount
+  let path;
 
   const TYPE_DEFAULT = 0;
   const TYPE_ALLOWLISTED = 1;
@@ -69,9 +109,10 @@ describe("New PaymentHub", () => {
     shares = await ethers.getContract("Shares");
     brokerbot = await ethers.getContract("Brokerbot");
     brokerbotDAI = await ethers.getContract("BrokerbotDAI");
-
+    
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
+    //await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
+    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
     // Set (manipulate local) DAI balance for first 5 accounts
     await setBalance(daiContract, config.daiBalanceSlot, accounts);
     // Set (manipulate local) WBTC balance for first 5 accounts
@@ -165,9 +206,9 @@ describe("New PaymentHub", () => {
     });
 
     describe("Trading with DAI base", () => {
-      before(async () => {
-        const randomAmountt = chance.natural({ min: 5000, max: 50000 });
-        daiAmount = await brokerbotDAI.getBuyPrice(randomAmountt);
+      beforeEach(async () => {
+        const randomAmount = chance.natural({ min: 500, max: 5000 });
+        daiAmount = await brokerbotDAI.getBuyPrice(randomAmount);
       });
       it("Should get right ETH price ", async () => {
         const priceeth = await paymentHub.getLatestPriceETHUSD();
@@ -192,20 +233,33 @@ describe("New PaymentHub", () => {
         expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
       });
 
-      it("Should buy shares and pay with DAI"), async () => {
-        //TODO: mint dai and buy shares
-      }
+      it("Should buy shares and pay with DAI", async () => {
+        // allowance for DAI
+        await daiContract.connect(sig1).approve(paymentHub.address, daiAmount);
+
+        const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
+        //await paymentHub.connect(sig1).payAndNotify(brokerbotDAI.address, daiAmount, "0x01");
+        const paymentHubAdr1 = await paymentHub.connect(sig1);
+        await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbotDAI.address, daiAmount, "0x01");
+        const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
+
+        // brokerbot should have after the payment with eth the dai in the balance
+        expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
+      });
     });
 
-    describe("Trading Using WBTC", () => {
-      beforeEach(async () => {
+    describe("Trading ERC20 with XCHF base", () => {
+      before(async () => {
         randomShareAmount = chance.natural({ min: 500, max: 50000 });
         xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
+        const types = ["address","uint24","address","uint24","address"];
+        const values = [config.baseCurrencyAddress, 3000, config.wethAddress, 500, config.wbtcAddress];
+        path = ethers.utils.solidityPack(types,values);
       });
 
-      it("Should get price in WBTC", async () => {
-        const base = await brokerbot.base();
-        const price = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](xchfamount, base, config.wbtcAddress);
+      it("Should get price in WBTC via ETH", async () => {
+        const price = await paymentHub.callStatic["getPriceInERC20(uint256,bytes)"](xchfamount, path);
+        //console.log(await ethers.utils.formatEther(price));
         expect(price).to.be.above(0);
       });
 
@@ -215,7 +269,7 @@ describe("New PaymentHub", () => {
         await paymentHub.approveERC20(config.wbtcAddress);
         
         // get approximate price 
-        const priceInWBTC = await paymentHub.callStatic["getPriceInERC20(uint256,address,address)"](xchfamount, base, config.wbtcAddress);
+        const priceInWBTC = await paymentHub.callStatic["getPriceInERC20(uint256,bytes)"](xchfamount, path);
         
         // little bit more for slippage 
         const priceInWBTCWithSlippage = priceInWBTC.mul(101).div(100);
@@ -227,7 +281,7 @@ describe("New PaymentHub", () => {
         const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
         const sharesBefore = await shares.balanceOf(sig1.address);
         //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
-        await paymentHub.connect(sig1).payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, "0x01");
+        await paymentHub.connect(sig1).payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, path, "0x01");
         const sharesAfter = await shares.balanceOf(sig1.address);
         const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
         //console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
@@ -240,6 +294,65 @@ describe("New PaymentHub", () => {
         
         // allowance for payment - uniswaprouter is infinit and always above 0
         expect(await wbtcContract.allowance(paymentHub.address, "0xE592427A0AEce92De3Edee1F18E0157C05861564")).to.be.above(0);
+      });
+    });
+
+    describe("Trading ERC20 with DAI base", () => {
+      before(async () => {
+        randomShareAmount = chance.natural({ min: 500, max: 50000 });
+        daiAmount = await brokerbotDAI.getBuyPrice(randomShareAmount);
+        // get best route via auto router
+        const daiCurrencyAmount = CurrencyAmount.fromRawAmount(DAI, daiAmount);
+        const route = await router.route(
+          daiCurrencyAmount,
+          XCHF,
+          TradeType.EXACT_OUTPUT,
+          {
+            recipient: sig1.address,
+            slippageTolerance: new Percent(5, 100),
+            deadline: 100
+          }
+        );
+        
+        path = encodeRouteToPath(route.route[0].route, true);
+      });
+      it("Should get price in XCHF to DAI auto route", async () => {
+        const price = await paymentHub.callStatic["getPriceInERC20(uint256,bytes)"](daiAmount, path);
+        // console.log(ethers.utils.formatEther(daiAmount));
+        // console.log(ethers.utils.formatEther(price));
+        expect(price).to.be.above(0);
+      });
+
+      it("Should buy shares with XCHF and trade it to DAI", async () => {
+        //approve XCHF in the paymenthub
+        await paymentHub.approveERC20(config.baseCurrencyAddress);
+        
+        // get approximate price 
+        const priceInXCHF = await paymentHub.callStatic["getPriceInERC20(uint256,bytes)"](daiAmount, path);
+        
+        // little bit more for slippage 
+        const priceInXCHFWithSlippage = priceInXCHF.mul(101).div(100);
+        
+        // approve xchf for the user
+        await baseCurrency.connect(sig1).approve(paymentHub.address, priceInXCHFWithSlippage);
+
+        //trade and log balance change
+        const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
+        const sharesBefore = await shares.balanceOf(sig1.address);
+        //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
+        await paymentHub.connect(sig1).payFromERC20AndNotify(brokerbotDAI.address, daiAmount, baseCurrency.address, priceInXCHFWithSlippage, path, "0x01");
+        const sharesAfter = await shares.balanceOf(sig1.address);
+        const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
+        //console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
+        
+        // brokerbot should have after the payment with eth the xchf in the balance
+        expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
+        
+        // user should get the amount of shares
+        expect(sharesBefore.add(randomShareAmount)).to.equal(sharesAfter);
+        
+        // allowance for payment - uniswaprouter is infinit and always above 0
+        expect(await baseCurrency.allowance(paymentHub.address, "0xE592427A0AEce92De3Edee1F18E0157C05861564")).to.be.above(0);
       });
 
     });

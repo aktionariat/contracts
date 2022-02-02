@@ -14,6 +14,7 @@ const config = {
   mintDecrement: 10,
   baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
+  xchfBalanceSlot: 2,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
@@ -57,7 +58,7 @@ describe("Bond Contract", () => {
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
+    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
     
     //Mint bonds to first 5 accounts
     for( let i = 0; i < 5; i++) {
