@@ -39,7 +39,7 @@ jobs:
         run: yarn install
 
       - name: Run tests
-        run: yarn coverage
+        run: yarn coverage --timeout 100000
         
       - name: Coveralls
         uses: coverallsapp/github-action@master
