@@ -137,7 +137,11 @@ module.exports = {
     },
     owner: {
       default: 0,
-      1: process.env.MULTISIG_DEPLOY // to multisigwallet
+      1: process.env.MULTISIG_DEPLOY, // to multisigwallet
+      3: process.env.MULTISIG_DEPLOY, // to multisigwallet
+      4: process.env.MULTISIG_DEPLOY, // to multisigwallet
+      5: process.env.MULTISIG_DEPLOY, // to multisigwallet
+      42: process.env.MULTISIG_DEPLOY // to multisigwallet
     },
     dev: {
       // Default to 1
