@@ -36,62 +36,6 @@ library RLPEncode {
         return concat(encodeLength(list.length, 192), list);
     }
 
-    /**
-     * @dev RLP encodes a string.
-     * @param self The string to encode.
-     * @return The RLP encoded string in bytes.
-     */
-    function encodeString(string memory self) internal pure returns (bytes memory) {
-        return encodeBytes(bytes(self));
-    }
-
-    /** 
-     * @dev RLP encodes an address.
-     * @param self The address to encode.
-     * @return The RLP encoded address in bytes.
-     */
-    function encodeAddress(address self) internal pure returns (bytes memory) {
-        bytes memory inputBytes;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let m := mload(0x40)
-            mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, self))
-            mstore(0x40, add(m, 52))
-            inputBytes := m
-        }
-        return encodeBytes(inputBytes);
-    }
-
-    /** 
-     * @dev RLP encodes a uint.
-     * @param self The uint to encode.
-     * @return The RLP encoded uint in bytes.
-     */
-    function encodeUint(uint self) internal pure returns (bytes memory) {
-        return encodeBytes(toBinary(self));
-    }
-
-    /** 
-     * @dev RLP encodes an int.
-     * @param self The int to encode.
-     * @return The RLP encoded int in bytes.
-     */
-    function encodeInt(int self) internal pure returns (bytes memory) {
-        return encodeUint(uint(self));
-    }
-
-    /** 
-     * @dev RLP encodes a bool.
-     * @param self The bool to encode.
-     * @return The RLP encoded bool in bytes.
-     */
-    function encodeBool(bool self) internal pure returns (bytes memory) {
-        bytes memory encoded = new bytes(1);
-        encoded[0] = (self ? bytes1(0x01) : bytes1(0x80));
-        return encoded;
-    }
-
-
     /*
      * Private functions
      */
