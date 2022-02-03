@@ -126,6 +126,7 @@ contract Brokerbot is Ownable {
     }
 
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
+        require(hasSetting(BUYING_ENABLED), "buying disabled");
         uint shares = getShares(paid);
         uint costs = notifyTraded(from, shares, ref);
         if (costs < paid){
@@ -135,8 +136,10 @@ contract Brokerbot is Ownable {
         return shares;
     }
 
+    // Callers must verify that (hasSetting(BUYING_ENABLED) || msg.sender == owner) holds!
     function notifyTraded(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(BUYING_ENABLED), "buying disabled");
+        // disabling the requirement below for efficiency as this always holds once we reach this point
+        // require(hasSetting(BUYING_ENABLED) || msg.sender == owner, "buying disabled");
         uint costs = getBuyPrice(shares);
         price = price + (shares * increment);
         emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
