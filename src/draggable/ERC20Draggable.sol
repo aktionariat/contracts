@@ -68,6 +68,9 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 
 	event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
 
+    /**
+	 * Note that the Brokerbot only supports tokens that revert on failure and where transfer never returns false.
+     */
 	constructor(
 		address _wrappedToken,
 		uint256 _quorum,

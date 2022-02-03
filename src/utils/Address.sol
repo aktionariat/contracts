@@ -40,7 +40,10 @@ library Address {
         if (success) {
             return returndata;
         } else {
-            revert(string(returndata));
+            // TODO: test
+            assembly{
+                revert (add (returndata, 0x20), mload (returndata))
+            }
         }
     }
 }

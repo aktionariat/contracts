@@ -29,7 +29,7 @@ pragma solidity ^0.8.0;
 
 import "../recovery/ERC20Recoverable.sol";
 import "../ERC20/ERC20Allowlistable.sol";
-import "./DraggableShares.sol";
+import "../draggable/ERC20Draggable.sol";
 
 contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Recoverable {
 

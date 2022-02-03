@@ -172,7 +172,7 @@ abstract contract ERC20Flaggable is IERC20 {
      */
     function _transfer(address sender, address recipient, uint256 amount) internal virtual {
         _beforeTokenTransfer(sender, recipient, amount);
-        _balances[sender] -= amount;
+        decreaseBalance(sender, amount);
         increaseBalance(recipient, amount);
         emit Transfer(sender, recipient, amount);
     }
@@ -205,10 +205,8 @@ abstract contract ERC20Flaggable is IERC20 {
     function increaseBalance(address recipient, uint256 amount) private {
         require(recipient != address(0x0), "0x0"); // use burn instead
         uint256 oldBalance = _balances[recipient];
-        uint256 oldSettings = oldBalance & FLAGGING_MASK;
         uint256 newBalance = oldBalance + amount;
-        uint256 newSettings = newBalance & FLAGGING_MASK;
-        require(newSettings == oldSettings, "overflow");
+        require(oldBalance & FLAGGING_MASK == newBalance & FLAGGING_MASK, "overflow");
         _balances[recipient] = newBalance;
     }
 
@@ -227,8 +225,15 @@ abstract contract ERC20Flaggable is IERC20 {
         _beforeTokenTransfer(account, address(0), amount);
 
         _totalSupply -= amount;
-        _balances[account] -= amount;
+        decreaseBalance(account, amount);
         emit Transfer(account, address(0), amount);
+    }
+
+    function decreaseBalance(address sender, uint256 amount) private {
+        uint256 oldBalance = _balances[sender];
+        uint256 newBalance = oldBalance - amount;
+        require(oldBalance & FLAGGING_MASK == newBalance & FLAGGING_MASK, "underflow");
+        _balances[sender] = newBalance;
     }
 
     /**

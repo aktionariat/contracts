@@ -49,8 +49,8 @@ contract Shares is ERC20Recoverable, ERC20Named {
 
     string public terms;
 
-    uint256 public totalShares = 0; // total number of shares, maybe not all tokenized
-    uint256 public invalidTokens = 0;
+    uint256 public totalShares; // total number of shares, maybe not all tokenized
+    uint256 public invalidTokens;
 
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
@@ -68,6 +68,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
     {
         totalShares = _totalShares;
         terms = _terms;
+        invalidTokens = 0;
     }
 
     function setTerms(string memory _terms) external onlyOwner {
@@ -132,7 +133,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      */
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
-        IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data);
+        require(IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data));
     }
 
     function mint(address target, uint256 amount) public onlyOwner {
@@ -159,7 +160,6 @@ contract Shares is ERC20Recoverable, ERC20Named {
      * having agreed with the company on the further fate of the shares in question.
      */
     function burn(uint256 _amount) external {
-        require(_amount <= balanceOf(msg.sender), "balance");
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
     }

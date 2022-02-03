@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract MultiSigCloneFactory {
 
-  address public multiSigImplementation;
+  address constant public multiSigImplementation;
 
   event ContractCreated(address contractAddress, string typeName);
 

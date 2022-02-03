@@ -44,7 +44,6 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
     ERC20Allowlistable()
   {
-    terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
     IRecoveryHub(address(_recoveryHub)).setRecoverable(false); 
   }
 
