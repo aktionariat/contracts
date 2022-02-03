@@ -54,7 +54,10 @@ contract Brokerbot is Ownable {
     uint8 private constant SELLING_ENABLED = 0x2;
     // note that in the UI, we call the setting "convert ether", which is the opposite
     uint8 private constant KEEP_ETHER = 0x4;
-    uint8 private constant VERSION = 0x1;
+
+    // Version history
+    // Version 2: added ability to process bank orders even if buying disabled
+    uint8 private constant VERSION = 0x2;
 
     // more bits to be used by payment hub
     uint256 public settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
