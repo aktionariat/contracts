@@ -41,8 +41,10 @@ import "./IERC677Receiver.sol";
 
 abstract contract ERC20Flaggable is IERC20 {
 
+    // as Documented in /doc/infiniteallowance.md
+    uint256 constant private INFINITE_ALLOWANCE = 2**255;
+
     uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
-    uint256 private constant BALANCES_MASK = 0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
     // Documentation of flags used by subclasses:
     // NOTE: flags denote the bit number that is being used and must be smaller than 32
@@ -52,13 +54,15 @@ abstract contract ERC20Flaggable is IERC20 {
     // ERCAllowlistable: uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
     // ERCAllowlistable: uint8 private constant FLAG_INDEX_POWERLIST = 22;
 
-    mapping (address => uint256) private _balances; // lower 32 bits reserved for flags
+    mapping (address => uint256) private _balances; // upper 32 bits reserved for flags
 
     mapping (address => mapping (address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
 
     uint8 public override decimals;
+
+    event NameChanged(string name, string symbol);
 
     constructor(uint8 _decimals) {
         decimals = _decimals;
@@ -75,13 +79,16 @@ abstract contract ERC20Flaggable is IERC20 {
      * @dev See `IERC20.balanceOf`.
      */
     function balanceOf(address account) public view override returns (uint256) {
-        return _balances[account] & BALANCES_MASK;
+        return uint224 (_balances [account]);
     }
 
     function hasFlag(address account, uint8 number) external view returns (bool) {
         return hasFlagInternal(account, number);
     }
 
+    /**
+     * @return true if the flag was changed, false if the flag was already set.
+     */
     function setFlag(address account, uint8 index, bool value) internal returns (bool) {
         if (hasFlagInternal(account, index) != value){
             toggleFlag(account, index);
@@ -148,10 +155,10 @@ abstract contract ERC20Flaggable is IERC20 {
     function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _transfer(sender, recipient, amount);
         uint256 currentAllowance = _allowances[sender][msg.sender];
-        if (currentAllowance < (1 << 255)){
+        if (currentAllowance < INFINITE_ALLOWANCE){
             // Only decrease the allowance if it was not set to 'infinite'
             // Documented in /doc/infiniteallowance.md
-            _approve(sender, msg.sender, currentAllowance - amount);
+            _allowances[sender][msg.sender] = currentAllowance - amount;
         }
         return true;
     }
@@ -179,11 +186,8 @@ abstract contract ERC20Flaggable is IERC20 {
 
     // ERC-677 functionality, can be useful for swapping and wrapping tokens
     function transferAndCall(address recipient, uint amount, bytes calldata data) external virtual returns (bool) {
-        bool success = transfer(recipient, amount);
-        if (success){
-            success = IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);
-        }
-        return success;
+        return transfer (recipient, amount) 
+            && IERC677Receiver (recipient).onTokenTransfer (msg.sender, amount, data);
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
