@@ -47,6 +47,7 @@ import "../ERC20/IERC20.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "./IOffer.sol";
 import "./IOfferFactory.sol";
+import "../shares/IShares.sol";
 
 abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable {
     
@@ -264,10 +265,4 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	function offerExists() internal view returns (bool) {
 		return address(offer) != address(0);
 	}
-}
-
-abstract contract IShares {
-	function burn(uint256) external virtual;
-
-	function totalShares() external view virtual returns (uint256);
 }

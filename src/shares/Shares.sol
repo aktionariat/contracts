@@ -30,6 +30,7 @@ pragma solidity ^0.8.0;
 import "../ERC20/ERC20Named.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "../recovery/ERC20Recoverable.sol";
+import "../shares/IShares.sol";
 
 /**
  * @title CompanyName AG Shares
@@ -45,11 +46,11 @@ import "../recovery/ERC20Recoverable.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract Shares is ERC20Recoverable, ERC20Named {
+contract Shares is ERC20Recoverable, ERC20Named, IShares{
 
     string public terms;
 
-    uint256 public totalShares; // total number of shares, maybe not all tokenized
+    uint256 public override totalShares; // total number of shares, maybe not all tokenized
     uint256 public invalidTokens;
 
     event Announcement(string message);
@@ -159,7 +160,7 @@ contract Shares is ERC20Recoverable, ERC20Named {
      * tokens on a different blockchain). It is not recommended to call this function without
      * having agreed with the company on the further fate of the shares in question.
      */
-    function burn(uint256 _amount) external {
+    function burn(uint256 _amount) override external {
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
     }
