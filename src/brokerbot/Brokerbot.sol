@@ -1,29 +1,14 @@
 /**
 * SPDX-License-Identifier: LicenseRef-Aktionariat
 *
-* MIT License with Automated License Fee Payments
+* Proprietary License
 *
-* COPYRIGHT (c) 2020 Aktionariat AG (aktionariat.com)
+* This code cannot be used without an explicit permission from the copyright holder.
+* If you wish to use the Aktionariat Brokerbot, you can either use the open version
+* named Brokerbot.sol that can be used under an MIT License with Automated License Fee Payments,
+* or you can get in touch with use to negotiate a license to use LicensedBrokerbot.sol .
 *
-* Permission is hereby granted to any person obtaining a copy of this software
-* and associated documentation files (the "Software"), to deal in the Software
-* without restriction, including without limitation the rights to use, copy,
-* modify, merge, publish, distribute, sublicense, and/or sell copies of the
-* Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* - The above COPYRIGHT notice and this permission notice shall be included in
-*   all copies or substantial portions of the Software.
-* - All automated license fee payments integrated into this and related Software
-*   are preserved.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
+* Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
 */
 pragma solidity ^0.8.0;
 
@@ -35,19 +20,15 @@ contract Brokerbot is Ownable {
 
     address public paymenthub;
 
-    address public immutable base;  // ERC-20 currency
-    address public immutable token; // ERC-20 share token
+    IERC20 public immutable base;  // ERC-20 currency
+    IERC20 public immutable token; // ERC-20 share token
 
-    address public constant COPYRIGHT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D; // Aktionariat AG
-
-    uint256 private price; // current offer price, without drift
-    uint256 public increment; // increment
+    uint256 private price; // current offer price in base currency, without drift
+    uint256 public increment; // increment step the price in/decreases when buying/selling
 
     uint256 public driftStart;
     uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
     int256 public driftIncrement;
-
-    uint8 private constant LICENSEFEEBPS = 90;
 
     // Note that these settings might be hard-coded in various places, so better not change these values.
     uint8 private constant BUYING_ENABLED = 0x1;
@@ -59,29 +40,33 @@ contract Brokerbot is Ownable {
     // more bits to be used by payment hub
     uint256 public settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
 
-    event Trade(address indexed token, address who, bytes ref, int amount, address base, uint totPrice, uint fee, uint newprice);
-    event ChangePaymentHub(address newPaymentHub, address who);
+    event Trade(IERC20 indexed token, address indexed who, bytes ref, int amount, IERC20 indexed base, uint totPrice, uint newprice);
+    event ChangePaymentHub(address indexed paymentHub, address indexed who);
+    event ChangePrice(uint256 price, uint256 increment);
+    event ChangeDrift(uint256 timeToDrift, int256 driftIncrement);
+    event ChangeSetting(uint256 setting);
 
     constructor(
-        address _shareToken,
+        IERC20 _token,
         uint256 _price,
         uint256 _increment,
-        address _baseCurrency,
+        IERC20 _base,
         address _owner,
         address _paymentHub
     )
         Ownable(_owner)
     {
-        base = _baseCurrency;
-        token = _shareToken;
+        base = _base;
+        token = _token;
         price = _price;
         increment = _increment;
         paymenthub = _paymentHub;
     }
 
-    function setPrice(uint256 newPrice, uint256 newIncrement) external onlyOwner {
-        anchorPrice(newPrice);
-        increment = newIncrement;
+    function setPrice(uint256 _price, uint256 _increment) external onlyOwner {
+        anchorPrice(_price);
+        increment = _increment;
+        emit ChangePrice(_price, _increment);
     }
 
     function hasDrift() public view returns (bool) {
@@ -89,10 +74,11 @@ contract Brokerbot is Ownable {
     }
 
     // secondsPerStep should be negative for downwards drift
-    function setDrift(uint256 secondsPerStep, int256 newDriftIncrement) external onlyOwner {
+    function setDrift(uint256 secondsPerStep, int256 _driftIncrement) external onlyOwner {
         anchorPrice(getPrice());
         timeToDrift = secondsPerStep;
-        driftIncrement = newDriftIncrement;
+        driftIncrement = _driftIncrement;
+        emit ChangeDrift(secondsPerStep, _driftIncrement);
     }
 
     function anchorPrice(uint256 currentPrice) private {
@@ -137,7 +123,7 @@ contract Brokerbot is Ownable {
         require(hasSetting(BUYING_ENABLED), "buying disabled");
         uint costs = getBuyPrice(shares);
         price = price + (shares * increment);
-        emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
+        emit Trade(token, from, ref, int256(shares), base, costs, getPrice());
         return costs;
     }
 
@@ -165,27 +151,21 @@ contract Brokerbot is Ownable {
     /**
      * Payment hub might actually have sent another accepted token, including Ether.
      */
-    function processIncoming(address token_, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
-        require(msg.sender == token_ || msg.sender == base || msg.sender == paymenthub, "invalid calle");
-        if (token_ == token){
+    function processIncoming(IERC20 _token, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
+        require(msg.sender == address(_token) || msg.sender == address(base) || msg.sender == paymenthub, "invalid calle");
+        if (_token == token){
             return sell(from, amount, ref);
-        } else if (token_ == base){
+        } else if (_token == base){
             return buy(from, amount, ref);
         } else {
-            require(false, "invalid token");
-            return 0;
+            revert("invalid token");
         }
     }
 
     // ERC-677 recipient
     function onTokenTransfer(address from, uint256 amount, bytes calldata ref) external returns (bool) {
-        processIncoming(msg.sender, from, amount, ref);
+        processIncoming(IERC20(msg.sender), from, amount, ref);
         return true;
-    }
-
-    // (deprecated ITokenReceiver, still called by old payment hub)
-    function onTokenTransfer(address token_, address from, uint256 amount, bytes calldata ref) external {
-        processIncoming(token_, from, amount, ref);
     }
 
     function buyingEnabled() external view returns (bool){
@@ -200,6 +180,10 @@ contract Brokerbot is Ownable {
         return settings & setting == setting;
     }
 
+    /**
+     * ref 0x01 or old format sells shares for base currency.
+     * ref 0x02 indicates a sell via bank transfer.
+     */
     function isDirectSale(bytes calldata ref) internal pure returns (bool) {
         if (ref.length == 0 || ref.length == 20) {
             return true; // old format
@@ -209,8 +193,7 @@ contract Brokerbot is Ownable {
             } else if (ref[0] == bytes1(0x02)) {
                 return false;
             } else {
-                require(false, "unknown ref");
-                return true;
+                revert("unknown ref");
             }
         }
     }
@@ -220,20 +203,12 @@ contract Brokerbot is Ownable {
         require(hasSetting(SELLING_ENABLED), "selling disabled");
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
-        uint256 fee = getLicenseFee(totPrice);
         price -= amount * increment;
-        if (fee > 0){
-            baseToken.transfer(COPYRIGHT, fee);
-        }
         if (isDirectSale(ref)){
-            baseToken.transfer(recipient, totPrice - fee);
+            baseToken.transfer(recipient, totPrice);
         }
-        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, fee, getPrice());
+        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, getPrice());
         return totPrice;
-    }
-
-    function getLicenseFee(uint256 totPrice) public virtual pure returns (uint256) {
-        return totPrice * LICENSEFEEBPS / 10000;
     }
 
     function getSellPrice(uint256 shares) public view returns (uint256) {
@@ -270,7 +245,8 @@ contract Brokerbot is Ownable {
     }
 
     function withdrawEther(uint256 amount) external ownerOrHub() {
-        payable(msg.sender).transfer(amount); // return change
+        (bool success, ) = msg.sender.call{value:amount}("");
+        require(success, "Transfer failed.");
     }
 
     function approve(address erc20, address who, uint256 amount) external onlyOwner() {
@@ -286,21 +262,25 @@ contract Brokerbot is Ownable {
         emit ChangePaymentHub(paymenthub, msg.sender);
     }
 
-    function setSettings(uint256 settings_) external onlyOwner() {
-        settings = settings_;
+    function setSettings(uint256 _settings) public onlyOwner() {
+        settings = _settings;
+        emit ChangeSetting(_settings);
     }
 
-    function setEnabled(bool newBuyingEnabled, bool newSellingEnabled) external onlyOwner() {
-        if (newBuyingEnabled != hasSetting(BUYING_ENABLED)){
-            settings ^= BUYING_ENABLED;
+    function setEnabled(bool _buyingEnabled, bool _sellingEnabled) external onlyOwner() {
+        uint256 _settings = settings;
+        if (_buyingEnabled != hasSetting(BUYING_ENABLED)){
+            _settings ^= BUYING_ENABLED;
+            setSettings(_settings);
         }
-        if (newSellingEnabled != hasSetting(SELLING_ENABLED)){
-            settings ^= SELLING_ENABLED;
+        if (_sellingEnabled != hasSetting(SELLING_ENABLED)){
+            _settings ^= SELLING_ENABLED;
+            setSettings(_settings);
         }
     }
     
     modifier ownerOrHub() {
-        require(owner == msg.sender || paymenthub == msg.sender, "not owner");
+        require(owner == msg.sender || paymenthub == msg.sender, "not owner nor hub");
         _;
     }
 }
