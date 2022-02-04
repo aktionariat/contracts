@@ -1,8 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-abstract contract IOffer {
-	function makeCompetingOffer(address newOffer) external virtual;
+import "../ERC20/IERC20.sol";
 
-	function notifyMoved(address from, address to, uint256 value) external virtual;
+interface IOffer {
+	function makeCompetingOffer(IOffer newOffer) external;
+
+	function notifyMoved(address from, address to, uint256 value) external;
+
+	function currency() external view returns (IERC20);
+
+	function price() external view returns (uint256);
+
+	function isWellFunded() external view returns (bool);
 }

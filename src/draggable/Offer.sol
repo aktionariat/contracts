@@ -42,8 +42,8 @@ contract Offer is IOffer {
     IDraggable public immutable token;
     address public immutable buyer;                     // who made the offer
     
-    IERC20 public immutable currency;
-    uint256 public immutable price;                               // the price offered per share
+    IERC20 override public immutable currency;
+    uint256 override public immutable price;                               // the price offered per share
 
     enum Vote { NONE, YES, NO }                         // Used internally, represents not voted yet or yes/no vote.
     mapping (address => Vote) private votes;            // Who votes what
@@ -61,17 +61,17 @@ contract Offer is IOffer {
     // Not checked here, but buyer should make sure it is well funded from the beginning
     constructor(
         address _buyer,
-        address _token,
+        IDraggable _token,
         uint256 _price,
-        address _currency,
+        IERC20 _currency,
         uint256 _quorum,
         uint256 _votePeriod
     ) 
         payable 
     {
         buyer = _buyer;
-        token = IDraggable(_token);
-        currency = IERC20(_currency);
+        token = _token;
+        currency = _currency;
         price = _price;
         quorum = _quorum;
         // rely on time stamp is ok, no exact time stamp needed
@@ -83,12 +83,11 @@ contract Offer is IOffer {
         payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
     }
 
-    function makeCompetingOffer(address betterOffer) external override {
+    function makeCompetingOffer(IOffer betterOffer) external override {
         require(msg.sender == address(token), "invalid caller");
-        Offer better = Offer(betterOffer);
         require(!isAccepted(), "old already accepted");
-        require(currency == better.currency() && better.price() > price, "old offer better");
-        require(better.isWellFunded(), "not funded");
+        require(currency == betterOffer.currency() && betterOffer.price() > price, "old offer better");
+        require(betterOffer.isWellFunded(), "not funded");
         kill(false, "replaced");
     }
 
@@ -127,7 +126,7 @@ contract Offer is IOffer {
         return (tok.totalSupply() - tok.balanceOf(buyer)) * price;
     }
 
-    function isWellFunded() public view returns (bool) {
+    function isWellFunded() public view override returns (bool) {
         uint256 buyerBalance = currency.balanceOf(buyer);
         uint256 totalPrice = getTotalPrice();
         return totalPrice <= buyerBalance;
