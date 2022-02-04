@@ -43,11 +43,11 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
 
     constructor(
         string memory _terms,
-        address _wrappedToken,
+        IERC20 _wrappedToken,
         uint256 _quorumBps,
         uint256 _votePeriodSeconds,
         address _recoveryHub,
-        address _offerFactory,
+        IOfferFactory _offerFactory,
         address _oracle
     )
         ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle) ERC20Flaggable(0) ERC20Recoverable(_recoveryHub) 

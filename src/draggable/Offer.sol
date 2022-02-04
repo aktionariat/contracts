@@ -117,7 +117,7 @@ contract Offer is IOffer {
         require(isAccepted(), "not accepted");
         uint256 totalPrice = getTotalPrice();
         require(currency.transferFrom(buyer, address(token), totalPrice), "transfer failed");
-        token.drag(buyer, address(currency));
+        token.drag(buyer, currency);
         kill(true, "success");
     }
 

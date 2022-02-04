@@ -37,11 +37,11 @@ contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Re
 
   constructor(
     string memory _terms,
-    address _wrappedToken,
+    IERC20 _wrappedToken,
     uint256 _quorum,
     uint256 _votePeriod,
     address _recoveryHub,
-    address _offerFactory,
+    IOfferFactory _offerFactory,
     address _oracle,
     address _owner
   )
@@ -51,7 +51,7 @@ contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Re
     Ownable(_owner)
   {
     terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
-    IRecoveryHub(address(_recoveryHub)).setRecoverable(false); 
+    IRecoveryHub(_recoveryHub).setRecoverable(false); 
   }
 
   /**
