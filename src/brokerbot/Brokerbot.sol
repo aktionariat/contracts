@@ -15,8 +15,9 @@ pragma solidity ^0.8.0;
 import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";
 import "../ERC20/IERC677Receiver.sol";
+import "./IBrokerbot.sol";
 
-contract Brokerbot is Ownable {
+contract Brokerbot is IBrokerbot, Ownable {
 
     address public paymenthub;
 
@@ -38,7 +39,7 @@ contract Brokerbot is Ownable {
     uint8 private constant VERSION = 0x1;
 
     // more bits to be used by payment hub
-    uint256 public settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
+    uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
 
     event Trade(IERC20 indexed token, address indexed who, bytes ref, int amount, IERC20 indexed base, uint totPrice, uint newprice);
     event ChangePaymentHub(address indexed paymentHub, address indexed who);
@@ -151,7 +152,7 @@ contract Brokerbot is Ownable {
     /**
      * Payment hub might actually have sent another accepted token, including Ether.
      */
-    function processIncoming(IERC20 _token, address from, uint256 amount, bytes calldata ref) public payable returns (uint256) {
+    function processIncoming(IERC20 _token, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
         require(msg.sender == address(_token) || msg.sender == address(base) || msg.sender == paymenthub, "invalid calle");
         if (_token == token){
             return sell(from, amount, ref);

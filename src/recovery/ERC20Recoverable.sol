@@ -51,7 +51,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     uint8 private constant FLAG_CLAIM_PRESENT = 10;
 
     // ERC-20 token that can be used as collateral or 0x0 if disabled
-    address public customCollateralAddress;
+    IERC20 public customCollateralAddress;
     uint256 public customCollateralRate;
 
     IRecoveryHub public immutable recovery;
@@ -68,8 +68,8 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
      * Subclasses should override this method if they want to add additional types of
      * collateral.
      */
-    function getCollateralRate(address collateralType) public override virtual view returns (uint256) {
-        if (collateralType == address(this)) {
+    function getCollateralRate(IERC20 collateralType) public override virtual view returns (uint256) {
+        if (address(collateralType) == address(this)) {
             return 1;
         } else if (collateralType == customCollateralAddress) {
             return customCollateralRate;
@@ -89,9 +89,9 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
      * Also, do not forget to multiply the rate in accordance with the number of decimals of the collateral.
      * For example, rate should be 7*10**18 for 7 units of a collateral with 18 decimals.
      */
-    function _setCustomClaimCollateral(address collateral, uint256 rate) internal {
+    function _setCustomClaimCollateral(IERC20 collateral, uint256 rate) internal {
         customCollateralAddress = collateral;
-        if (customCollateralAddress == address(0)) {
+        if (address(customCollateralAddress) == address(0)) {
             customCollateralRate = 0; // disabled
         } else {
             require(rate > 0, "zero");

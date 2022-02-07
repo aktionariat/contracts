@@ -44,14 +44,14 @@ import "./IBrokerbot.sol";
 contract PaymentHub {
 
     address public immutable weth; 
-    address public immutable currency;
+    IERC20 public immutable currency;
     
     IQuoter private constant UNISWAP_QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     ISwapRouter private constant UNISWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     AggregatorV3Interface internal priceFeedCHFUSD;
     AggregatorV3Interface internal priceFeedETHUSD;
 
-    constructor(address _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
+    constructor(IERC20 _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
         currency = _currency;
         weth = UNISWAP_QUOTER.WETH9();
         priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
@@ -72,7 +72,7 @@ contract PaymentHub {
         if ((brokerBot != address(0)) && hasSettingKeepEther(brokerBot)) {
             return getPriceInEtherFromOracle(amountOfXCHF);
         } else {
-            return UNISWAP_QUOTER.quoteExactOutputSingle(weth, currency, 3000, amountOfXCHF, 0);
+            return UNISWAP_QUOTER.quoteExactOutputSingle(weth, address(currency), 3000, amountOfXCHF, 0);
         }
     }
 
@@ -113,7 +113,7 @@ contract PaymentHub {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
             // rely on time stamp is ok, no exact time stamp needed
             // solhint-disable-next-line not-rely-on-time
-            weth, currency, 3000, recipient, block.timestamp, xchfamount, msg.value, 0);
+            weth, address(currency), 3000, recipient, block.timestamp, xchfamount, msg.value, 0);
 
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
         uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
@@ -130,7 +130,7 @@ contract PaymentHub {
         multiPay(currency, recipients, amounts);
     }
 
-    function multiPay(address token, address[] calldata recipients, uint256[] calldata amounts) public {
+    function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
             IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]);
         }
@@ -139,7 +139,7 @@ contract PaymentHub {
     /**
      * Can (at least in theory) save some gas as the sender balance only is touched in one transaction.
      */
-    function multiPayAndNotify(address token, address[] calldata recipients, uint256[] calldata amounts, bytes calldata ref) external {
+    function multiPayAndNotify(IERC20 token, address[] calldata recipients, uint256[] calldata amounts, bytes calldata ref) external {
         for (uint i=0; i<recipients.length; i++) {
             payAndNotify(token, recipients[i], amounts[i], ref);
         }
@@ -151,7 +151,7 @@ contract PaymentHub {
         payAndNotify(currency, recipient, xchfamount, ref);
     }
 
-    function payAndNotify(address token, address recipient, uint256 amount, bytes calldata ref) public {
+    function payAndNotify(IERC20 token, address recipient, uint256 amount, bytes calldata ref) public {
         IERC20(token).transferFrom(msg.sender, recipient, amount);
         IBrokerbot(recipient).processIncoming(token, msg.sender, amount, ref);
     }
@@ -160,7 +160,7 @@ contract PaymentHub {
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(recipient)) {
             uint256 priceInEther = getPriceInEtherFromOracle(xchfamount);
-            IBrokerbot(recipient).processIncoming{value: priceInEther}(address(currency), msg.sender, xchfamount, ref);
+            IBrokerbot(recipient).processIncoming{value: priceInEther}(currency, msg.sender, xchfamount, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
@@ -169,7 +169,7 @@ contract PaymentHub {
 
         } else {
             payFromEther(recipient, xchfamount);
-            IBrokerbot(recipient).processIncoming(address(currency), msg.sender, xchfamount, ref);
+            IBrokerbot(recipient).processIncoming(currency, msg.sender, xchfamount, ref);
         }
     }
 

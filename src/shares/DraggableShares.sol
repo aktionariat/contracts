@@ -69,11 +69,11 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         return getOracle();
     }
 
-    function getCollateralRate(address collateralType) public view override returns (uint256) {
+    function getCollateralRate(IERC20 collateralType) public view override returns (uint256) {
         uint256 rate = super.getCollateralRate(collateralType);
         if (rate > 0) {
             return rate;
-        } else if (collateralType == address(wrapped)) {
+        } else if (address(collateralType) == address(wrapped)) {
             return unwrapConversionFactor;
         } else {
             // If the wrapped contract allows for a specific collateral, we should too.

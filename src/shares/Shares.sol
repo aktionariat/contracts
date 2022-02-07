@@ -97,7 +97,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
     /**
      * See parent method for collateral requirements.
      */
-    function setCustomClaimCollateral(address collateral, uint256 rate) external onlyOwner() {
+    function setCustomClaimCollateral(IERC20 collateral, uint256 rate) external onlyOwner() {
         super._setCustomClaimCollateral(collateral, rate);
     }
 

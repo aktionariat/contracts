@@ -38,7 +38,7 @@ contract RecoveryHub is IRecoveryHub {
         address claimant; // the person who created the claim
         uint256 collateral; // the amount of collateral deposited
         uint256 timestamp;  // the timestamp of the block in which the claim was made
-        address currencyUsed; // The currency (XCHF) can be updated, we record the currency used for every request
+        IERC20 currencyUsed; // The currency (XCHF) can be updated, we record the currency used for every request
     }
 
     mapping(address => mapping (address => Claim)) public claims; // there can be at most one claim per token and claimed address
@@ -76,7 +76,7 @@ contract RecoveryHub is IRecoveryHub {
     * whenever a claim is made for their address (this of course is only possible if they are known to the owner, e.g.
     * through a shareholder register).
     */
-    function declareLost(address token, address collateralType, address lostAddress) external {
+    function declareLost(address token, IERC20 collateralType, address lostAddress) external {
         require(isRecoveryEnabled(lostAddress), "disabled");
         uint256 collateralRate = IRecoverable(token).getCollateralRate(collateralType);
         require(collateralRate > 0, "bad collateral");
@@ -110,7 +110,7 @@ contract RecoveryHub is IRecoveryHub {
         return claims[token][lostAddress].collateral;
     }
 
-    function getCollateralType(address token, address lostAddress) external view returns (address) {
+    function getCollateralType(address token, address lostAddress) external view returns (IERC20) {
         return claims[token][lostAddress].currencyUsed;
     }
 
