@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../ERC20/IERC20.sol";
 
-interface IRecoverable {
+interface IRecoverable is IERC20{
 
     function claimPeriod() external view returns (uint256);
     

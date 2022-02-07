@@ -41,13 +41,13 @@ contract RecoveryHub is IRecoveryHub {
         IERC20 currencyUsed; // The currency (XCHF) can be updated, we record the currency used for every request
     }
 
-    mapping(address => mapping (address => Claim)) public claims; // there can be at most one claim per token and claimed address
+    mapping(IRecoverable => mapping (address => Claim)) public claims; // there can be at most one claim per token and claimed address
     mapping(address => bool) public recoveryDisabled; // disable claimability (e.g. for long term storage)
 
-    event ClaimMade(address indexed token, address indexed lostAddress, address indexed claimant, uint256 balance);
-    event ClaimCleared(address indexed token, address indexed lostAddress, uint256 collateral);
-    event ClaimDeleted(address indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
-    event ClaimResolved(address indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
+    event ClaimMade(IRecoverable indexed token, address indexed lostAddress, address indexed claimant, uint256 balance);
+    event ClaimCleared(IRecoverable indexed token, address indexed lostAddress, uint256 collateral);
+    event ClaimDeleted(IRecoverable indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
+    event ClaimResolved(IRecoverable indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
 
     function setRecoverable(bool enabled) external override {
         recoveryDisabled[msg.sender] = !enabled;
@@ -76,45 +76,44 @@ contract RecoveryHub is IRecoveryHub {
     * whenever a claim is made for their address (this of course is only possible if they are known to the owner, e.g.
     * through a shareholder register).
     */
-    function declareLost(address token, IERC20 collateralType, address lostAddress) external {
+    function declareLost(IRecoverable token, IERC20 collateralType, address lostAddress) external {
         require(isRecoveryEnabled(lostAddress), "disabled");
         uint256 collateralRate = IRecoverable(token).getCollateralRate(collateralType);
         require(collateralRate > 0, "bad collateral");
-        address claimant = msg.sender;
-        uint256 balance = IERC20(token).balanceOf(lostAddress);
+        uint256 balance = token.balanceOf(lostAddress);
         uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
         require(balance > 0, "empty");
         require(claims[token][lostAddress].collateral == 0, "already claimed");
 
         claims[token][lostAddress] = Claim({
-            claimant: claimant,
+            claimant: msg.sender,
             collateral: collateral,
             // rely on time stamp is ok, no exact time stamp needed
             // solhint-disable-next-line not-rely-on-time
             timestamp: block.timestamp,
             currencyUsed: collateralType
         });
-        emit ClaimMade(token, lostAddress, claimant, balance);
+        emit ClaimMade(token, lostAddress, msg.sender, balance);
         
-        require(currency.transferFrom(claimant, address(this), collateral), "transfer failed");
+        require(currency.transferFrom(msg.sender, address(this), collateral), "transfer failed");
 
         IRecoverable(token).notifyClaimMade(lostAddress);
     }
 
-    function getClaimant(address token, address lostAddress) external view returns (address) {
+    function getClaimant(IRecoverable token, address lostAddress) external view returns (address) {
         return claims[token][lostAddress].claimant;
     }
 
-    function getCollateral(address token, address lostAddress) external view returns (uint256) {
+    function getCollateral(IRecoverable token, address lostAddress) external view returns (uint256) {
         return claims[token][lostAddress].collateral;
     }
 
-    function getCollateralType(address token, address lostAddress) external view returns (IERC20) {
+    function getCollateralType(IRecoverable token, address lostAddress) external view returns (IERC20) {
         return claims[token][lostAddress].currencyUsed;
     }
 
-    function getTimeStamp(address token, address lostAddress) external view returns (uint256) {
+    function getTimeStamp(IRecoverable token, address lostAddress) external view returns (uint256) {
         return claims[token][lostAddress].timestamp;
     }
 
@@ -123,29 +122,29 @@ contract RecoveryHub is IRecoveryHub {
      * This is the price an adverse claimer pays for filing a false claim and makes it risky to do so.
      */
     function clearClaimFromToken(address holder) external override {
-        clearClaim(msg.sender, holder);
+        clearClaim(IRecoverable(msg.sender), holder);
     }
 
-    function clearClaimFromUser(address token) external {
+    function clearClaimFromUser(IRecoverable token) external {
         clearClaim(token, msg.sender);
     }
 
-    function clearClaim(address token, address holder) private {
+    function clearClaim(IRecoverable token, address holder) private {
         Claim memory claim = claims[token][holder];
-        if (claim.collateral != 0) {
-            IERC20 currency = IERC20(claim.currencyUsed);
-            delete claims[token][holder];
-            require(currency.transfer(holder, claim.collateral), "could not return collateral");
-            emit ClaimCleared(token, holder, claim.collateral);
-            IRecoverable(token).notifyClaimDeleted(holder);
-        }
+        require(claim.collateral > 0, "already cleared");
+
+        IERC20 currency = IERC20(claim.currencyUsed);
+        delete claims[token][holder];
+        require(currency.transfer(holder, claim.collateral), "could not return collateral");
+        emit ClaimCleared(token, holder, claim.collateral);
+        IRecoverable(token).notifyClaimDeleted(holder);
     }
 
    /**
     * After the claim period has passed, the claimant can call this function to send the
     * tokens on the lost address as well as the collateral to himself.
     */
-    function recover(address token, address lostAddress) external {
+    function recover(IRecoverable token, address lostAddress) external {
         Claim memory claim = claims[token][lostAddress];
         address claimant = claim.claimant;
         require(claimant == msg.sender, "not claimant");
@@ -167,7 +166,7 @@ contract RecoveryHub is IRecoveryHub {
      * only authorized parties can trigger such a call.
      */
     function deleteClaim(address lostAddress) external override {
-        address token = msg.sender;
+        IRecoverable token = IRecoverable(msg.sender);
         Claim memory claim = claims[token][lostAddress];
         IERC20 currency = IERC20(claim.currencyUsed);
         require(claim.collateral != 0, "not found");

@@ -52,12 +52,15 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 
     // ERC-20 token that can be used as collateral or 0x0 if disabled
     IERC20 public customCollateralAddress;
+    // Rate the custom collateral currency is multiplied to be valued like one share.
     uint256 public customCollateralRate;
+
+    uint256 constant CLAIM_PERIOD = 180 days;
 
     IRecoveryHub public immutable recovery;
 
-    constructor(address recoveryHub){
-        recovery = IRecoveryHub(recoveryHub);
+    constructor(IRecoveryHub recoveryHub){
+        recovery = recoveryHub;
     }
 
     /**
@@ -79,7 +82,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     }
 
     function claimPeriod() external pure override returns (uint256){
-        return 180 days;
+        return CLAIM_PERIOD;
     }
 
     /**
@@ -101,7 +104,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 
     function getClaimDeleter() virtual public view returns (address);
 
-    function transfer(address recipient, uint256 amount) override virtual public returns (bool) {
+    function transfer(address recipient, uint256 amount) override(ERC20Flaggable, IERC20) virtual public returns (bool) {
         require(super.transfer(recipient, amount), "transfer");
         if (hasFlagInternal(msg.sender, FLAG_CLAIM_PRESENT)){
             recovery.clearClaimFromToken(msg.sender);
