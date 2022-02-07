@@ -42,37 +42,35 @@ import "./IBrokerbot.sol";
  * using the current exchange rate as found in the chainlink oracle.
  */
 contract PaymentHub {
+    uint24 private constant DEFAULT_FEE = 3000;
+    uint256 private constant DENOMINATOR = 1e8;
 
-    address public immutable weth; 
     IERC20 public immutable currency;
     
-    IQuoter private constant UNISWAP_QUOTER = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
-    ISwapRouter private constant UNISWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    IQuoter private immutable uniswapQuoter;
+    ISwapRouter private immutable uniswapRouter;
     AggregatorV3Interface internal priceFeedCHFUSD;
     AggregatorV3Interface internal priceFeedETHUSD;
 
-    constructor(IERC20 _currency, address _aggregatorCHFUSD, address _aggregatorETHUSD) {
+    constructor(IERC20 _currency, IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
         currency = _currency;
-        weth = UNISWAP_QUOTER.WETH9();
-        priceFeedCHFUSD = AggregatorV3Interface(_aggregatorCHFUSD);
-        priceFeedETHUSD = AggregatorV3Interface(_aggregatorETHUSD);
-    }
-
-    // Deprecated. Kept for compatibility with old hub
-    function getPriceInEther(uint256 amountOfXCHF) external returns (uint256) {
-        return getPriceInEther(amountOfXCHF, address(0));
+        uniswapQuoter = _quoter;
+        uniswapRouter = swapRouter;
+        priceFeedCHFUSD = _aggregatorCHFUSD;
+        priceFeedETHUSD = _aggregatorETHUSD;
     }
 
     /**
      * Get price in Ether depding on brokerbot setting.
      * If keep ETH is set price is from oracle.
      * This is the method that the Brokerbot widget should use to quote the price to the user.
+     * @return The price in wei.
      */
-    function getPriceInEther(uint256 amountOfXCHF, address brokerBot) public returns (uint256) {
-        if ((brokerBot != address(0)) && hasSettingKeepEther(brokerBot)) {
+    function getPriceInEther(uint256 amountOfXCHF, IBrokerbot brokerBot) public returns (uint256) {
+        if ((address(brokerBot) != address(0)) && hasSettingKeepEther(brokerBot)) {
             return getPriceInEtherFromOracle(amountOfXCHF);
         } else {
-            return UNISWAP_QUOTER.quoteExactOutputSingle(weth, address(currency), 3000, amountOfXCHF, 0);
+            return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), address(currency), DEFAULT_FEE, amountOfXCHF, 0);
         }
     }
 
@@ -80,14 +78,14 @@ contract PaymentHub {
      * Price in ETH with 18 decimals
      */
     function getPriceInEtherFromOracle(uint256 amountOfXCHF) public view returns (uint256) {
-        return getPriceInUSD(amountOfXCHF) * 10**8 / uint256(getLatestPriceETHUSD());
+        return uint256(getLatestPriceCHFUSD()) * amountOfXCHF / uint256(getLatestPriceETHUSD());
     }
 
     /**
      * Price in USD with 18 decimals
      */
     function getPriceInUSD(uint256 amountOfCHF) public view returns (uint256) {
-        return (uint256(getLatestPriceCHFUSD()) * amountOfCHF) / 10**8;
+        return uint256(getLatestPriceCHFUSD()) * amountOfCHF / DENOMINATOR;
     }
 
     /**
@@ -101,8 +99,8 @@ contract PaymentHub {
     /**
      * Returns the latest price of chf/usd pair from chainlink with 8 decimals
      */
-    function getLatestPriceCHFUSD() public view returns (int) {
-        (, int price, , , ) = priceFeedCHFUSD.latestRoundData();
+    function getLatestPriceCHFUSD() public view returns (int256) {
+        (, int256 price, , , ) = priceFeedCHFUSD.latestRoundData();
         return price;
     }
 
@@ -113,16 +111,17 @@ contract PaymentHub {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
             // rely on time stamp is ok, no exact time stamp needed
             // solhint-disable-next-line not-rely-on-time
-            weth, address(currency), 3000, recipient, block.timestamp, xchfamount, msg.value, 0);
+            uniswapQuoter.WETH9(), address(currency), DEFAULT_FEE, recipient, block.timestamp, xchfamount, msg.value, 0);
 
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = UNISWAP_ROUTER.exactOutputSingle{value: msg.value}(params);
+        uint256 amountIn = uniswapRouter.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
         if (amountIn < msg.value) {
-            UNISWAP_ROUTER.refundETH();
-            payable(msg.sender).transfer(msg.value - amountIn); // return change
+            uniswapRouter.refundETH();
+            (bool success, ) = msg.sender.call{value:msg.value - amountIn}(""); // return change
+            require(success, "Transfer failed.");            
         }
     }
 
@@ -158,13 +157,14 @@ contract PaymentHub {
 
     function payFromEtherAndNotify(address recipient, uint256 xchfamount, bytes calldata ref) external payable {
         // Check if the brokerbot has setting to keep ETH
-        if (hasSettingKeepEther(recipient)) {
+        if (hasSettingKeepEther(IBrokerbot(recipient))) {
             uint256 priceInEther = getPriceInEtherFromOracle(xchfamount);
             IBrokerbot(recipient).processIncoming{value: priceInEther}(currency, msg.sender, xchfamount, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
-                payable(msg.sender).transfer(msg.value - priceInEther); // return change
+                (bool success, ) = msg.sender.call{value:msg.value - priceInEther}(""); // return change
+                require(success, "Transfer failed.");
             }
 
         } else {
@@ -176,8 +176,8 @@ contract PaymentHub {
     /**
      * Checks if the recipient(brokerbot) has setting enabled to keep ether
      */
-    function hasSettingKeepEther(address recipient) public view returns (bool) {
-        return IBrokerbot(recipient).settings() & 0x4 == 0x4;
+    function hasSettingKeepEther(IBrokerbot recipient) public view returns (bool) {
+        return recipient.settings() & recipient.KEEP_ETHER() == recipient.KEEP_ETHER();
     }
 
     /**
@@ -188,7 +188,8 @@ contract PaymentHub {
         IERC20(ercAddress).transfer(to, amount);
     }
 
-    // Important to receive ETH refund from Uniswap
     // solhint-disable-next-line no-empty-blocks
-    receive() external payable {}
+    receive() external payable {
+        // Important to receive ETH refund from Uniswap
+    }
 }
