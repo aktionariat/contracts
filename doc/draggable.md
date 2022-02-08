@@ -6,6 +6,25 @@
 
 Typical shareholder agreements contain “drag-along” and “tag-along” clauses. If someone makes an acquisition offer and a majority of shareholders wants to sell, the drag-along clause allows them to force the rest of the shareholders to join them in selling their shares at the same price. This is useful because an acquirer often wants to either buy a company completely or not at all. This is similar to a squeeze-out on the stock market, which allows someone owning 98% of a company to buy the remaining 2%. In contrast, a drag-along clause is often already enforceable when 75% or so of the shareholders agree. However, enforcing a drag-along clause can be time consuming in practice as all involved parties need to be contacted, need to sign a transfer agreement, and need to be paid. Our draggable smart contract fully automates this process for tokenized shares, thereby allowing companies to have thousands of shareholders without losing the strategic option of an exit.
 
+## Process
+This section describes the automatic enforcement of the Drag-Along clause implemented by the SHA Contract.
+
+### Initiation
+The Offering Party can initiate an offer to acquire all (but not less than all) SHA Tokens (the "Offering Party") from the other SHA Token Holders (the "Selling Parties") for a specific price per Share (the "Offering Price", together with the further terms, the "Acquisition Offer") through interaction with the SHA Contract, subject to a non-reimbursable software licence fee payable as defined in the source code. By doing so, a smart contract governing the acquisition ("Offer Contract") is created and an "OfferCreated" event is emitted on the Blockchain. It is the responsibility of each Token Holder to monitor the Blockchain for such events or to use a service to do so on her or his behalf.
+
+### Voting
+After the initiation of an offer, the Voting Period starts. During the Voting Period any SHA Token Holder (including the Offering Party) may call the functions 'voteYes' and 'voteNo' to vote on the Drag-Along Offer. This only affects the tokens residing on the calling address and the vote count is automatically adjusted as additional tokens arrive at this address or as tokens leave the address again during the Voting Period. Note that the total supply of SHA Tokens may increase during the Voting Period as additional shareholders wrap newly tokenized shares or existing Base Tokens. Holders of other forms of shares can report their vote to the Oracle, which shall in turn report these votes to the Offer Contract within three business days. The Oracle can invoice the transaction fees for reporting the votes to the respective voters. After the end of the Voting Period, the Execution Period starts. After this point in time, no new votes are accepted any more, but the Oracle can still report votes it received before the end of the Voting Period to the Offer Contract. 
+
+### Execution
+Anyone can trigger the 'execution' function on the Offer Contract to enforce the acquisition at any time during the Voting Period or the Execution Period, given that all necessary conditions are met, namely that the Acquisition Quorum is reached and the required funding is available. Executing the Acquisition Offer assigns all wrapped Base Tokens to the Offering Party and replaces them with the sales proceeds. At the same time, this Agreement ceases to be contractually binding, allowing the SHA Token Holders to unwrap the sales proceeds in proportion to their tokens.
+
+The Acquisition Quorum is reached if at least 75% of all shares approved the acquisition. Once the Voting Period ends, the shares for which no vote was cast are assumed to have voted yes and no in the same proportion as those shares that did vote. The votes of the shares not represented by SHA Tokens are reported through the Oracle.
+
+### Cancellation
+The Offering Party can cancel the offer at any time, calling the respective function on the Offer Contract. Furthermore, anyone can contest the Acquisition Offer, calling the respective function on the Offer Contract. This results in the Acquisition Offer being cancelled if the Offering Party did not make enough funds available, if the Execution Period has passed, or if the Acquisition Quorum has become unreachable under the assumption that the number of "no" votes will not decrease.
+Further, anyone can make a higher counteroffer using the same acquisition currency as the current offer. Making such an offer cancels the old offer.
+
+
 ## Functionality
 
 The ERC‑20 contract [ERC20Draggable](../src/shares/draggable/ERC20Draggable.sol) can be used to convert any existing ERC‑20 token (referred to as base token) into a draggable token by wrapping it. Once deployed, the contract offers the following functionality:
