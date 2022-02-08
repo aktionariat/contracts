@@ -168,14 +168,6 @@ contract Brokerbot is Ownable {
         return true;
     }
 
-    function buyingEnabled() external view returns (bool){
-        return hasSetting(BUYING_ENABLED);
-    }
-
-    function sellingEnabled() external view returns (bool){
-        return hasSetting(SELLING_ENABLED);
-    }
-
     function hasSetting(uint256 setting) private view returns (bool) {
         return settings & setting == setting;
     }

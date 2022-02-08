@@ -21,7 +21,7 @@ library RLPEncode {
         if (self.length == 1 && uint8(self[0]) <= 128) {
             encoded = self;
         } else {
-            encoded = concat(encodeLength(self.length, 128), self);
+            encoded = abi.encodePacked(encodeLength(self.length, 128), self);
         }
         return encoded;
     }
@@ -33,7 +33,7 @@ library RLPEncode {
      */
     function encodeList(bytes[] memory self) internal pure returns (bytes memory) {
         bytes memory list = flatten(self);
-        return concat(encodeLength(list.length, 192), list);
+        return abi.encodePacked(encodeLength(list.length, 192), list);
     }
 
     /*
@@ -54,9 +54,9 @@ library RLPEncode {
         } else {
             uint lenLen;
             uint i = 1;
-            while (len / i != 0) {
+            while (len >= i) {
                 lenLen++;
-                i *= 256;
+                i <<= 8;
             }
 
             encoded = new bytes(lenLen + 1);
@@ -66,30 +66,6 @@ library RLPEncode {
             }
         }
         return encoded;
-    }
-
-    /**
-     * @dev Encode integer in big endian binary form with no leading zeroes.
-     * @param _x The integer to encode.
-     * @return RLP encoded bytes.
-     */
-    function toBinary(uint _x) private pure returns (bytes memory) {
-        bytes memory b = new bytes(32);
-        // solhint-disable-next-line no-inline-assembly
-        assembly { 
-            mstore(add(b, 32), _x) 
-        }
-        uint i;
-        for (i = 0; i < 32; i++) {
-            if (b[i] != 0) {
-                break;
-            }
-        }
-        bytes memory res = new bytes(32 - i);
-        for (uint j = 0; j < res.length; j++) {
-            res[j] = b[i++];
-        }
-        return res;
     }
 
     /**
@@ -113,7 +89,7 @@ library RLPEncode {
             src += 32;
         }
 
-        uint mask = 256 ** (32 - len) - 1;
+        uint mask = type(uint).max >> (len << 3);
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let srcpart := and(mload(src), not(mask))
@@ -152,62 +128,10 @@ library RLPEncode {
             assembly { listPtr := add(item, 0x20)}
 
             memcpy(flattenedPtr, listPtr, item.length);
-            flattenedPtr += _list[i].length;
+            flattenedPtr += item.length;
         }
 
         return flattened;
     }
 
-    /**
-     * @dev Concatenates two bytes.
-     * @notice From: https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol.
-     * @param _preBytes First byte string.
-     * @param _postBytes Second byte string.
-     * @return Both byte string combined.
-     */
-    function concat(bytes memory _preBytes, bytes memory _postBytes) private pure returns (bytes memory) {
-        bytes memory tempBytes;
-
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            tempBytes := mload(0x40)
-
-            let length := mload(_preBytes)
-            mstore(tempBytes, length)
-
-            let mc := add(tempBytes, 0x20)
-            let end := add(mc, length)
-
-            for {
-                let cc := add(_preBytes, 0x20)
-            } lt(mc, end) {
-                mc := add(mc, 0x20)
-                cc := add(cc, 0x20)
-            } {
-                mstore(mc, mload(cc))
-            }
-
-            length := mload(_postBytes)
-            mstore(tempBytes, add(length, mload(tempBytes)))
-
-            mc := end
-            end := add(mc, length)
-
-            for {
-                let cc := add(_postBytes, 0x20)
-            } lt(mc, end) {
-                mc := add(mc, 0x20)
-                cc := add(cc, 0x20)
-            } {
-                mstore(mc, mload(cc))
-            }
-
-            mstore(0x40, and(
-              add(add(end, iszero(add(length, mload(_preBytes)))), 31),
-              not(31)
-            ))
-        }
-
-        return tempBytes;
-    }
 }

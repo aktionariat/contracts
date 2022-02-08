@@ -57,7 +57,7 @@ contract RecoveryHub is IRecoveryHub {
      * Some users might want to disable claims for their address completely.
      * For example if they use a deep cold storage solution or paper wallet.
      */
-    function isRecoveryEnabled(address target) public view returns (bool) {
+    function isRecoverable(address target) public view returns (bool) {
         return !recoveryDisabled[target];
     }
 
@@ -77,16 +77,16 @@ contract RecoveryHub is IRecoveryHub {
     * through a shareholder register).
     */
     function declareLost(address token, address collateralType, address lostAddress) external {
-        require(isRecoveryEnabled(lostAddress), "disabled");
+        require(isRecoverable(lostAddress), "disabled");
         uint256 collateralRate = IRecoverable(token).getCollateralRate(collateralType);
         require(collateralRate > 0, "bad collateral");
-        address claimant = msg.sender;
         uint256 balance = IERC20(token).balanceOf(lostAddress);
+        require(balance > 0, "empty");
         uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
-        require(balance > 0, "empty");
         require(claims[token][lostAddress].collateral == 0, "already claimed");
 
+        address claimant = msg.sender;
         claims[token][lostAddress] = Claim({
             claimant: claimant,
             collateral: collateral,
