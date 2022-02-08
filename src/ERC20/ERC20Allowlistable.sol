@@ -65,7 +65,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   }
 
   function setApplicableInternal(bool transferRestrictionsApplicable) internal {
-    restrictTransfers = true;
+    restrictTransfers = transferRestrictionsApplicable;
     // if transfer restrictions are applied, we guess that should also be the case for newly minted tokens
     // if the admin disagrees, it is still possible to change the type of the null address
     if (transferRestrictionsApplicable){
