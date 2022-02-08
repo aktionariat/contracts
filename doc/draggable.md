@@ -1,6 +1,12 @@
-# Drag-Along Mechanism
+# Drag-Along Mechanism 1.1
 
 ![drag-along](https://hub.aktionariat.com/images/contracts/draggable.jpg)
+
+## Version
+
+This is version 1.1 of the drag-along mechanism.
+
+Internal note: this document is referred to from various places, including legal documents. In case of material changes, we need to bump the version number and provide a link to old version. Furthermore, the path [doc/draggable.md](https://github.com/aktionariat/contracts/edit/master/doc/draggable.md) should not be changed to prevent broken links.
 
 ## Overview and Motivation
 
