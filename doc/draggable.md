@@ -6,7 +6,7 @@
 
 Versions prior to 1.0 are documented within the relevant Token Holder Agreements.
 
-Internal note: this document is referred to from various places, including legal documents. In case of material changes, we need to bump the version number and provide a link to old version. Furthermore, the DNS entry of [dragdoc.aktionariat.com](https://dragdoc.aktionariat.com/) should always redirect to this document and needs to be updated in case this document is moved.
+Internal note: this document is referred to from various places, including legal documents. In case of material changes, we need to bump the version number and provide a link to old version. Furthermore, the DNS entry of [dragdoc.aktionariat.com](dragdoc.aktionariat.com/) should always redirect to this document and needs to be updated in case this document is moved.
 
 ## Overview and Motivation
 
