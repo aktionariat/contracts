@@ -17,17 +17,13 @@ import "./Brokerbot.sol";
 contract LicensedBrokerbot is Brokerbot {
 
     constructor(
-        address _shareToken,
+        IERC20 _shareToken,
         uint256 _price,
         uint256 _increment,
-        address _baseCurrency,
+        IERC20 _baseCurrency,
         address _owner,
         address _paymentHub
     ) Brokerbot (_shareToken, _price, _increment, _baseCurrency, _owner, _paymentHub) 
     // solhint-disable-next-line no-empty-blocks
     {}
-
-    function getLicenseFee(uint256) public pure override returns (uint256) {
-        return 0;
-    }
 }

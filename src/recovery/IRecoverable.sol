@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-abstract contract IRecoverable {
+import "../ERC20/IERC20.sol";
 
-    function claimPeriod() external view virtual returns (uint256);
+interface IRecoverable is IERC20{
+
+    function claimPeriod() external view returns (uint256);
     
-    function notifyClaimMade(address target) external virtual;
+    function notifyClaimMade(address target) external;
 
-    function notifyClaimDeleted(address target) external virtual;
+    function notifyClaimDeleted(address target) external;
 
-    function getCollateralRate(address collateral) public view virtual returns(uint256);
+    function getCollateralRate(IERC20 collateral) external view returns(uint256);
 
-    function recover(address oldAddress, address newAddress) external virtual;
+    function recover(address oldAddress, address newAddress) external;
 
 }

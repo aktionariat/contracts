@@ -55,6 +55,8 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
 
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
+    event ChangeTerms(string terms);
+    event ChangeTotalShares(uint256 total);
 
     constructor(
         string memory _symbol,
@@ -62,7 +64,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
         string memory _terms,
         uint256 _totalShares,
         address _owner,
-        address _recoveryHub
+        IRecoveryHub _recoveryHub
     )
         ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
@@ -74,6 +76,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
 
     function setTerms(string memory _terms) external onlyOwner {
         terms = _terms;
+        emit ChangeTerms(_terms);
     }
 
     /**
@@ -85,6 +88,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
     function setTotalShares(uint256 _newTotalShares) external onlyOwner() {
         require(_newTotalShares >= totalValidSupply(), "below supply");
         totalShares = _newTotalShares;
+        emit ChangeTotalShares(_newTotalShares);
     }
 
     /**
@@ -97,7 +101,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
     /**
      * See parent method for collateral requirements.
      */
-    function setCustomClaimCollateral(address collateral, uint256 rate) external onlyOwner() {
+    function setCustomClaimCollateral(IERC20 collateral, uint256 rate) external onlyOwner() {
         super._setCustomClaimCollateral(collateral, rate);
     }
 

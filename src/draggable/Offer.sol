@@ -37,13 +37,19 @@ import "./IOffer.sol";
 
 contract Offer is IOffer {
 
+    address private constant LICENSE_FEE_ADDRESS = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
+
+    uint256 private constant AQUISITION_GRACE_PERIOD = 30 days;     // buyer has thirty days to complete acquisition after voting ends
+    
+    uint256 private constant BPS_MUL = 10000;           // basis point multiplier to be used with quorum
+
     uint256 public immutable quorum;                    // Percentage of votes needed to start drag-along process in BPS, i.e. 10'000 = 100%
 
     IDraggable public immutable token;
     address public immutable buyer;                     // who made the offer
     
     IERC20 override public immutable currency;
-    uint256 override public immutable price;                               // the price offered per share
+    uint256 override public immutable price;            // the price offered per share
 
     enum Vote { NONE, YES, NO }                         // Used internally, represents not voted yet or yes/no vote.
     mapping (address => Vote) private votes;            // Who votes what
@@ -52,11 +58,11 @@ contract Offer is IOffer {
     uint256 public noExternal;                          // number of external no votes reported by oracle
     uint256 public yesExternal;                         // number of external yes votes reported by oracle
 
-    uint256 public immutable voteEnd;                             // end of vote period in block time (seconds after 1.1.1970)
+    uint256 public immutable voteEnd;                   // end of vote period in block time (seconds after 1.1.1970)
 
-    event VotesChanged(uint256 newYesVotes, uint256 newNoVotes);
-    event OfferCreated(address indexed buyer, address token, uint256 pricePerShare, address currency);
-    event OfferEnded(address indexed buyer, bool success, string message);
+    event VotesChanged(uint256 yesVotes, uint256 noVotes);
+    event OfferCreated(address indexed buyer, IDraggable indexed token, uint256 pricePerShare, IERC20 indexed currency);
+    event OfferEnded(address indexed buyer, bool indexed success, string message);
 
     // Not checked here, but buyer should make sure it is well funded from the beginning
     constructor(
@@ -77,10 +83,10 @@ contract Offer is IOffer {
         // rely on time stamp is ok, no exact time stamp needed
         // solhint-disable-next-line not-rely-on-time
         voteEnd = block.timestamp + _votePeriod;
-        emit OfferCreated(_buyer, address(_token), _price, address(_currency));
+        emit OfferCreated(_buyer, _token, _price, _currency);
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
-        payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).transfer(3 ether);
+        payable(LICENSE_FEE_ADDRESS).transfer(3 ether);
     }
 
     function makeCompetingOffer(IOffer betterOffer) external override {
@@ -94,7 +100,7 @@ contract Offer is IOffer {
     function hasExpired() internal view returns (bool) {
         // rely on time stamp is ok, no exact time stamp needed
         // solhint-disable-next-line not-rely-on-time
-        return block.timestamp > voteEnd + 30 days; // buyer has thirty days to complete acquisition after voting ends
+        return block.timestamp > voteEnd + AQUISITION_GRACE_PERIOD; 
     }
 
     function contest() external {
@@ -134,11 +140,11 @@ contract Offer is IOffer {
 
     function isAccepted() public view returns (bool) {
         if (isVotingOpen()) {
-            // is it already clear that 75% will vote yes even though the vote is not over yet?
-            return yesVotes * 10000  >= quorum * IDraggable(token).totalVotingTokens();
+            // is it already clear that more than the quorum requiered will vote yes even though the vote is not over yet?
+            return yesVotes * BPS_MUL  >= quorum * token.totalVotingTokens();
         } else {
-            // did 75% of all cast votes say 'yes'?
-            return yesVotes * 10000 >= quorum * (yesVotes + noVotes);
+            // did more than the quorum requiered votes say 'yes'?
+            return yesVotes * BPS_MUL >= quorum * (yesVotes + noVotes);
         }
     }
 
@@ -146,10 +152,10 @@ contract Offer is IOffer {
         if (isVotingOpen()) {
             // is it already clear that 25% will vote no even though the vote is not over yet?
             uint256 supply = token.totalVotingTokens();
-            return (supply - noVotes) * 10000 < quorum * supply;
+            return (supply - noVotes) * BPS_MUL < quorum * supply;
         } else {
             // did quorum% of all cast votes say 'no'?
-            return 10000 * yesVotes < quorum * (yesVotes + noVotes);
+            return BPS_MUL * yesVotes < quorum * (yesVotes + noVotes);
         }
     }
 
@@ -165,14 +171,14 @@ contract Offer is IOffer {
     function update(Vote previousVote, Vote newVote, uint256 votes_) internal {
         if (previousVote != newVote) {
             if (previousVote == Vote.NO) {
-                noVotes = noVotes - votes_;
+                noVotes -= votes_;
             } else if (previousVote == Vote.YES) {
-                yesVotes = yesVotes - votes_;
+                yesVotes -= votes_;
             }
             if (newVote == Vote.NO) {
-                noVotes = noVotes + votes_;
+                noVotes += votes_;
             } else if (newVote == Vote.YES) {
-                yesVotes = yesVotes + votes_;
+                yesVotes += votes_;
             }
             emit VotesChanged(yesVotes, noVotes);
         }
@@ -217,9 +223,9 @@ contract Offer is IOffer {
         Vote previousVote = votes[msg.sender];
         votes[msg.sender] = newVote;
         if(previousVote == Vote.NONE){
-            IDraggable(token).notifyVoted(msg.sender);
+            token.notifyVoted(msg.sender);
         }
-        update(previousVote, newVote, IDraggable(token).votingPower(msg.sender));
+        update(previousVote, newVote, token.votingPower(msg.sender));
     }
 
     function hasVotedYes(address voter) external view returns (bool) {
@@ -232,7 +238,7 @@ contract Offer is IOffer {
 
     function kill(bool success, string memory message) internal {
         emit OfferEnded(buyer, success, message);
-        IDraggable(token).notifyOfferEnded();
+        token.notifyOfferEnded();
         selfdestruct(payable(buyer));
     }
 

@@ -38,13 +38,13 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     string memory _name,
     string memory _terms,
     uint256 _totalShares,
-    address _recoveryHub,
+    IRecoveryHub _recoveryHub,
     address _owner
   )
     Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
     ERC20Allowlistable()
   {
-    IRecoveryHub(address(_recoveryHub)).setRecoverable(false); 
+    _recoveryHub.setRecoverable(false); 
   }
 
   function getClaimDeleter() public override view returns (address) {
