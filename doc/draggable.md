@@ -4,7 +4,7 @@
 
 ## Version History
 
-This is version 1.0 of the drag-along mechanism.
+There are no relevant older versions.
 
 Internal note: this document is referred to from various places, including legal documents. In case of material changes, we need to bump the version number and provide a link to old version. Furthermore, the path [doc/draggable.md](https://github.com/aktionariat/contracts/edit/master/doc/draggable.md) should not be changed to prevent broken links.
 
