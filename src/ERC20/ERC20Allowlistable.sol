@@ -113,15 +113,6 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     return hasFlagInternal(account, FLAG_INDEX_POWERLIST);
   }
 
-  /**
-   * Cleans the allowlist and disallowlist flag under the assumption that the
-   * allowlisting is not applicable any more.
-   */
-  function failOrCleanup(address account) internal {
-    require(!restrictTransfers, "not allowed");
-    setType(account, TYPE_DEFAULT);
-  }
-
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
     super._beforeTokenTransfer(from, to, amount);
     // empty block for gas saving fall through
@@ -130,16 +121,22 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
       // ok, transfers to allowlisted addresses are always allowed
     } else if (isForbidden(to)){
       // Target is forbidden, but maybe restrictions have been removed and we can clean the flag
-      failOrCleanup(to);
+      require(!restrictTransfers, "not allowed");
+      setFlag(to, FLAG_INDEX_FORBIDDEN, false);
     } else {
       if (isPowerlisted(from)){
         // it is not allowlisted, but we can make it so
-        setType(to, TYPE_ALLOWLISTED);
+        // we no the recipient is neither forbidden, allowlisted or powerlisted, so we can set flag directly
+        setFlag(to, FLAG_INDEX_ALLOWLIST, true);
       }
       // if we made it to here, the target must be a free address and we are not powerlisted
-      else if (hasFlagInternal(from, FLAG_INDEX_ALLOWLIST) || isForbidden(from)){
+      else if (hasFlagInternal(from, FLAG_INDEX_ALLOWLIST)){
         // We cannot send to free addresses, but maybe the restrictions have been removed and we can clean the flag?
-        failOrCleanup(from);
+        require(!restrictTransfers, "not allowed");
+        setFlag(from, FLAG_INDEX_ALLOWLIST, false);
+      } else if (isForbidden(from)){
+        require(!restrictTransfers, "not allowed");
+        setFlag(from, FLAG_INDEX_FORBIDDEN, false);
       }
     }
   }
