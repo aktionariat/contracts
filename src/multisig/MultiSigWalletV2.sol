@@ -12,7 +12,7 @@ import "./Nonce.sol";
 /**
  * Documented in ../../doc/multisig.md
  */
-contract MultiSigWallet is Nonce, Initializable {
+contract MultiSigWalletV2 is Nonce, Initializable {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 

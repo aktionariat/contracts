@@ -3,10 +3,11 @@
 // Libraries
 const BN = require("bn.js");
 const hre = require("hardhat");
-const { artifacts } = require("hardhat");
+const { artifacts, getUnnamedAccounts} = require("hardhat");
+const { sendEther, setBalance } = require("./helper/index");  
 
 // Shared Migration Config
-const config = require("../migrations/migration_config");
+const config = require("../scripts/deploy_config.js");
 
 const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
@@ -25,7 +26,8 @@ const ERC20Basic = artifacts.require("ERC20Basic");
 
 module.exports = async (deployer) => {
   const accounts = await deployer.getNamedAccounts();
-  const unAccounts = await deployer.getUnnamedAccounts();
+  const unAccounts = await getUnnamedAccounts();
+  const [deploy] = await ethers.getSigners();
 
   const recoveryHub = await RecoveryHub.new();
   RecoveryHub.setAsDeployed(recoveryHub);
@@ -59,10 +61,10 @@ module.exports = async (deployer) => {
   // Mint ETH to copyright owner for sending transactions
   /*const forceSend = await ForceSend.new();
   await forceSend.send(config.brokerbotCopyrightOwnerAddress, {value: 1000000000000000000})*/
-  sendEther(deployer, config.brokerbotCopyrightOwnerAddress, "1000000000000000000");
+  sendEther(deploy, config.brokerbotCopyrightOwnerAddress, "1");
 
   // Mint BaseCurrency to first 5 accounts
-  await setBalance(baseCurrency, 2, accounts);
+  await setBalance(baseCurrency, config.xchfBalanceSlot, unAccounts);
 
   // Mint Shares to first 5 accounts
   for (let i = 0; i < 5; i++) {

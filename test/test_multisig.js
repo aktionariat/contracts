@@ -1,5 +1,6 @@
 const {network, ethers, deployments } = require("hardhat");
 const { expect } = require("chai");
+const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
 const config = require("../migrations/migration_config");
 
 describe("Multisig", () => {

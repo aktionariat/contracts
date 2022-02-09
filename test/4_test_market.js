@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 
 // Shared Migration Config
-const config = require("../migrations/migration_config");
+const config = require("../scripts/deploy_config.js");
 
 // Libraries
 const BN = require("bn.js");

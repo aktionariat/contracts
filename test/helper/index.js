@@ -50,7 +50,7 @@ async function setBalance(erc20Contract, slot, accounts) {
 };
 
 async function sendEther(signer, to, amount) {
-  const tx = signer.sendTransaction({
+  const tx = await signer.sendTransaction({
     to: to,
     value: ethers.utils.parseEther(amount)
   });
@@ -60,4 +60,4 @@ async function sendEther(signer, to, amount) {
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance };
+module.exports = { mintERC20, setBalance, sendEther };

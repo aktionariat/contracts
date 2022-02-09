@@ -1,12 +1,13 @@
 /* global artifacts, contract, web3, assert */
 
 // Shared Migration Config
-const config = require("../migrations/migration_config");
+const config = require("../scripts/deploy_config.js");
 
 // Libraries
 const BN = require("bn.js");
 const hre = require("hardhat");
 const { artifacts } = require("hardhat");
+const { sendEther, setBalance } = require("./helper/index");  
 
 // Used contracts
 const Shares = artifacts.require("Shares");
@@ -21,6 +22,7 @@ const ERC20Basic = artifacts.require("ERC20Basic");
 contract("Migration", (accounts) => {
   // do all set
   before(async function () {
+    const [deployer] = await ethers.getSigners();
     const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
     const brokerbot = await Brokerbot.deployed();
     const recoveryHub = await RecoveryHub.deployed();
@@ -38,7 +40,7 @@ contract("Migration", (accounts) => {
     await brokerbot.approve(baseCurrency.address, paymentHub.address, new BN(config.infiniteAllowance));
 
     // Mint ETH to copyright owner for sending transactions
-    sendEther(deployer, config.brokerbotCopyrightOwnerAddress, "1000000000000000000");
+    sendEther(deployer, config.brokerbotCopyrightOwnerAddress, "1");
     // Mint BaseCurrency to first 5 accounts
     await setBalance(baseCurrency, 2, accounts);
 
