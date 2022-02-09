@@ -232,6 +232,7 @@ contract PaymentHub {
         uint256 balanceBefore = IERC20(base).balanceOf(recipient);
         payFromERC20(amountBase, amountInMaximum, erc20, path, recipient);
         uint256 balanceAfter = IERC20(base).balanceOf(recipient);
+        require(amountBase == (balanceAfter - balanceBefore), "swap error");
         IBrokerbot(recipient).processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
     }
 
