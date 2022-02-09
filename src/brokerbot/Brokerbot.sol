@@ -35,8 +35,11 @@ contract Brokerbot is IBrokerbot, Ownable {
     uint8 public override constant BUYING_ENABLED = 0x1;
     uint8 public override constant SELLING_ENABLED = 0x2;
     // note that in the UI, we call the setting "convert ether", which is the opposite
-    uint8 public override constant KEEP_ETHER = 0x4;
-    uint8 private constant VERSION = 0x1;
+    uint8 private constant KEEP_ETHER = 0x4;
+
+    // Version history
+    // Version 2: added ability to process bank orders even if buying disabled
+    uint8 private constant VERSION = 0x2;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
@@ -62,6 +65,8 @@ contract Brokerbot is IBrokerbot, Ownable {
         price = _price;
         increment = _increment;
         paymenthub = _paymentHub;
+        // Should we disabled recoverability in the recovery hub here?
+        // No, if someone attacks us, we can always trigger a transfer and recover the tokens as well as the collateral.
     }
 
     function setPrice(uint256 _price, uint256 _increment) external onlyOwner {
@@ -111,6 +116,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
+        require(hasSetting(BUYING_ENABLED), "buying disabled");
         uint shares = getShares(paid);
         uint costs = notifyTraded(from, shares, ref);
         if (costs < paid){
@@ -120,8 +126,10 @@ contract Brokerbot is IBrokerbot, Ownable {
         return shares;
     }
 
+    // Callers must verify that (hasSetting(BUYING_ENABLED) || msg.sender == owner) holds!
     function notifyTraded(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(BUYING_ENABLED), "buying disabled");
+        // disabling the requirement below for efficiency as this always holds once we reach this point
+        // require(hasSetting(BUYING_ENABLED) || msg.sender == owner, "buying disabled");
         uint costs = getBuyPrice(shares);
         price = price + (shares * increment);
         emit Trade(token, from, ref, int256(shares), base, costs, getPrice());

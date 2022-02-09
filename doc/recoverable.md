@@ -1,6 +1,6 @@
 # Recovery Mechanism
 
-![token recovery](https://aktionariat.com/images/saver.jpg)
+![token recovery](https://hub.aktionariat.com/images/contracts/saver.jpg)
 
 Documentation for the token recovery mechanism implemented in [ERC20Recoverable.sol](../src/recovery/ERC20Recoverable.sol).
 

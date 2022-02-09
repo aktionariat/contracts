@@ -1,13 +1,13 @@
 const {network, ethers, deployments } = require("hardhat");
 const { expect } = require("chai");
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
-const config = require("../migrations/migration_config");
+const config = require("../scripts/deploy_config.js");
 
 describe("Multisig", () => {
   let multiSigMaster;
   let multiSigCloneFactory;
   let multiSigClone;
   let multiSigClone2;
+  let forceSend;
 
   let owner;
   let adr1;

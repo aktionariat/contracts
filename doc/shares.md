@@ -1,6 +1,6 @@
 # Shareholder Registry
 
-![shareholder registry](https://aktionariat.com/images/registry.jpg)
+![shareholder registry](https://hub.aktionariat.com/images/contracts/registry.jpg)
 
 [Aktionariat](http://aktionariat.com) constructs the shareholder registry from two sources of information:
 

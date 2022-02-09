@@ -11,6 +11,8 @@ interface IBrokerbot {
   // note that in the UI, we call the setting "convert ether", which is the opposite
   function KEEP_ETHER() external view returns(uint8) ; // 0x04
 
+  function base() external view returns (address);
+  
   function settings() external view returns (uint256);
 
   // @return The amount of shares bought on buying or how much in the base currency is transfered on selling

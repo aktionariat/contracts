@@ -79,6 +79,9 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     setTypeInternal(account, typeNumber);
   }
 
+  /**
+   * If TYPE_DEFAULT all flags are set to 0
+   */
   function setTypeInternal(address account, uint8 typeNumber) internal {
     setFlag(account, FLAG_INDEX_ALLOWLIST, typeNumber == TYPE_ALLOWLISTED);
     setFlag(account, FLAG_INDEX_FORBIDDEN, typeNumber == TYPE_FORBIDDEN);

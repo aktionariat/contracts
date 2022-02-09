@@ -1,7 +1,7 @@
 const {network, ethers} = require("hardhat");
 const { expect } = require("chai");
 const Chance = require("chance");
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
+const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
 
 // Shared Migration Config
 const config = {
@@ -23,7 +23,7 @@ const config = {
   uniswapRouterAddress: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
 }
 
-describe.skip("Bond Contract", () => {
+describe("Bond Contract", () => {
   let bond;
   let bondBot;
   let baseCurrency;
@@ -38,38 +38,38 @@ describe.skip("Bond Contract", () => {
   let adr3;
   let adr4;
   let accounts;
-  
+
   before(async () => {
     [deployer,owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
     //console.log(accounts);
-    
+
     chance = new Chance();
-    
+
     await deployments.fixture(["Bond", "PaymentHub", "BondbotDAI"]);
     bond = await ethers.getContract("Bond");
     bondBot = await ethers.getContract("BondbotDAI");
     paymentHub = await ethers.getContract("PaymentHub");
-    
+
     forceSend = await await ethers.getContractFactory("ForceSend")
     .then(factory => factory.deploy())
     .then(contract => contract.deployed());
-    
+
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    
+
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
-    
+
     //Mint bonds to first 5 accounts
     for( let i = 0; i < 5; i++) {
       await bond.connect(owner).mint(accounts[i], 100000);
     }
-    
+
     //Deposit Bonds and BaseCurrency into BondBot
     //await bond.transfer(bondBot.address, 50000000);
     await baseCurrency.connect(owner).transfer(bondBot.address, ethers.utils.parseEther("100000"));
-    
-    
+
+
     // Allow payment hub to spend baseCurrency from accounts[0] and bond from Brokerbot
     await bond.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
     await baseCurrency.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
@@ -261,3 +261,4 @@ describe.skip("Bond Contract", () => {
     });
   });
 });
+

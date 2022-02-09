@@ -4,9 +4,9 @@
 const BN = require("bn.js");
 const hre = require("hardhat");
 const { artifacts, getUnnamedAccounts} = require("hardhat");
-const { sendEther, setBalance } = require("./helper/index");  
+const { sendEther, setBalance } = require("./helper/index");
 
-// Shared Migration Config
+// Shared Config
 const config = require("../scripts/deploy_config.js");
 
 const Shares = artifacts.require("Shares");
@@ -25,8 +25,8 @@ const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 const ERC20Basic = artifacts.require("ERC20Basic");
 
 module.exports = async (deployer) => {
-  const accounts = await deployer.getNamedAccounts();
-  const unAccounts = await getUnnamedAccounts();
+  const namedAcc = await deployer.getNamedAccounts();
+  const accounts = await getUnnamedAccounts();
   const [deploy] = await ethers.getSigners();
 
   const recoveryHub = await RecoveryHub.new();
@@ -35,16 +35,16 @@ module.exports = async (deployer) => {
   const offerFactory = await OfferFactory.new();
   OfferFactory.setAsDeployed(offerFactory);
 
-  const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, accounts.deployer, recoveryHub.address);
+  const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, namedAcc.deployer, recoveryHub.address);
   Shares.setAsDeployed(shares);
 
-  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts.deployer);
+  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts[0]);
   DraggableShares.setAsDeployed(draggableShares);
 
-  const paymentHub = await PaymentHub.new(config.baseCurrencyAddress, uniswapQuoter, uniswapRouter, priceFeedCHFUSD, priceFeedETHUSD);
+  const paymentHub = await PaymentHub.new(uniswapQuoter, uniswapRouter, priceFeedCHFUSD, priceFeedETHUSD);
   PaymentHub.setAsDeployed(paymentHub);
 
-  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, accounts.deployer, paymentHub.address);
+  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, namedAcc.deployer, paymentHub.address);
   Brokerbot.setAsDeployed(brokerbot);
 
 
@@ -53,8 +53,8 @@ module.exports = async (deployer) => {
   await brokerbot.setPaymentHub(paymentHub.address);
 
   // Allow payment hub to spend baseCurrency from accounts[0] and draggableShares from Brokerbot
-  await draggableShares.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: accounts.deployer });
-  await baseCurrency.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: accounts.deployer });
+  await draggableShares.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: accounts[0] });
+  await baseCurrency.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: accounts[0] });
   await brokerbot.approve(draggableShares.address, paymentHub.address, new BN(config.infiniteAllowance));
   await brokerbot.approve(baseCurrency.address, paymentHub.address, new BN(config.infiniteAllowance));
 
@@ -68,16 +68,16 @@ module.exports = async (deployer) => {
 
   // Mint Shares to first 5 accounts
   for (let i = 0; i < 5; i++) {
-    await shares.mint(unAccounts[i], 1000000);
+    await shares.mint(accounts[i], 1000000);
   }
 
   // Convert some Shares to DraggableShares
   for (let i = 0; i < 5; i++) {
-    await shares.approve(draggableShares.address, config.infiniteAllowance, { from: unAccounts[i] });
-    await draggableShares.wrap(unAccounts[i], 800000, { from: unAccounts[i] });
+    await shares.approve(draggableShares.address, config.infiniteAllowance, { from: accounts[i] });
+    await draggableShares.wrap(accounts[i], 800000, { from: accounts[i] });
   }
 
   // Deposit some shares to Brokerbot
-  await draggableShares.transfer(brokerbot.address, 500000, { from: unAccounts[0]});
-  await baseCurrency.transfer(brokerbot.address, web3.utils.toWei("100000"), { from: unAccounts[0] });
+  await draggableShares.transfer(brokerbot.address, 500000, { from: accounts[0]});
+  await baseCurrency.transfer(brokerbot.address, web3.utils.toWei("100000"), { from: accounts[0] });
 };

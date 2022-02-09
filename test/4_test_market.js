@@ -1,13 +1,14 @@
 /* global artifacts, contract */
 /* eslint-disable no-undef */
 
-// Shared Migration Config
+// Shared Config
 const config = require("../scripts/deploy_config.js");
 
 // Libraries
 const BN = require("bn.js");
 const Chance = require("chance");
 const truffleAssert = require("truffle-assertions");
+const { artifacts, getNamedAccounts, getUnnamedAccounts} = require("hardhat");
 
 // Import contracts to be tested
 const Shares = artifacts.require("Shares");
@@ -19,29 +20,40 @@ const Brokerbot = artifacts.require("Brokerbot");
 const BUYING_ENABLED = 0x1;
 const SELLING_ENABLED = 0x2;
 
-contract("Brokerbot", (accounts) => {
+contract("Brokerbot", () => {
+  let accounts;
+  let brokerbot;
+  let paymentHub;
+  let draggableShares;
+  let deployer;
+
+  before(async () => {
+    const namedAcc = await getNamedAccounts();
+    deployer = namedAcc.deployer;
+    accounts =  await getUnnamedAccounts();
+    brokerbot = await Brokerbot.deployed();
+    paymentHub = await PaymentHub.deployed();
+    draggableShares = await DraggableShares.deployed();
+  });
+
   it("should deploy", async () => {
-    const brokerbot = await Brokerbot.deployed();
     assert(brokerbot.address !== "");
   });
 
   it("should get constructor params correctly", async () => {
-    const brokerbot = await Brokerbot.deployed();
     const baseCurrency = await brokerbot.base.call();
     const owner = await brokerbot.owner.call();
     const price = web3.utils.toBN(await brokerbot.getPrice());
     const increment = web3.utils.toBN(await brokerbot.increment.call());
 
     assert.equal(baseCurrency, config.baseCurrencyAddress);
-    assert.equal(owner, accounts[0]);
+    assert.equal(owner, deployer);
     assert.equal(price, config.sharePrice);
     assert(increment.isZero());
   });
 
   it("should calculate buy price correctly - no increment - no drift", async () => {
     // Used Contract: Brokerbot
-    const brokerbot = await Brokerbot.deployed();
-
     // Initialize
     await brokerbot.setPrice(config.sharePrice, new BN(0));
 
@@ -68,8 +80,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should calculate sell price correctly - no increment - no drift", async () => {
     // Used Contract: Brokerbot
-    const brokerbot = await Brokerbot.deployed();
-
     // Initialize
     await brokerbot.setPrice(config.sharePrice, new BN(0));
 
@@ -96,8 +106,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should set increment correctly (0.001 per share)", async () => {
     // Used Contract: Brokerbot
-    const brokerbot = await Brokerbot.deployed();
-
     // Get existing and reset while incrementing by delta
     const price = await brokerbot.getPrice();
     const incrementBefore = await brokerbot.increment.call();
@@ -111,8 +119,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should calculate buy price correctly - with increment - no drift", async () => {
     // Used Contract: Brokerbot
-    const brokerbot = await Brokerbot.deployed();
-
     // Initialize with random increment
     const increment = web3.utils.toWei(
       new BN(new Chance().integer({ min: 1, max: 1000 })),
@@ -154,8 +160,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should calculate sell price correctly - with increment - no drift", async () => {
     // Used Contract: Brokerbot
-    const brokerbot = await Brokerbot.deployed();
-
     // Initialize with random increment
     const increment = web3.utils.toWei(
       new BN(new Chance().integer({ min: 1, max: 10000 })),
@@ -197,8 +201,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should calculate number of shares for given baseCurrency amount sent (getShares)", async () => {
     // Used Contract: Brokerbot
-    const brokerbot = await Brokerbot.deployed();
-
     // Set random price and increment
     const price = web3.utils.toWei(
       new BN(new Chance().integer({ min: 1000, max: 10000 })),
@@ -234,8 +236,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should allow enabling/disabling buying/selling.", async () => {
     // Used Contract: Brokerbot
-    const brokerbot = await Brokerbot.deployed();
-
     await brokerbot.setSettings(BUYING_ENABLED);
     assert(await brokerbot.buyingEnabled());
     assert(!(await brokerbot.sellingEnabled()));
@@ -255,16 +255,13 @@ contract("Brokerbot", (accounts) => {
 
   it("should not allow buying shares when buying is disabled", async () => {
     // Used Contract: Brokerbot, Payment Hub
-    const brokerbot = await Brokerbot.deployed();
-    const paymentHub = await PaymentHub.deployed();
-
     // Disable buying
     brokerbot.setSettings(SELLING_ENABLED);
 
     // Random number of shares to buy
     const sharesToBuy = new BN(new Chance().natural({ min: 1, max: 500 }));
     const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-    const buyPriceInETH = await paymentHub.getPriceInEther.call(buyPrice);
+    const buyPriceInETH = await paymentHub.getPriceInEther.call(buyPrice, brokerbot.address);
 
     // Base payment should fail
     await truffleAssert.reverts(
@@ -284,10 +281,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should not allow selling shares when selling is disabled", async () => {
     // Used Contract: Brokerbot, Payment Hub, Draggable Shares
-    const brokerbot = await Brokerbot.deployed();
-    const paymentHub = await PaymentHub.deployed();
-    const draggableShares = await DraggableShares.deployed();
-
     // Disable selling
     brokerbot.setSettings(BUYING_ENABLED);
 
@@ -308,9 +301,6 @@ contract("Brokerbot", (accounts) => {
 
   it("should be able to distribute shares to multiple shareholders", async () => {
     // Used Contract: Brokerbot, Draggable Shares
-    const brokerbot = await Brokerbot.deployed();
-    const draggableShares = await DraggableShares.deployed();
-
     const buyers = [
       "0xae7eedf49d6c7a777452ee5927e5f8cacd82253b",
       "0xae7eedf49d6c7a777452ee5927e5f8cacd82253b",

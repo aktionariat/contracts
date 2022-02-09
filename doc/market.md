@@ -1,8 +1,8 @@
 # Brokerbot
 
-![bazaar marketplace](https://aktionariat.com/images/bazaar.jpg)
+![bazaar marketplace](https://hub.aktionariat.com/images/contracts/bazaar.jpg)
 
-Documentation for the Brokerbot smart contract implemented in [Brokerbot.sol](../src/shares/Brokerbot.sol).
+Documentation for the Brokerbot smart contract implemented in [Brokerbot.sol](../src/brokerbot/Brokerbot.sol).
 
 ## Purpose
 
@@ -23,7 +23,7 @@ The time based drift can be used to reflect expected organic growth or to have i
 
 ## Example use case
 
-The Brokerbot contract is the basis of the [Brokerbot widget](https://aktionariat.com/brokerbot.html), which can be seen in action on the [Aktionariat AG Investor Relations](https://aktionariat.com/investors.html#brokerbot) page.
+The Brokerbot contract is the basis of the [Brokerbot widget](https://www.aktionariat.com/our-products/brokerbot#details), which can be seen in action on the [Aktionariat AG Investor Relations](https://www.aktionariat.com/investor-relations#brokerbot) page, for instance.
 
 ## License Fee
 
