@@ -131,7 +131,7 @@ contract PaymentHub {
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
-            IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]);
+            require(IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]));
         }
     }
 
@@ -151,7 +151,7 @@ contract PaymentHub {
     }
 
     function payAndNotify(IERC20 token, address recipient, uint256 amount, bytes calldata ref) public {
-        IERC20(token).transferFrom(msg.sender, recipient, amount);
+        require(IERC20(token).transferFrom(msg.sender, recipient, amount));
         IBrokerbot(recipient).processIncoming(token, msg.sender, amount, ref);
     }
 
@@ -185,7 +185,7 @@ contract PaymentHub {
      * Make sure to be fast as anyone can call this!
      */
     function recover(address ercAddress, address to, uint256 amount) external {
-        IERC20(ercAddress).transfer(to, amount);
+        require(IERC20(ercAddress).transfer(to, amount));
     }
 
     // solhint-disable-next-line no-empty-blocks

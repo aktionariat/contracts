@@ -86,26 +86,17 @@ abstract contract ERC20Flaggable is IERC20 {
         return hasFlagInternal(account, number);
     }
 
-    /**
-     * @return true if the flag was changed, false if the flag was already set.
-     */
-    function setFlag(address account, uint8 index, bool value) internal returns (bool) {
-        if (hasFlagInternal(account, index) != value){
-            toggleFlag(account, index);
-            return true;
-        } else {
-            return false;
+    function setFlag(address account, uint8 index, bool value) internal {
+        uint256 flagMask = 1 << (index + 224);
+        uint256 balance = _balances [account];
+        if ((balance & flagMask == flagMask) != value) {
+            _balances [account] = balance ^ flagMask;
         }
     }
 
     function hasFlagInternal(address account, uint8 number) internal view returns (bool) {
         uint256 flag = 0x1 << (number + 224);
         return _balances[account] & flag == flag;
-    }
-
-    function toggleFlag(address account, uint8 number) internal {
-        uint256 flag = 0x1 << (number + 224);
-        _balances[account] ^= flag;
     }
 
     /**
