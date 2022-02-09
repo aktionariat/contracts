@@ -7,7 +7,6 @@ describe("Multisig", () => {
   let multiSigCloneFactory;
   let multiSigClone;
   let multiSigClone2;
-  let forceSend;
 
   let owner;
   let adr1;
@@ -28,10 +27,6 @@ describe("Multisig", () => {
     await deployments.fixture(["MultiSigCloneFactory"]);
     multiSigMaster = await ethers.getContract("MultiSigWalletMaster");
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
-
-    forceSend = await ethers.getContractFactory("ForceSend")
-        .then(factory => factory.deploy())
-        .then(contract => contract.deployed());
 
   });
 

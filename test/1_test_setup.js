@@ -16,7 +16,6 @@ const PaymentHub = artifacts.require("PaymentHub");
 const RecoveryHub = artifacts.require("RecoveryHub");
 const OfferFactory = artifacts.require("OfferFactory");
 
-const ForceSend = artifacts.require("ForceSend");
 const ERC20Basic = artifacts.require("ERC20Basic");
 
 contract("Migration", (accounts) => {
@@ -39,24 +38,9 @@ contract("Migration", (accounts) => {
     await brokerbot.approve(baseCurrency.address, paymentHub.address, new BN(config.infiniteAllowance));
 
     // Mint ETH to copyright owner for sending transactions
-    const forceSend = await ForceSend.new();
-    await forceSend.send(config.brokerbotCopyrightOwnerAddress, {value: 1000000000000000000})
+    sendEther(deployer, config.brokerbotCopyrightOwnerAddress, "1000000000000000000");
     // Mint BaseCurrency to first 5 accounts
-    const forceSend2 = await ForceSend.new();
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: ["0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9"],
-    });
-    const signer = await ethers.getSigner("0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9")
-    await forceSend2.send(config.baseCurrencyMinterAddress, {value: 1000000000000000000})
-    for (let i = 0; i < 5; i++) {
-      await baseCurrency.mint(accounts[i], web3.utils.toWei("10000000"), { from: await signer.getAddress()});
-      // console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-    }
-    await hre.network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: ["0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9"],
-    });
+    await setBalance(baseCurrency, 2, accounts);
 
     // Mint Shares to first 5 accounts
     for (let i = 0; i < 5; i++) {

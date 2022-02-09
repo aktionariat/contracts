@@ -25,7 +25,6 @@ describe("Bond Contract", () => {
   let BondBotFactory;
   let BondFactory;
   let PaymentHubFactory;
-  let ForceSendFactory;
   let recoveryHub;
 
   let bond;
@@ -33,7 +32,6 @@ describe("Bond Contract", () => {
   let baseCurrency;
   let paymentHub;
   let paymentHubContract
-  let forceSend;
 
   let owner;
   let adr1;
@@ -45,10 +43,6 @@ describe("Bond Contract", () => {
   before(async () =>{
     BondBotFactory = await ethers.getContractFactory("BondBot");
     BondFactory = await ethers.getContractFactory("Bond");
-
-    forceSend = await await ethers.getContractFactory("ForceSend")
-    .then(factory => factory.deploy())
-    .then(contract => contract.deployed());
 
     const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
     const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
@@ -75,20 +69,7 @@ describe("Bond Contract", () => {
     await bondBot.deployed();
 
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
-    const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
-    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.BigNumber.from("1000000000000000000")});
-    for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
-     //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-    }
-    await network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
+    await setBalance(baseCurrency, 2, accounts);
 
     //Mint bonds to first 5 accounts
     await bond.setMinter(owner.address);

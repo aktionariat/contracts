@@ -11,7 +11,6 @@ describe("New Standard", () => {
   let recoveryHub;
   let baseCurrency;
   let paymentHub;
-  let forceSend;
   let offerFactory
   let allowlistShares;
   let allowlistDraggable;
@@ -51,10 +50,6 @@ describe("New Standard", () => {
 
     // deploy contracts
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    
-    forceSend = await ethers.getContractFactory("ForceSend")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
 
     const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
     const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
@@ -91,20 +86,7 @@ describe("New Standard", () => {
 
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
-    const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
-    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.utils.parseEther("2")});
-    for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
-     //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-    }
-    await network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
+    await setBalance(baseCurrency, 2, accounts);
 
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
