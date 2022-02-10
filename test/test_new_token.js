@@ -461,16 +461,11 @@ describe("New Standard", () => {
   });
 
   describe("Allowlist", () => {
-    it("Should allowlist address and mint", async () => {
-      // use sig1 for allowlist
-      const allowlistAddress = sig1.address;
-      await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
-      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
-      await allowlistShares.connect(owner).mint(allowlistAddress, "1000");
-      const balanceAllow = await allowlistShares.balanceOf(allowlistAddress);
-      expect(balanceAllow).to.equal(ethers.BigNumber.from(1000));
-    });
-
+    // sig1 will be powerlist
+    // sig2 will be forbidden
+    // sig3 will be allowlist -> default
+    // sig4 will be allowlist
+    // sig5 will be default
     it("Should set forbidden and revert mint", async () => {
       //use sig2 for blacklist
       const forbiddenAddress = sig2.address;
@@ -486,13 +481,16 @@ describe("New Standard", () => {
     it("Should set allowlist for default address when minted from 0 (powerlisted)", async () => {
       //use sig3 for default address
       const defaultAddress = sig3.address
+      // before mint is not allowlisted
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
 
       await allowlistShares.connect(owner).mint(defaultAddress, "1000");
+      
+      // after mint is allowlisted
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
       const balancedef = await allowlistShares.balanceOf(defaultAddress);
       expect(balancedef).to.equal(ethers.BigNumber.from(1000));
-      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
     });
 
     it("Should set powerlist to not owner and transfer token to default", async () => {
@@ -515,10 +513,61 @@ describe("New Standard", () => {
 
       // transfer from powerlist to default(sig4)
       const balanceBefore = await allowlistShares.balanceOf(defaultAddress);
-      await allowlistShares.connect(sig1).transfer(defaultAddress, "1000");
+      await allowlistShares.connect(sig1).transfer(defaultAddress, "100");
       const balanceAfter = await allowlistShares.balanceOf(defaultAddress);
-      expect(balanceBefore.add(1000)).to.equal(balanceAfter);
+      expect(balanceBefore.add(100)).to.equal(balanceAfter);
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);
+    });
+
+    it("Should set allowlist address to default and transfer to default/allowlist, but not to forbidden address", async () => {
+      // use sig3 for the default sender
+      const defaultAddress = sig3.address
+      // is still allowlisted
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);  
+      // set to default and make shares transferable
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      // is not allowlisted anymore
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      
+      // is not possible to send from default(sig3) to forbidden(sig2)
+      const forbiddenAddress = sig2.address
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+      await expect(allowlistShares.connect(sig3).transfer(forbiddenAddress, "100")).to.be.revertedWith("not allowed");
+
+      // is possible to send from default(sig3) to fresh/default(sig5)
+      const freshAddress = sig5.address
+      expect(await allowlistShares.isForbidden(freshAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(freshAddress)).to.equal(false);
+      await allowlistShares.connect(sig3).transfer(freshAddress, "100");
+      const balanceFresh = await allowlistShares.balanceOf(freshAddress);
+      expect(balanceFresh).to.equal(ethers.BigNumber.from(100));
+      // fresh address is still default
+      expect(await allowlistShares.isForbidden(freshAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(freshAddress)).to.equal(false);
+
+      // is possible to send from default(sig3) to allowlist(sig4)
+      const allowAddress = sig4.address;
+      expect(await allowlistShares.isForbidden(allowAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(allowAddress)).to.equal(true);
+      const balAllowBefore = await allowlistShares.balanceOf(allowAddress);
+      await allowlistShares.connect(sig3).transfer(allowAddress, "100");
+      const balAllowAfter = await allowlistShares.balanceOf(allowAddress);
+      expect(balAllowBefore.add(100)).to.equal(balAllowAfter);
+    });
+
+    it("Should not allow transfer from allowlist to default", async () => {
+      // sig4 is allowlist address
+      const allowAddress = sig4.address;
+      expect(await allowlistShares.isForbidden(allowAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(allowAddress)).to.equal(true);
+
+      // sig5 is default address
+      const defaultAddress = sig5.address
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+
+      // transfer from allowlist(sig4) to default(sig5) should fail
+      await expect(allowlistShares.connect(sig4).transfer(defaultAddress, "100")).to.be.revertedWith("not allowed");
     });
 
     it("Should mint and call on allowlistShares to allowlistDraggable", async () => {
@@ -601,7 +650,6 @@ describe("New Standard", () => {
 
       // restrict should be false
       expect(await allowlistShares.restrictTransfers()).to.equal(false);
-
     });
 
     it("Should clean forbidden address after removed restriction", async () => {
@@ -615,26 +663,25 @@ describe("New Standard", () => {
       //check if is now default
       expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
       expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
-
     });
 
     it("Should clean allowlist address after removed restriction", async () => {
-      //use sig1 for allowlist
-      const allowlistAddress = sig1.address;
+      // use sig4 for allowlist
+      const allowlistAddress = sig4.address;
       await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
       expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
 
-      //use sig3 as default
-      const defaultAddress = sig3.address
+      // use sig5 as default
+      const defaultAddress = sig5.address
       await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
 
-      await allowlistShares.connect(sig1).transfer(sig3.address, "10");
+      // allow transfer from allowlist(sig4) to default(sig5) -- (what failed before with resriction on)
+      await allowlistShares.connect(sig4).transfer(defaultAddress, "10");
+      // cleans allowlist address to be default now
       expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(allowlistAddress)).to.equal(false);
-
     });
-  })
-
+  });
 });
