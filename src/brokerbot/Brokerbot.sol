@@ -160,11 +160,11 @@ contract Brokerbot is IBrokerbot, Ownable {
     /**
      * Payment hub might actually have sent another accepted token, including Ether.
      */
-    function processIncoming(IERC20 _token, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
-        require(msg.sender == address(_token) || msg.sender == address(base) || msg.sender == paymenthub, "invalid calle");
-        if (_token == token){
+    function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
+        require(msg.sender == address(incomingAsset) || msg.sender == paymenthub, "invalid caller");
+        if (incomingAsset == token){
             return sell(from, amount, ref);
-        } else if (_token == base){
+        } else if (incomingAsset == base){
             return buy(from, amount, ref);
         } else {
             revert("invalid token");

@@ -51,7 +51,10 @@ import "../shares/IShares.sol";
 
 abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable {
     
-	uint8 private constant FLAG_VOTED = 1;
+	// If flag is not present, one can be sure that the address did not vote. If the 
+	// flag is present, the address might have voted and one needs to check with the
+	// current offer (if any) when transferring tokens.
+	uint8 private constant FLAG_VOTE_HINT = 1;
 
 	IERC20 public wrapped; // The wrapped contract
 	IOfferFactory public immutable factory;
@@ -181,14 +184,12 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		offer = newOffer;
 	}
 
-	function drag(address buyer, IERC20 currency) external override {
-		require(msg.sender == address(offer), "sender");
+	function drag(address buyer, IERC20 currency) external override offerOnly {
 		unwrap(buyer, balanceOf(buyer), 1);
 		replaceWrapped(currency, buyer);
 	}
 
-	function notifyOfferEnded() external override {
-		require(msg.sender == address(offer), "sender");
+	function notifyOfferEnded() external override offerOnly {
 		offer = IOffer(address(0));
 	}
 
@@ -243,11 +244,16 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	}
 
 	function hasVoted(address voter) internal view returns (bool) {
-		return hasFlagInternal(voter, FLAG_VOTED);
+		return hasFlagInternal(voter, FLAG_VOTE_HINT);
 	}
 
-	function notifyVoted(address voter) external override {
-		setFlag(voter, FLAG_VOTED, true);
+	function notifyVoted(address voter) external override offerOnly {
+		setFlag(voter, FLAG_VOTE_HINT, true);
+	}
+
+	modifier offerOnly(){
+		require(msg.sender == address(offer), "sender");
+		_;
 	}
 
 	function _beforeTokenTransfer(address from, address to,	uint256 amount) internal virtual override {
@@ -255,8 +261,8 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 			if (offerExists()) {
 				offer.notifyMoved(from, to, amount);
 			} else {
-				setFlag(from, FLAG_VOTED, false);
-				setFlag(to, FLAG_VOTED, false);
+				setFlag(from, FLAG_VOTE_HINT, false);
+				setFlag(to, FLAG_VOTE_HINT, false);
 			}
 		}
 		super._beforeTokenTransfer(from, to, amount);
