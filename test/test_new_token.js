@@ -329,7 +329,7 @@ describe("New Standard", () => {
     it("Should able to disable recovery", async () => {
       const recovery = await ethers.getContractAt("RecoveryHub", await draggable.recovery());
       await recovery.connect(sig1).setRecoverable(false);
-      expect(await recoveryHub.isRecoveryEnabled(sig1.address)).to.equal(false);
+      expect(await recoveryHub.isRecoverable(sig1.address)).to.equal(false);
     });
 
     it("Should revert declare lost on disabled recovery", async () => {

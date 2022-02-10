@@ -57,7 +57,17 @@ async function sendEther(signer, to, amount) {
   await tx.wait();
 }
 
+async function buyingEnabled(brokerbot) {
+  const settings = await brokerbot.settings();
+  return (settings & await brokerbot.BUYING_ENABLED()) == await brokerbot.BUYING_ENABLED();
+}
+
+async function sellingEnabled(brokerbot) {
+  const settings = await brokerbot.settings();
+  return (settings & await brokerbot.SELLING_ENABLED()) == await brokerbot.SELLING_ENABLED();
+}
+
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther };
+module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled};

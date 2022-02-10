@@ -29,8 +29,7 @@ describe("Bond Contract", () => {
   let baseCurrency;
   let paymentHub;
   let paymentHubContract
-  let forceSend;
-
+  
   let deployer;
   let owner;
   let adr1;
@@ -50,10 +49,6 @@ describe("Bond Contract", () => {
     bond = await ethers.getContract("Bond");
     bondBot = await ethers.getContract("BondbotDAI");
     paymentHub = await ethers.getContract("PaymentHub");
-
-    forceSend = await await ethers.getContractFactory("ForceSend")
-    .then(factory => factory.deploy())
-    .then(contract => contract.deployed());
 
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
 

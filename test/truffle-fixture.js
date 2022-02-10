@@ -64,7 +64,7 @@ module.exports = async (deployer) => {
   sendEther(deploy, config.brokerbotCopyrightOwnerAddress, "1");
 
   // Mint BaseCurrency to first 5 accounts
-  await setBalance(baseCurrency, config.xchfBalanceSlot, unAccounts);
+  await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
 
   // Mint Shares to first 5 accounts
   for (let i = 0; i < 5; i++) {

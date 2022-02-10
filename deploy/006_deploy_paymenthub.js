@@ -33,9 +33,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     contract: "PaymentHub",
     from: deployer,
     args: [
-      baseCurrencyContract,
-      uniswapRouter,
       uniswapQuoter,
+      uniswapRouter,
       priceFeedCHFUSD,
       priceFeedETHUSD],
     log: true,

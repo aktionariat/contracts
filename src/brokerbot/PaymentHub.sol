@@ -50,11 +50,25 @@ contract PaymentHub {
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
 
-    constructor(IERC20 _currency, IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
+    constructor(IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
         priceFeedCHFUSD = _aggregatorCHFUSD;
         priceFeedETHUSD = _aggregatorETHUSD;
+    }
+
+    /*  
+     * Get price in ERC20
+     * This is the method that the Brokerbot widget should use to quote the price to the user.
+     * @param amountInBase The amount of the base currency for the exact output.
+     * @param path The encoded path of the swap from erc20 to base.
+     * @return amount quoted to pay
+     */
+    function getPriceInERC20(uint256 amountInBase, bytes memory path) public returns (uint256) {
+        return uniswapQuoter.quoteExactOutput(
+            path,
+            amountInBase
+        );
     }
 
     /**
@@ -67,14 +81,14 @@ contract PaymentHub {
         if ((address(brokerBot) != address(0)) && hasSettingKeepEther(brokerBot)) {
             return getPriceInEtherFromOracle(amountInBase, IBrokerbot(brokerBot).base());
         } else {
-            return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), IBrokerbot(brokerBot).base(), DEFAULT_FEE, amountInBase, 0);
+            return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), address(brokerBot.base()), DEFAULT_FEE, amountInBase, 0);
         }
     }
 
     /**
      * Price in ETH with 18 decimals
      */
-    function getPriceInEtherFromOracle(uint256 amountInBase, address base) public view returns (uint256) {
+    function getPriceInEtherFromOracle(uint256 amountInBase, IERC20 base) public view returns (uint256) {
         if(isBaseCurrencyCHF(base)) {
             return uint256(getLatestPriceCHFUSD()) * amountInBase / uint256(getLatestPriceETHUSD());        }
         return amountInBase * DENOMINATOR / uint256(getLatestPriceETHUSD());
@@ -106,11 +120,11 @@ contract PaymentHub {
     /**
      * Convenience method to swap ether into base and pay a target address
      */
-    function payFromEther(address recipient, uint256 amountInBase, address base) public payable {
+    function payFromEther(address recipient, uint256 amountInBase, IERC20 base) public payable {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
             // rely on time stamp is ok, no exact time stamp needed
             // solhint-disable-next-line not-rely-on-time
-            uniswapQuoter.WETH9(), base, DEFAULT_FEE, recipient, block.timestamp, amountInBase, msg.value, 0);
+            uniswapQuoter.WETH9(), address(base), DEFAULT_FEE, recipient, block.timestamp, amountInBase, msg.value, 0);
 
         ISwapRouter swapRouter = uniswapRouter;
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
@@ -134,7 +148,7 @@ contract PaymentHub {
     /// @param recipient The reciving address - brokerbot.
     /// @return amountIn The amountIn of ERC20 actually spent to receive the desired amountOut.
     function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, bytes memory path, address recipient) public returns (uint256 amountIn) {
-        ISwapRouter swapRouter = UNISWAP_ROUTER;
+        ISwapRouter swapRouter = uniswapRouter;
         // Transfer the specified `amountInMaximum` to this contract.
         IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
 
@@ -162,7 +176,7 @@ contract PaymentHub {
     ///@dev This function needs to be called before using the PaymentHub the first time with a new ERC20 token.
     ///@param erc20In The erc20 addresse to approve.
     function approveERC20(address erc20In) external {
-        IERC20(erc20In).approve(address(UNISWAP_ROUTER), 0x8000000000000000000000000000000000000000000000000000000000000000);
+        IERC20(erc20In).approve(address(uniswapRouter), 0x8000000000000000000000000000000000000000000000000000000000000000);
     }
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
@@ -192,7 +206,7 @@ contract PaymentHub {
     }
 
     function payFromEtherAndNotify(address recipient, uint256 amountInBase, bytes calldata ref) external payable {
-        address base = IBrokerbot(recipient).base();
+        IERC20 base = IBrokerbot(recipient).base();
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(IBrokerbot(recipient))) {
             uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, base);
@@ -215,7 +229,7 @@ contract PaymentHub {
      * The needed amount needs to be approved at the ERC20 contract beforehand
      */
     function payFromERC20AndNotify(address recipient, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external {
-        address base = IBrokerbot(recipient).base();
+        IERC20 base = IBrokerbot(recipient).base();
         uint256 balanceBefore = IERC20(base).balanceOf(recipient);
         payFromERC20(amountBase, amountInMaximum, erc20, path, recipient);
         uint256 balanceAfter = IERC20(base).balanceOf(recipient);
@@ -230,8 +244,8 @@ contract PaymentHub {
         return recipient.settings() & recipient.KEEP_ETHER() == recipient.KEEP_ETHER();
     }
 
-    function isBaseCurrencyCHF(address base) private pure returns (bool) {
-        if (base == address(0xB4272071eCAdd69d933AdcD19cA99fe80664fc08)) {
+    function isBaseCurrencyCHF(IERC20 base) private pure returns (bool) {
+        if (address(base) == address(0xB4272071eCAdd69d933AdcD19cA99fe80664fc08)) {
             return true;
         }
         return false;

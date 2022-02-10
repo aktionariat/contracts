@@ -11,7 +11,7 @@ interface IBrokerbot {
   // note that in the UI, we call the setting "convert ether", which is the opposite
   function KEEP_ETHER() external view returns(uint8) ; // 0x04
 
-  function base() external view returns (address);
+  function base() external view returns (IERC20);
   
   function settings() external view returns (uint256);
 

@@ -54,7 +54,7 @@ contract Bond is ERC20Recoverable, ERC20Named {
         string memory _terms,
         uint256 _termToMaturity,
         address _owner,
-        address _recoveryHub
+        IRecoveryHub _recoveryHub
     ) 
         ERC20Named(_symbol, _name, 0, _owner)
         ERC20Recoverable(_recoveryHub)
@@ -83,7 +83,7 @@ contract Bond is ERC20Recoverable, ERC20Named {
     /**
      * See parent method for collateral requirements.
      */
-    function setCustomClaimCollateral(address collateral, uint256 rate) external onlyOwner() {
+    function setCustomClaimCollateral(IERC20 collateral, uint256 rate) external onlyOwner() {
         super._setCustomClaimCollateral(collateral, rate);
     }
 
