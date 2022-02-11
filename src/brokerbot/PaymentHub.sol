@@ -256,8 +256,8 @@ contract PaymentHub {
      * In case tokens have been accidentally sent directly to this contract.
      * Make sure to be fast as anyone can call this!
      */
-    function recover(address ercAddress, address to, uint256 amount) external {
-        require(IERC20(ercAddress).transfer(to, amount));
+    function recover(IERC20 ercAddress, address to, uint256 amount) external {
+        require(ercAddress.transfer(to, amount));
     }
 
     // solhint-disable-next-line no-empty-blocks

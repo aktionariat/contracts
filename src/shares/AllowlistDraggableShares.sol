@@ -27,13 +27,10 @@
 */
 pragma solidity ^0.8.0;
 
-import "../recovery/ERC20Recoverable.sol";
 import "../ERC20/ERC20Allowlistable.sol";
-import "../draggable/ERC20Draggable.sol";
+import "./DraggableShares.sol";
 
-contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Recoverable {
-
-  string public terms;
+contract AllowlistDraggableShares is ERC20Allowlistable, DraggableShares {
 
   constructor(
     string memory _terms,
@@ -45,29 +42,17 @@ contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Re
     address _oracle,
     address _owner
   )
-    ERC20Draggable(_wrappedToken, _quorum, _votePeriod, _offerFactory, _oracle) 
-    ERC20Flaggable(0)
-    ERC20Recoverable(_recoveryHub)
+    DraggableShares(_terms, _wrappedToken, _quorum, _votePeriod, _recoveryHub, _offerFactory, _oracle)
     Ownable(_owner)
   {
-    terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
-    _recoveryHub.setRecoverable(false); 
+    // initialization is done in ERC20Allowlistbale and DraggableShares
   }
 
-  /**
-  * Let the oracle act as deleter of invalid claims. In earlier versions, this was referring to the claim deleter
-  * of the wrapped token. But that stops working after a successful acquisition as the acquisition currency most
-  * likely does not have a claim deleter.
-  */
-  function getClaimDeleter() public view override returns (address) {
-      return oracle;
-  }
-
-  function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
+  function transfer(address to, uint256 value) virtual override(ERC20Flaggable, DraggableShares) public returns (bool) {
       return super.transfer(to, value);
   }
   
-  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, ERC20Draggable, ERC20Flaggable) internal {
+  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, DraggableShares) internal {
     super._beforeTokenTransfer(from, to, amount);
   }
 

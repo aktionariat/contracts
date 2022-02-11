@@ -72,6 +72,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
         totalShares = _totalShares;
         terms = _terms;
         invalidTokens = 0;
+        _recoveryHub.setRecoverable(false); 
     }
 
     function setTerms(string memory _terms) external onlyOwner {
@@ -105,7 +106,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
         super._setCustomClaimCollateral(collateral, rate);
     }
 
-    function getClaimDeleter() public virtual override view returns (address) {
+    function getClaimDeleter() public override view returns (address) {
         return owner;
     }
 
