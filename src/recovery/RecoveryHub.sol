@@ -131,12 +131,12 @@ contract RecoveryHub is IRecoveryHub {
 
     function clearClaim(IRecoverable token, address holder) private {
         Claim memory claim = claims[token][holder];
-        require(claim.collateral > 0, "already cleared");
-
-        IERC20 currency = IERC20(claim.currencyUsed);
-        delete claims[token][holder];
-        require(currency.transfer(holder, claim.collateral), "could not return collateral");
-        emit ClaimCleared(token, holder, claim.collateral);
+        if (claim.collateral > 0){
+            IERC20 currency = IERC20(claim.currencyUsed);
+            delete claims[token][holder];
+            require(currency.transfer(holder, claim.collateral), "could not return collateral");
+            emit ClaimCleared(token, holder, claim.collateral);
+        }
         IRecoverable(token).notifyClaimDeleted(holder);
     }
 
