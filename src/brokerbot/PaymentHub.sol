@@ -44,6 +44,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 contract PaymentHub {
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
+    address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
     
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
@@ -245,7 +246,7 @@ contract PaymentHub {
     }
 
     function isBaseCurrencyCHF(IERC20 base) private pure returns (bool) {
-        if (address(base) == address(0xB4272071eCAdd69d933AdcD19cA99fe80664fc08)) {
+        if (address(base) == CHF_TOKEN) {
             return true;
         }
         return false;

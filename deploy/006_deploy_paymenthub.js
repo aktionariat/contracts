@@ -1,4 +1,5 @@
 const Confirm = require('prompt-confirm');
+const config = require("../scripts/deploy_config.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -18,7 +19,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
     console.log("chainlink chf usd: %s", priceFeedCHFUSD);
-    console.log("chainlink eth usd", priceFeedETHUSD);
+    console.log("chainlink eth usd: %s", priceFeedETHUSD);
+    console.log("uniswap qouter: %s", uniswapQuoter);
+    console.log("uniswap router: %s", uniswapRouter);
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -36,7 +39,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       uniswapQuoter,
       uniswapRouter,
       priceFeedCHFUSD,
-      priceFeedETHUSD],
+      priceFeedETHUSD
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
