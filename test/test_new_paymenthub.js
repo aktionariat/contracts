@@ -65,9 +65,9 @@ describe("New PaymentHub", () => {
   let sig2;
   let sig3;
   let sig4;
+  let sig5;
   let accounts;
   let signers;
-  let oracle;
 
   let chance;
   let name;
@@ -86,9 +86,9 @@ describe("New PaymentHub", () => {
 
   before(async () => {
     // get signers and accounts of them
-    [deployer,owner,sig1,sig2,sig3,sig4,oracle] = await ethers.getSigners();
+    [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
     signers = [owner,sig1,sig2,sig3,sig4];
-    accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address];
+    accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
     chance = new Chance();
 
     // random test data with chance

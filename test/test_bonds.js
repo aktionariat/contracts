@@ -36,11 +36,12 @@ describe("Bond Contract", () => {
   let adr2;
   let adr3;
   let adr4;
+  let adr5;
   let accounts;
 
   before(async () => {
-    [deployer,owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
-    accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
+    [deployer,owner,adr1,adr2,adr3,adr4,adr5] = await ethers.getSigners();
+    accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address,adr5.address];
     //console.log(accounts);
 
     chance = new Chance();
