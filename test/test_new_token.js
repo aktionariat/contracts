@@ -626,6 +626,14 @@ describe("New Standard", () => {
   });
 
   describe("Allowlist Draggable", () => {
+
+    it("Should revert if not owner sets type", async () => {
+      // use sig1 for allowlist
+      const allowlistAddress = sig1.address;
+      await expect(allowlistDraggable.connect(sig1)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED))
+        .to.be.revertedWith("not owner");
+    });
+    
     it("Should allow wrap on allowlist", async () => {
       // use sig1 for allowlist
       const allowlistAddress = sig1.address;
@@ -722,6 +730,25 @@ describe("New Standard", () => {
       // cleans allowlist address to be default now
       expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(allowlistAddress)).to.equal(false);
+    });
+
+    it("Should clean forbidden address after removed restriction", async () => {
+      // use sig4 for forbidden
+      const forbiddenAddress = sig4.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+
+      // use sig5 as default
+      const defaultAddress = sig5.address
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+
+      // allow transfer from allowlist(sig4) to default(sig5) -- (what failed before with resriction on)
+      await allowlistShares.connect(sig4).transfer(defaultAddress, "10");
+      // cleans allowlist address to be default now
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
     });
   });
 });
