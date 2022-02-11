@@ -42,9 +42,12 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
  * using the current exchange rate as found in the chainlink oracle.
  */
 contract PaymentHub {
+
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
     address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
+
+    uint8 private override constant KEEP_ETHER = 0x4; // copied from brokerbot
     
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
@@ -90,32 +93,27 @@ contract PaymentHub {
      * Price in ETH with 18 decimals
      */
     function getPriceInEtherFromOracle(uint256 amountInBase, IERC20 base) public view returns (uint256) {
-        if(isBaseCurrencyCHF(base)) {
-            return uint256(getLatestPriceCHFUSD()) * amountInBase / uint256(getLatestPriceETHUSD());        }
-        return amountInBase * DENOMINATOR / uint256(getLatestPriceETHUSD());
-    }
-
-    /**
-     * Price in USD with 18 decimals
-     */
-    function getPriceInUSD(uint256 amountInBase) public view returns (uint256) {
-        return uint256(getLatestPriceCHFUSD()) * amountInBase / DENOMINATOR;
+        if(address(base) == CHF_TOKEN) {
+            return getLatestPriceCHFUSD() * amountInBase / getLatestPriceETHUSD();
+        } else {
+            return amountInBase * DENOMINATOR / getLatestPriceETHUSD();
+        }
     }
 
     /**
      * Returns the latest price of eth/usd pair from chainlink with 8 decimals
      */
-    function getLatestPriceETHUSD() public view returns (int256) {
+    function getLatestPriceETHUSD() public view returns (uint256) {
         (, int256 price, , , ) = priceFeedETHUSD.latestRoundData();
-        return price;
+        return uint256(price);
     }
 
     /**
      * Returns the latest price of chf/usd pair from chainlink with 8 decimals
      */
-    function getLatestPriceCHFUSD() public view returns (int256) {
+    function getLatestPriceCHFUSD() public view returns (uint256) {
         (, int256 price, , , ) = priceFeedCHFUSD.latestRoundData();
-        return price;
+        return uint256(price);
     }
 
     /**
@@ -206,12 +204,12 @@ contract PaymentHub {
         IBrokerbot(recipient).processIncoming(token, msg.sender, amount, ref);
     }
 
-    function payFromEtherAndNotify(address recipient, uint256 amountInBase, bytes calldata ref) external payable {
-        IERC20 base = IBrokerbot(recipient).base();
+    function payFromEtherAndNotify(IBrokerbot recipient, uint256 amountInBase, bytes calldata ref) external payable {
+        IERC20 base = recipient.base();
         // Check if the brokerbot has setting to keep ETH
-        if (hasSettingKeepEther(IBrokerbot(recipient))) {
+        if (hasSettingKeepEther(recipient)) {
             uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, base);
-            IBrokerbot(recipient).processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
+            recipient.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
@@ -221,7 +219,7 @@ contract PaymentHub {
 
         } else {
             payFromEther(recipient, amountInBase, base);
-            IBrokerbot(recipient).processIncoming(base, msg.sender, amountInBase, ref);
+            recipient.processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
 
@@ -242,14 +240,7 @@ contract PaymentHub {
      * Checks if the recipient(brokerbot) has setting enabled to keep ether
      */
     function hasSettingKeepEther(IBrokerbot recipient) public view returns (bool) {
-        return recipient.settings() & recipient.KEEP_ETHER() == recipient.KEEP_ETHER();
-    }
-
-    function isBaseCurrencyCHF(IERC20 base) private pure returns (bool) {
-        if (address(base) == CHF_TOKEN) {
-            return true;
-        }
-        return false;
+        return recipient.settings() & KEEP_ETHER == KEEP_ETHER;
     }
 
     /**
