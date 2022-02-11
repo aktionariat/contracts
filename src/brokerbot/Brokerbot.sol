@@ -46,10 +46,10 @@ contract Brokerbot is IBrokerbot, Ownable {
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
 
     event Trade(IERC20 indexed token, address indexed who, bytes ref, int amount, IERC20 indexed base, uint totPrice, uint newprice);
-    event PaymentHubUpdated(address indexed paymentHub);
+    event PaymentHubUpdate(address indexed paymentHub);
     event PriceSet(uint256 price, uint256 increment);
     event DriftSet(uint256 timeToDrift, int256 driftIncrement);
-    event SettingsChanged(uint256 setting);
+    event SettingsChange(uint256 setting);
 
     constructor(
         IERC20 _token,
@@ -261,12 +261,12 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     function setPaymentHub(address hub) external onlyOwner() {
         paymenthub = hub;
-        emit PaymentHubUpdated(paymenthub);
+        emit PaymentHubUpdate(paymenthub);
     }
 
     function setSettings(uint256 _settings) public onlyOwner() {
         settings = _settings;
-        emit SettingsChanged(_settings);
+        emit SettingsChange(_settings);
     }
 
     function setEnabled(bool _buyingEnabled, bool _sellingEnabled) external onlyOwner() {
