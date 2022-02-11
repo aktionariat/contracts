@@ -45,7 +45,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
 
-    event Trade(IERC20 indexed token, address indexed who, bytes ref, int amount, IERC20 indexed base, uint totPrice, uint newprice);
+    event Trade(IERC20 indexed token, address who, bytes ref, int amount, IERC20 base, uint totPrice, uint fee, uint newprice);
     event PaymentHubUpdate(address indexed paymentHub);
     event PriceSet(uint256 price, uint256 increment);
     event DriftSet(uint256 timeToDrift, int256 driftIncrement);
@@ -133,7 +133,7 @@ contract Brokerbot is IBrokerbot, Ownable {
         // require(hasSetting(BUYING_ENABLED) || msg.sender == owner, "buying disabled");
         uint costs = getBuyPrice(shares);
         price = price + (shares * increment);
-        emit Trade(token, from, ref, int256(shares), base, costs, getPrice());
+        emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
         return costs;
     }
 
@@ -209,7 +209,7 @@ contract Brokerbot is IBrokerbot, Ownable {
         if (isDirectSale(ref)){
             baseToken.transfer(recipient, totPrice);
         }
-        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, getPrice());
+        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, 0, getPrice());
         return totPrice;
     }
 
