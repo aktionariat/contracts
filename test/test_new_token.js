@@ -78,13 +78,13 @@ describe("New Standard", () => {
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
 
-    //Mint shares to first 5 accounts
-    for( let i = 0; i < 5; i++) {
+    //Mint shares to accounts
+    for( let i = 0; i < accounts.length; i++) {
       await shares.connect(owner).mint(accounts[i], 1000000);
     }
 
      // Convert some Shares to DraggableShares
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < accounts.length; i++) {
       await shares.connect(signers[i]).approve(draggable.address, config.infiniteAllowance);
       await draggable.connect(signers[i]).wrap(accounts[i], 900000);
     }
@@ -338,10 +338,32 @@ describe("New Standard", () => {
       await expect(recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig1.address))
         .to.be.revertedWith("disabled");
     });
+
+    it("Should remove claim when token are transfered", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddressBalance = await draggable.balanceOf(sig4.address);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, sig4.address);
+      // check if flag is set
+      expect(await draggable.hasFlag(sig4.address, 10)).to.equal(true);
+      // transfer to lost address
+      await draggable.connect(owner).transfer(sig4.address, "10");
+      // after transfer to lost address still claim on it
+      expect(await draggable.hasFlag(sig4.address, 10)).to.equal(true);
+      // transfer from last address (to clear claim)
+      await draggable.connect(sig4).transfer(sig5.address, "10");
+      // claim cleared
+      expect(await draggable.hasFlag(sig4.address, 10)).to.equal(false);
+      // get collateral
+      expect(await draggable.balanceOf(sig4.address)).to.equal(await lostAddressBalance.mul(2));
+
+    });
     it("Should able to recover token", async () => {
       await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
       const amountLost = await draggable.balanceOf(sig3.address);
       const amountClaimer = await draggable.balanceOf(sig2.address);
+      // sig2 declares lost funds at sig3
       await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig3.address);
 
       // check if flag is set
