@@ -39,16 +39,17 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     // Version history
     // Version 2: added ability to process bank orders even if buying disabled
-    uint8 private constant VERSION = 0x2;
+    // Version 3: added various events, removed license fee
+    uint8 private constant VERSION = 0x3;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
 
     event Trade(IERC20 indexed token, address indexed who, bytes ref, int amount, IERC20 indexed base, uint totPrice, uint newprice);
-    event ChangePaymentHub(address indexed paymentHub, address indexed who);
-    event ChangePrice(uint256 price, uint256 increment);
-    event ChangeDrift(uint256 timeToDrift, int256 driftIncrement);
-    event ChangeSetting(uint256 setting);
+    event PaymentHubUpdated(address indexed paymentHub);
+    event PriceSet(uint256 price, uint256 increment);
+    event DriftSet(uint256 timeToDrift, int256 driftIncrement);
+    event SettingsChanged(uint256 setting);
 
     constructor(
         IERC20 _token,
@@ -72,7 +73,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     function setPrice(uint256 _price, uint256 _increment) external onlyOwner {
         anchorPrice(_price);
         increment = _increment;
-        emit ChangePrice(_price, _increment);
+        emit PriceSet(_price, _increment);
     }
 
     function hasDrift() public view returns (bool) {
@@ -84,7 +85,7 @@ contract Brokerbot is IBrokerbot, Ownable {
         anchorPrice(getPrice());
         timeToDrift = secondsPerStep;
         driftIncrement = _driftIncrement;
-        emit ChangeDrift(secondsPerStep, _driftIncrement);
+        emit DriftSet(secondsPerStep, _driftIncrement);
     }
 
     function anchorPrice(uint256 currentPrice) private {
@@ -260,24 +261,23 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     function setPaymentHub(address hub) external onlyOwner() {
         paymenthub = hub;
-        emit ChangePaymentHub(paymenthub, msg.sender);
+        emit PaymentHubUpdated(paymenthub);
     }
 
     function setSettings(uint256 _settings) public onlyOwner() {
         settings = _settings;
-        emit ChangeSetting(_settings);
+        emit SettingsChanged(_settings);
     }
 
     function setEnabled(bool _buyingEnabled, bool _sellingEnabled) external onlyOwner() {
         uint256 _settings = settings;
         if (_buyingEnabled != hasSetting(BUYING_ENABLED)){
             _settings ^= BUYING_ENABLED;
-            setSettings(_settings);
         }
         if (_sellingEnabled != hasSetting(SELLING_ENABLED)){
             _settings ^= SELLING_ENABLED;
-            setSettings(_settings);
         }
+        setSettings(_settings);
     }
     
     modifier ownerOrHub() {
