@@ -242,7 +242,7 @@ contract PaymentHub {
      * Checks if the recipient(brokerbot) has setting enabled to keep ether
      */
     function hasSettingKeepEther(IBrokerbot recipient) public view returns (bool) {
-        return recipient.settings() & recipient.KEEP_ETHER() == recipient.KEEP_ETHER();
+        return recipient.settings() & 0x4 == 0x4;
     }
 
     function isBaseCurrencyCHF(IERC20 base) private pure returns (bool) {

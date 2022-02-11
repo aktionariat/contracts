@@ -31,5 +31,9 @@ module.exports = {
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+  wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  // brokerbot
+  BUYING_ENABLED: 0x1,
+  SELLING_ENABLED: 0x2,
+  KEEP_ETHER: 0x4
 };

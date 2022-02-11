@@ -172,7 +172,7 @@ describe("New PaymentHub", () => {
     });
 
     it("Should set setting for keeping ETH", async () => {
-      const settingKeepETh = 4;
+      const settingKeepETh = config.KEEP_ETHER;
       const settingsBefore = await brokerbot.settings();
 
       // new setting with combination of old setting plus keep ETH

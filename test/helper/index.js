@@ -59,12 +59,12 @@ async function sendEther(signer, to, amount) {
 
 async function buyingEnabled(brokerbot) {
   const settings = await brokerbot.settings();
-  return (settings & await brokerbot.BUYING_ENABLED()) == await brokerbot.BUYING_ENABLED();
+  return (settings & config.BUYING_ENABLED) == config.BUYING_ENABLED;
 }
 
 async function sellingEnabled(brokerbot) {
   const settings = await brokerbot.settings();
-  return (settings & await brokerbot.SELLING_ENABLED()) == await brokerbot.SELLING_ENABLED();
+  return (settings & config.SELLING_ENABLED) == config.SELLING_ENABLED;
 }
 
 
