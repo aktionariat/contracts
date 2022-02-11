@@ -46,7 +46,7 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     event Trade(IERC20 indexed token, address indexed who, bytes ref, int amount, IERC20 indexed base, uint totPrice, uint newprice);
     event ChangePaymentHub(address indexed paymentHub, address indexed who);
-    event ChangePrice(uint256 price, uint256 increment);
+    event ChangePriceSetting(uint256 price, uint256 increment);
     event ChangeDrift(uint256 timeToDrift, int256 driftIncrement);
     event ChangeSetting(uint256 setting);
 
@@ -72,7 +72,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     function setPrice(uint256 _price, uint256 _increment) external onlyOwner {
         anchorPrice(_price);
         increment = _increment;
-        emit ChangePrice(_price, _increment);
+        emit ChangePriceSetting(_price, _increment);
     }
 
     function hasDrift() public view returns (bool) {
