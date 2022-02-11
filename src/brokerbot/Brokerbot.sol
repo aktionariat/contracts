@@ -32,10 +32,10 @@ contract Brokerbot is IBrokerbot, Ownable {
     int256 public driftIncrement;
 
     // Note that these settings might be hard-coded in various places, so better not change these values.
-    uint8 public override constant BUYING_ENABLED = 0x1;
-    uint8 public override constant SELLING_ENABLED = 0x2;
+    uint8 private constant BUYING_ENABLED = 0x1;
+    uint8 private constant SELLING_ENABLED = 0x2;
     // note that in the UI, we call the setting "convert ether", which is the opposite
-    uint8 public override constant KEEP_ETHER = 0x4;
+    uint8 private constant KEEP_ETHER = 0x4;
 
     // Version history
     // Version 2: added ability to process bank orders even if buying disabled

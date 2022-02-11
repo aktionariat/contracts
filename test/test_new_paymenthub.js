@@ -147,8 +147,6 @@ describe("New PaymentHub", () => {
       xchfamount = await brokerbot.getBuyPrice(randomAmount);
     });
     it("Should get price in ETH", async () => {
-      const priceusd = await paymentHub.getPriceInUSD(ethers.utils.parseEther("100"));
-      // console.log(await ethers.utils.formatEther(priceusd));
       const priceeth = await paymentHub.getLatestPriceETHUSD();
       // console.log(await priceeth.toString());
       
@@ -172,7 +170,7 @@ describe("New PaymentHub", () => {
     });
 
     it("Should set setting for keeping ETH", async () => {
-      const settingKeepETh = 4;
+      const settingKeepETh = config.KEEP_ETHER;
       const settingsBefore = await brokerbot.settings();
 
       // new setting with combination of old setting plus keep ETH

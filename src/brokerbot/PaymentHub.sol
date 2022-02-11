@@ -47,7 +47,7 @@ contract PaymentHub {
     uint256 private constant DENOMINATOR = 1e8;
     address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
 
-    uint8 private override constant KEEP_ETHER = 0x4; // copied from brokerbot
+    uint8 private constant KEEP_ETHER = 0x4; // copied from brokerbot
     
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
@@ -218,7 +218,7 @@ contract PaymentHub {
             }
 
         } else {
-            payFromEther(recipient, amountInBase, base);
+            payFromEther(address(recipient), amountInBase, base);
             recipient.processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
