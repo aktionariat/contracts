@@ -44,11 +44,7 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
     ERC20Allowlistable()
   {
-    _recoveryHub.setRecoverable(false); 
-  }
-
-  function getClaimDeleter() public override view returns (address) {
-      return owner;
+    // initialization in shares
   }
 
   function transfer(address recipient, uint256 amount) override(Shares, ERC20Flaggable) virtual public returns (bool) {
