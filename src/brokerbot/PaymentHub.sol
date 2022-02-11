@@ -218,7 +218,7 @@ contract PaymentHub {
             }
 
         } else {
-            payFromEther(recipient, amountInBase, base);
+            payFromEther(address(recipient), amountInBase, base);
             recipient.processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
