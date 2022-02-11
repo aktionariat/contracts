@@ -70,9 +70,10 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	uint256 public immutable quorum; // BPS (out of 10'000)
 	uint256 public immutable votePeriod; // In seconds
 
-	address private oracle;
+	address public override oracle;
 
 	event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
+	event ChangeOracle(address oracle);
 
     /**
 	 * Note that the Brokerbot only supports tokens that revert on failure and where transfer never returns false.
@@ -202,13 +203,10 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
 	}
 
-	function getOracle() public view override returns (address) {
-		return oracle;
-	}
-
 	function setOracle(address newOracle) external {
 		require(msg.sender == oracle, "not oracle");
 		oracle = newOracle;
+		emit ChangeOracle(oracle);
 	}
 
 	function migrateWithExternalApproval(address successor, uint256 additionalVotes) external {

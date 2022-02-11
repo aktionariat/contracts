@@ -7,6 +7,8 @@ module.exports = {
   sharePrice: "1000000000000000000",
   baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
+  baseCurrencyName: "CryptoFranc",
+  baseCurrencySymbol: "XCHF",
   xchfBalanceSlot: 2,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",

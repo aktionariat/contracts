@@ -302,9 +302,11 @@ describe("New Standard", () => {
     it("Should set new oracle", async () => {
       const newOracle = sig1.address;
       await draggable.connect(oracle).setOracle(newOracle);
-      //expect(await draggable.oracle()).to.equal(newOracle);
-      // reset oracle for for offer testing
-      await draggable.connect(sig1).setOracle(owner.address);
+      expect(await draggable.oracle()).to.equal(newOracle);
+      // reset oracle for offer testing
+      await expect(draggable.connect(sig1).setOracle(owner.address))
+        .to.emit(draggable, 'ChangeOracle')
+        .withArgs(owner.address);
     });
 
     it("Should burn draggable shares", async () => {
@@ -364,11 +366,14 @@ describe("New Standard", () => {
   });
 
   describe("Offer", () => {
+    let pricePerShare;
     beforeEach(async () => {
       const overrides = {
         value: ethers.utils.parseEther("5.0")
       }
-      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("2"), baseCurrency.address, overrides)
+      pricePerShare = ethers.utils.parseEther("2");
+      const salt = ethers.utils.formatBytes32String('1');
+      await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
       const blockNum = await ethers.provider.getBlockNumber();
       const block= await ethers.provider.getBlock(blockNum);
     });
@@ -445,11 +450,24 @@ describe("New Standard", () => {
 
       //execute
       await baseCurrency.connect(sig1).approve(offer.address, config.infiniteAllowance);
-      await offer.connect(sig1).execute();
+      await expect(offer.connect(sig1).execute())
+        .to.emit(draggable, "NameChanged")
+        .withArgs(`${config.baseCurrencyName} (Wrapped)`, `${config.baseCurrencySymbol}S`);
 
       // after execute all draggable shares are transfered to the buyer, if the buyer already had
       // shares they have to be added to compare to the new balance
       expect(await shares.balanceOf(sig1.address)).to.equal(draggableTotal.add(buyerBal));
+
+      // wrapped token in draggable is now base currency
+      expect(await draggable.wrapped()).to.equal(baseCurrency.address);
+
+      // balance of draggable in base currency is pricePerShare*totalSupply
+      const draggableBaseCurrencyBalance = await baseCurrency.balanceOf(draggable.address);
+      const draggableTotalSupply = await draggable.totalSupply();
+      expect(draggableBaseCurrencyBalance).to.equal(await draggableTotalSupply.mul(pricePerShare));
+
+      // unwrap conversion factor is base currency balance / totalsupply
+      expect(await draggable.unwrapConversionFactor()).to.equal(await draggableBaseCurrencyBalance.div(draggableTotalSupply));
     });
 
     afterEach(async () => {

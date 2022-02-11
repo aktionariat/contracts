@@ -60,7 +60,7 @@ contract AllowlistDraggableShares is ERC20Allowlistable, ERC20Draggable, ERC20Re
   * likely does not have a claim deleter.
   */
   function getClaimDeleter() public view override returns (address) {
-      return getOracle();
+      return oracle;
   }
 
   function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {

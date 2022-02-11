@@ -66,7 +66,7 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
      * likely does not have a claim deleter.
      */
     function getClaimDeleter() public view override returns (address) {
-        return getOracle();
+        return oracle;
     }
 
     function getCollateralRate(IERC20 collateralType) public view override returns (uint256) {

@@ -201,7 +201,7 @@ contract Offer is IOffer {
      * oracle should always report the total number of yes and no votes. Abstentions are not counted.
      */
     function reportExternalVotes(uint256 yes, uint256 no) external {
-        require(msg.sender == token.getOracle(), "not oracle");
+        require(msg.sender == token.oracle(), "not oracle");
         require(yes + no + IERC20(address(token)).totalSupply() <= token.totalVotingTokens(), "too many votes");
         // adjust total votes taking into account that the oralce might have reported different counts before
         yesVotes = yesVotes - yesExternal + yes;
