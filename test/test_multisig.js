@@ -56,7 +56,7 @@ describe("Multisig", () => {
 
     // initialize is already called with create and should revert
     await expect(multiSigClone.initialize(adr1.address)).to.be
-        .revertedWith("Initializable: contract is already initialized");
+        .revertedWith("already initialized");
   });
 
   it("Should create unique contract id for clone", async () => {
