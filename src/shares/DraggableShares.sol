@@ -50,13 +50,14 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         IOfferFactory _offerFactory,
         address _oracle
     )
-        ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle) ERC20Flaggable(0) ERC20Recoverable(_recoveryHub) 
+        ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle)
+        ERC20Recoverable(_recoveryHub) 
     {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
         _recoveryHub.setRecoverable(false);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
         return super.transfer(to, value);
     }
 
@@ -87,7 +88,7 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         }
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Draggable, ERC20Flaggable) internal {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Draggable) internal {
         super._beforeTokenTransfer(from, to, amount);
     }
 

@@ -49,7 +49,7 @@ import "./IOffer.sol";
 import "./IOfferFactory.sol";
 import "../shares/IShares.sol";
 
-abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable {
+abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable {
     
 	// If flag is not present, one can be sure that the address did not vote. If the 
 	// flag is present, the address might have voted and one needs to check with the
@@ -84,7 +84,9 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 		uint256 _votePeriod,
 		IOfferFactory _offerFactory,
 		address _oracle
-	) {
+	) 
+		ERC20Flaggable(0)
+	{
 		wrapped = _wrappedToken;
 		quorum = _quorum;
 		votePeriod = _votePeriod;

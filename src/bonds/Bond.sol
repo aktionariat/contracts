@@ -39,7 +39,7 @@ import "../ERC20/IERC677Receiver.sol";
  * @notice In order to prevent malicious attempts, a collateral needs to be posted.
  * @notice The contract owner can delete claims in case of disputes.
  */
-contract Bond is ERC20Recoverable, ERC20Named {
+contract Bond is ERC20Named, ERC20Recoverable {
 
     string public terms;
     uint256 public immutable deployTimestamp; // the timestamp of the contract deployment
@@ -56,8 +56,8 @@ contract Bond is ERC20Recoverable, ERC20Named {
         address _owner,
         IRecoveryHub _recoveryHub
     ) 
-        ERC20Named(_symbol, _name, 0, _owner)
         ERC20Recoverable(_recoveryHub)
+        ERC20Named(_symbol, _name, 0, _owner)
     {
         symbol = _symbol;
         name = _name;
@@ -95,7 +95,7 @@ contract Bond is ERC20Recoverable, ERC20Named {
         _mint(target, amount);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
         return super.transfer(to, value);
     }
 

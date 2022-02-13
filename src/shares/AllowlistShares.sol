@@ -47,15 +47,15 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     // initialization in shares
   }
 
-  function transfer(address recipient, uint256 amount) override(Shares, ERC20Flaggable) virtual public returns (bool) {
+  function transfer(address recipient, uint256 amount) override(ERC20Flaggable, Shares) virtual public returns (bool) {
     return super.transfer(recipient, amount); 
   }
 
-  function _mint(address account, uint256 amount) internal override(Shares, ERC20Flaggable) {
+  function _mint(address account, uint256 amount) internal override(ERC20Flaggable, Shares) {
       super._mint(account, amount);
   }
 
-  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, ERC20Flaggable) internal {
+  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Allowlistable) internal {
     super._beforeTokenTransfer(from, to, amount);
   }
 
