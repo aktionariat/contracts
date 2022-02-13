@@ -338,9 +338,8 @@ describe("New Standard", () => {
     it("Draggable should get conversion factors from shares", async () => {
       expect(await draggable.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
       expect(await draggable.getCollateralRate(draggable.address)).to.equal(1);
-      const factor = await draggable.unwrapConversionFactor();
-      expect(await draggable.getCollateralRate(shares.address)).to.equal(factor);
-      expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate).mul(factor));
+      expect(await draggable.getCollateralRate(shares.address)).to.equal(1);
+      expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate));
     });
 
     it("Should delete claim", async () => {
@@ -379,9 +378,9 @@ describe("New Standard", () => {
       // claim cleared
       expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
       // get collateral
-      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2));
-
+      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
     });
+
     it("Should able to recover token", async () => {
       await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
       const amountLost = await draggable.balanceOf(sig3.address);
@@ -666,9 +665,9 @@ describe("New Standard", () => {
       await allowlistShares.connect(sig1).approve(allowlistDraggable.address, config.infiniteAllowance);
 
       // wrap w/ permisson
-      await allowlistDraggable.connect(sig1).wrap(allowlistAddress, "10");
+      await allowlistDraggable.connect(sig1).wrap(allowlistAddress, "100");
       const balanceAllow = await allowlistDraggable.balanceOf(allowlistAddress);
-      expect(balanceAllow).to.equal(ethers.BigNumber.from(10));
+      expect(balanceAllow).to.equal(ethers.BigNumber.from(100));
     });
 
     it("Should revert wrap to forbidden", async () => {
@@ -713,14 +712,18 @@ describe("New Standard", () => {
     it("Should remove restriction", async () => {
       // restrict should be true
       expect(await allowlistShares.restrictTransfers()).to.equal(true);
+      expect(await allowlistDraggable.restrictTransfers()).to.equal(true);
 
       // can only be set by owner
       await expect(allowlistShares.setApplicable(false)).to.be.revertedWith("not owner");
+      await expect(allowlistDraggable.setApplicable(false)).to.be.revertedWith("not owner");
 
       await allowlistShares.connect(owner).setApplicable(false);
+      await allowlistDraggable.connect(owner).setApplicable(false);
 
       // restrict should be false
-      expect(await allowlistShares.restrictTransfers()).to.equal(false);
+      expect(await allowlistShares.restrictTransfers()).to.equal(false)
+      expect(await allowlistDraggable.restrictTransfers()).to.equal(false)
     });
 
     it("Should clean forbidden address after removed restriction", async () => {
@@ -772,6 +775,30 @@ describe("New Standard", () => {
       // cleans allowlist address to be default now
       expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
+    });
+
+
+    it("Should remove claim when token are transfered", async () => {
+      await allowlistDraggable.connect(sig1).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig3.address;
+      const lostSigner = sig3;
+      const lostAddressBalance = await allowlistDraggable.balanceOf(lostAddress);
+      console.log(await lostAddressBalance.toString());
+
+      // declare token lost
+      await recoveryHub.connect(sig1).declareLost(allowlistDraggable.address, allowlistDraggable.address, lostAddress);
+      // check if flag is set
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer to lost address
+      await allowlistDraggable.connect(sig1).transfer(lostAddress, "10");
+      // after transfer to lost address still claim on it
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer from lost address (to clear claim)
+      await allowlistDraggable.connect(lostSigner).transfer(sig1.address, "10");
+      // claim cleared
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(false);
+      // get collateral
+      expect(await allowlistDraggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
     });
   });
 });
