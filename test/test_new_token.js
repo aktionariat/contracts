@@ -319,6 +319,10 @@ describe("New Standard", () => {
     });
 
     it("Should set custom claim collateral for shares", async () => {
+      // check for custom collateral address("0x0000000000000000000000000000000000000000")
+      await shares.connect(owner).setCustomClaimCollateral(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"), 100);
+      expect(await shares.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
+
       // test that only owenr can set
       await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
         .to.be.revertedWith("not owner");
@@ -332,6 +336,7 @@ describe("New Standard", () => {
     });
 
     it("Draggable should get conversion factors from shares", async () => {
+      expect(await draggable.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
       expect(await draggable.getCollateralRate(draggable.address)).to.equal(1);
       const factor = await draggable.unwrapConversionFactor();
       expect(await draggable.getCollateralRate(shares.address)).to.equal(factor);
