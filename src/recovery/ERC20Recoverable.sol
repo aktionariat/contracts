@@ -113,22 +113,22 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     }
 
     function notifyClaimMade(address target) external override {
-        require(msg.sender == address(recovery), "sender");
+        require(msg.sender == address(recovery), "not recovery");
         setFlag(target, FLAG_CLAIM_PRESENT, true);
     }
 
     function notifyClaimDeleted(address target) external override {
-        require(msg.sender == address(recovery), "sender");
+        require(msg.sender == address(recovery), "not recovery");
         setFlag(target, FLAG_CLAIM_PRESENT, false);
     }
 
     function deleteClaim(address lostAddress) external {
-        require(msg.sender == getClaimDeleter(), "sender");
+        require(msg.sender == getClaimDeleter(), "not claim deleter");
         recovery.deleteClaim(lostAddress);
     }
 
     function recover(address oldAddress, address newAddress) external override {
-        require(msg.sender == address(recovery), "sender");
+        require(msg.sender == address(recovery), "not recovery");
         _transfer(oldAddress, newAddress, balanceOf(oldAddress));
     }
 

@@ -338,6 +338,23 @@ describe("New Standard", () => {
       expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate).mul(factor));
     });
 
+    it("Should delete claim", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const claimAdress = sig5.address;
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+      const balanceClaimer = await draggable.balanceOf(claimAdress);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // delete claim as non oracle
+      await expect(draggable.connect(sig4).deleteClaim(lostAddress)).to.be.revertedWith("not claim deleter");
+      // delete claim as oracle
+      await draggable.connect(oracle).deleteClaim(lostAddress);
+      expect(await draggable.balanceOf(claimAdress)).to.equal(balanceClaimer);
+    })
+
     it("Should remove claim when token are transfered", async () => {
       await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
       const lostAddress = sig4.address;
