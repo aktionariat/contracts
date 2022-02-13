@@ -180,17 +180,6 @@ describe("New Standard", () => {
   });
 
   describe("Shares", () => {
-    it("Should set custom claim collateral for shares", async () => {
-      const collateralAddress = config.baseCurrencyAddress;
-      const collateralRate = 10;
-      // test that only owenr can set
-      await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
-      .to.be.revertedWith("not owner");
-      // test with owner
-      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
-      expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
-      expect(await shares.customCollateralRate()).to.equal(collateralRate);
-    });
 
     it("Should change terms for shares", async () => {
       const newTerms = "www.test.com/newterms";
@@ -213,18 +202,6 @@ describe("New Standard", () => {
       await shares.connect(owner).setName(newSymbol, newName);
       expect(await shares.name()).to.equal(newName);
       expect(await shares.symbol()).to.equal(newSymbol);
-    })
-
-    it("Should set custom claim collateral for shares", async () => {
-      const collateralAddress = config.baseCurrencyAddress;
-      const collateralRate = 10;
-      // test that only owenr can set
-      await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
-        .to.be.revertedWith("not owner");
-      // test with owner
-      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
-      expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
-      expect(await shares.customCollateralRate()).to.equal(collateralRate);
     });
 
     it("Should change terms for shares", async () => {
@@ -328,6 +305,8 @@ describe("New Standard", () => {
   });
 
   describe("Recovery", () => {
+    const collateralAddress = config.baseCurrencyAddress;
+    const collateralRate = 10;
     it("Should able to disable recovery", async () => {
       const recovery = await ethers.getContractAt("RecoveryHub", await draggable.recovery());
       await recovery.connect(sig1).setRecoverable(false);
@@ -339,24 +318,46 @@ describe("New Standard", () => {
         .to.be.revertedWith("disabled");
     });
 
+    it("Should set custom claim collateral for shares", async () => {
+      // test that only owenr can set
+      await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
+        .to.be.revertedWith("not owner");
+      // test with owner
+      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
+      expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
+      expect(await shares.customCollateralRate()).to.equal(collateralRate);
+      expect(await shares.getCollateralRate(shares.address)).to.equal(1);
+      expect(await shares.getCollateralRate(collateralAddress)).to.equal(collateralRate);
+      expect(await shares.getCollateralRate(draggable.address)).to.equal(0);
+    });
+
+    it("Draggable should get conversion factors from shares", async () => {
+      expect(await draggable.getCollateralRate(draggable.address)).to.equal(1);
+      const factor = await draggable.unwrapConversionFactor();
+      expect(await draggable.getCollateralRate(shares.address)).to.equal(factor);
+      expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate).mul(factor));
+    });
+
     it("Should remove claim when token are transfered", async () => {
       await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
-      const lostAddressBalance = await draggable.balanceOf(sig4.address);
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
 
       // declare token lost
-      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, sig4.address);
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
       // check if flag is set
-      expect(await draggable.hasFlag(sig4.address, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
       // transfer to lost address
-      await draggable.connect(owner).transfer(sig4.address, "10");
+      await draggable.connect(owner).transfer(lostAddress, "10");
       // after transfer to lost address still claim on it
-      expect(await draggable.hasFlag(sig4.address, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
       // transfer from last address (to clear claim)
-      await draggable.connect(sig4).transfer(sig5.address, "10");
+      await draggable.connect(lostSigner).transfer(sig5.address, "10");
       // claim cleared
-      expect(await draggable.hasFlag(sig4.address, 10)).to.equal(false);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
       // get collateral
-      expect(await draggable.balanceOf(sig4.address)).to.equal(await lostAddressBalance.mul(2));
+      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2));
 
     });
     it("Should able to recover token", async () => {
@@ -633,7 +634,7 @@ describe("New Standard", () => {
       await expect(allowlistDraggable.connect(sig1)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED))
         .to.be.revertedWith("not owner");
     });
-    
+
     it("Should allow wrap on allowlist", async () => {
       // use sig1 for allowlist
       const allowlistAddress = sig1.address;
