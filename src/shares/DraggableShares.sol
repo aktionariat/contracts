@@ -73,12 +73,17 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
         uint256 rate = super.getCollateralRate(collateralType);
         if (rate > 0) {
             return rate;
-        } else if (address(collateralType) == address(wrapped)) {
-            return unwrapConversionFactor;
         } else {
-            // If the wrapped contract allows for a specific collateral, we should too.
-            // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
-            return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * unwrapConversionFactor;
+            // as long as it is binding, the conversion rate is 1:1
+            uint256 factor = isBinding() ? 1 : unwrapConversionFactor;
+            if (address(collateralType) == address(wrapped)) {
+                // allow wrapped token as collateral
+                return factor;
+            } else {
+                // If the wrapped contract allows for a specific collateral, we should too.
+                // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
+                return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * factor;
+            }
         }
     }
 
