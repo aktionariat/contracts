@@ -1,6 +1,6 @@
 const {network, ethers, deployments } = require("hardhat");
 const { expect } = require("chai");
-const config = require("../migrations/migration_config");
+const config = require("../scripts/deploy_config.js");
 
 describe("Multisig", () => {
   let multiSigMaster;
@@ -26,12 +26,8 @@ describe("Multisig", () => {
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
 
     await deployments.fixture(["MultiSigCloneFactory"]);
-    multiSigMaster = await ethers.getContract("MultiSigWalletMaster");
+    multiSigMaster = await ethers.getContract("MultiSigWalletMasterV2");
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
-
-    forceSend = await ethers.getContractFactory("ForceSend")
-        .then(factory => factory.deploy())
-        .then(contract => contract.deployed());
 
   });
 
@@ -60,7 +56,7 @@ describe("Multisig", () => {
 
     // initialize is already called with create and should revert
     await expect(multiSigClone.initialize(adr1.address)).to.be
-        .revertedWith("Initializable: contract is already initialized");
+        .revertedWith("already initialized");
   });
 
   it("Should create unique contract id for clone", async () => {

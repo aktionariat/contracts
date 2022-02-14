@@ -4,9 +4,10 @@
 const BN = require("bn.js");
 const hre = require("hardhat");
 const { artifacts, getUnnamedAccounts} = require("hardhat");
+const { sendEther, setBalance } = require("./helper/index");
 
-// Shared Migration Config
-const config = require("../migrations/migration_config");
+// Shared Config
+const config = require("../scripts/deploy_config.js");
 
 const Shares = artifacts.require("Shares");
 const DraggableShares = artifacts.require("DraggableShares");
@@ -17,14 +18,16 @@ const OfferFactory = artifacts.require("OfferFactory");
 
 const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
 const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
+const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
+const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
 // Import Contracts
-const ForceSend = artifacts.require("ForceSend");
 const ERC20Basic = artifacts.require("ERC20Basic");
 
 module.exports = async (deployer) => {
   const namedAcc = await deployer.getNamedAccounts();
   const accounts = await getUnnamedAccounts();
+  const [deploy] = await ethers.getSigners();
 
   const recoveryHub = await RecoveryHub.new();
   RecoveryHub.setAsDeployed(recoveryHub);
@@ -38,7 +41,7 @@ module.exports = async (deployer) => {
   const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts[0]);
   DraggableShares.setAsDeployed(draggableShares);
 
-  const paymentHub = await PaymentHub.new(priceFeedCHFUSD, priceFeedETHUSD);
+  const paymentHub = await PaymentHub.new(uniswapQuoter, uniswapRouter, priceFeedCHFUSD, priceFeedETHUSD);
   PaymentHub.setAsDeployed(paymentHub);
 
   const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, namedAcc.deployer, paymentHub.address);
@@ -56,25 +59,12 @@ module.exports = async (deployer) => {
   await brokerbot.approve(baseCurrency.address, paymentHub.address, new BN(config.infiniteAllowance));
 
   // Mint ETH to copyright owner for sending transactions
-  const forceSend = await ForceSend.new();
-  await forceSend.send(config.brokerbotCopyrightOwnerAddress, {value: 1000000000000000000})
+  /*const forceSend = await ForceSend.new();
+  await forceSend.send(config.brokerbotCopyrightOwnerAddress, {value: 1000000000000000000})*/
+  sendEther(deploy, config.brokerbotCopyrightOwnerAddress, "1");
 
   // Mint BaseCurrency to first 5 accounts
-  const forceSend2 = await ForceSend.new();
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: ["0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9"],
-  });
-  const signer = await ethers.getSigner("0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9")
-  await forceSend2.send(config.baseCurrencyMinterAddress, {value: 1000000000000000000})
-  for (let i = 0; i < 5; i++) {
-    await baseCurrency.mint(accounts[i], web3.utils.toWei("10000000"), { from: await signer.getAddress()});
-    // console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-  }
-  await hre.network.provider.request({
-    method: "hardhat_stopImpersonatingAccount",
-    params: ["0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9"],
-  });
+  await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
 
   // Mint Shares to first 5 accounts
   for (let i = 0; i < 5; i++) {

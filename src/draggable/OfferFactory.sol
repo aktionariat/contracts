@@ -28,21 +28,21 @@
 pragma solidity ^0.8.0;
 
 import "./Offer.sol";
+import "./IOffer.sol";
+import "./IOfferFactory.sol";
 
-contract OfferFactory {
-    
-    event OfferCreated(address contractAddress, string typeName);
+contract OfferFactory is IOfferFactory{
 
     // It must be possible to predict the address of the offer so one can pre-fund the allowance.
-    function predict(bytes32 salt, address buyer, address token, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod) external view returns (address) {
+    function predictOfferAddress(bytes32 salt, address buyer, IDraggable token, uint256 pricePerShare, IERC20 currency, uint256 quorum, uint256 votePeriod) external view returns (address) {
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(Offer).creationCode, abi.encode(buyer, token, pricePerShare, currency, quorum, votePeriod)));
         bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, initCodeHash));
         return address(uint160(uint256(hashResult)));
     }
 
     // Do not call directly, msg.sender must be the token to be acquired
-    function create(bytes32 salt, address buyer, uint256 pricePerShare, address currency, uint256 quorum, uint256 votePeriod) external payable returns (address) {
-        Offer offer = new Offer{value: msg.value, salt: salt}(buyer, msg.sender, pricePerShare, currency, quorum, votePeriod);
-        return address(offer);
+    function create(bytes32 salt, address buyer, uint256 pricePerShare, IERC20 currency, uint256 quorum, uint256 votePeriod) override external payable returns (IOffer) {
+        IOffer offer = new Offer{value: msg.value, salt: salt}(buyer, IDraggable(msg.sender), pricePerShare, currency, quorum, votePeriod);
+        return offer;
     }
 }

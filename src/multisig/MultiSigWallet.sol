@@ -5,7 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "../utils/Address.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "../utils/Initializable.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
@@ -21,7 +21,7 @@ contract MultiSigWallet is Nonce, Initializable {
 
   event SignerChange(
     address indexed signer,
-    uint8 cosignaturesNeeded
+    uint8 signaturesNeeded
   );
 
   event Transacted(
@@ -30,21 +30,24 @@ contract MultiSigWallet is Nonce, Initializable {
     address[] signers // Addresses of the signers used to initiate the transaction
   );
 
+  event Received(address indexed sender, uint amount);
+
   function initialize(address owner) external initializer {
-    // We use the gas price to get a unique id into our transactions.
+    // We use the gas price field to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
     // same id, but it practically rules out that someone accidentally creates two
     // two multisig contracts with the same id, and that's all we need to prevent
     // replay-attacks.
     contractId = toBytes(uint32(uint160(address(this))));
+    signerCount = 0;
     _setSigner(owner, 1); // set initial owner
   }
 
   /**
    * It should be possible to store ether on this address.
    */
-   // solhint-disable-next-line no-empty-blocks
   receive() external payable {
+    emit Received(msg.sender, msg.value);
   }
 
   /**
@@ -61,7 +64,7 @@ contract MultiSigWallet is Nonce, Initializable {
    */
   function checkExecution(address to, uint value, bytes calldata data) external {
     Address.functionCallWithValue(to, data, value);
-    require(false, "Test passed. Reverting.");
+    revert("Test passed. Reverting.");
   }
 
   function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external returns (bytes memory) {
@@ -121,8 +124,8 @@ contract MultiSigWallet is Nonce, Initializable {
     address[] memory found = new address[](r.length);
     for (uint i = 0; i < r.length; i++) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
-      uint8 cosignaturesNeeded = signers[signer];
-      require(cosignaturesNeeded > 0 && cosignaturesNeeded <= r.length, "cosigner error");
+      uint8 signaturesNeeded = signers[signer];
+      require(signaturesNeeded > 0 && signaturesNeeded <= r.length, "cosigner error");
       found[i] = signer;
     }
     requireNoDuplicates(found);
@@ -140,8 +143,8 @@ contract MultiSigWallet is Nonce, Initializable {
   /**
    * Call this method through execute
    */
-  function setSigner(address signer, uint8 cosignaturesNeeded) external authorized {
-    _setSigner(signer, cosignaturesNeeded);
+  function setSigner(address signer, uint8 signaturesNeeded) external authorized {
+    _setSigner(signer, signaturesNeeded);
     require(signerCount > 0, "signer count 0");
   }
 
@@ -159,16 +162,17 @@ contract MultiSigWallet is Nonce, Initializable {
     _setSigner(source, 0);
   }
 
-  function _setSigner(address signer, uint8 cosignaturesNeeded) private {
+  function _setSigner(address signer, uint8 signaturesNeeded) private {
     require(!Address.isContract(signer), "signer cannot be a contract");
+    require(signer != address(0x0), "0x0 signer");
     uint8 prevValue = signers[signer];
-    signers[signer] = cosignaturesNeeded;
-    if (prevValue > 0 && cosignaturesNeeded == 0){
+    signers[signer] = signaturesNeeded;
+    if (prevValue > 0 && signaturesNeeded == 0){
       signerCount--;
-    } else if (prevValue == 0 && cosignaturesNeeded > 0){
+    } else if (prevValue == 0 && signaturesNeeded > 0){
       signerCount++;
     }
-    emit SignerChange(signer, cosignaturesNeeded);
+    emit SignerChange(signer, signaturesNeeded);
   }
 
   modifier authorized() {

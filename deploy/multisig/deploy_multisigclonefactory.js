@@ -1,9 +1,11 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
 
-  const multiSigWalletMaster = await deployments.get('MultiSigWalletMaster');
+  const multiSigWalletMaster = await deployments.get('MultiSigWalletMasterV2');
 
 
   if (network.name != "hardhat") {
@@ -33,4 +35,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["MultiSigCloneFactory"];
-module.exports.dependencies = ['MultiSigWalletMaster'];
+module.exports.dependencies = ['MultiSigWalletMasterV2'];
