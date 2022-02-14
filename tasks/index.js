@@ -18,8 +18,9 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
     .setAction(async ({ factory, owner, salt }, { getNamedAccounts, ethers }) => {
         const { deployer, multiSigDefaultOwner } = await getNamedAccounts();
         if (factory == undefined) {
-            factory = "0xb34E47DA0A612ffC5325790DD8e219D870f84898"; // mainnet factory
-            //factory = "0x140e1dD82C63a64E6BAE7635A83A049aa2c7290a"; // kovan factory
+            factory = "0xAA0cb4CA7aF641C7d046604Bb6AdFf0805f1dfbF"; // mainnet factory
+            //factory = "0xAF21E166ADc362465A27AeDc15315DcFc0c51624"; // kovan factory
+            // factory = "0xd350a14834d0cFdfC40013A9b605Ecc9CA1024Ce" // ropsten factory
         }
         if(owner == undefined) {
             owner = multiSigDefaultOwner;

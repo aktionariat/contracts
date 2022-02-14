@@ -37,7 +37,7 @@ import "../draggable/ERC20Draggable.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract DraggableShares is ERC20Recoverable, ERC20Draggable {
+contract DraggableShares is ERC20Draggable, ERC20Recoverable {
 
     string public terms;
 

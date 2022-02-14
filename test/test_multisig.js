@@ -26,7 +26,7 @@ describe("Multisig", () => {
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
 
     await deployments.fixture(["MultiSigCloneFactory"]);
-    multiSigMaster = await ethers.getContract("MultiSigWalletMaster");
+    multiSigMaster = await ethers.getContract("MultiSigWalletMasterV2");
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
 
   });

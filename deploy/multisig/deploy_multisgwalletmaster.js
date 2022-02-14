@@ -1,3 +1,5 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
@@ -18,8 +20,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("MultiSigWalletMaster", {
-    contract: "MultiSigWallet",
+  const { address } = await deploy("MultiSigWalletMasterV2", {
+    contract: "MultiSigWalletV2",
     from: deployer,
     args: [],
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
@@ -28,4 +30,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["MultiSigWalletMaster"];
+module.exports.tags = ["MultiSigWalletMasterV2"];
