@@ -9,6 +9,9 @@ const BN = require("bn.js");
 const Chance = require("chance");
 const truffleAssert = require("truffle-assertions");
 const { artifacts, getNamedAccounts, getUnnamedAccounts} = require("hardhat");
+const { buyingEnabled, sellingEnabled } = require("./helper/index");
+const { assert } = require("console");
+const { expect } = require("chai");
 
 // Import contracts to be tested
 const Shares = artifacts.require("Shares");
@@ -43,12 +46,12 @@ contract("Brokerbot", () => {
   it("should get constructor params correctly", async () => {
     const baseCurrency = await brokerbot.base.call();
     const owner = await brokerbot.owner.call();
-    const price = web3.utils.toBN(await brokerbot.getPrice());
+    const price = await brokerbot.getPrice();
     const increment = web3.utils.toBN(await brokerbot.increment.call());
 
-    assert.equal(baseCurrency, config.baseCurrencyAddress);
-    assert.equal(owner, deployer);
-    assert.equal(price, config.sharePrice);
+    expect(baseCurrency).to.equal(config.baseCurrencyAddress);
+    expect(owner).to.equal(deployer);
+    expect(await price.toString()).to.equal(config.sharePrice);
     assert(increment.isZero());
   });
 
@@ -215,7 +218,7 @@ contract("Brokerbot", () => {
     // No payment no shares
     const sharesZeroPaid = await brokerbot.getShares(new BN(0));
     assert(sharesZeroPaid.isZero());
-
+    
     // Sent payment worth 1 share
     const singlePrice = await brokerbot.getBuyPrice(new BN(1));
     const sharesSinglePaid = await brokerbot.getShares(singlePrice);
@@ -237,20 +240,21 @@ contract("Brokerbot", () => {
   it("should allow enabling/disabling buying/selling.", async () => {
     // Used Contract: Brokerbot
     await brokerbot.setSettings(BUYING_ENABLED);
-    assert(await brokerbot.buyingEnabled());
-    assert(!(await brokerbot.sellingEnabled()));
+    
+    assert(await buyingEnabled(brokerbot));
+    assert(!(await sellingEnabled(brokerbot)));
 
     await brokerbot.setSettings(SELLING_ENABLED);
-    assert(!(await brokerbot.buyingEnabled()));
-    assert(await brokerbot.sellingEnabled());
+    assert(!(await buyingEnabled(brokerbot)));
+    assert(await sellingEnabled(brokerbot));
 
     await brokerbot.setSettings(BUYING_ENABLED | SELLING_ENABLED);
-    assert(await brokerbot.buyingEnabled());
-    assert(await brokerbot.sellingEnabled());
+    assert(await buyingEnabled(brokerbot));
+    assert(await sellingEnabled(brokerbot));
 
     await brokerbot.setSettings("0x0");
-    assert(!(await brokerbot.buyingEnabled()));
-    assert(!(await brokerbot.sellingEnabled()));
+    assert(!(await buyingEnabled(brokerbot)));
+    assert(!(await sellingEnabled(brokerbot)));
   });
 
   it("should not allow buying shares when buying is disabled", async () => {

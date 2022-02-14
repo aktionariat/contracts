@@ -10,22 +10,22 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract MultiSigCloneFactory {
 
-  address public multiSigImplementation;
+  address immutable public multiSigImplementation;
 
-  event ContractCreated(address contractAddress, string typeName);
+  event ContractCreated(address indexed contractAddress, string indexed typeName);
 
-  constructor(address _multSigImplementation) {
-    multiSigImplementation = _multSigImplementation;
+  constructor(address _multiSigImplementation) {
+    multiSigImplementation = _multiSigImplementation;
   }
   
   function predict(bytes32 salt) external view returns (address) {
     return Clones.predictDeterministicAddress(multiSigImplementation, salt);
   }
 
-  function create(address owner, bytes32 salt) external returns (address) {
+  function create(address owner, bytes32 salt) external returns (MultiSigWallet) {
     address payable instance = payable(Clones.cloneDeterministic(multiSigImplementation, salt));
     MultiSigWallet(instance).initialize(owner);
     emit ContractCreated(instance, "MultiSigWallet");
-    return instance;
+    return MultiSigWallet(instance);
   }
 }

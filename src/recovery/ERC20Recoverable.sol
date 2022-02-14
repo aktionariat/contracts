@@ -51,13 +51,16 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     uint8 private constant FLAG_CLAIM_PRESENT = 10;
 
     // ERC-20 token that can be used as collateral or 0x0 if disabled
-    address public customCollateralAddress;
+    IERC20 public customCollateralAddress;
+    // Rate the custom collateral currency is multiplied to be valued like one share.
     uint256 public customCollateralRate;
+
+    uint256 constant CLAIM_PERIOD = 180 days;
 
     IRecoveryHub public immutable recovery;
 
-    constructor(address recoveryHub){
-        recovery = IRecoveryHub(recoveryHub);
+    constructor(IRecoveryHub recoveryHub){
+        recovery = recoveryHub;
     }
 
     /**
@@ -68,8 +71,8 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
      * Subclasses should override this method if they want to add additional types of
      * collateral.
      */
-    function getCollateralRate(address collateralType) public override virtual view returns (uint256) {
-        if (collateralType == address(this)) {
+    function getCollateralRate(IERC20 collateralType) public override virtual view returns (uint256) {
+        if (address(collateralType) == address(this)) {
             return 1;
         } else if (collateralType == customCollateralAddress) {
             return customCollateralRate;
@@ -79,7 +82,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     }
 
     function claimPeriod() external pure override returns (uint256){
-        return 180 days;
+        return CLAIM_PERIOD;
     }
 
     /**
@@ -89,9 +92,9 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
      * Also, do not forget to multiply the rate in accordance with the number of decimals of the collateral.
      * For example, rate should be 7*10**18 for 7 units of a collateral with 18 decimals.
      */
-    function _setCustomClaimCollateral(address collateral, uint256 rate) internal {
+    function _setCustomClaimCollateral(IERC20 collateral, uint256 rate) internal {
         customCollateralAddress = collateral;
-        if (customCollateralAddress == address(0)) {
+        if (address(customCollateralAddress) == address(0)) {
             customCollateralRate = 0; // disabled
         } else {
             require(rate > 0, "zero");
@@ -101,7 +104,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 
     function getClaimDeleter() virtual public view returns (address);
 
-    function transfer(address recipient, uint256 amount) override virtual public returns (bool) {
+    function transfer(address recipient, uint256 amount) override(ERC20Flaggable, IERC20) virtual public returns (bool) {
         require(super.transfer(recipient, amount), "transfer");
         if (hasFlagInternal(msg.sender, FLAG_CLAIM_PRESENT)){
             recovery.clearClaimFromToken(msg.sender);
@@ -110,22 +113,22 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     }
 
     function notifyClaimMade(address target) external override {
-        require(msg.sender == address(recovery), "sender");
+        require(msg.sender == address(recovery), "not recovery");
         setFlag(target, FLAG_CLAIM_PRESENT, true);
     }
 
     function notifyClaimDeleted(address target) external override {
-        require(msg.sender == address(recovery), "sender");
+        require(msg.sender == address(recovery), "not recovery");
         setFlag(target, FLAG_CLAIM_PRESENT, false);
     }
 
     function deleteClaim(address lostAddress) external {
-        require(msg.sender == getClaimDeleter(), "sender");
+        require(msg.sender == getClaimDeleter(), "not claim deleter");
         recovery.deleteClaim(lostAddress);
     }
 
     function recover(address oldAddress, address newAddress) external override {
-        require(msg.sender == address(recovery), "sender");
+        require(msg.sender == address(recovery), "not recovery");
         _transfer(oldAddress, newAddress, balanceOf(oldAddress));
     }
 

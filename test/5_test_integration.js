@@ -167,7 +167,7 @@ contract("Payment Integration", () => {
   })
   */
 
-  it("should allow selling by sending share tokens through PaymentHub - with license fee", async () => {
+  it("should allow selling by sending share tokens through PaymentHub", async () => {
     // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
     // Transfer is not processed if token sender is not a known currency contract or PaymentHub
     const brokerbot = await Brokerbot.deployed();
@@ -181,9 +181,6 @@ contract("Payment Integration", () => {
     // Random number of shares to sell
     const sharesToSell = new BN(new Chance().natural({ min: 1, max: 500 }));
     const sellPrice = await brokerbot.getSellPrice(sharesToSell);
-
-    // Calculate total fee for transaction
-    const totalFee = await brokerbot.getLicenseFee(sellPrice);;
 
     // Balance before
     const baseBalanceSenderBefore = await erc20.balanceOf(accounts[0]);
@@ -224,15 +221,11 @@ contract("Payment Integration", () => {
     assert(
       baseBalanceSenderBefore
         .add(sellPrice)
-        .sub(totalFee)
         .eq(baseBalanceSenderAfter)
     );
     assert(
       baseBalanceBrokerbotBefore.sub(sellPrice).eq(baseBalanceBrokerbotAfter)
-    );
-    assert(
-      baseBalanceCopyrightBefore.add(totalFee).eq(baseBalanceCopyrightAfter)
-    );
+    )
     assert(
       shareBalanceBrokerbotBefore
         .add(sharesToSell)

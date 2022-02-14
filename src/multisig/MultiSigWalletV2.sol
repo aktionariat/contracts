@@ -5,14 +5,14 @@
 pragma solidity ^0.8.0;
 
 import "../utils/Address.sol";
-import "../utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
 /**
  * Documented in ../../doc/multisig.md
  */
-contract MultiSigWallet is Nonce, Initializable {
+contract MultiSigWalletV2 is Nonce, Initializable {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
@@ -84,21 +84,22 @@ contract MultiSigWallet is Nonce, Initializable {
     }
   }
 
-  function toBytes(uint number) internal pure returns (bytes memory){
-    uint len = 0;
-    uint temp = 1;
-    while (number >= temp){
-      temp = temp << 8;
-      len++;
-    }
-    temp = number;
-    bytes memory data = new bytes(len);
-    for (uint i = len; i>0; i--) {
-      data[i-1] = bytes1(uint8(temp));
-      temp = temp >> 8;
-    }
-    return data;
+function toBytes (uint256 x) public pure returns (bytes memory result) {
+  uint l = 0;
+  uint xx = x;
+  if (x >= 0x100000000000000000000000000000000) { x >>= 128; l += 16; }
+  if (x >= 0x10000000000000000) { x >>= 64; l += 8; }
+  if (x >= 0x100000000) { x >>= 32; l += 4; }
+  if (x >= 0x10000) { x >>= 16; l += 2; }
+  if (x >= 0x100) { x >>= 8; l += 1; }
+  if (x > 0x0) { l += 1; }
+  assembly {
+    result := mload (0x40)
+    mstore (0x40, add (result, add (l, 0x20)))
+    mstore (add (result, l), xx)
+    mstore (result, l)
   }
+}
 
   // Note: does not work with contract creation
   function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
@@ -106,14 +107,16 @@ contract MultiSigWallet is Nonce, Initializable {
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
-    all[2] = toBytes(21000); // gas limit
-    all[3] = abi.encodePacked(to);
+    all[2] = bytes("\x82\x52\x08"); // 21000 gas limit
+    all[3] = abi.encodePacked (bytes1 (0x94), to);
     all[4] = toBytes(value);
     all[5] = data;
     all[6] = toBytes(block.chainid);
-    all[7] = toBytes(0);
+    all[7] = new bytes(0);
     for (uint i = 0; i<8; i++){
-      all[i] = RLPEncode.encodeBytes(all[i]);
+      if (i != 2 && i!= 3) {
+        all[i] = RLPEncode.encodeBytes(all[i]);
+      }
     }
     all[8] = all[7];
     return keccak256(RLPEncode.encodeList(all));

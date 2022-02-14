@@ -1,7 +1,7 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
 const { expect } = require("chai");
 const Chance = require("chance");
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");  
+const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
 
@@ -12,7 +12,6 @@ describe("New Standard", () => {
   let baseCurrency;
   let brokerbot;
   let paymentHub;
-  let forceSend;
   let offerFactory
   let allowlistShares;
   let allowlistDraggable;
@@ -49,19 +48,15 @@ describe("New Standard", () => {
 
     // deploy contracts
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    
-    forceSend = await ethers.getContractFactory("ForceSend")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
 
     await deployments.fixture([
       "ReoveryHub",
       "OfferFactory",
       "Shares",
-      "DraggableShares", 
-      "AllowlistShares", 
-      //"AllowlistDraggableShares", 
-      "PaymentHub", 
+      "DraggableShares",
+      "AllowlistShares",
+      //"AllowlistDraggableShares",
+      "PaymentHub",
       "Brokerbot"
     ]);
 
@@ -83,13 +78,13 @@ describe("New Standard", () => {
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
 
-    //Mint shares to first 5 accounts
-    for( let i = 0; i < 5; i++) {
+    //Mint shares to accounts
+    for( let i = 0; i < accounts.length; i++) {
       await shares.connect(owner).mint(accounts[i], 1000000);
     }
 
      // Convert some Shares to DraggableShares
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < accounts.length; i++) {
       await shares.connect(signers[i]).approve(draggable.address, config.infiniteAllowance);
       await draggable.connect(signers[i]).wrap(accounts[i], 900000);
     }
@@ -107,11 +102,11 @@ describe("New Standard", () => {
         expect(await shares.symbol()).to.equal(config.symbol);
         expect(await shares.terms()).to.equal(config.terms);
       });
-      
+
       it("Should set the right owner", async () =>{
         expect(await shares.owner()).to.equal(owner.address);
       });
-      
+
       it("Should get right claim deleter", async () => {
         expect(await shares.getClaimDeleter()).to.equal(owner.address);
       });
@@ -125,35 +120,35 @@ describe("New Standard", () => {
       it("Should have params specified at the constructor", async() => {
         expect(await draggable.terms()).to.equal(config.terms);
       }); 
-      
+
       it("Should get right claim deleter", async () => {
         expect(await draggable.getClaimDeleter()).to.equal(oracle.address);
       });
     });
-    
+
     describe("AllowlistShares", () => {
       it("Should deploy allowlist shares", async () => {
         expect(allowlistShares.address).to.exist;
       });
-      
+
       it("Should have params specified at the constructor", async() => {
         expect(await allowlistShares.name()).to.equal(config.allowlist_name);
         expect(await allowlistShares.symbol()).to.equal(config.allowlist_symbol);
         expect(await allowlistShares.terms()).to.equal(config.allowlist_terms);
       }); 
     });
-    
+
     describe("Allowlist Draggable Shares", () => {
       it("Should deploy contracts", async () => {
         expect(allowlistDraggable.address).to.exist;
       });
-      
+
       it("Should have params specified at the constructor", async() => {
         expect(await allowlistDraggable.terms()).to.equal(config.allowlist_terms);
       }); 
     });
   });
-  
+
   describe("Setup", () => {
     it("should have some ETH in first 5 accounts", async () => {  
       for (let i = 0; i < 5; i++) {
@@ -161,21 +156,21 @@ describe("New Standard", () => {
         assert(!balance.isZero(), "Balance is 0");
       }
     });
-    
+
     it("should have some BaseCurrency in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await baseCurrency.balanceOf(accounts[i]);
         assert(!balance.isZero(), "Balance is 0");
       }
     });
-    
+
     it("should have some Shares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await shares.balanceOf(accounts[i]);
         assert(!balance.isZero(), "Balance is 0");
       }
     });
-    
+
     it("should have some DraggableShares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await draggable.balanceOf(accounts[i]);
@@ -183,24 +178,13 @@ describe("New Standard", () => {
       }
     });
   });
-  
+
   describe("Shares", () => {
-    it("Should set custom claim collateral for shares", async () => {
-      const collateralAddress = config.baseCurrencyAddress;
-      const collateralRate = 10;
-      // test that only owenr can set
-      await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
-      .to.be.revertedWith("not owner");
-      // test with owner
-      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
-      expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
-      expect(await shares.customCollateralRate()).to.equal(collateralRate);
-    });
-    
+
     it("Should change terms for shares", async () => {
       const newTerms = "www.test.com/newterms";
       await shares.connect(owner).setTerms(newTerms);
-      
+
       // check if terms set correct
       expect(await shares.terms()).to.equal(newTerms);
     });
@@ -218,18 +202,6 @@ describe("New Standard", () => {
       await shares.connect(owner).setName(newSymbol, newName);
       expect(await shares.name()).to.equal(newName);
       expect(await shares.symbol()).to.equal(newSymbol);
-    })
-
-    it("Should set custom claim collateral for shares", async () => {
-      const collateralAddress = config.baseCurrencyAddress;
-      const collateralRate = 10;
-      // test that only owenr can set
-      await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
-        .to.be.revertedWith("not owner");
-      // test with owner
-      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
-      expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
-      expect(await shares.customCollateralRate()).to.equal(collateralRate);
     });
 
     it("Should change terms for shares", async () => {
@@ -263,11 +235,11 @@ describe("New Standard", () => {
       // try to declare too many tokens invalid
       await expect(shares.connect(owner).declareInvalid(sig4.address, holderBalance.add(1), "more than I have"))
         .to.be.revertedWith("amount too high");
-      
+
       await expect(shares.connect(owner).declareInvalid(sig4.address, randomdAmount, "test"))
         .to.emit(shares, "TokensDeclaredInvalid")
         .withArgs(sig4.address, randomdAmount, "test");
-      
+
       const invalidTokenAfter = await shares.invalidTokens();
       expect(invalidTokenBefore.add(randomdAmount)).to.equal(invalidTokenAfter);
     });
@@ -307,9 +279,11 @@ describe("New Standard", () => {
     it("Should set new oracle", async () => {
       const newOracle = sig1.address;
       await draggable.connect(oracle).setOracle(newOracle);
-      //expect(await draggable.oracle()).to.equal(newOracle);
-      // reset oracle for for offer testing
-      await draggable.connect(sig1).setOracle(owner.address);
+      expect(await draggable.oracle()).to.equal(newOracle);
+      // reset oracle for offer testing
+      await expect(draggable.connect(sig1).setOracle(owner.address))
+        .to.emit(draggable, 'ChangeOracle')
+        .withArgs(owner.address);
     });
 
     it("Should burn draggable shares", async () => {
@@ -317,8 +291,8 @@ describe("New Standard", () => {
       const balanceBefore = await shares.balanceOf(draggable.address);
       const balanceBeforeDraggable = await draggable.balanceOf(sig3.address);
       const totalSupplyBefore = await shares.totalSupply();
-      
-      // burn token which burns also shares which are in the drraggable contract 
+
+      // burn token which burns also shares which are in the drraggable contract
       // and reduces supply from shares
       await draggable.connect(sig3).burn(randomAmountToBurn);
       const balanceAfter = await shares.balanceOf(draggable.address);
@@ -331,20 +305,87 @@ describe("New Standard", () => {
   });
 
   describe("Recovery", () => {
+    const collateralAddress = config.baseCurrencyAddress;
+    const collateralRate = 10;
     it("Should able to disable recovery", async () => {
       const recovery = await ethers.getContractAt("RecoveryHub", await draggable.recovery());
       await recovery.connect(sig1).setRecoverable(false);
-      expect(await recoveryHub.isRecoveryEnabled(sig1.address)).to.equal(false);
+      expect(await recoveryHub.isRecoverable(sig1.address)).to.equal(false);
     });
 
     it("Should revert declare lost on disabled recovery", async () => {
       await expect(recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig1.address))
         .to.be.revertedWith("disabled");
     });
+
+    it("Should set custom claim collateral for shares", async () => {
+      // check for custom collateral address("0x0000000000000000000000000000000000000000")
+      await shares.connect(owner).setCustomClaimCollateral(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"), 100);
+      expect(await shares.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
+
+      // test that only owenr can set
+      await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
+        .to.be.revertedWith("not owner");
+      // test with owner
+      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
+      expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
+      expect(await shares.customCollateralRate()).to.equal(collateralRate);
+      expect(await shares.getCollateralRate(shares.address)).to.equal(1);
+      expect(await shares.getCollateralRate(collateralAddress)).to.equal(collateralRate);
+      expect(await shares.getCollateralRate(draggable.address)).to.equal(0);
+    });
+
+    it("Draggable should get conversion factors from shares", async () => {
+      expect(await draggable.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
+      expect(await draggable.getCollateralRate(draggable.address)).to.equal(1);
+      expect(await draggable.getCollateralRate(shares.address)).to.equal(1);
+      expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate));
+    });
+
+    it("Should delete claim", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const claimAdress = sig5.address;
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+      const balanceClaimer = await draggable.balanceOf(claimAdress);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // delete claim as non oracle
+      await expect(draggable.connect(sig4).deleteClaim(lostAddress)).to.be.revertedWith("not claim deleter");
+      // delete claim as oracle
+      await draggable.connect(oracle).deleteClaim(lostAddress);
+      expect(await draggable.balanceOf(claimAdress)).to.equal(balanceClaimer);
+    })
+
+    it("Should remove claim when token are transfered", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // check if flag is set
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer to lost address
+      await draggable.connect(owner).transfer(lostAddress, "10");
+      // after transfer to lost address still claim on it
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer from last address (to clear claim)
+      await draggable.connect(lostSigner).transfer(sig5.address, "10");
+      // claim cleared
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
+      // get collateral
+      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
+    });
+
     it("Should able to recover token", async () => {
       await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
       const amountLost = await draggable.balanceOf(sig3.address);
       const amountClaimer = await draggable.balanceOf(sig2.address);
+      // sig2 declares lost funds at sig3
       await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig3.address);
 
       // check if flag is set
@@ -369,11 +410,14 @@ describe("New Standard", () => {
   });
 
   describe("Offer", () => {
+    let pricePerShare;
     beforeEach(async () => {
       const overrides = {
         value: ethers.utils.parseEther("5.0")
       }
-      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("2"), baseCurrency.address, overrides)
+      pricePerShare = ethers.utils.parseEther("2");
+      const salt = ethers.utils.formatBytes32String('1');
+      await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
       const blockNum = await ethers.provider.getBlockNumber();
       const block= await ethers.provider.getBlock(blockNum);
     });
@@ -450,11 +494,24 @@ describe("New Standard", () => {
 
       //execute
       await baseCurrency.connect(sig1).approve(offer.address, config.infiniteAllowance);
-      await offer.connect(sig1).execute();
+      await expect(offer.connect(sig1).execute())
+        .to.emit(draggable, "NameChanged")
+        .withArgs(`${config.baseCurrencyName} (Wrapped)`, `${config.baseCurrencySymbol}S`);
 
       // after execute all draggable shares are transfered to the buyer, if the buyer already had
       // shares they have to be added to compare to the new balance
       expect(await shares.balanceOf(sig1.address)).to.equal(draggableTotal.add(buyerBal));
+
+      // wrapped token in draggable is now base currency
+      expect(await draggable.wrapped()).to.equal(baseCurrency.address);
+
+      // balance of draggable in base currency is pricePerShare*totalSupply
+      const draggableBaseCurrencyBalance = await baseCurrency.balanceOf(draggable.address);
+      const draggableTotalSupply = await draggable.totalSupply();
+      expect(draggableBaseCurrencyBalance).to.equal(await draggableTotalSupply.mul(pricePerShare));
+
+      // unwrap conversion factor is base currency balance / totalsupply
+      expect(await draggable.unwrapConversionFactor()).to.equal(await draggableBaseCurrencyBalance.div(draggableTotalSupply));
     });
 
     afterEach(async () => {
@@ -466,16 +523,11 @@ describe("New Standard", () => {
   });
 
   describe("Allowlist", () => {
-    it("Should allowlist address and mint", async () => {
-      // use sig1 for allowlist
-      const allowlistAddress = sig1.address;
-      await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
-      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
-      await allowlistShares.connect(owner).mint(allowlistAddress, "1000");
-      const balanceAllow = await allowlistShares.balanceOf(allowlistAddress);
-      expect(balanceAllow).to.equal(ethers.BigNumber.from(1000));
-    });
-
+    // sig1 will be powerlist
+    // sig2 will be forbidden
+    // sig3 will be allowlist -> default
+    // sig4 will be allowlist
+    // sig5 will be default
     it("Should set forbidden and revert mint", async () => {
       //use sig2 for blacklist
       const forbiddenAddress = sig2.address;
@@ -491,13 +543,16 @@ describe("New Standard", () => {
     it("Should set allowlist for default address when minted from 0 (powerlisted)", async () => {
       //use sig3 for default address
       const defaultAddress = sig3.address
+      // before mint is not allowlisted
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
 
       await allowlistShares.connect(owner).mint(defaultAddress, "1000");
+      
+      // after mint is allowlisted
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
       const balancedef = await allowlistShares.balanceOf(defaultAddress);
       expect(balancedef).to.equal(ethers.BigNumber.from(1000));
-      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
     });
 
     it("Should set powerlist to not owner and transfer token to default", async () => {
@@ -520,10 +575,61 @@ describe("New Standard", () => {
 
       // transfer from powerlist to default(sig4)
       const balanceBefore = await allowlistShares.balanceOf(defaultAddress);
-      await allowlistShares.connect(sig1).transfer(defaultAddress, "1000");
+      await allowlistShares.connect(sig1).transfer(defaultAddress, "100");
       const balanceAfter = await allowlistShares.balanceOf(defaultAddress);
-      expect(balanceBefore.add(1000)).to.equal(balanceAfter);
-      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
+      expect(balanceBefore.add(100)).to.equal(balanceAfter);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);
+    });
+
+    it("Should set allowlist address to default and transfer to default/allowlist, but not to forbidden address", async () => {
+      // use sig3 for the default sender
+      const defaultAddress = sig3.address
+      // is still allowlisted
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);  
+      // set to default and make shares transferable
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      // is not allowlisted anymore
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      
+      // is not possible to send from default(sig3) to forbidden(sig2)
+      const forbiddenAddress = sig2.address
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+      await expect(allowlistShares.connect(sig3).transfer(forbiddenAddress, "100")).to.be.revertedWith("not allowed");
+
+      // is possible to send from default(sig3) to fresh/default(sig5)
+      const freshAddress = sig5.address
+      expect(await allowlistShares.isForbidden(freshAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(freshAddress)).to.equal(false);
+      await allowlistShares.connect(sig3).transfer(freshAddress, "100");
+      const balanceFresh = await allowlistShares.balanceOf(freshAddress);
+      expect(balanceFresh).to.equal(ethers.BigNumber.from(100));
+      // fresh address is still default
+      expect(await allowlistShares.isForbidden(freshAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(freshAddress)).to.equal(false);
+
+      // is possible to send from default(sig3) to allowlist(sig4)
+      const allowAddress = sig4.address;
+      expect(await allowlistShares.isForbidden(allowAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(allowAddress)).to.equal(true);
+      const balAllowBefore = await allowlistShares.balanceOf(allowAddress);
+      await allowlistShares.connect(sig3).transfer(allowAddress, "100");
+      const balAllowAfter = await allowlistShares.balanceOf(allowAddress);
+      expect(balAllowBefore.add(100)).to.equal(balAllowAfter);
+    });
+
+    it("Should not allow transfer from allowlist to default", async () => {
+      // sig4 is allowlist address
+      const allowAddress = sig4.address;
+      expect(await allowlistShares.isForbidden(allowAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(allowAddress)).to.equal(true);
+
+      // sig5 is default address
+      const defaultAddress = sig5.address
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+
+      // transfer from allowlist(sig4) to default(sig5) should fail
+      await expect(allowlistShares.connect(sig4).transfer(defaultAddress, "100")).to.be.revertedWith("not allowed");
     });
 
     it("Should mint and call on allowlistShares to allowlistDraggable", async () => {
@@ -542,6 +648,14 @@ describe("New Standard", () => {
   });
 
   describe("Allowlist Draggable", () => {
+
+    it("Should revert if not owner sets type", async () => {
+      // use sig1 for allowlist
+      const allowlistAddress = sig1.address;
+      await expect(allowlistDraggable.connect(sig1)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED))
+        .to.be.revertedWith("not owner");
+    });
+
     it("Should allow wrap on allowlist", async () => {
       // use sig1 for allowlist
       const allowlistAddress = sig1.address;
@@ -550,10 +664,10 @@ describe("New Standard", () => {
       // set allowance
       await allowlistShares.connect(sig1).approve(allowlistDraggable.address, config.infiniteAllowance);
 
-      // wrap w/ permisson 
-      await allowlistDraggable.connect(sig1).wrap(allowlistAddress, "10");
+      // wrap w/ permisson
+      await allowlistDraggable.connect(sig1).wrap(allowlistAddress, "100");
       const balanceAllow = await allowlistDraggable.balanceOf(allowlistAddress);
-      expect(balanceAllow).to.equal(ethers.BigNumber.from(10));
+      expect(balanceAllow).to.equal(ethers.BigNumber.from(100));
     });
 
     it("Should revert wrap to forbidden", async () => {
@@ -598,15 +712,18 @@ describe("New Standard", () => {
     it("Should remove restriction", async () => {
       // restrict should be true
       expect(await allowlistShares.restrictTransfers()).to.equal(true);
+      expect(await allowlistDraggable.restrictTransfers()).to.equal(true);
 
       // can only be set by owner
       await expect(allowlistShares.setApplicable(false)).to.be.revertedWith("not owner");
+      await expect(allowlistDraggable.setApplicable(false)).to.be.revertedWith("not owner");
 
       await allowlistShares.connect(owner).setApplicable(false);
+      await allowlistDraggable.connect(owner).setApplicable(false);
 
       // restrict should be false
-      expect(await allowlistShares.restrictTransfers()).to.equal(false);
-
+      expect(await allowlistShares.restrictTransfers()).to.equal(false)
+      expect(await allowlistDraggable.restrictTransfers()).to.equal(false)
     });
 
     it("Should clean forbidden address after removed restriction", async () => {
@@ -620,26 +737,68 @@ describe("New Standard", () => {
       //check if is now default
       expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
       expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
-
     });
 
     it("Should clean allowlist address after removed restriction", async () => {
-      //use sig1 for allowlist
-      const allowlistAddress = sig1.address;
+      // use sig4 for allowlist
+      const allowlistAddress = sig4.address;
       await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
       expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
 
-      //use sig3 as default
-      const defaultAddress = sig3.address
+      // use sig5 as default
+      const defaultAddress = sig5.address
       await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
 
-      await allowlistShares.connect(sig1).transfer(sig3.address, "10");
+      // allow transfer from allowlist(sig4) to default(sig5) -- (what failed before with resriction on)
+      await allowlistShares.connect(sig4).transfer(defaultAddress, "10");
+      // cleans allowlist address to be default now
       expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(allowlistAddress)).to.equal(false);
-
     });
-  })
 
+    it("Should clean forbidden address after removed restriction", async () => {
+      // use sig4 for forbidden
+      const forbiddenAddress = sig4.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+
+      // use sig5 as default
+      const defaultAddress = sig5.address
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+
+      // allow transfer from allowlist(sig4) to default(sig5) -- (what failed before with resriction on)
+      await allowlistShares.connect(sig4).transfer(defaultAddress, "10");
+      // cleans allowlist address to be default now
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
+    });
+
+
+    it("Should remove claim when token are transfered", async () => {
+      await allowlistDraggable.connect(sig1).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig3.address;
+      const lostSigner = sig3;
+      const lostAddressBalance = await allowlistDraggable.balanceOf(lostAddress);
+      console.log(await lostAddressBalance.toString());
+
+      // declare token lost
+      await recoveryHub.connect(sig1).declareLost(allowlistDraggable.address, allowlistDraggable.address, lostAddress);
+      // check if flag is set
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer to lost address
+      await allowlistDraggable.connect(sig1).transfer(lostAddress, "10");
+      // after transfer to lost address still claim on it
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer from lost address (to clear claim)
+      await allowlistDraggable.connect(lostSigner).transfer(sig1.address, "10");
+      // claim cleared
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(false);
+      // get collateral
+      expect(await allowlistDraggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
+    });
+  });
 });

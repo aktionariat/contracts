@@ -29,10 +29,10 @@ async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
 }
 
 async function setBalance(erc20Contract, slot, accounts) {
-  const locallyManipulatedBalance = ethers.utils.parseEther("10000000");
+  const locallyManipulatedBalance = ethers.utils.parseEther("100000000");
   const newFormatedBalance = toBytes32(locallyManipulatedBalance).toString();
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     // Get storage slot index
     const index = ethers.utils.solidityKeccak256(
       ["uint256", "uint256"],
@@ -49,7 +49,25 @@ async function setBalance(erc20Contract, slot, accounts) {
   }
 };
 
+async function sendEther(signer, to, amount) {
+  const tx = await signer.sendTransaction({
+    to: to,
+    value: ethers.utils.parseEther(amount)
+  });
+  await tx.wait();
+}
+
+async function buyingEnabled(brokerbot) {
+  const settings = await brokerbot.settings();
+  return (settings & config.BUYING_ENABLED) == config.BUYING_ENABLED;
+}
+
+async function sellingEnabled(brokerbot) {
+  const settings = await brokerbot.settings();
+  return (settings & config.SELLING_ENABLED) == config.SELLING_ENABLED;
+}
+
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance };
+module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled};

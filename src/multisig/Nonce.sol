@@ -39,8 +39,9 @@ contract Nonce {
     
     /**
      * The next recommended nonce, which is the highest nonce ever used plus one.
+     * The initial nonce is 129.
      */
-    function nextNonce() external view returns (uint256){
+    function nextNonce() external view returns (uint128){
         return getMax() + 1;
     }
 
@@ -67,7 +68,7 @@ contract Nonce {
         } else if (isValidLowNonce(max, reg, nonce)){
             setBoth(max, uint128(reg | 0x1 << (max - nonce - 1)));
         } else {
-            require(false, "used");
+            revert("used");
         }
     }
     
@@ -87,7 +88,7 @@ contract Nonce {
         return nonce > max && nonce <= max + MAX_INCREASE;
     }
 
-    function isValidLowNonce(uint128 max, uint128 reg, uint256 nonce) private pure returns (bool){
+    function isValidLowNonce(uint128 max, uint128 reg, uint128 nonce) private pure returns (bool){
         uint256 diff = max - nonce;
         return diff > 0 && diff <= 128 && ((0x1 << (diff - 1)) & reg == 0);
     }

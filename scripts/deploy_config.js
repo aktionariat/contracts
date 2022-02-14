@@ -7,6 +7,8 @@ module.exports = {
   sharePrice: "1000000000000000000",
   baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
+  baseCurrencyName: "CryptoFranc",
+  baseCurrencySymbol: "XCHF",
   xchfBalanceSlot: 2,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
@@ -29,5 +31,9 @@ module.exports = {
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+  wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  // brokerbot
+  BUYING_ENABLED: 0x1,
+  SELLING_ENABLED: 0x2,
+  KEEP_ETHER: 0x4
 };
