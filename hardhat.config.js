@@ -136,7 +136,7 @@ module.exports = {
       default: 0,
     },
     owner: {
-      default: 0,
+      default: 1,
       1: process.env.MULTISIG_DEPLOY, // to multisigwallet
       3: process.env.MULTISIG_DEPLOY, // to multisigwallet
       4: process.env.MULTISIG_DEPLOY, // to multisigwallet
@@ -151,7 +151,10 @@ module.exports = {
     },
     multiSigDefaultOwner: {
       default: 0,
-      1: process.env.MULTISIG_DEFAULT
+      1: process.env.MULTISIG_DEFAULT,
+      3: process.env.MULTISIG_DEFAULT,
+      4: process.env.MULTISIG_DEFAULT,
+      42: process.env.MULTISIG_DEFAULT
     }
   },
   gasReporter: {
@@ -183,4 +186,7 @@ module.exports = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
+  mocha: {
+    timeout: 100000
+  }
 };
