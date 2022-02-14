@@ -8,14 +8,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   
   const shares = await deployments.get('SSAShares');
-  let recoveryHub;
-  if (network.name == "hardhat") {
-    recoveryHub = await deployments.get("RecoveryHub"); 
-  } else if (network.name == "ropsten") {
-    recoveryHub = await ethers.getContractAt("RecoveryHub", "0xfE9098d62aF73EF8a24Bf48a1d0dAD19d7D592e9"); //ropstes
-  } else {
-    recoveryHub = await ethers.getContractAt("RecoveryHub", "0x6884ade31AC154DC52395F9dB819A03c667063A9"); //mainnet
-  }
+  const recoveryHub = await deployments.get("RecoveryHub"); 
   const offerFactory = await deployments.get("OfferFactory");
   
   const terms = "https://swissshore.com/investor-relations";
@@ -59,8 +52,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["SSADraggableShares"];
-if (network.name == "hardhat") {
-  module.exports.dependencies = ["SSAShares","OfferFactory","RecoveryHub"]; //local deploy
-} else {
-  module.exports.dependencies = ["SSAShares","OfferFactory"];
-}
+module.exports.dependencies = ["SSAShares","OfferFactory","RecoveryHub"];

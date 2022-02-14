@@ -34,6 +34,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
         console.log("deployer: %s", deployer);
         console.log("owner: %s", owner)
         console.log("salt: %s", salt)
+        console.log("factory: %s", factory)
 
         if (network.name != "hardhat") {
             const prompt = await new Confirm("Addresses correct?").run();

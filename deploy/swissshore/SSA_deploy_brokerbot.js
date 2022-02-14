@@ -33,7 +33,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const feeData = await ethers.provider.getFeeData();
 
   const { address } = await deploy("SSABrokerbot", {
-    contract: "LicensedBrokerbot",
+    contract: "Brokerbot",
     from: deployer,
     args: [
       shares.address,
