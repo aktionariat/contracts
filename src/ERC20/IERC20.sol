@@ -18,8 +18,6 @@ interface IERC20 {
 
     function symbol() external view returns (string memory);
 
-    event NameChanged(string name, string symbol);
-
     function decimals() external view returns (uint8);
 
     /**

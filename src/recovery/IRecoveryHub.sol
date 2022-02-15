@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-abstract contract IRecoveryHub {
+interface IRecoveryHub {
 
-    function setRecoverable(bool flag) external virtual;
+    function setRecoverable(bool flag) external;
     
-    function deleteClaim(address target) external virtual;
+    // deletes claim and transfers collateral back to claimer
+    function deleteClaim(address target) external;
 
-    function clearClaimFromToken(address holder) external virtual;
+    // clears claim and transfers collateral to holder
+    function clearClaimFromToken(address holder) external;
 
 }

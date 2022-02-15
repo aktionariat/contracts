@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-abstract contract IDraggable {
+import "../ERC20/IERC20.sol";
+interface IDraggable {
     
-    function getOracle() public virtual returns (address);
-    function drag(address buyer, address currency) external virtual;
-    function notifyOfferEnded() external virtual;
-    function votingPower(address voter) external virtual returns (uint256);
-    function totalVotingTokens() public virtual view returns (uint256);
-    function notifyVoted(address voter) external virtual;
+    function oracle() external view returns (address);
+    function drag(address buyer, IERC20 currency) external;
+    function notifyOfferEnded() external;
+    function votingPower(address voter) external returns (uint256);
+    function totalVotingTokens() external view returns (uint256);
+    function notifyVoted(address voter) external;
 
 }

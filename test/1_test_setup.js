@@ -1,11 +1,10 @@
 /* global artifacts, contract, web3, assert */
 
-// Shared Migration Config
-const config = require("../migrations/migration_config");
+// Shared Config
+const config = require("../scripts/deploy_config.js");
 
 // Libraries
 const BN = require("bn.js");
-const hre = require("hardhat");
 const { artifacts, getUnnamedAccounts } = require("hardhat");
 
 // Used contracts
@@ -16,7 +15,6 @@ const PaymentHub = artifacts.require("PaymentHub");
 const RecoveryHub = artifacts.require("RecoveryHub");
 const OfferFactory = artifacts.require("OfferFactory");
 
-const ForceSend = artifacts.require("ForceSend");
 const ERC20Basic = artifacts.require("ERC20Basic");
 
 contract("Migration", () => {

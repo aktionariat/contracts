@@ -38,29 +38,24 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     string memory _name,
     string memory _terms,
     uint256 _totalShares,
-    address _recoveryHub,
+    IRecoveryHub _recoveryHub,
     address _owner
   )
     Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
     ERC20Allowlistable()
   {
-    terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
-    IRecoveryHub(address(_recoveryHub)).setRecoverable(false); 
+    // initialization in shares
   }
 
-  function getClaimDeleter() public override view returns (address) {
-      return owner;
-  }
-
-  function transfer(address recipient, uint256 amount) override(Shares, ERC20Flaggable) virtual public returns (bool) {
+  function transfer(address recipient, uint256 amount) override(ERC20Flaggable, Shares) virtual public returns (bool) {
     return super.transfer(recipient, amount); 
   }
 
-  function _mint(address account, uint256 amount) internal override(Shares, ERC20Flaggable) {
+  function _mint(address account, uint256 amount) internal override(ERC20Flaggable, Shares) {
       super._mint(account, amount);
   }
 
-  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, ERC20Flaggable) internal {
+  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Allowlistable) internal {
     super._beforeTokenTransfer(from, to, amount);
   }
 

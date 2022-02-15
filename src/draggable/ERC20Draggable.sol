@@ -45,10 +45,16 @@ import "./IDraggable.sol";
 import "../ERC20/ERC20Flaggable.sol";
 import "../ERC20/IERC20.sol";
 import "../ERC20/IERC677Receiver.sol";
+import "./IOffer.sol";
+import "./IOfferFactory.sol";
+import "../shares/IShares.sol";
 
-abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable {
+abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable {
     
-	uint8 private constant FLAG_VOTED = 1;
+	// If flag is not present, one can be sure that the address did not vote. If the 
+	// flag is present, the address might have voted and one needs to check with the
+	// current offer (if any) when transferring tokens.
+	uint8 private constant FLAG_VOTE_HINT = 1;
 
 	IERC20 public wrapped; // The wrapped contract
 	IOfferFactory public immutable factory;
@@ -59,24 +65,32 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	// The current acquisition attempt, if any. See initiateAcquisition to see the requirements to make a public offer.
 	IOffer public offer;
 
+	uint256 private constant QUORUM_MULTIPLIER = 10000;
+
 	uint256 public immutable quorum; // BPS (out of 10'000)
 	uint256 public immutable votePeriod; // In seconds
 
-	address private oracle;
+	address public override oracle;
 
 	event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
+	event ChangeOracle(address oracle);
 
+    /**
+	 * Note that the Brokerbot only supports tokens that revert on failure and where transfer never returns false.
+     */
 	constructor(
-		address _wrappedToken,
+		IERC20 _wrappedToken,
 		uint256 _quorum,
 		uint256 _votePeriod,
-		address _offerFactory,
+		IOfferFactory _offerFactory,
 		address _oracle
-	) {
-		wrapped = IERC20(_wrappedToken);
+	) 
+		ERC20Flaggable(0)
+	{
+		wrapped = _wrappedToken;
 		quorum = _quorum;
 		votePeriod = _votePeriod;
-		factory = IOfferFactory(_offerFactory);
+		factory = _offerFactory;
 		oracle = _oracle;
 	}
 
@@ -111,10 +125,11 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	 * in order to indicate that this token represents shares bound to a shareholder agreement.
 	 */
 	function name() public view override returns (string memory) {
+		string memory wrappedName = wrapped.name();
 		if (isBinding()) {
-			return string(abi.encodePacked(wrapped.name(), " SHA"));
+			return string(abi.encodePacked(wrappedName, " SHA"));
 		} else {
-			return string(abi.encodePacked(wrapped.name(), " (Wrapped)"));
+			return string(abi.encodePacked(wrappedName, " (Wrapped)"));
 		}
 	}
 
@@ -154,63 +169,56 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	 */
 	function burn(uint256 amount) external {
 		_burn(msg.sender, amount);
-		uint256 factor = isBinding() ? 1 : unwrapConversionFactor;
-		IShares(address(wrapped)).burn(amount * factor);
+		IShares(address(wrapped)).burn (isBinding() ? amount : amount * unwrapConversionFactor);
 	}
 
 	function makeAcquisitionOffer(
 		bytes32 salt, 
 		uint256 pricePerShare, 
-		address currency
+		IERC20 currency
 	) external payable {
 		require(isBinding(), "factor");
-		address newOffer = factory.create{value: msg.value}(
+		IOffer newOffer = factory.create{value: msg.value}(
 			salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
 
 		if (offerExists()) {
 			offer.makeCompetingOffer(newOffer);
 		}
-		offer = IOffer(newOffer);
+		offer = newOffer;
 	}
 
-	function drag(address buyer, address currency) external override {
-		require(msg.sender == address(offer), "sender");
+	function drag(address buyer, IERC20 currency) external override offerOnly {
 		unwrap(buyer, balanceOf(buyer), 1);
 		replaceWrapped(currency, buyer);
 	}
 
-	function notifyOfferEnded() external override {
-		if (msg.sender == address(offer)) {
-			offer = IOffer(address(0));
-		}
+	function notifyOfferEnded() external override offerOnly {
+		offer = IOffer(address(0));
 	}
 
-	function replaceWrapped(address newWrapped, address oldWrappedDestination) internal {
+	function replaceWrapped(IERC20 newWrapped, address oldWrappedDestination) internal {
 		require(isBinding(), "factor");
 		// Free all old wrapped tokens we have
 		require(wrapped.transfer(oldWrappedDestination, wrapped.balanceOf(address(this))), "transfer");
 		// Count the new wrapped tokens
-		wrapped = IERC20(newWrapped);
-		deactivate(wrapped.balanceOf(address(this)) / totalSupply());
-	}
-
-	function getOracle() public view override returns (address) {
-		return oracle;
+		wrapped = newWrapped;
+		deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
 	}
 
 	function setOracle(address newOracle) external {
 		require(msg.sender == oracle, "not oracle");
 		oracle = newOracle;
+		emit ChangeOracle(oracle);
 	}
 
-	function migrateWithExternalApproval(address target, uint256 externalSupportingVotes) external {
+	function migrateWithExternalApproval(address successor, uint256 additionalVotes) external {
 		require(msg.sender == oracle, "not oracle");
 		// Additional votes cannot be higher than the votes not represented by these tokens.
 		// The assumption here is that more shareholders are bound to the shareholder agreement
 		// that this contract helps enforce and a vote among all parties is necessary to change
 		// it, with an oracle counting and reporting the votes of the others.
-		require(totalSupply() + externalSupportingVotes <= totalVotingTokens(), "votes");
-		migrate(target, externalSupportingVotes);
+		require(totalSupply() + additionalVotes <= totalVotingTokens(), "votes");
+		migrate(successor, additionalVotes);
 	}
 
 	function migrate() external {
@@ -220,10 +228,10 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	function migrate(address successor, uint256 additionalVotes) internal {
 		uint256 yesVotes = additionalVotes + balanceOf(successor);
 		uint256 totalVotes = totalVotingTokens();
-		require(yesVotes < totalVotes, "votes");
+		require(yesVotes <= totalVotes, "votes");
 		require(!offerExists(), "no offer"); // if you have the quorum, you can cancel the offer first if necessary
-		require(yesVotes * 10000 >= totalVotes * quorum, "quorum");
-		replaceWrapped(successor, successor);
+		require(yesVotes * QUORUM_MULTIPLIER >= totalVotes * quorum, "quorum");
+		replaceWrapped(IERC20(successor), successor);
 		emit MigrationSucceeded(successor, yesVotes, additionalVotes, totalVotes);
 	}
 
@@ -236,11 +244,16 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	}
 
 	function hasVoted(address voter) internal view returns (bool) {
-		return hasFlagInternal(voter, FLAG_VOTED);
+		return hasFlagInternal(voter, FLAG_VOTE_HINT);
 	}
 
-	function notifyVoted(address voter) external override {
-		setFlag(voter, FLAG_VOTED, true);
+	function notifyVoted(address voter) external override offerOnly {
+		setFlag(voter, FLAG_VOTE_HINT, true);
+	}
+
+	modifier offerOnly(){
+		require(msg.sender == address(offer), "sender");
+		_;
 	}
 
 	function _beforeTokenTransfer(address from, address to,	uint256 amount) internal virtual override {
@@ -248,8 +261,8 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 			if (offerExists()) {
 				offer.notifyMoved(from, to, amount);
 			} else {
-				setFlag(from, FLAG_VOTED, false);
-				setFlag(to, FLAG_VOTED, false);
+				setFlag(from, FLAG_VOTE_HINT, false);
+				setFlag(to, FLAG_VOTE_HINT, false);
 			}
 		}
 		super._beforeTokenTransfer(from, to, amount);
@@ -258,22 +271,4 @@ abstract contract ERC20Draggable is ERC20Flaggable, IERC677Receiver, IDraggable 
 	function offerExists() internal view returns (bool) {
 		return address(offer) != address(0);
 	}
-}
-
-abstract contract IShares {
-	function burn(uint256) external virtual;
-
-	function totalShares() external view virtual returns (uint256);
-}
-
-abstract contract IOffer {
-	function makeCompetingOffer(address newOffer) external virtual;
-
-	function notifyMoved(address from, address to, uint256 value) external virtual;
-}
-
-abstract contract IOfferFactory {
-	function create(
-		bytes32 salt, address buyer, uint256 pricePerShare,	address currency,	uint256 quorum,	uint256 votePeriod
-	) external payable virtual returns (address);
 }

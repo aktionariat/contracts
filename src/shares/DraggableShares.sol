@@ -37,26 +37,27 @@ import "../draggable/ERC20Draggable.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract DraggableShares is ERC20Recoverable, ERC20Draggable {
+contract DraggableShares is ERC20Draggable, ERC20Recoverable {
 
     string public terms;
 
     constructor(
         string memory _terms,
-        address _wrappedToken,
+        IERC20 _wrappedToken,
         uint256 _quorumBps,
         uint256 _votePeriodSeconds,
-        address _recoveryHub,
-        address _offerFactory,
+        IRecoveryHub _recoveryHub,
+        IOfferFactory _offerFactory,
         address _oracle
     )
-        ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle) ERC20Flaggable(0) ERC20Recoverable(_recoveryHub) 
+        ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle)
+        ERC20Recoverable(_recoveryHub) 
     {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
-        IRecoveryHub(address(_recoveryHub)).setRecoverable(false);
+        _recoveryHub.setRecoverable(false);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
         return super.transfer(to, value);
     }
 
@@ -66,23 +67,28 @@ contract DraggableShares is ERC20Recoverable, ERC20Draggable {
      * likely does not have a claim deleter.
      */
     function getClaimDeleter() public view override returns (address) {
-        return getOracle();
+        return oracle;
     }
 
-    function getCollateralRate(address collateralType) public view override returns (uint256) {
+    function getCollateralRate(IERC20 collateralType) public view override returns (uint256) {
         uint256 rate = super.getCollateralRate(collateralType);
         if (rate > 0) {
             return rate;
-        } else if (collateralType == address(wrapped)) {
-            return unwrapConversionFactor;
         } else {
-            // If the wrapped contract allows for a specific collateral, we should too.
-            // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
-            return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * unwrapConversionFactor;
+            // as long as it is binding, the conversion rate is 1:1
+            uint256 factor = isBinding() ? 1 : unwrapConversionFactor;
+            if (address(collateralType) == address(wrapped)) {
+                // allow wrapped token as collateral
+                return factor;
+            } else {
+                // If the wrapped contract allows for a specific collateral, we should too.
+                // If the wrapped contract is not IRecoverable, we will fail here, but would fail anyway.
+                return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * factor;
+            }
         }
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Draggable, ERC20Flaggable) internal {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Draggable) internal {
         super._beforeTokenTransfer(from, to, amount);
     }
 

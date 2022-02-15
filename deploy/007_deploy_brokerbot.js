@@ -1,4 +1,5 @@
 const Confirm = require('prompt-confirm');
+const config = require("../scripts/deploy_config.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -8,7 +9,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const shares = await deployments.get('Shares');
   const paymentHub = await deployments.get('PaymentHub');
   
-  const price = "1000000000000000000";
+  const price = config.sharePrice;
   const increment = 10;
   const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
   
