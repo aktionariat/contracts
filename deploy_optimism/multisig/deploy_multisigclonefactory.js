@@ -1,12 +1,26 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
 
-  const multiSigWalletMaster = await deployments.get('MultiSigWalletMaster');
+  const multiSigWalletMaster = await deployments.get('MultiSigWalletMasterV2');
 
-  console.log(`deployer: ${deployer}`);
-  console.log(`multiSigWalletMaster: ${multiSigWalletMaster.address}`);
+
+  if (network.name != "hardhat") {
+    console.log("------------------------------")
+    console.log("Deploy MultiSig Clone Factory")
+    console.log("------------------------------")
+    console.log(`deployer: ${deployer}`);
+    console.log(`multiSigWalletMaster: ${multiSigWalletMaster.address}`);
+
+    const prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
 
@@ -21,4 +35,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["MultiSigCloneFactory"];
-module.exports.dependencies = ['MultiSigWalletMaster'];
+module.exports.dependencies = ['MultiSigWalletMasterV2'];

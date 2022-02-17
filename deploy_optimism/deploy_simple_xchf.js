@@ -1,6 +1,6 @@
 const Confirm = require('prompt-confirm');
 // Shared  Config
-const config = require("../deploy/deploy_config"); //use other config for other customers
+const config = require("../scripts/deploy_config.js"); //use other config for other customers
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;

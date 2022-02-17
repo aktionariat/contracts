@@ -1,6 +1,6 @@
 const Confirm = require('prompt-confirm');
 // Shared  Config
-const config = require("../deploy/deploy_config"); //use other config for other customers
+const config = require("../scripts/deploy_config.js"); //use other config for other customers
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -16,7 +16,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const l2Bridge = "0x4200000000000000000000000000000000000010";
   const l1Token = "0xCb1D5644297502812f9545e5C6d6C6479d0d1666";
   
-  if (network.name != "hardhat") {
+  //if (network.name != "hardhat") {
     console.log("-----------------------")
     console.log("Deploy OptimismShares")
     console.log("-----------------------")
@@ -29,7 +29,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       console.log("exiting");
       process.exit();
     }
-  }
+  //}
 
   const feeData = await ethers.provider.getFeeData();
 

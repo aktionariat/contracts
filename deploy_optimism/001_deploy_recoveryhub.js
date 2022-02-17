@@ -3,10 +3,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer } = await getNamedAccounts();
 
-  console.log("-----------------------")
-  console.log("Deploy RecoveryHub")
-  console.log("-----------------------")
-  console.log("deployer: %s", deployer);
+  if (network.name != "hardhat") {
+    console.log("-----------------------")
+    console.log("Deploy RecoveryHub")
+    console.log("-----------------------")
+    console.log("deployer: %s", deployer);
+
+    const prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
 

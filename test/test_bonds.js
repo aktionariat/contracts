@@ -12,9 +12,10 @@ const config = {
   bondPrice: "500000000000000000",
   timeToMarturity: "432000000", //5000days around 14y
   mintDecrement: 10,
-  baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  // baseCurrencyAddress: "0x6b175474e89094c44da98b954eedeac495271d0f", //mainnet
+  baseCurrencyAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", // optimism
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
-  xchfBalanceSlot: 2,
+  daiBalanceSlot: 2,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
@@ -53,8 +54,8 @@ describe("Bond Contract", () => {
 
     baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
 
-    // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    // Mint baseCurrency Tokens (dai) to first 5 accounts
+    await setBalance(baseCurrency, config.daiBalanceSlot, accounts);
 
     //Mint bonds to first 5 accounts
     for( let i = 0; i < 5; i++) {

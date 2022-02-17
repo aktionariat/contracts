@@ -31,7 +31,7 @@ import "../shares/Shares.sol";
  import { IL2StandardERC20 } from "../ERC20/IL2StandardERC20.sol";
 
 contract OptimismShares is Shares, IL2StandardERC20 {
-    address public l1Token;
+    address public override l1Token;
     address public l2Bridge;
 
     constructor(
@@ -41,7 +41,7 @@ contract OptimismShares is Shares, IL2StandardERC20 {
     string memory _name,
     string memory _terms,
     uint256 _totalShares,
-    address _recoveryHub,
+    IRecoveryHub _recoveryHub,
     address _owner
     )
       Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)

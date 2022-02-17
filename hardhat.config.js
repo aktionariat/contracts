@@ -43,21 +43,34 @@ module.exports = {
       live: false,
       saveDeployments: true,
       tags: ["local"],
+      
     },
+    /*hardhat: {
+      initialBaseFeePerGas: 0,
+      accounts: accounts(),
+      forking: {
+        enabled: process.env.FORKING === "true",
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 13191833,
+      },
+      live: false,
+      saveDeployments: true,
+      chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      tags: ["test", "local"]
+    },*/
     hardhat: {
       initialBaseFeePerGas: 0,
       accounts: accounts(),
       forking: {
-        //enabled: process.env.FORKING === "true",
-        //url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-        //blockNumber: 13191833,
+        enabled: process.env.FORKING === "true",
         url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
-        blockNumber: 654,
+        blockNumber: 3611994, //optimism transaction index
       },
       live: false,
       saveDeployments: true,
       chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
       tags: ["test", "local"],
+      deploy: ['deploy_optimism']
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -163,9 +176,10 @@ module.exports = {
       deploy: ['deploy_optimism']
     },
     optimism: {
-        url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}}`,
+        //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}}`,
+        url: "https://mainnet.optimism.io",
         accounts: accounts("mainnet"),
-        chainId: 10,
+        //chainId: 10,
         live: true,
         saveDeployments: true,
         deploy: ['deploy_optimism']
@@ -176,14 +190,14 @@ module.exports = {
       default: 0,
     },
     owner: {
-      default: 0,
+      default: 1,
       1: process.env.MULTISIG_DEPLOY, // to multisigwallet
       10: process.env.MULTISIG_DEPLOY, // optimism
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli
-      42: 0, // kovan
-      69: 0, // optimism kovan
+      42: process.env.MULTISIG_DEPLOY, // kovan
+      69: process.env.MULTISIG_DEPLOY, // optimism kovan
       42161: process.env.MULTISIG_DEPLOY // arb1
     },
     dev: {

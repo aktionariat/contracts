@@ -8,8 +8,7 @@ const { encodeRouteToPath } = require("@uniswap/v3-sdk");
 const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const { wbtcAddress } = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_optimism.js");
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.providers.Web3Provider(network.provider);
@@ -147,12 +146,13 @@ describe("New PaymentHub", () => {
       xchfamount = await brokerbot.getBuyPrice(randomAmount);
     });
     it("Should get price in ETH", async () => {
-      const priceeth = await paymentHub.getLatestPriceETHUSD();
+      const priceEthUsd = await paymentHub.getLatestPriceETHUSD();
+      const priceChfUsd = await paymentHub.getLatestPriceCHFUSD();
       // console.log(await priceeth.toString());
+      const price = xchfamount.mul(Math.pow(10,8)).div(priceEthUsd);
       
-      const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"), await brokerbot.base());
-      // rework to not use static value
-      expect(await ethers.utils.formatEther(priceInETH)).to.equal("0.244787563584463807")
+      const priceInETH = await paymentHub.getPriceInEtherFromOracle(xchfamount, await brokerbot.base());
+      expect(priceInETH).to.equal(price);
     });
 
     it("Should buy shares with ETH and trade it to XCHF", async () => {
@@ -285,7 +285,7 @@ describe("New PaymentHub", () => {
       randomShareAmount = chance.natural({ min: 500, max: 50000 });
       xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
       const types = ["address","uint24","address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 3000, config.wethAddress, 500, config.wbtcAddress];
+      const values = [config.baseCurrencyAddress, 3000, config.wethAddress, 3000, config.wbtcAddress];
       path = ethers.utils.solidityPack(types,values);
     });
 
@@ -329,7 +329,7 @@ describe("New PaymentHub", () => {
     });
   });
 
-  describe("Trading ERC20 with DAI base", () => {
+  describe.skip("Trading ERC20 with DAI base and auto router", () => {
     before(async () => {
       randomShareAmount = chance.natural({ min: 500, max: 50000 });
       daiAmount = await brokerbotDAI.getBuyPrice(randomShareAmount);

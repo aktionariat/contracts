@@ -1,15 +1,27 @@
+const Confirm = require('prompt-confirm');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
+  const { deployer, dev } = await getNamedAccounts();
 
-  console.log(`deployer: ${deployer}`);
-  console.log(`multiSigDefaultOwner: ${multiSigDefaultOwner}`);
+  if (network.name != "hardhat") {
+    console.log("------------------------------")
+    console.log("Deploy MultiSigWallet Master")
+    console.log("------------------------------")
+    console.log(`deployer: ${deployer}`);
+
+    const prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("MultiSigWalletMaster", {
-    contract: "MultiSigWallet",
+  const { address } = await deploy("MultiSigWalletMasterV2", {
+    contract: "MultiSigWalletV2",
     from: deployer,
     args: [],
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
@@ -18,4 +30,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["MultiSigWalletMaster"];
+module.exports.tags = ["MultiSigWalletMasterV2"];

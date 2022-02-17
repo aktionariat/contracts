@@ -5,16 +5,13 @@ module.exports = {
   terms: "test.ch/terms",
   totalShares: 10000000,
   sharePrice: "1000000000000000000",
-  //baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08", // mainnet
-  baseCurrencyAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", // optimism
-  //baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9", //mainet
+  baseCurrencyAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", // optimism dai
   baseCurrencyMinterAddress: "0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7", //optimism
-  baseCurrencyName: "CryptoFranc",
-  baseCurrencySymbol: "XCHF",
+  baseCurrencyName: "Dai Stablecoin",
+  baseCurrencySymbol: "DAI",
   xchfBalanceSlot: 2,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
-  brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
   quorumBps: 7500,
   votePeriodSeconds: 5184000,
   uniswapRouterAddress: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
@@ -26,15 +23,14 @@ module.exports = {
   allowlist_quorumBps: 10,
   allowlist_votePeriodSeconds: 36000,
   // DAI
-  // daiAddress: "0x6b175474e89094c44da98b954eedeac495271d0f",//mainnet
   daiAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",//optimis
   daiBalanceSlot: 2,
   // WBTC
-  wbtcAddress: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+  wbtcAddress: "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  wethAddress: "0x4200000000000000000000000000000000000006",
   // brokerbot
   BUYING_ENABLED: 0x1,
   SELLING_ENABLED: 0x2,
