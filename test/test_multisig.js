@@ -52,7 +52,7 @@ describe("Multisig", () => {
     //check is predicted address is created address
     expect(multiSigAddress).to.equal(address);
 
-    multiSigClone = await ethers.getContractAt("MultiSigWallet",address);
+    multiSigClone = await ethers.getContractAt("MultiSigWalletV2",address);
 
     // initialize is already called with create and should revert
     await expect(multiSigClone.initialize(adr1.address)).to.be
@@ -63,7 +63,7 @@ describe("Multisig", () => {
     const tx2 = await multiSigCloneFactory.create(owner.address, salts[1]);
     const { events } = await tx2.wait();
     const { address } = events.find(Boolean);
-    multiSigClone2 = await ethers.getContractAt("MultiSigWallet",address);
+    multiSigClone2 = await ethers.getContractAt("MultiSigWalletV2",address);
     expect(await multiSigClone.contractId()).not.to.equal(await multiSigClone2.contractId())
   });
 
@@ -88,7 +88,7 @@ describe("Multisig", () => {
     const tx = await multiSigCloneFactory.create(wallet.address, salts[2]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
-    const multiSig = await ethers.getContractAt("MultiSigWallet",address);
+    const multiSig = await ethers.getContractAt("MultiSigWalletV2",address);
 
     //send eth
     const tx_send = {

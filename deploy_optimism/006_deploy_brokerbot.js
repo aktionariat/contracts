@@ -9,7 +9,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const shares = await deployments.get('Shares');
   const paymentHub = await deployments.get('PaymentHub');
   
-  const price = "1000000000000000000";
+  const price = "10000000000000000";
   const increment = 10;
   const baseCurrencyContract = config.baseCurrencyAddress;
   

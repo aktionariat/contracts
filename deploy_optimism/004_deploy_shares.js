@@ -7,8 +7,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const recoveryHub = await deployments.get("RecoveryHub");
 
-  const symbol = "SHR";
-  const name = "Test Shares";
+  const symbol = "OES";
+  const name = "Optimistic Example AG Shares";
   const terms = "test.ch/terms";
   const totalShares = 10000000;
   

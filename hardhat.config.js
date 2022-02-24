@@ -176,7 +176,7 @@ module.exports = {
       deploy: ['deploy_optimism']
     },
     optimism: {
-        //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}}`,
+        //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
         url: "https://mainnet.optimism.io",
         accounts: accounts("mainnet"),
         //chainId: 10,
@@ -226,7 +226,7 @@ module.exports = {
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY
   },
   solidity: {
     compilers: [
