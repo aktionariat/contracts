@@ -90,8 +90,12 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   }
 
   function setType(address[] calldata addressesToAdd, uint8 value) public onlyOwner {
-    for (uint i=0; i<addressesToAdd.length; i++){
+    uint len = addressesToAdd.length;
+    for (uint i; i < len; ) {
       setType(addressesToAdd, value);
+      unchecked {
+        i++;
+      }
     }
   }
 

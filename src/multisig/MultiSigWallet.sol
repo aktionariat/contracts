@@ -85,7 +85,7 @@ contract MultiSigWallet is Nonce, Initializable {
   }
 
   function toBytes(uint number) internal pure returns (bytes memory){
-    uint len = 0;
+    uint len;
     uint temp = 1;
     while (number >= temp){
       temp = temp << 8;
@@ -93,9 +93,13 @@ contract MultiSigWallet is Nonce, Initializable {
     }
     temp = number;
     bytes memory data = new bytes(len);
-    for (uint i = len; i>0; i--) {
+    for (uint i = len; i > 0; ) {
       data[i-1] = bytes1(uint8(temp));
       temp = temp >> 8;
+      // can't underflow
+      unchecked {
+        i--;
+      }
     }
     return data;
   }
@@ -112,8 +116,11 @@ contract MultiSigWallet is Nonce, Initializable {
     all[5] = data;
     all[6] = toBytes(block.chainid);
     all[7] = toBytes(0);
-    for (uint i = 0; i<8; i++){
+    for (uint i; i < 8; ) {
       all[i] = RLPEncode.encodeBytes(all[i]);
+      unchecked {
+        i++;
+      }
     }
     all[8] = all[7];
     return keccak256(RLPEncode.encodeList(all));
@@ -121,21 +128,29 @@ contract MultiSigWallet is Nonce, Initializable {
 
   function verifySignatures(bytes32 transactionHash, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s)
     public view returns (address[] memory) {
-    address[] memory found = new address[](r.length);
-    for (uint i = 0; i < r.length; i++) {
+    uint len = r.length;
+    address[] memory found = new address[](len);
+    for (uint i; i < len; ) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
       uint8 signaturesNeeded = signers[signer];
-      require(signaturesNeeded > 0 && signaturesNeeded <= r.length, "cosigner error");
+      require(signaturesNeeded > 0 && signaturesNeeded <= len, "cosigner error");
       found[i] = signer;
+      unchecked {
+        i++;
+      }
     }
     requireNoDuplicates(found);
     return found;
   }
 
   function requireNoDuplicates(address[] memory found) private pure {
-    for (uint i = 0; i < found.length; i++) {
-      for (uint j = i+1; j < found.length; j++) {
+    uint len = found.length;
+    for (uint i; i < len; ) {
+      for (uint j = i+1; j < len; j++) {
         require(found[i] != found[j], "duplicate signature");
+      }
+      unchecked {
+        i++;
       }
     }
   }

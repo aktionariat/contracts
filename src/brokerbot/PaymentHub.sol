@@ -179,8 +179,12 @@ contract PaymentHub {
     }
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
-        for (uint i=0; i<recipients.length; i++) {
+        uint len = recipients.length;
+        for (uint i; i < len; ) {
             require(IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]));
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -188,8 +192,12 @@ contract PaymentHub {
      * Can (at least in theory) save some gas as the sender balance only is touched in one transaction.
      */
     function multiPayAndNotify(IERC20 token, address[] calldata recipients, uint256[] calldata amounts, bytes calldata ref) external {
-        for (uint i=0; i<recipients.length; i++) {
+        uint len = recipients.length;
+        for (uint i; i < len; ) {
             payAndNotify(token, recipients[i], amounts[i], ref);
+            unchecked {
+                i++;
+            }
         }
     }
 

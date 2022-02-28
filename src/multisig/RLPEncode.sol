@@ -105,14 +105,17 @@ library RLPEncode {
      * @return The flattened byte string.
      */
     function flatten(bytes[] memory _list) private pure returns (bytes memory) {
-        if (_list.length == 0) {
+        uint length = _list.length;
+        if (length == 0) {
             return new bytes(0);
         }
 
         uint len;
-        uint i;
-        for (i = 0; i < _list.length; i++) {
+        for (uint i; i < length; i++) {
             len += _list[i].length;
+            unchecked {
+                i++;
+            }
         }
 
         bytes memory flattened = new bytes(len);
@@ -120,7 +123,7 @@ library RLPEncode {
         // solhint-disable-next-line no-inline-assembly
         assembly { flattenedPtr := add(flattened, 0x20) }
 
-        for(i = 0; i < _list.length; i++) {
+        for(uint i; i < length; ) {
             bytes memory item = _list[i];
             
             uint listPtr;
@@ -129,6 +132,10 @@ library RLPEncode {
 
             memcpy(flattenedPtr, listPtr, item.length);
             flattenedPtr += item.length;
+
+            unchecked {
+                i++;
+            }
         }
 
         return flattened;

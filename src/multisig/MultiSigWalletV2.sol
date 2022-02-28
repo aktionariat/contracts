@@ -85,7 +85,7 @@ contract MultiSigWalletV2 is Nonce, Initializable {
   }
 
 function toBytes (uint256 x) public pure returns (bytes memory result) {
-  uint l = 0;
+  uint l;
   uint xx = x;
   if (x >= 0x100000000000000000000000000000000) { x >>= 128; l += 16; }
   if (x >= 0x10000000000000000) { x >>= 64; l += 8; }
@@ -113,9 +113,12 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
     all[5] = data;
     all[6] = toBytes(block.chainid);
     all[7] = new bytes(0);
-    for (uint i = 0; i<8; i++){
+    for (uint i; i < 8; ){
       if (i != 2 && i!= 3) {
         all[i] = RLPEncode.encodeBytes(all[i]);
+      }
+      unchecked {
+        i++;
       }
     }
     all[8] = all[7];
@@ -124,21 +127,29 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
 
   function verifySignatures(bytes32 transactionHash, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s)
     public view returns (address[] memory) {
-    address[] memory found = new address[](r.length);
-    for (uint i = 0; i < r.length; i++) {
+    uint len = r.length;
+    address[] memory found = new address[](len);
+    for (uint i; i < len; ) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
       uint8 signaturesNeeded = signers[signer];
-      require(signaturesNeeded > 0 && signaturesNeeded <= r.length, "cosigner error");
+      require(signaturesNeeded > 0 && signaturesNeeded <= len, "cosigner error");
       found[i] = signer;
+      unchecked {
+        i++;
+      }
     }
     requireNoDuplicates(found);
     return found;
   }
 
   function requireNoDuplicates(address[] memory found) private pure {
-    for (uint i = 0; i < found.length; i++) {
-      for (uint j = i+1; j < found.length; j++) {
+    uint len = found.length;
+    for (uint i; i < len; ) {
+      for (uint j = i+1; j < len; j++) {
         require(found[i] != found[j], "duplicate signature");
+      }
+      unchecked {
+        i++;
       }
     }
   }

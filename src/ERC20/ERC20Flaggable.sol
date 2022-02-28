@@ -42,7 +42,7 @@ import "./IERC677Receiver.sol";
 abstract contract ERC20Flaggable is IERC20 {
 
     // as Documented in /doc/infiniteallowance.md
-    uint256 constant private INFINITE_ALLOWANCE = 2**255;
+    uint256 constant private INFINITE_ALLOWANCE = 1 << 255;
 
     uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
 

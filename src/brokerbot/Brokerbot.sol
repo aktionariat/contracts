@@ -147,14 +147,22 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     function notifyTrades(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) external onlyOwner {
-        for (uint i = 0; i < buyers.length; i++) {
+        uint len = buyers.length;
+        for (uint i; i < len; ) {
             notifyTraded(buyers[i], shares[i], ref[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 
     function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) external onlyOwner {
-        for (uint i = 0; i < buyers.length; i++) {
+        uint len = buyers.length;
+        for (uint i; i < len; ) {
             notifyTradeAndTransfer(buyers[i], shares[i], ref[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -232,7 +240,7 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     function getShares(uint256 money) public view returns (uint256) {
         uint256 currentPrice = getPrice();
-        uint256 min = 0;
+        uint256 min;
         uint256 max = money / currentPrice;
         while (min < max){
             uint256 middle = (min + max)/2;
