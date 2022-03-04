@@ -12,13 +12,15 @@ async function main() {
 
   const overrides = { gasLimit: 200000, };
 
-  const paymentHub =  await ethers.getContractAt("PaymentHub","0xAF21E166ADc362465A27AeDc15315DcFc0c51624");
+  const paymentHub =  await ethers.getContractAt("PaymentHub","0x20D1c515e38aE9c345836853E2af98455F919637");
   const wrapped = WrapperBuilder.wrapLite(paymentHub).usingPriceFeed("redstone-stocks");
   const priceChfUsd = await wrapped.getLatestPriceCHFUSD(overrides);
   const priceEthUsd = await wrapped.getLatestPriceETHUSD();
+  const priceInEthChf = await wrapped.getPriceInEtherFromOracle(ethers.utils.parseEther('100'), "0xE4F27b04cC7729901876B44f4EAA5102EC150265");
 
   console.log("price chf/usd: %s", priceChfUsd.toString());
   console.log("price eth/usd: %s", priceEthUsd.toString());
+  console.log("price eth/chf: %s", ethers.utils.formatEther(priceInEthChf));
 
 }
 

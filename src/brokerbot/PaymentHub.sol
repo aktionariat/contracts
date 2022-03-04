@@ -44,7 +44,7 @@ contract PaymentHub is PriceAware{
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
-    address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
+    address private constant CHF_TOKEN = 0xE4F27b04cC7729901876B44f4EAA5102EC150265;
     address private immutable TRUSTED_SIGNER;
 
     uint8 private constant KEEP_ETHER = 0x4; // copied from brokerbot
@@ -102,14 +102,14 @@ contract PaymentHub is PriceAware{
     }
 
     /**
-     * Returns the latest price of eth/usd pair from chainlink with 8 decimals
+     * Returns the latest price of eth/usd pair from redstone with 8 decimals
      */
     function getLatestPriceETHUSD() public view returns (uint256) {
         return getPriceFromMsg(bytes32("ETH"));
     }
 
     /**
-     * Returns the latest price of chf/usd pair from redstoneainlink with 8 decimals
+     * Returns the latest price of chf/usd pair from redstone with 8 decimals
      */
     function getLatestPriceCHFUSD() public view returns (uint256) {
         return getPriceFromMsg(bytes32("CHF"));
