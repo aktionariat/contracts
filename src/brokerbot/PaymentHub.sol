@@ -31,7 +31,7 @@ import "../ERC20/IERC20.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "../utils/PriceAware.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -40,24 +40,25 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
  * Further, it supports automatic conversion from Ether to the payment currency through Uniswap or the reception of Ether
  * using the current exchange rate as found in the chainlink oracle.
  */
-contract PaymentHub {
+contract PaymentHub is PriceAware{
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
     address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
+    address private constant TRUSTED_SIGNER = 0x0C39486f770B26F5527BBBf942726537986Cd7eb; // redstone main demo provider
 
     uint8 private constant KEEP_ETHER = 0x4; // copied from brokerbot
     
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
-    AggregatorV3Interface internal immutable priceFeedCHFUSD;
-    AggregatorV3Interface internal immutable priceFeedETHUSD;
 
-    constructor(IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
+    constructor(IQuoter _quoter, ISwapRouter swapRouter) {
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
-        priceFeedCHFUSD = _aggregatorCHFUSD;
-        priceFeedETHUSD = _aggregatorETHUSD;
+    }
+
+    function isSignerAuthorized(address _receviedSigner) public override virtual view returns (bool) {
+        return _receviedSigner == TRUSTED_SIGNER;
     }
 
     /*  
@@ -103,16 +104,14 @@ contract PaymentHub {
      * Returns the latest price of eth/usd pair from chainlink with 8 decimals
      */
     function getLatestPriceETHUSD() public view returns (uint256) {
-        (, int256 price, , , ) = priceFeedETHUSD.latestRoundData();
-        return uint256(price);
+        return getPriceFromMsg(bytes32("ETH"));
     }
 
     /**
-     * Returns the latest price of chf/usd pair from chainlink with 8 decimals
+     * Returns the latest price of chf/usd pair from redstoneainlink with 8 decimals
      */
     function getLatestPriceCHFUSD() public view returns (uint256) {
-        (, int256 price, , , ) = priceFeedCHFUSD.latestRoundData();
-        return uint256(price);
+        return getPriceFromMsg(bytes32("CHF"));
     }
 
     /**

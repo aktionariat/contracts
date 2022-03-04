@@ -41,9 +41,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     from: deployer,
     args: [
       uniswapQuoter,
-      uniswapRouter,
-      priceFeedCHFUSD,
-      priceFeedETHUSD
+      uniswapRouter
     ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,

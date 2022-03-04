@@ -4,6 +4,7 @@ const Chance = require("chance");
 const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
+const  { WrapperBuilder } = require("redstone-evm-connector");
 
 const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
 
@@ -57,6 +58,7 @@ describe("New PaymentHub", () => {
   let brokerbotDAI;
   let daiContract;
   let wbtcContract;
+  let wrappedPaymentHub;
 
   let deployer;
   let owner;
@@ -124,6 +126,12 @@ describe("New PaymentHub", () => {
     await shares.connect(owner).transfer(brokerbot.address, 500000 );
     await shares.connect(owner).transfer(brokerbotDAI.address, 500000);
     await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
+
+    // wrap paymenthub for price aware oracle
+    //wrappedPaymentHub = WrapperBuilder.wrapLite(paymentHub).usingPriceFeed('redstone');
+    wrappedPaymentHub = WrapperBuilder.mockLite(paymentHub).using({'ETH': 2900, 'CHF': 1.08711825});
+    await wrappedPaymentHub.authorizeProvider();
+
   });
 
   describe("Deployment", () => {
@@ -146,12 +154,13 @@ describe("New PaymentHub", () => {
       xchfamount = await brokerbot.getBuyPrice(randomAmount);
     });
     it("Should get price in ETH", async () => {
-      const priceEthUsd = await paymentHub.getLatestPriceETHUSD();
-      const priceChfUsd = await paymentHub.getLatestPriceCHFUSD();
+      const priceChfUsd = await wrappedPaymentHub.getLatestPriceCHFUSD();
+      console.log("test");
+      const priceEthUsd = await wrappedPaymentHub.getLatestPriceETHUSD();
       // console.log(await priceeth.toString());
       const price = xchfamount.mul(Math.pow(10,8)).div(priceEthUsd);
       
-      const priceInETH = await paymentHub.getPriceInEtherFromOracle(xchfamount, await brokerbot.base());
+      const priceInETH = await wrappedPaymentHub.getPriceInEtherFromOracle(xchfamount, await brokerbot.base());
       expect(priceInETH).to.equal(price);
     });
 
