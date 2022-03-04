@@ -45,16 +45,17 @@ contract PaymentHub is PriceAware{
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
     address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
-    address private constant TRUSTED_SIGNER = 0x0C39486f770B26F5527BBBf942726537986Cd7eb; // redstone main demo provider
+    address private immutable TRUSTED_SIGNER;
 
     uint8 private constant KEEP_ETHER = 0x4; // copied from brokerbot
     
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
 
-    constructor(IQuoter _quoter, ISwapRouter swapRouter) {
+    constructor(IQuoter _quoter, ISwapRouter swapRouter, address _trustedSigner) {
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
+        TRUSTED_SIGNER = _trustedSigner;
     }
 
     function isSignerAuthorized(address _receviedSigner) public override virtual view returns (bool) {

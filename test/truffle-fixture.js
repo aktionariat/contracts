@@ -16,8 +16,8 @@ const PaymentHub = artifacts.require("PaymentHub");
 const RecoveryHub = artifacts.require("RecoveryHub");
 const OfferFactory = artifacts.require("OfferFactory");
 
-const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
-const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
+//const redstoneProvider = 0x0C39486f770B26F5527BBBf942726537986Cd7eb; //redstone main demo provider 
+const redstoneProvider = "0x926E370fD53c23f8B71ad2B3217b227E41A92b12"; //redstone stocks provider (includes eth and chf)
 const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
 const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
@@ -41,7 +41,7 @@ module.exports = async (deployer) => {
   const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts[0]);
   DraggableShares.setAsDeployed(draggableShares);
 
-  const paymentHub = await PaymentHub.new(uniswapQuoter, uniswapRouter, priceFeedCHFUSD, priceFeedETHUSD);
+  const paymentHub = await PaymentHub.new(uniswapQuoter, uniswapRouter, redstoneProvider);
   PaymentHub.setAsDeployed(paymentHub);
 
   const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, namedAcc.deployer, paymentHub.address);

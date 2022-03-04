@@ -128,9 +128,8 @@ describe("New PaymentHub", () => {
     await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
 
     // wrap paymenthub for price aware oracle
-    //wrappedPaymentHub = WrapperBuilder.wrapLite(paymentHub).usingPriceFeed('redstone');
+    //wrappedPaymentHub = WrapperBuilder.wrapLite(paymentHub).usingPriceFeed('redstone-stocks');
     wrappedPaymentHub = WrapperBuilder.mockLite(paymentHub).using({'ETH': 2900, 'CHF': 1.08711825});
-    await wrappedPaymentHub.authorizeProvider();
 
   });
 
