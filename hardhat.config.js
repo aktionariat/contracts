@@ -64,7 +64,7 @@ module.exports = {
       forking: {
         enabled: process.env.FORKING === "true",
         url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
-        blockNumber: 3611994, //optimism transaction index
+        blockNumber: 4180042, //optimism transaction index
       },
       live: false,
       saveDeployments: true,
@@ -231,7 +231,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.9",
+        version: "0.8.12",
         settings: {
           optimizer: {
             enabled: true,
