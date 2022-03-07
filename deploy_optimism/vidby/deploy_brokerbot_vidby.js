@@ -1,5 +1,5 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config_optimism.js");
+const config = require("../../scripts/deploy_config_optimism.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -10,14 +10,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const shares = await ethers.getContractAt('DraggableShares', "0xAF21E166ADc362465A27AeDc15315DcFc0c51624");
   const paymentHub = await deployments.get('PaymentHub');
   
-  const price = "10000000000000000";
-  const increment = 10;
+  const price = "1000000000000000000";
+  const increment = 0;
   const baseCurrencyContract = config.baseCurrencyAddress;
   
   
   if (network.name != "hardhat") {
     console.log("-----------------------");
-    console.log("Deploy Brokerbot Optimism");
+    console.log("Deploy Vidby Brokerbot Optimism");
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
     console.log("shares: %s", shares.address);
@@ -34,7 +34,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("Brokerbot", {
+  const { address } = await deploy("BrokerbotVidby", {
     contract: "Brokerbot",
     from: deployer,
     args: [
@@ -50,6 +50,6 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   });
 };
 
-module.exports.tags = ["Brokerbot"];
+module.exports.tags = ["BrokerbotVidby"];
 //module.exports.dependencies = ["Shares", "PaymentHub"];
 module.exports.dependencies = ["PaymentHub"];
