@@ -16,8 +16,6 @@ const PaymentHub = artifacts.require("PaymentHub");
 const RecoveryHub = artifacts.require("RecoveryHub");
 const OfferFactory = artifacts.require("OfferFactory");
 
-const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
-const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
 const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
 const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
@@ -41,7 +39,7 @@ module.exports = async (deployer) => {
   const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts[0]);
   DraggableShares.setAsDeployed(draggableShares);
 
-  const paymentHub = await PaymentHub.new(uniswapQuoter, uniswapRouter, priceFeedCHFUSD, priceFeedETHUSD);
+  const paymentHub = await PaymentHub.new(uniswapQuoter, uniswapRouter );
   PaymentHub.setAsDeployed(paymentHub);
 
   const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, namedAcc.deployer, paymentHub.address);

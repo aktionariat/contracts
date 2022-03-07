@@ -1,15 +1,15 @@
 module.exports = {
   // Parameters used during contract development and testing
-  symbol: "SHR",
-  name: "Test Shares",
+  symbol: "OES",
+  name: "Optimistic Example AG Shares",
   terms: "test.ch/terms",
   totalShares: 10000000,
   sharePrice: "1000000000000000000",
-  baseCurrencyAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", // optimism dai
+  baseCurrencyAddress: "0xE4F27b04cC7729901876B44f4EAA5102EC150265", // optimism dai
   baseCurrencyMinterAddress: "0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7", //optimism
-  baseCurrencyName: "Dai Stablecoin",
-  baseCurrencySymbol: "DAI",
-  xchfBalanceSlot: 2,
+  baseCurrencyName: "CryptoFranc",
+  baseCurrencySymbol: "XCHF",
+  xchfBalanceSlot: 0,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   quorumBps: 7500,

@@ -5,7 +5,7 @@ const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
 
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
+const { sendEther, setBalance } = require("./helper/index");
 
 // Shared  Config
 const config = require("../scripts/deploy_config_optimism.js");
@@ -106,7 +106,6 @@ describe("New PaymentHub", () => {
     shares = await ethers.getContract("Shares");
     brokerbot = await ethers.getContract("Brokerbot");
     brokerbotDAI = await ethers.getContract("BrokerbotDAI");
-
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     //await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
     await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
@@ -114,12 +113,12 @@ describe("New PaymentHub", () => {
     await setBalance(daiContract, config.daiBalanceSlot, accounts);
     // Set (manipulate local) WBTC balance for first 5 accounts
     await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
-
+    
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
       await shares.connect(owner).mint(accounts[i], 1000000);
     }
-
+    
     // Deposit some shares to Brokerbot
     await shares.connect(owner).transfer(brokerbot.address, 500000 );
     await shares.connect(owner).transfer(brokerbotDAI.address, 500000);
@@ -145,15 +144,6 @@ describe("New PaymentHub", () => {
       const randomAmount = chance.natural({ min: 500, max: 50000 });
       xchfamount = await brokerbot.getBuyPrice(randomAmount);
     });
-    it("Should get price in ETH", async () => {
-      const priceEthUsd = await paymentHub.getLatestPriceETHUSD();
-      const priceChfUsd = await paymentHub.getLatestPriceCHFUSD();
-      // console.log(await priceeth.toString());
-      const price = xchfamount.mul(Math.pow(10,8)).div(priceEthUsd);
-      
-      const priceInETH = await paymentHub.getPriceInEtherFromOracle(xchfamount, await brokerbot.base());
-      expect(priceInETH).to.equal(price);
-    });
 
     it("Should buy shares with ETH and trade it to XCHF", async () => {
       const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
@@ -169,50 +159,14 @@ describe("New PaymentHub", () => {
       expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
     });
 
-    it("Should set setting for keeping ETH", async () => {
-      const settingKeepETh = config.KEEP_ETHER;
-      const settingsBefore = await brokerbot.settings();
-
-      // new setting with combination of old setting plus keep ETH
-      const newSetting = settingsBefore.xor(settingKeepETh);
-
-      await brokerbot.connect(owner).setSettings(newSetting);
-      const settingsAfter = await brokerbot.settings();
-
-      expect(settingsAfter).to.not.equal(settingsBefore);
-      expect(settingsAfter).to.equal(newSetting);
-    });
-
     it("Should revert if buy with ETH and send to less ETH", async () => {
       const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
       const lowerPriceInETH = priceInETH.mul(90).div(100);
       await expect(paymentHub.connect(sig1).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.reverted;
     });
 
-    it("Should buy shares with ETH and keep ETH", async () => {
-      const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
-      // console.log(await ethers.utils.formatEther(priceInETH));
-      // console.log(await priceInETH.toString());
-
-      // overpay in eth to test payback
-      const pricePlus = priceInETH.mul(110).div(100);
-
-      const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
-      const buyerETHBefore = await ethers.provider.getBalance(sig1.address);
-      const tx = await paymentHub.connect(sig1).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: pricePlus});
-      const { effectiveGasPrice, cumulativeGasUsed} = await tx.wait();
-      // get how much eth was paid for tx
-      const gasPaid = effectiveGasPrice.mul(cumulativeGasUsed);
-      const brokerbotETHAfter = await ethers.provider.getBalance(brokerbot.address);
-      const buyerETHAfter = await ethers.provider.getBalance(sig1.address);
-      // console.log(await ethers.utils.formatEther(brokerbotETHAfter));
-      // brokerbot balance only increase priceInETH not pricePlus -> correct eth is send to brokerbot
-      expect(brokerbotETHBefore.add(priceInETH)).to.equal(brokerbotETHAfter);
-      // buyer balance decrease in gas paid for tx + priceInETH -> overpaid eth is send back
-      expect(buyerETHBefore.sub(priceInETH).sub(gasPaid)).to.equal(buyerETHAfter);
-    });
-
-    it("Should be able to withdraw ETH from brokerbot as owner", async () => {
+    it.skip("Should be able to withdraw ETH from brokerbot as owner", async () => {
+      await sendEther(deployer, brokerbot.address, "1");
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const ownerETHBefore = await ethers.provider.getBalance(owner.address);
       await expect(brokerbot.withdrawEther(brokerbotETHBefore)).to.be.revertedWith("not owner nor hub");
@@ -241,14 +195,6 @@ describe("New PaymentHub", () => {
     beforeEach(async () => {
       const randomAmount = chance.natural({ min: 500, max: 5000 });
       daiAmount = await brokerbotDAI.getBuyPrice(randomAmount);
-    });
-    it("Should get right ETH price ", async () => {
-      const priceeth = await paymentHub.getLatestPriceETHUSD();
-      // console.log(await priceeth.toString());
-      // console.log(await daiAmount.toString());
-      const priceInETH = await paymentHub.getPriceInEtherFromOracle(daiAmount, brokerbotDAI.address);
-      await expect(ethers.utils.formatEther(priceInETH)).to.equal(
-        ethers.utils.formatEther(daiAmount.mul(await ethers.BigNumber.from(10).pow(8)).div(priceeth)));
     });
 
     it("Should buy shares with ETH and trade it to DAI", async () => {
@@ -284,8 +230,8 @@ describe("New PaymentHub", () => {
     before(async () => {
       randomShareAmount = chance.natural({ min: 500, max: 50000 });
       xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
-      const types = ["address","uint24","address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 3000, config.wethAddress, 3000, config.wbtcAddress];
+      const types = ["address", "uint24", "address", "uint24","address","uint24","address"];
+      const values = [config.baseCurrencyAddress, 500, config.daiAddress, 3000, config.wethAddress, 3000, config.wbtcAddress];
       path = ethers.utils.solidityPack(types,values);
     });
 
