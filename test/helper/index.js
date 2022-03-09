@@ -67,7 +67,85 @@ async function sellingEnabled(brokerbot) {
   return (settings & config.SELLING_ENABLED) == config.SELLING_ENABLED;
 }
 
+async function setBalances(accounts, baseCurrency, daiContract, wbtcContract) {
+  // Mint baseCurrency Tokens (xchf) to first 5 accounts
+    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    // Set (manipulate local) DAI balance for first 5 accounts
+    await setBalance(daiContract, config.daiBalanceSlot, accounts);
+    // Set (manipulate local) WBTC balance for first 5 accounts
+    await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
+}
+
+async function setup() {
+  let baseCurrency;
+  let brokerbot;
+  let recoveryHub;
+  let offerFactory;
+  let draggableShares;
+  let shares;
+  let paymentHub;
+
+  let deployer
+  let owner;
+  let sig1;
+  let sig2;
+  let sig3;
+  let sig4;
+  let sig5;
+  let accounts;
+  let signers;
+
+  [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
+  signers = [owner,sig1,sig2,sig3,sig4,sig5];
+  accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
+  
+  // deploy contracts
+  baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+  
+  await deployments.fixture([
+    "ReoveryHub",
+    "OfferFactory",
+    "Shares",
+    "DraggableShares",
+    "PaymentHub",
+    "Brokerbot"
+  ]);
+  
+  paymentHub = await ethers.getContract("PaymentHub");
+  recoveryHub = await ethers.getContract("RecoveryHub");
+  offerFactory = await ethers.getContract("OfferFactory");
+  shares = await ethers.getContract("Shares");
+  draggableShares = await ethers.getContract("DraggableShares");
+  brokerbot = await ethers.getContract("Brokerbot");
+  
+  // Set Payment Hub for Brokerbot
+  await brokerbot.connect(owner).setPaymentHub(paymentHub.address);
+
+  // Allow payment hub to spend baseCurrency from accounts[0] and draggableShares from Brokerbot
+  await draggableShares.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
+  await baseCurrency.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
+  await brokerbot.connect(owner).approve(draggableShares.address, paymentHub.address, config.infiniteAllowance);
+  await brokerbot.connect(owner).approve(baseCurrency.address, paymentHub.address, config.infiniteAllowance);
+
+  // Mint baseCurrency Tokens (xchf) to first 5 accounts
+  await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+
+  //Mint shares to first 5 accounts
+  for( let i = 0; i < accounts.length; i++) {
+    await shares.connect(owner).mint(accounts[i], 1000000);
+  }
+
+  // Convert some Shares to DraggableShares
+  for (let i = 0; i < signers.length; i++) {
+    await shares.connect(signers[i]).approve(draggableShares.address, config.infiniteAllowance);
+    await draggableShares.connect(signers[i]).wrap(accounts[i], 900000);
+  }
+  // Deposit some shares to Brokerbot
+  await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
+  await baseCurrency.connect(owner).transfer(brokerbot.address, web3.utils.toWei("100000"));
+}
+
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled};
+module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup};

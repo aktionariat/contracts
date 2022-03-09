@@ -1,7 +1,7 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
 const { expect } = require("chai");
 const Chance = require("chance");
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
+const { setBalance } = require("./helper/index");
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
 
@@ -783,7 +783,6 @@ describe("New Standard", () => {
       const lostAddress = sig3.address;
       const lostSigner = sig3;
       const lostAddressBalance = await allowlistDraggable.balanceOf(lostAddress);
-      console.log(await lostAddressBalance.toString());
 
       // declare token lost
       await recoveryHub.connect(sig1).declareLost(allowlistDraggable.address, allowlistDraggable.address, lostAddress);

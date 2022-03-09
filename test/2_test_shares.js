@@ -1,77 +1,69 @@
-/* global artifacts, contract */
-/* eslint-disable no-undef */
-
 // Shared Config
 const config = require("../scripts/deploy_config.js");
 
 // Libraries
-const BN = require("bn.js");
-
 const { artifacts, getUnnamedAccounts } = require("hardhat");
-
-// Import contracts to be tested
-const Shares = artifacts.require("Shares");
-const PaymentHub = artifacts.require("PaymentHub");
+const { expect } = require("chai");
 
 // Test parameters
 const sharesToMint = 10;
 
-contract("Shares", () => {
+describe("Shares", () => {
   let accounts;
   let shares;
   let paymentHub;
 
+  let deployer;
+  let owner;
+  let sig1
+
   before(async function () {
+    [deployer,owner,sig1] = await ethers.getSigners();
     accounts =  await getUnnamedAccounts();
-    shares = await Shares.deployed();
-    paymentHub = await PaymentHub.deployed();
+    paymentHub = await ethers.getContract("PaymentHub");
+    shares = await ethers.getContract("Shares");
+    
   });
 
   it("should deploy", async () => {
-    assert(shares.address !== "");
+    expect(shares.address).to.exist;
   });
 
   it("should get constructor params correctly", async () => {
     const symbol = await shares.symbol.call();
-    assert.equal(symbol, config.symbol);
+    expect(symbol).to.equal(config.symbol);
     const name = await shares.name.call();
-    assert.equal(name, config.name);
+    expect(name).to.equal(config.name);
     const terms = await shares.terms.call();
-    assert.equal(terms, config.terms);
+    expect(terms).to.equal(config.terms);
     const totalShares = await shares.totalShares.call();
-    assert.equal(totalShares, config.totalShares);
+    expect(totalShares).to.equal(config.totalShares);
   });
 
   it("should be mintable", async () => {
     const oldBalance = await shares.balanceOf(accounts[0]);
-    await shares.mint(accounts[0], sharesToMint);
+    await shares.connect(owner).mint(accounts[0], sharesToMint);
     const newBalance = await shares.balanceOf(accounts[0]);
-    assert.equal(oldBalance.toNumber() + sharesToMint, newBalance.toNumber());
+    expect(oldBalance.add(sharesToMint)).to.equal(newBalance);
+    //assert.equal(oldBalance.toNumber() + sharesToMint, newBalance.toNumber());
   });
 
   it("should allow infinite allowance", async () => {
     // Used Contracts: Shares, PaymentHub
     // Allow PaymentHub to spend infinite shares from accounts[0]
-    await shares.approve(paymentHub.address, config.infiniteAllowance, {
-      from: accounts[0],
-    });
+    await shares.connect(sig1).approve(paymentHub.address, config.infiniteAllowance);
 
     // Get allowance before transaction
-    const allowanceBefore = new BN(
-      await shares.allowance(accounts[0], paymentHub.address)
-    );
+    const allowanceBefore = await shares.allowance(accounts[0], paymentHub.address);
 
     // Execute transaction. Send any number through paymentHub
-    await paymentHub.multiPay(shares.address, [accounts[1]], [1], {
-      from: accounts[0],
-    });
+    await paymentHub.connect(sig1).multiPay(shares.address, [accounts[1]], [1]);
 
     // Get allowance after transaction
-    const allowanceAfter = new BN(
-      await shares.allowance(accounts[0], paymentHub.address)
-    );
+    const allowanceAfter = await shares.allowance(accounts[0], paymentHub.address);
 
     // Infinite approval must not have changed
-    assert(allowanceBefore.eq(allowanceAfter));
+    expect(allowanceBefore).to.equal(allowanceAfter);
+    
   });
 });

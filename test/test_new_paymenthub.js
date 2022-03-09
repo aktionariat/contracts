@@ -5,13 +5,13 @@ const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
 
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
+const { mintBaseCurrency, mintERC20, setBalances } = require("./helper/index");
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
 const { wbtcAddress } = require("../scripts/deploy_config.js");
 
-describe("New PaymentHub", () => {
+describe.skip("New PaymentHub", () => {
   const ethersProvider = new ethers.providers.Web3Provider(network.provider);
   const router = new AlphaRouter({ chainId: 1, provider: ethersProvider });
   const WETH = new Token(
@@ -108,13 +108,8 @@ describe("New PaymentHub", () => {
     brokerbot = await ethers.getContract("Brokerbot");
     brokerbotDAI = await ethers.getContract("BrokerbotDAI");
 
-    // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    //await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
-    // Set (manipulate local) DAI balance for first 5 accounts
-    await setBalance(daiContract, config.daiBalanceSlot, accounts);
-    // Set (manipulate local) WBTC balance for first 5 accounts
-    await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
+    // Set (manipulate local) balances (xchf,dai,wbtc) for first 5 accounts
+    await setBalances(accounts, baseCurrency, daiContract, wbtcContract);
 
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
@@ -270,7 +265,6 @@ describe("New PaymentHub", () => {
       await daiContract.connect(sig1).approve(paymentHub.address, daiAmount);
 
       const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
-      //await paymentHub.connect(sig1).payAndNotify(brokerbotDAI.address, daiAmount, "0x01");
       const paymentHubAdr1 = await paymentHub.connect(sig1);
       await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbotDAI.address, daiAmount, "0x01");
       const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);

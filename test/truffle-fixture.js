@@ -27,7 +27,7 @@ const ERC20Basic = artifacts.require("ERC20Basic");
 module.exports = async (deployer) => {
   const namedAcc = await deployer.getNamedAccounts();
   const accounts = await getUnnamedAccounts();
-  const [deploy] = await ethers.getSigners();
+  const [deploy, owner] = await ethers.getSigners();
 
   const recoveryHub = await RecoveryHub.new();
   RecoveryHub.setAsDeployed(recoveryHub);
@@ -35,22 +35,22 @@ module.exports = async (deployer) => {
   const offerFactory = await OfferFactory.new();
   OfferFactory.setAsDeployed(offerFactory);
 
-  const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, namedAcc.deployer, recoveryHub.address);
+  const shares = await Shares.new(config.symbol, config.name, config.terms, config.totalShares, namedAcc.owner, recoveryHub.address);
   Shares.setAsDeployed(shares);
 
-  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, accounts[0]);
+  const draggableShares = await DraggableShares.new(config.terms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, namedAcc.owner);
   DraggableShares.setAsDeployed(draggableShares);
 
   const paymentHub = await PaymentHub.new(uniswapQuoter, uniswapRouter, priceFeedCHFUSD, priceFeedETHUSD);
   PaymentHub.setAsDeployed(paymentHub);
 
-  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, namedAcc.deployer, paymentHub.address);
+  const brokerbot = await Brokerbot.new(draggableShares.address, config.sharePrice, 0, config.baseCurrencyAddress, namedAcc.owner, paymentHub.address);
   Brokerbot.setAsDeployed(brokerbot);
 
 
   const baseCurrency = await ERC20Basic.at(config.baseCurrencyAddress);
   // Set Payment Hub for Brokerbot
-  await brokerbot.setPaymentHub(paymentHub.address);
+  await brokerbot.setPaymentHub(paymentHub.address, {from: namedAcc.owner});
 
   // Allow payment hub to spend baseCurrency from accounts[0] and draggableShares from Brokerbot
   await draggableShares.approve(paymentHub.address, new BN(config.infiniteAllowance), { from: accounts[0] });
