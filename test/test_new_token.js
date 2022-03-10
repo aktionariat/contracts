@@ -153,28 +153,28 @@ describe("New Standard", () => {
     it("should have some ETH in first 5 accounts", async () => {  
       for (let i = 0; i < 5; i++) {
         const balance = ethers.BigNumber.from(await ethers.provider.getBalance(accounts[i]));
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some BaseCurrency in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await baseCurrency.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some Shares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await shares.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some DraggableShares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await draggable.balanceOf(accounts[i]);
-        assert(!balance.isZero());
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
   });

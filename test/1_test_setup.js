@@ -5,6 +5,7 @@ const config = require("../scripts/deploy_config.js");
 const BN = require("bn.js");
 const { artifacts, getUnnamedAccounts } = require("hardhat");
 const { setBalance, setup } = require("./helper/index");
+const { expect } = require("chai");
 
 // Used contracts
 /*const Shares = artifacts.require("Shares");
@@ -57,34 +58,35 @@ describe("Migration", () => {
   it("should have some ETH in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = new BN(await web3.eth.getBalance(accounts[i]));
-      assert(!balance.isZero(), "Balance is 0");
+      expect(balance.isZero(), "Balance is 0").to.be.false;
     }
   });
 
   it("should have some BaseCurrency in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = await baseCurrency.balanceOf(accounts[i]);
-      assert(!balance.isZero(), "Balance is 0");
+      expect(balance.isZero(), "Balance is 0").to.be.false;
     }
   });
 
   it("should have some Shares in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = await shares.balanceOf(accounts[i]);
-      assert(!balance.isZero(), "Balance is 0");
+      expect(balance.isZero(), "Balance is 0").to.be.false;
     }
   });
 
   it("should have some DraggableShares in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = await draggableShares.balanceOf(accounts[i]);
-      assert(!balance.isZero());
+      expect(balance.isZero(), "Balance is 0").to.be.false;
     }
   });
 
   it("should have DraggableShares and BaseCurrency deposited into the Brokerbot", async () => {
     const tokenBalance = await draggableShares.balanceOf(brokerbot.address);
     const baseBalance = await baseCurrency.balanceOf(brokerbot.address);
-    assert(!tokenBalance.isZero() && !baseBalance.isZero());
+    expect(tokenBalance.isZero()).to.eq(false, "Balance is 0");
+    expect(baseBalance.isZero()).to.eq(false, "Balance is 0");
   });
 });

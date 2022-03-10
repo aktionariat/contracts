@@ -1,5 +1,3 @@
-/* global artifacts, contract, assert, web3 */
-
 // Shared Config
 const config = require("../scripts/deploy_config.js");
 
@@ -99,19 +97,10 @@ describe("PaymentHub", () => {
     const ethBalanceUniswapAfter = await ethers.provider.getBalance(config.uniswapRouterAddress);
 
     // Check result
-    assert(
-      ethBalanceSenderBefore
-        .sub(priceInETH)
-        .sub(gasCost)
-        .eq(ethBalanceSenderAfter)
-    );
-    assert(
-      baseBalanceRecipientBefore
-        .add(paymentAmountInBase)
-        .eq(baseBalanceRecipientAfter)
-    );
-    assert(ethBalancePaymentHubAfter.isZero());
-    assert(ethBalanceUniswapAfter.isZero());
+    expect(ethBalanceSenderBefore.sub(priceInETH).sub(gasCost)).to.eq(ethBalanceSenderAfter);
+    expect(baseBalanceRecipientBefore.add(paymentAmountInBase)).to.eq(baseBalanceRecipientAfter);
+    expect(ethBalancePaymentHubAfter.isZero()).to.equal(true);
+    expect(ethBalanceUniswapAfter.isZero()).to.equal(true);
   });
 
   it("should make multiple payments in baseCurrency in single transaction", async () => {
@@ -147,11 +136,9 @@ describe("PaymentHub", () => {
     const balanceAfter3 = await base.balanceOf(accounts[3]);
 
     // Check result
-    assert(
-      balanceBefore0.sub(toSend1).sub(toSend2).sub(toSend3).eq(balanceAfter0)
-    );
-    assert(balanceBefore1.add(toSend1).eq(balanceAfter1));
-    assert(balanceBefore2.add(toSend2).eq(balanceAfter2));
-    assert(balanceBefore3.add(toSend3).eq(balanceAfter3));
+    expect(balanceBefore0.sub(toSend1).sub(toSend2).sub(toSend3)).to.eq(balanceAfter0);
+    expect(balanceBefore1.add(toSend1)).to.eq(balanceAfter1);
+    expect(balanceBefore2.add(toSend2)).to.eq(balanceAfter2);
+    expect(balanceBefore3.add(toSend3)).to.eq(balanceAfter3);
   });
 });

@@ -2,7 +2,7 @@
 const config = require("../scripts/deploy_config.js");
 
 // Libraries
-const { artifacts, getUnnamedAccounts } = require("hardhat");
+const { getUnnamedAccounts } = require("hardhat");
 const { expect } = require("chai");
 
 // Test parameters
@@ -45,7 +45,6 @@ describe("Shares", () => {
     await shares.connect(owner).mint(accounts[0], sharesToMint);
     const newBalance = await shares.balanceOf(accounts[0]);
     expect(oldBalance.add(sharesToMint)).to.equal(newBalance);
-    //assert.equal(oldBalance.toNumber() + sharesToMint, newBalance.toNumber());
   });
 
   it("should allow infinite allowance", async () => {

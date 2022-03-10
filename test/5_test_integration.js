@@ -59,18 +59,13 @@ describe("Payment Integration", () => {
     const shareBalanceBrokerbotAfter = await draggableShares.balanceOf(brokerbot.address);
 
     // Check Results
-    assert(baseBalanceSenderBefore.sub(buyPrice).eq(baseBalanceSenderAfter));
-    assert(
-      baseBalanceBrokerbotBefore.add(buyPrice).eq(baseBalanceBrokerbotAfter)
-    );
-    assert(
-      shareBalanceSenderBefore.add(sharesToBuy).eq(shareBalanceSenderAfter)
-    );
-    assert(
-      shareBalanceBrokerbotBefore
-        .sub(sharesToBuy)
-        .eq(shareBalanceBrokerbotAfter)
-    );
+    expect(baseBalanceSenderBefore.sub(buyPrice)).to.equal(baseBalanceSenderAfter);
+    expect(
+      baseBalanceBrokerbotBefore.add(buyPrice)).to.equal(baseBalanceBrokerbotAfter);
+    expect(
+      shareBalanceSenderBefore.add(sharesToBuy)).to.equal(shareBalanceSenderAfter);
+    expect(shareBalanceBrokerbotBefore.sub(sharesToBuy))
+        .to.equal(shareBalanceBrokerbotAfter);
   });
 
   it("should allow buying shares by sending ETH through PaymentHub", async () => {
@@ -104,25 +99,13 @@ describe("Payment Integration", () => {
     const balanceSenderAfter = await ethers.provider.getBalance(accounts[0]);
     const baseBalanceBrokerbotAfter = await baseCurrency.balanceOf(brokerbot.address);
     const shareBalanceSenderAfter = await draggableShares.balanceOf(accounts[0]);
-    const shareBalanceBrokerbotAfter = await draggableShares.balanceOf(
-      brokerbot.address
-    );
+    const shareBalanceBrokerbotAfter = await draggableShares.balanceOf(brokerbot.address);
 
     // Check Results
-    assert(
-      balanceSenderBefore.sub(buyPriceInETH).sub(gasCost).eq(balanceSenderAfter)
-    );
-    assert(
-      baseBalanceBrokerbotBefore.add(buyPrice).eq(baseBalanceBrokerbotAfter)
-    );
-    assert(
-      shareBalanceSenderBefore.add(sharesToBuy).eq(shareBalanceSenderAfter)
-    );
-    assert(
-      shareBalanceBrokerbotBefore
-        .sub(sharesToBuy)
-        .eq(shareBalanceBrokerbotAfter)
-    );
+    expect(balanceSenderBefore.sub(buyPriceInETH).sub(gasCost)).to.equal(balanceSenderAfter);
+    expect(baseBalanceBrokerbotBefore.add(buyPrice)).to.equal(baseBalanceBrokerbotAfter);
+    expect(shareBalanceSenderBefore.add(sharesToBuy)).to.equal(shareBalanceSenderAfter);
+    expect(shareBalanceBrokerbotBefore.sub(sharesToBuy)).to.equal(shareBalanceBrokerbotAfter);
   });
 
   /*
@@ -154,10 +137,10 @@ describe("Payment Integration", () => {
     let shareBalanceBrokerbotAfter = await draggableShares.balanceOf(brokerbot.address);
     
     // Check Results
-    assert(baseBalanceSenderBefore.add(sellPrice).eq(baseBalanceSenderAfter))
-    assert(baseBalanceBrokerbotBefore.sub(sellPrice).eq(baseBalanceBrokerbotAfter));
-    assert(shareBalanceBrokerbotBefore.add(sharesToSell).eq(shareBalanceBrokerbotAfter))
-    assert(shareBalanceSenderBefore.sub(sharesToSell).eq(shareBalanceSenderAfter));
+    expect(baseBalanceSenderBefore.add(sellPrice)).to.equal(baseBalanceSenderAfter);
+    expect(baseBalanceBrokerbotBefore.sub(sellPrice)).to.equal(baseBalanceBrokerbotAfter);
+    expect(shareBalanceBrokerbotBefore.add(sharesToSell)).to.equal(shareBalanceBrokerbotAfter);
+    expect(shareBalanceSenderBefore.sub(sharesToSell)).to.equal(shareBalanceSenderAfter));
   })
   */
 
@@ -193,30 +176,15 @@ describe("Payment Integration", () => {
     // Balance after
     const baseBalanceSenderAfter = await baseCurrency.balanceOf(accounts[0]);
     const baseBalanceBrokerbotAfter = await baseCurrency.balanceOf(brokerbot.address);
-    const baseBalanceCopyrightAfter = await baseCurrency.balanceOf(
-      config.brokerbotCopyrightOwnerAddress
-    );
     const shareBalanceSenderAfter = await draggableShares.balanceOf(accounts[0]);
     const shareBalanceBrokerbotAfter = await draggableShares.balanceOf(
       brokerbot.address
     );
 
     // Check Results
-    assert(
-      baseBalanceSenderBefore
-        .add(sellPrice)
-        .eq(baseBalanceSenderAfter)
-    );
-    assert(
-      baseBalanceBrokerbotBefore.sub(sellPrice).eq(baseBalanceBrokerbotAfter)
-    )
-    assert(
-      shareBalanceBrokerbotBefore
-        .add(sharesToSell)
-        .eq(shareBalanceBrokerbotAfter)
-    );
-    assert(
-      shareBalanceSenderBefore.sub(sharesToSell).eq(shareBalanceSenderAfter)
-    );
+    expect(baseBalanceSenderBefore.add(sellPrice)).to.equal(baseBalanceSenderAfter);
+    expect(baseBalanceBrokerbotBefore.sub(sellPrice)).to.equal(baseBalanceBrokerbotAfter);
+    expect(shareBalanceBrokerbotBefore.add(sharesToSell)).to.equal(shareBalanceBrokerbotAfter);
+    expect(shareBalanceSenderBefore.sub(sharesToSell)).to.equal(shareBalanceSenderAfter);
   });
 });

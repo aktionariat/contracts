@@ -6,10 +6,10 @@ const config = require("../scripts/deploy_config.js");
 
 // Libraries
 const Chance = require("chance");
-const truffleAssert = require("truffle-assertions");
 const { ethers } = require("hardhat");
 const { buyingEnabled, sellingEnabled } = require("./helper/index");
 const { expect } = require("chai");
+const exp = require("constants");
 
 // Import contracts to be tested
 const Shares = artifacts.require("Shares");
@@ -51,7 +51,7 @@ describe("Brokerbot", () => {
       expect(baseCurrency).to.equal(config.baseCurrencyAddress);
       expect(brokerbotOwner).to.equal(owner.address);
       expect(await price.toString()).to.equal(config.sharePrice);
-      assert(increment.isZero());
+      expect(increment.isZero()).to.eq(true);
     });
   });
 
@@ -64,18 +64,18 @@ describe("Brokerbot", () => {
       // Used Contract: Brokerbot      
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getBuyPrice(0);
-      assert(priceZeroShares.isZero());
+      expect(priceZeroShares.isZero()).to.eq(true);
       
       // getPrice cost for 1 share
       const priceOneShare = await brokerbot.getBuyPrice(1);
       const quotePrice = await brokerbot.getPrice();
-      assert(priceOneShare.eq(quotePrice));
+      expect(priceOneShare).to.eq(quotePrice);
       
       // Do 100 times with random number of shares
       for (let i = 0; i < 10; i++) {
         const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
         const priceRandomNumberShares = await brokerbot.getBuyPrice(randomNumberShares);
-        assert(priceOneShare.mul(randomNumberShares).eq(priceRandomNumberShares));
+        expect(priceOneShare.mul(randomNumberShares)).to.eq(priceRandomNumberShares);
       }
     });
     
@@ -84,18 +84,18 @@ describe("Brokerbot", () => {
       
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getSellPrice(0);
-      assert(priceZeroShares.isZero());
+      expect(priceZeroShares.isZero()).to.equal(true);
       
       // getPrice cost for 1 share
       const priceOneShare = await brokerbot.getSellPrice(1);
       const quotePrice = await brokerbot.getPrice();
-      assert(priceOneShare.eq(quotePrice));
+      expect(priceOneShare).to.eq(quotePrice);
       
       // Do 100 times with random number of shares
       for (let i = 0; i < 10; i++) {
         const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
         const priceRandomNumberShares = await brokerbot.getSellPrice(randomNumberShares);
-        assert(priceOneShare.mul(randomNumberShares).eq(priceRandomNumberShares));
+        expect(priceOneShare.mul(randomNumberShares)).to.eq(priceRandomNumberShares);
       }
     });
     
@@ -109,7 +109,7 @@ describe("Brokerbot", () => {
       const incrementAfter = await brokerbot.increment();
       
       // Check result
-      assert(incrementBefore.add(delta).eq(incrementAfter));
+      expect(incrementBefore.add(delta)).to.eq(incrementAfter);
     });
     
     it("should calculate buy price correctly - with increment - no drift", async () => {
@@ -124,12 +124,12 @@ describe("Brokerbot", () => {
       
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getBuyPrice(0);
-      assert(priceZeroShares.isZero());
+      expect(priceZeroShares.isZero()).to.eq(true);
       
       // getPrice cost for 1 share
       const priceOneShare = await brokerbot.getBuyPrice(1);
       const quotePrice = await brokerbot.getPrice();
-      assert(priceOneShare.eq(quotePrice));
+      expect(priceOneShare).to.eq(quotePrice);
       
       // Do 10 times with random number of shares
       for (let i = 0; i < 10; i++) {
@@ -148,7 +148,7 @@ describe("Brokerbot", () => {
         }
         
         // Check result
-        assert(priceRandomNumberShares.eq(calculatedPrice));
+        expect(priceRandomNumberShares).to.eq(calculatedPrice);
       }
     });
           
@@ -162,12 +162,12 @@ describe("Brokerbot", () => {
         
         // 0 cost for 0 shares
         const priceZeroShares = await brokerbot.getSellPrice(0);
-        assert(priceZeroShares.isZero());
+        expect(priceZeroShares.isZero()).to.eq(true);
         
         // getPrice cost for 1 share
         const priceOneShare = await brokerbot.getSellPrice(1);
         const quotePrice = await brokerbot.getPrice();
-        assert(priceOneShare.eq(quotePrice.sub(increment)));
+        expect(priceOneShare).to.eq(quotePrice.sub(increment));
         
         // Do 10 times with random number of shares
         for (let i = 0; i < 10; i++) {
@@ -186,7 +186,7 @@ describe("Brokerbot", () => {
               }
               
               // Check result
-              assert(priceRandomNumberShares.eq(calculatedPrice));
+              expect(priceRandomNumberShares).to.eq(calculatedPrice);
             }
     });
   });
@@ -196,23 +196,23 @@ describe("Brokerbot", () => {
       // Used Contract: Brokerbot
       //await brokerbot.connect(owner).setSettings(BUYING_ENABLED);
       await brokerbot.connect(owner).setEnabled(true, false);      
-      assert(await buyingEnabled(brokerbot));
-      assert(!(await sellingEnabled(brokerbot)));
+      expect(await buyingEnabled(brokerbot)).to.eq(true);
+      expect(await sellingEnabled(brokerbot)).to.equal(false);
       
       await brokerbot.connect(owner).setEnabled(false, true);
       //await brokerbot.setSettings(SELLING_ENABLED);
-      assert(!(await buyingEnabled(brokerbot)));
-      assert(await sellingEnabled(brokerbot));
+      expect(await buyingEnabled(brokerbot)).to.equal(false);
+      expect(await sellingEnabled(brokerbot)).to.equal(true);
       
       await brokerbot.connect(owner).setEnabled(true, true);
       //await brokerbot.setSettings(BUYING_ENABLED | SELLING_ENABLED);
-      assert(await buyingEnabled(brokerbot));
-      assert(await sellingEnabled(brokerbot));
+      expect(await buyingEnabled(brokerbot)).to.equal(true);
+      expect(await sellingEnabled(brokerbot)).to.equal(true);
       
       await brokerbot.connect(owner).setEnabled(false, false);
       //await brokerbot.setSettings("0x0");
-      assert(!(await buyingEnabled(brokerbot)));
-      assert(!(await sellingEnabled(brokerbot)));
+      expect(await buyingEnabled(brokerbot)).to.equal(false);
+      expect(await sellingEnabled(brokerbot)).to.equal(false);
     });
     
     it("should not allow buying shares when buying is disabled", async () => {
@@ -268,12 +268,12 @@ describe("Brokerbot", () => {
         
         // No payment no shares
         const sharesZeroPaid = await brokerbot.getShares(0);
-        assert(sharesZeroPaid.isZero());
+        expect(sharesZeroPaid.isZero()).to.equal(true);
         
         // Sent payment worth 1 share
         const singlePrice = await brokerbot.getBuyPrice(1);
         const sharesSinglePaid = await brokerbot.getShares(singlePrice);
-        assert(sharesSinglePaid.eq(1));
+        expect(sharesSinglePaid).to.eq(1);
         
         // Repeat with random number of shares
         for (let i = 0; i < 10; i++) {
@@ -282,7 +282,7 @@ describe("Brokerbot", () => {
             randomNumberShares
             );
           const calculatedShares = await brokerbot.getShares(priceRandomNumberShares);
-          assert(calculatedShares.eq(randomNumberShares));
+          expect(calculatedShares).to.eq(randomNumberShares);
         }
     });
 
@@ -356,13 +356,11 @@ describe("Brokerbot", () => {
             balance = balance.add(shares[j]);
           }
         }
-        assert(balance.eq(buyerBalancesAfter[i]));
+        expect(balance).to.eq(buyerBalancesAfter[i]);
       }
 
       const totalShares = shares.reduce((a, b) => a + b, 0);
-      assert(
-        brokerbotBalanceBefore.sub(totalShares).eq(brokerbotBalanceAfter)
-      );
+      expect(brokerbotBalanceBefore.sub(totalShares)).to.eq(brokerbotBalanceAfter);
     });
   });
 
@@ -383,8 +381,8 @@ describe("Brokerbot", () => {
     let price2 = await brokerbot.getBuyPrice(new BN(1));
     let balanceAfter = await draggableShares.balanceOf(brokerbot.address);
 
-    assert(price1.add(increment.mul(new BN(1000))).eq(price2));
-    assert(balanceAfter.add(new BN(300)).eq(balanceBefore));
+    expect(price1.add(increment.mul(1000)).to.eq(price2);
+    expect(balanceAfter.add(300)).to.eq(balanceBefore);
   })
 
   it('should allow buying shares with BaseCurrency', async () => {
