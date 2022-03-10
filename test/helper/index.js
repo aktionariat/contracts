@@ -142,7 +142,7 @@ async function setup() {
   }
   // Deposit some shares to Brokerbot
   await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
-  await baseCurrency.connect(owner).transfer(brokerbot.address, web3.utils.toWei("100000"));
+  await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
 }
 
 
