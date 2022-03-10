@@ -188,5 +188,10 @@ module.exports = {
   },
   mocha: {
     timeout: 100000
-  }
+  },
+  skipFiles: [
+    'multisig/MultiSigWallet.sol',
+    'multisig/Nonce.sol',
+    'multisig/RLPEncode.sol'
+   ]
 };
