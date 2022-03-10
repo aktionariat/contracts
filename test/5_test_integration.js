@@ -31,7 +31,7 @@ describe("Payment Integration", () => {
     brokerbot = await ethers.getContract("Brokerbot");
     draggableShares = await ethers.getContract("DraggableShares");
 
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   });
   it("should allow buying shares by sending baseCurrency through PaymentHub", async () => {
     // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares

@@ -51,7 +51,7 @@ describe("Bond Contract", () => {
     bondBot = await ethers.getContract("BondbotDAI");
     paymentHub = await ethers.getContract("PaymentHub");
 
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
 
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);

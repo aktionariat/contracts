@@ -31,7 +31,7 @@ describe("PaymentHub", () => {
     paymentHub = await ethers.getContract("PaymentHub");
     brokerbot = await ethers.getContract("Brokerbot");
 
-    base = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    base = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   });
 
   it("should deploy paymenthub", async () => {

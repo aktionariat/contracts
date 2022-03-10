@@ -3,19 +3,9 @@ const config = require("../scripts/deploy_config.js");
 
 // Libraries
 const BN = require("bn.js");
-const { artifacts, getUnnamedAccounts } = require("hardhat");
-const { setBalance, setup } = require("./helper/index");
+const { ethers } = require("hardhat");
+const { setup } = require("./helper/index");
 const { expect } = require("chai");
-
-// Used contracts
-/*const Shares = artifacts.require("Shares");
-const DraggableShares = artifacts.require("DraggableShares");
-const Brokerbot = artifacts.require("Brokerbot");
-const PaymentHub = artifacts.require("PaymentHub");
-const RecoveryHub = artifacts.require("RecoveryHub");
-const OfferFactory = artifacts.require("OfferFactory");
-
-const ERC20Basic = artifacts.require("ERC20Basic");*/
 
 describe("Migration", () => {
   let baseCurrency;
@@ -46,7 +36,7 @@ describe("Migration", () => {
     await setup();
 
     // get references
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
     paymentHub = await ethers.getContract("PaymentHub");
     recoveryHub = await ethers.getContract("RecoveryHub");
     offerFactory = await ethers.getContract("OfferFactory");

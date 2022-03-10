@@ -100,7 +100,7 @@ async function setup() {
   accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
   
   // deploy contracts
-  baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+  baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   
   await deployments.fixture([
     "ReoveryHub",

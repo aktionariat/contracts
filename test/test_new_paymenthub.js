@@ -98,9 +98,9 @@ describe("New PaymentHub", () => {
     dterms = chance.word({length: chance.natural({min: 1, max: 10})});
 
     // deploy contracts
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    daiContract = await ethers.getContractAt("ERC20Basic", config.daiAddress);
-    wbtcContract = await ethers.getContractAt("ERC20Basic", config.wbtcAddress)
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+    daiContract = await ethers.getContractAt("ERC20Named", config.daiAddress);
+    wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress)
 
     await deployments.fixture(["Shares", "DraggableShares", "PaymentHub", "Brokerbot", "BrokerbotDAI"]);
     paymentHub = await ethers.getContract("PaymentHub");
