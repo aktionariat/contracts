@@ -54,7 +54,7 @@ async function sendEther(signer, to, amount) {
     to: to,
     value: ethers.utils.parseEther(amount)
   });
-  await tx.wait();
+  return await tx.wait();
 }
 
 async function buyingEnabled(brokerbot) {

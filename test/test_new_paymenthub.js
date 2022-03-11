@@ -1,11 +1,14 @@
 const {network, ethers, deployments, } = require("hardhat");
-const { expect } = require("chai");
+const { setBalances } = require("./helper/index");
 const Chance = require("chance");
 const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
+const { use, expect } = require("chai");
+const { solidity } = require("ethereum-waffle");
 
-const { mintBaseCurrency, mintERC20, setBalances } = require("./helper/index");
+use(solidity);
+
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");

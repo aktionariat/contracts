@@ -1,7 +1,11 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
-const { expect } = require("chai");
 const Chance = require("chance");
 const { setBalance } = require("./helper/index");
+const { use, expect } = require("chai");
+const { solidity } = require("ethereum-waffle");
+
+use(solidity);
+
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
 
@@ -119,6 +123,7 @@ describe("New Standard", () => {
   
       it("Should have params specified at the constructor", async() => {
         expect(await draggable.terms()).to.equal(config.terms);
+        expect(await draggable.name()).to.equal(config.name + " SHA");
       }); 
 
       it("Should get right claim deleter", async () => {
@@ -273,11 +278,21 @@ describe("New Standard", () => {
       const balanceAfter = await draggable.balanceOf(sig1.address);
       expect(balanceBefore.add(randomAmountToWrap)).to.equal(balanceAfter);
     })
+
+    it("Should allow transfer ownership", async () => {
+      await expect(shares.connect(owner).transferOwnership(sig1.address))
+        .to.emit(shares, "OwnershipTransferred")
+        .withArgs(owner.address, sig1.address);
+      expect(await shares.owner()).to.equal(sig1.address);
+      await shares.connect(sig1).transferOwnership(owner.address)
+    });
   });
 
   describe("Draggable Shares", () => {
     it("Should set new oracle", async () => {
       const newOracle = sig1.address;
+      // revert if not oracle 
+      await expect(draggable.connect(sig1).setOracle(newOracle)).to.be.revertedWith("not oracle");
       await draggable.connect(oracle).setOracle(newOracle);
       expect(await draggable.oracle()).to.equal(newOracle);
       // reset oracle for offer testing
@@ -297,10 +312,25 @@ describe("New Standard", () => {
       await draggable.connect(sig3).burn(randomAmountToBurn);
       const balanceAfter = await shares.balanceOf(draggable.address);
       const balanceAfterDraggable = await draggable.balanceOf(sig3.address);
-      const totalSupplyArfter= await shares.totalSupply();
+      const totalSupplyAfter= await shares.totalSupply();
       expect(balanceBeforeDraggable.sub(randomAmountToBurn)).to.equal(balanceAfterDraggable);
       expect(balanceBefore.sub(randomAmountToBurn)).to.equal(balanceAfter);
-      expect(totalSupplyBefore.sub(randomAmountToBurn)).to.equal(totalSupplyArfter);
+      expect(totalSupplyBefore.sub(randomAmountToBurn)).to.equal(totalSupplyAfter);
+    });
+
+    it("Should only mint on wrapping or from shares contract", async () => {
+      const amount = 100
+      // wrap from address without token
+      await expect(draggable.connect(deployer).wrap(deployer.address, amount)).to.be.reverted; // should throw underflow panic error
+      await expect(draggable.connect(sig1).onTokenTransfer(sig1.address, amount, "0x01")).to.be.revertedWith("sender");
+    });
+
+    it("Should revert on unwrap", async () => {
+      await expect(draggable.connect(sig2).unwrap(10)).to.be.revertedWith("factor");
+    });
+
+    it("Should revert when onTokenTransfer isn't called from wrapped token", async () => {
+      await expect(draggable.connect(sig2).onTokenTransfer(sig1.address, 100, "0x01")).to.revertedWith("sender");
     })
   });
 
@@ -411,10 +441,10 @@ describe("New Standard", () => {
 
   describe("Offer", () => {
     let pricePerShare;
+    const overrides = {
+      value: ethers.utils.parseEther("5.0")
+    }
     beforeEach(async () => {
-      const overrides = {
-        value: ethers.utils.parseEther("5.0")
-      }
       pricePerShare = ethers.utils.parseEther("2");
       const salt = ethers.utils.formatBytes32String('1');
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
@@ -460,9 +490,6 @@ describe("New Standard", () => {
       const offerBefore = await draggable.offer();
       expect(offerBefore).to.exist;
       
-      const overrides = {
-        value: ethers.utils.parseEther("5.0")
-      }
       await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("1"), baseCurrency.address, overrides))
         .to.revertedWith("old offer better");
       await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides);
@@ -474,7 +501,6 @@ describe("New Standard", () => {
       expect(offerAfter).to.not.equal(offerBefore);
       
     });
-    
 
     it("Should be able to execute offer", async () => {
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
@@ -511,7 +537,23 @@ describe("New Standard", () => {
       expect(draggableBaseCurrencyBalance).to.equal(await draggableTotalSupply.mul(pricePerShare));
 
       // unwrap conversion factor is base currency balance / totalsupply
-      expect(await draggable.unwrapConversionFactor()).to.equal(await draggableBaseCurrencyBalance.div(draggableTotalSupply));
+      const factor = await draggable.unwrapConversionFactor();
+      expect(factor).to.equal(await draggableBaseCurrencyBalance.div(draggableTotalSupply));
+
+      // revert new offer after execute
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(
+        ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+        .to.be.revertedWith("factor");
+
+      // should be able to unwrap token
+      const baseBefore = await baseCurrency.balanceOf(sig2.address);
+      const draggableBefore = await draggable.balanceOf(sig2.address);
+      console.log(factor.toString());
+      await draggable.connect(sig2).unwrap(10);
+      const draggableAfter = await draggable.balanceOf(sig2.address);
+      const baseAfter = await baseCurrency.balanceOf(sig2.address);
+      expect(draggableBefore.sub(10)).to.equal(draggableAfter);
+      expect(baseBefore.add(factor.mul(10))).to.equal(baseAfter);
     });
 
     afterEach(async () => {
