@@ -4,9 +4,8 @@
 * Proprietary License
 *
 * This code cannot be used without an explicit permission from the copyright holder.
-* If you wish to use the Aktionariat Brokerbot, you can either use the open version
-* named Brokerbot.sol that can be used under an MIT License with Automated License Fee Payments,
-* or you can get in touch with use to negotiate a license to use LicensedBrokerbot.sol .
+* If you wish to use the Aktionariat Brokerbot you can get in touch with us to 
+* negotiate a license.
 *
 * Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
 */
