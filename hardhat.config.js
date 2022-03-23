@@ -188,6 +188,10 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
+      3: 1,
+      4: 1,
+      5: 1,
+      42: 1,
       69: 1
     },
     owner: {
