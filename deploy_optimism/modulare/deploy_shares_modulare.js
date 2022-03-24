@@ -1,13 +1,14 @@
 const Confirm = require('prompt-confirm');
-const config = require("../deploy_config_modulare.js");
+const config = require("./deploy_config_modulare.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
 
-  const owner = config.multisig;
-  const recoveryHub = await ethers.getContractAt("RecoveryHub", config.recoveryHubAddress);
+  const owner = config.multisigAddress;
+  const recoveryHub = await deployments.get("RecoveryHub");
+
 
   const symbol = config.symbol;
   const name = config.name;
@@ -48,3 +49,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["SharesMRE"];
+module.exports.dependencies = ["RecoveryHub"];

@@ -1,5 +1,5 @@
 const Confirm = require('prompt-confirm');
-const config = require("../deploy_config_modulare.js");
+const config = require("./deploy_config_modulare.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -8,9 +8,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const owner = config.multisigAddress;
 
-  const shares = await ethers.getContractAt('Shares', config.shareAddress);
-  const recoveryHub = await ethers.getContractAt("RecoveryHub", config.recoveryHubAddress);
-  const offerFactory = await ethers.getContractAt("OfferFactory", config.offerFactoryAddress);
+  const shares = await deployments.get('SharesMRE');
+  const recoveryHub = await deployments.get("RecoveryHub");
+  const offerFactory = await deployments.get("OfferFactory");
   
   const terms = config.terms;
   const quorumBps = config.quorumBps;
@@ -35,7 +35,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("DraggableShares", {
+  const { address } = await deploy("DraggableSharesMRE", {
     contract: "DraggableShares",
     from: deployer,
     args: [
@@ -53,4 +53,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["DraggableSharesMRE"];
-module.exports.dependencies = ["SharesMRE"];
+module.exports.dependencies = ["SharesMRE", "RecoveryHub", "OfferFactory"];

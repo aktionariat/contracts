@@ -1,15 +1,15 @@
 const Confirm = require('prompt-confirm');
-const config = require("../deploy_config_modulare.js");
+const config = require("./deploy_config_modulare.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
 
-  const owner = config.multisigAddress
+  const owner = config.multisigAddress;
   //const shares = await deployments.get('Shares');
   const shares = await deployments.get("DraggableSharesMRE");
-  const paymentHub = await ethers.getContractAt('PaymentHub', config.paymentHubAddress);
+  const paymentHub = await deployments.get('PaymentHub');
   
   const price = config.sharePrice;
   const increment = config.increment;
@@ -35,7 +35,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("Brokerbot", {
+  const { address } = await deploy("BrokerbotMRE", {
     contract: "Brokerbot",
     from: deployer,
     args: [
@@ -51,5 +51,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   });
 };
 
-module.exports.tags = ["Brokerbot"];
-module.exports.dependencies = ["DraggableSharesMRE"];
+module.exports.tags = ["BrokerbotMRE"];
+module.exports.dependencies = ["DraggableSharesMRE", "PaymentHub"];
