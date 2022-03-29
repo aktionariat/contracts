@@ -441,16 +441,23 @@ describe("New Standard", () => {
 
   describe("Offer", () => {
     let pricePerShare;
+    let salt;
     const overrides = {
       value: ethers.utils.parseEther("5.0")
     }
     beforeEach(async () => {
       pricePerShare = ethers.utils.parseEther("2");
-      const salt = ethers.utils.formatBytes32String('1');
+      salt = ethers.utils.formatBytes32String('1');
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
       const blockNum = await ethers.provider.getBlockNumber();
       const block= await ethers.provider.getBlock(blockNum);
     });
+
+    it("Should predict offer address", async () => {
+      const predictedAddress = await offerFactory.predictOfferAddress(salt, sig1.address, draggable.address, pricePerShare, baseCurrency.address, config.quorumBps, config.votePeriodSeconds);
+      expect(predictedAddress).to.equal(await draggable.offer());
+    })
+
     it("Should able to make aquisition offer", async () => {
       const offer = await draggable.offer();
       expect(offer).to.exist;
@@ -548,7 +555,7 @@ describe("New Standard", () => {
       // should be able to unwrap token
       const baseBefore = await baseCurrency.balanceOf(sig2.address);
       const draggableBefore = await draggable.balanceOf(sig2.address);
-      console.log(factor.toString());
+      //console.log(factor.toString());
       await draggable.connect(sig2).unwrap(10);
       const draggableAfter = await draggable.balanceOf(sig2.address);
       const baseAfter = await baseCurrency.balanceOf(sig2.address);
