@@ -40,10 +40,11 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version history
     // Version 2: added ability to process bank orders even if buying disabled
     // Version 3: added various events, removed license fee
-    uint8 private constant VERSION = 0x3;
+    // Version 4: made version field public so it is actually usable
+    uint8 public constant VERSION = 0x4;
 
     // more bits to be used by payment hub
-    uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED | (VERSION<<248);
+    uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
 
     event Trade(IERC20 indexed token, address who, bytes ref, int amount, IERC20 base, uint totPrice, uint fee, uint newprice);
     event PaymentHubUpdate(address indexed paymentHub);
