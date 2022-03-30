@@ -1,6 +1,6 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
 const Chance = require("chance");
-const { setBalance } = require("./helper/index");
+const { setBalance, setBalanceWithAmount } = require("./helper/index");
 const { use, expect } = require("chai");
 const { solidity } = require("ethereum-waffle");
 
@@ -442,6 +442,7 @@ describe("New Standard", () => {
   describe("Offer", () => {
     let pricePerShare;
     let salt;
+    let offer;
     const overrides = {
       value: ethers.utils.parseEther("5.0")
     }
@@ -451,6 +452,7 @@ describe("New Standard", () => {
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
       const blockNum = await ethers.provider.getBlockNumber();
       const block= await ethers.provider.getBlock(blockNum);
+      offer = await ethers.getContractAt("Offer", await draggable.offer());
     });
 
     it("Should predict offer address", async () => {
@@ -459,16 +461,25 @@ describe("New Standard", () => {
     })
 
     it("Should able to make aquisition offer", async () => {
-      const offer = await draggable.offer();
-      expect(offer).to.exist;
-      expect(offer).to.not.equal("0x0000000000000000000000000000000000000000");
+      const offerAdr = await draggable.offer();
+      expect(offerAdr).to.exist;
+      expect(offerAdr).to.not.equal("0x0000000000000000000000000000000000000000");
     });
     
-    it("Shareholder can vote", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+    it("Shareholder can vote yes", async () => {
       await offer.connect(sig1).voteYes();
       // FLAG_VOTED = 1
       expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.true;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.false;
+    });
+
+    it("Shareholder can vote no", async () => {
+      await offer.connect(sig2).voteNo();
+      // FLAG_VOTED = 1
+      expect(await draggable.hasFlag(sig2.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig2.address)).to.be.false;
+      expect(await offer.hasVotedNo(sig2.address)).to.be.true;
     });
 
     it("Should able to contest offer after expiry", async () => {
@@ -476,20 +487,26 @@ describe("New Standard", () => {
       const expiry = await draggable.votePeriod().then(period => period.add(threedays));
       await ethers.provider.send("evm_increaseTime", [expiry.toNumber()]);
       await ethers.provider.send("evm_mine");
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.contest();
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
 
     it("Should able to contest offer if declined", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.connect(owner).voteNo();
       await offer.connect(sig2).voteNo();
       await offer.connect(sig3).voteNo();
       await offer.contest();
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
+    });
+
+    it("Should able to contest offer if not well funded", async () => {
+      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
+      await offer.contest();
+      const offerAfterContest = await draggable.offer();
+      expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
+      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
     });
     
     it("Should be able to make better offer", async () => {
@@ -506,15 +523,61 @@ describe("New Standard", () => {
       expect(offerAfter).to.exist;
       expect(offerAfter).to.not.equal("0x0000000000000000000000000000000000000000");
       expect(offerAfter).to.not.equal(offerBefore);
-      
     });
 
+    it("Should revert if competing offer isn't called from token", async () => {
+      const tx = await offerFactory.connect(sig2).create(
+        ethers.utils.formatBytes32String('3'), sig2.address, ethers.utils.parseEther("2.3"), baseCurrency.address, config.quorumBps, config.votePeriodSeconds, overrides);
+      const { events } = await tx.wait();
+      const { address } = events.find(Boolean);
+      await expect(offer.connect(sig2).makeCompetingOffer(address))
+        .to.be.revertedWith("invalid caller");
+    })
+
+    it("Should revert if offer is already accepted", async () => {
+      // collect external vote
+      const externalTokens = ethers.BigNumber.from(100000);
+      await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
+      for(let i = 0; i<signers.length; i++){
+        await offer.connect(signers[i]).voteYes();
+      }
+
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+        .to.be.revertedWith("old already accepted");
+    })
+
+    it("Should revert if user account isn't well funded", async () => {
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("100"), baseCurrency.address, overrides))
+        .to.be.revertedWith("not funded");
+    })
+
+    it("Should revert execution if sender isn't buyer", async () => {
+      await expect(offer.connect(sig2).execute()).to.be.revertedWith("not buyer");
+    })
+
+    it("Should revert execution if offer isn't accepted", async () => {
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+    })
+
+    it("Should revert if transfer of offer currency fails", async () => {
+      // collect external vote
+      const externalTokens = ethers.BigNumber.from(100000);
+      await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
+      for(let i = 0; i<signers.length; i++){
+        await offer.connect(signers[i]).voteYes();
+      }
+      //set balance to low to transfer
+      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("insufficient tokens");
+      //set balance back
+      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+    })
+
     it("Should be able to execute offer", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       // buyer share balance before voting/excute
       const buyerBal = await shares.balanceOf(sig1.address);
 
-      // vote and get total of draggable sahres
+      // vote and get total of draggable shares
       let draggableTotal = 0
       for(let i = 0; i<signers.length; i++){
         await offer.connect(signers[i]).voteYes();
@@ -561,6 +624,9 @@ describe("New Standard", () => {
       const baseAfter = await baseCurrency.balanceOf(sig2.address);
       expect(draggableBefore.sub(10)).to.equal(draggableAfter);
       expect(baseBefore.add(factor.mul(10))).to.equal(baseAfter);
+      
+      // TODO: offer should be indiceted as accepted
+      //expect(await offer.connect(sig1).isAccepted()).to.be.true;
     });
 
     afterEach(async () => {

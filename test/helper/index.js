@@ -30,9 +30,13 @@ async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
 
 async function setBalance(erc20Contract, slot, accounts) {
   const locallyManipulatedBalance = ethers.utils.parseEther("100000000");
-  const newFormatedBalance = toBytes32(locallyManipulatedBalance).toString();
+  setBalanceWithAmount(erc20Contract, slot, accounts, locallyManipulatedBalance);
+}
 
-  for (let i = 0; i < 6; i++) {
+async function setBalanceWithAmount(erc20Contract, slot, accounts, amount) {
+  const newFormatedBalance = toBytes32(amount).toString();
+
+  for (let i = 0; i < accounts.length; i++) {
     // Get storage slot index
     const index = ethers.utils.solidityKeccak256(
       ["uint256", "uint256"],
@@ -148,4 +152,4 @@ async function setup() {
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup};
+module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount};
