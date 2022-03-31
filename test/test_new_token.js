@@ -226,10 +226,13 @@ describe("New Standard", () => {
       await expect(shares.connect(owner).setTotalShares(await totalSupply.sub(randomChange)))
       .to.be.revertedWith("below supply");
 
+      let totalShares = await shares.totalShares();
+      newTotalShares = totalShares.add(randomChange);
+
       // set correct new total and check if set correct
-      await shares.connect(owner).setTotalShares(totalSupply.add(randomChange));
-      const totalShares = await shares.totalShares();
-      expect(totalShares).to.equal(totalSupply.add(randomChange));
+      await shares.connect(owner).setTotalShares(newTotalShares);
+      totalShares = await shares.totalShares();
+      expect(totalShares).to.equal(newTotalShares);
     });
 
     it("Should declare tokens invalid", async () => {
@@ -318,18 +321,18 @@ describe("New Standard", () => {
       expect(totalSupplyBefore.sub(randomAmountToBurn)).to.equal(totalSupplyAfter);
     });
 
-    it("Should only mint on wrapping or from shares contract", async () => {
+    it("Should revert wrapping(mint) w/o shares", async () => {
       const amount = 100
       // wrap from address without token
       await expect(draggable.connect(deployer).wrap(deployer.address, amount)).to.be.reverted; // should throw underflow panic error
-      await expect(draggable.connect(sig1).onTokenTransfer(sig1.address, amount, "0x01")).to.be.revertedWith("sender");
+      // info: correct wrapping is done in the main before 
     });
 
     it("Should revert on unwrap", async () => {
       await expect(draggable.connect(sig2).unwrap(10)).to.be.revertedWith("factor");
     });
 
-    it("Should revert when onTokenTransfer isn't called from wrapped token", async () => {
+    it("Should revert when onTokenTransfer isn't called from wrapped token (prevent minting)", async () => {
       await expect(draggable.connect(sig2).onTokenTransfer(sig1.address, 100, "0x01")).to.revertedWith("sender");
     })
   });
@@ -534,9 +537,13 @@ describe("New Standard", () => {
         .to.be.revertedWith("invalid caller");
     })
 
+    it("Should revert if notifyMoved isn't called from token", async () => {
+      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1"))).to.be.revertedWith("invalid caller");
+    })
+
     it("Should revert if offer is already accepted", async () => {
-      // collect external vote
-      const externalTokens = ethers.BigNumber.from(100000);
+      // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
+      const externalTokens = ethers.BigNumber.from(3000000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
       for(let i = 0; i<signers.length; i++){
         await offer.connect(signers[i]).voteYes();
@@ -560,8 +567,8 @@ describe("New Standard", () => {
     })
 
     it("Should revert if transfer of offer currency fails", async () => {
-      // collect external vote
-      const externalTokens = ethers.BigNumber.from(100000);
+      // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
+      const externalTokens = ethers.BigNumber.from(3000000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
       for(let i = 0; i<signers.length; i++){
         await offer.connect(signers[i]).voteYes();
@@ -588,7 +595,17 @@ describe("New Standard", () => {
       const externalTokens = ethers.BigNumber.from(100000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
 
-      //execute
+      // execute revert as external+yes in not 75% of total shares
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+
+      // move to after voting deadline (60days)
+      const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
+      await ethers.provider.send("evm_increaseTime", [votePeriod]);
+      await ethers.provider.send("evm_mine");
+
+      expect(await offer.isDeclined()).to.be.false;
+
+      //execute now after deadline only needs more 75% of total votes
       await baseCurrency.connect(sig1).approve(offer.address, config.infiniteAllowance);
       await expect(offer.connect(sig1).execute())
         .to.emit(draggable, "NameChanged")
@@ -624,9 +641,6 @@ describe("New Standard", () => {
       const baseAfter = await baseCurrency.balanceOf(sig2.address);
       expect(draggableBefore.sub(10)).to.equal(draggableAfter);
       expect(baseBefore.add(factor.mul(10))).to.equal(baseAfter);
-      
-      // TODO: offer should be indiceted as accepted
-      //expect(await offer.connect(sig1).isAccepted()).to.be.true;
     });
 
     afterEach(async () => {
