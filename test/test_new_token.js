@@ -384,7 +384,21 @@ describe("New Standard", () => {
       const balanceClaimer = await draggable.balanceOf(claimAdress);
 
       // declare token lost
-      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      const tx = await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // get claimant
+      expect(await recoveryHub.getClaimant(draggable.address, lostAddress)).to.be.equal(claimAdress);
+      // get collataral
+      const collateralRate = await draggable.getCollateralRate(draggable.address);
+      expect(await recoveryHub.getCollateral(draggable.address, lostAddress)).to.be.equal(lostAddressBalance.mul(collateralRate));
+      // get collateral type
+      expect(await recoveryHub.getCollateralType(draggable.address, lostAddress)).to.be.equal(draggable.address);
+      // get timestamp
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block= await ethers.provider.getBlock(blockNum);
+      expect(await recoveryHub.getTimeStamp(draggable.address, lostAddress)).to.be.equal(block.timestamp);
+      
+
+
       // delete claim as non oracle
       await expect(draggable.connect(sig4).deleteClaim(lostAddress)).to.be.revertedWith("not claim deleter");
       // delete claim as oracle
@@ -408,6 +422,27 @@ describe("New Standard", () => {
       expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
       // transfer from last address (to clear claim)
       await draggable.connect(lostSigner).transfer(sig5.address, "10");
+      // claim cleared
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
+      // get collateral
+      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
+
+      // move funds back to sig5
+      await draggable.connect(sig4).transfer(sig5.address, lostAddressBalance);
+    });
+    
+    it("Should remove claim when lost address calls clearClaimFromUser", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // check if flag is set
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // clear claim
+      await recoveryHub.connect(lostSigner).clearClaimFromUser(draggable.address);
       // claim cleared
       expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
       // get collateral
