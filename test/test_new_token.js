@@ -8,6 +8,7 @@ use(solidity);
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
+const exp = require("constants");
 
 describe("New Standard", () => {
   let draggable
@@ -351,12 +352,30 @@ describe("New Standard", () => {
         .to.be.revertedWith("disabled");
     });
 
+    it("Should revert declare lost with bad collateral", async () => {
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, config.wbtcAddress, sig4.address))
+        .to.be.revertedWith("bad collateral");
+    })
+
+    it("Should revert declare lost on empty address", async () => {
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, deployer.address))
+        .to.be.revertedWith("empty");
+    })
+
+    it("Should revert declare lost if claimer hasn't enough collateral", async () => {
+      await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
+        .to.be.revertedWith("panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)"); // underflow on transfer from
+    })
+
     it("Should set custom claim collateral for shares", async () => {
       // check for custom collateral address("0x0000000000000000000000000000000000000000")
       await shares.connect(owner).setCustomClaimCollateral(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"), 100);
       expect(await shares.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
 
-      // test that only owenr can set
+      // test that collateralRate is not 0
+      await expect(shares.connect(owner).setCustomClaimCollateral(collateralAddress, 0))
+        .to.be.revertedWith("zero");
+      // test that only owner can set
       await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
         .to.be.revertedWith("not owner");
       // test with owner
@@ -375,6 +394,18 @@ describe("New Standard", () => {
       expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate));
     });
 
+    it("Should revert if notifyClaimMade isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).notifyClaimMade(sig1.address)).to.be.revertedWith("not recovery");
+    })
+
+    it("Should revert if notifyClaimDeleted isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).notifyClaimDeleted(sig1.address)).to.be.revertedWith("not recovery");
+    })
+
+    it("Should revert if recover isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).recover(sig2.address, sig1.address)).to.be.revertedWith("not recovery");
+    })
+
     it("Should delete claim", async () => {
       await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
       const claimAdress = sig5.address;
@@ -382,6 +413,9 @@ describe("New Standard", () => {
       const lostSigner = sig4;
       const lostAddressBalance = await draggable.balanceOf(lostAddress);
       const balanceClaimer = await draggable.balanceOf(claimAdress);
+
+      // delete without claim should revert
+      await expect(recoveryHub.deleteClaim(lostAddress)).to.be.revertedWith("not found");
 
       // declare token lost
       const tx = await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
@@ -397,8 +431,6 @@ describe("New Standard", () => {
       const block= await ethers.provider.getBlock(blockNum);
       expect(await recoveryHub.getTimeStamp(draggable.address, lostAddress)).to.be.equal(block.timestamp);
       
-
-
       // delete claim as non oracle
       await expect(draggable.connect(sig4).deleteClaim(lostAddress)).to.be.revertedWith("not claim deleter");
       // delete claim as oracle
@@ -414,16 +446,19 @@ describe("New Standard", () => {
 
       // declare token lost
       await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // declare on same addresse should revert
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, lostAddress))
+        .to.be.revertedWith("already claimed");
       // check if flag is set
-      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.true;
       // transfer to lost address
       await draggable.connect(owner).transfer(lostAddress, "10");
       // after transfer to lost address still claim on it
-      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.true;
       // transfer from last address (to clear claim)
       await draggable.connect(lostSigner).transfer(sig5.address, "10");
       // claim cleared
-      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.false;
       // get collateral
       expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
 
