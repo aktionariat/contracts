@@ -539,21 +539,52 @@ describe("New Standard", () => {
       expect(offerAdr).to.not.equal("0x0000000000000000000000000000000000000000");
     });
     
-    it("Shareholder can vote yes", async () => {
+    it("Should set voted flag and change votes if user votes and changes decision after", async () => {
       await offer.connect(sig1).voteYes();
       // FLAG_VOTED = 1
       expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
       expect(await offer.hasVotedYes(sig1.address)).to.be.true;
       expect(await offer.hasVotedNo(sig1.address)).to.be.false;
+
+      // Change to no vote
+      await offer.connect(sig1).voteNo();
+      expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.false;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.true;
     });
 
-    it("Shareholder can vote no", async () => {
+    it("Should update votes if token is moved", async () => {
+      await offer.connect(sig1).voteYes();
       await offer.connect(sig2).voteNo();
-      // FLAG_VOTED = 1
-      expect(await draggable.hasFlag(sig2.address, 1)).to.equal(true);
-      expect(await offer.hasVotedYes(sig2.address)).to.be.false;
-      expect(await offer.hasVotedNo(sig2.address)).to.be.true;
-    });
+      const yesVotes = await offer.yesVotes();
+      const noVotes = await offer.noVotes();
+      const randomAmount = chance.natural({ min: 1, max: 100 });
+      await draggable.connect(sig1).transfer(sig2.address, randomAmount);
+      const yesVotesAfter = await offer.yesVotes();
+      const noVotesAfter = await offer.noVotes();
+      expect(yesVotes.sub(randomAmount)).to.be.equal(yesVotesAfter);
+      expect(noVotes.add(randomAmount)).to.be.equal(noVotesAfter);
+    })
+
+    it("Should revert voting if voting is closed", async () => {
+      // move to after voting deadline (60days)
+      const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
+      await ethers.provider.send("evm_increaseTime", [votePeriod]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(offer.connect(sig3).voteYes()).to.be.revertedWith("vote ended");
+    })
+
+    it("Should revert if reportExternalVotes isn't called from oracle or to many votes are reported", async () => {
+      const tooManyExternalTokens = ethers.BigNumber.from(300000000);
+      const externalTokens = ethers.BigNumber.from(3000000);
+      await expect(offer.connect(sig1).reportExternalVotes(externalTokens, 0)).to.be.revertedWith("not oracle");
+      await expect(offer.connect(oracle).reportExternalVotes(tooManyExternalTokens, 0)).to.be.revertedWith("too many votes");
+    })
+
+    it("Should revert cancel if not called from the buyer", async () => {
+      await expect(offer.connect(sig2).cancel()).to.be.revertedWith("invalid caller");
+    })
 
     it("Should able to contest offer after expiry", async () => {
       const threedays = 30*24*60*60;
@@ -611,7 +642,7 @@ describe("New Standard", () => {
       await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1"))).to.be.revertedWith("invalid caller");
     })
 
-    it("Should revert if offer is already accepted", async () => {
+    it("Should revert new offer if old offer is already accepted", async () => {
       // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
       const externalTokens = ethers.BigNumber.from(3000000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
