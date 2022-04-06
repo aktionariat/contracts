@@ -551,7 +551,25 @@ describe("New Standard", () => {
       expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
       expect(await offer.hasVotedYes(sig1.address)).to.be.false;
       expect(await offer.hasVotedNo(sig1.address)).to.be.true;
+
+      // Change back to yes vote
+      await offer.connect(sig1).voteYes();
+      expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.true;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.false;
     });
+
+    it("Should not allow double voting (votes get counted multiple times", async () => {
+      await offer.connect(sig1).voteYes();
+      const yesVotes = await offer.yesVotes();
+      const voterShares = await draggable.balanceOf(sig1.address);
+      expect(yesVotes).to.be.equal(voterShares);
+      
+      // Vote again
+      await offer.connect(sig1).voteYes();
+      const yesVotesAfter = await offer.yesVotes();
+      expect(yesVotes).to.be.equal(voterShares);
+    })
 
     it("Should update votes if token is moved", async () => {
       await offer.connect(sig1).voteYes();
