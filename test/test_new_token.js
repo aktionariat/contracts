@@ -803,13 +803,22 @@ describe("New Standard", () => {
     it("Should set forbidden and revert mint", async () => {
       //use sig2 for blacklist
       const forbiddenAddress = sig2.address;
-      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
-      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
-      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
 
+      // mint to non type set works
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1");
+
+      //set type forbidden
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.be.false;
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.be.true;
+
+      // after setting forbidden reverts
       await expect(allowlistShares.connect(owner).mint(forbiddenAddress, "1000")).to.be.revertedWith("not allowed");
       const balanceForbidden = await allowlistShares.balanceOf(forbiddenAddress);
-      expect(balanceForbidden).to.equal(ethers.BigNumber.from(0));
+      expect(balanceForbidden).to.equal(ethers.BigNumber.from(1));
+
+      // forbidden can't transfer
+      await expect(allowlistShares.connect(sig2).transfer(sig1.address, "1")).to.be.revertedWith("not allowed");
     });
 
     it("Should set allowlist for default address when minted from 0 (powerlisted)", async () => {
@@ -917,6 +926,18 @@ describe("New Standard", () => {
 
       expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
     });
+
+    it("Should set type for multiple addresses", async () => {
+      const addressesToAdd = [sig2.address, sig3.address, sig4.address];
+      // first check if revert non-owner
+      await expect(allowlistShares.connect(sig1)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN))
+        .to.be.revertedWith("not owner");
+      // second check if works with owner
+      await allowlistShares.connect(owner)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN);
+      for( let i = 0; i < addressesToAdd.length; i++) {
+        expect(await allowlistShares.isForbidden(addressesToAdd[i])).to.be.true;
+      }
+    })
   });
 
   describe("Allowlist Draggable", () => {
@@ -943,7 +964,7 @@ describe("New Standard", () => {
     });
 
     it("Should revert wrap to forbidden", async () => {
-      //use sig2 for blacklist
+      //use sig2 for forbidden
       const forbiddenAddress = sig2.address;
 
       // mint shares
