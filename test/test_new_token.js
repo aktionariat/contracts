@@ -336,6 +336,30 @@ describe("New Standard", () => {
     it("Should revert when onTokenTransfer isn't called from wrapped token (prevent minting)", async () => {
       await expect(draggable.connect(sig2).onTokenTransfer(sig1.address, 100, "0x01")).to.revertedWith("sender");
     })
+
+
+    it("Should revert on overflow", async () => {
+      // first set total shares > uint224
+      await shares.connect(owner).setTotalShares("0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+      await expect(shares.connect(owner).mint(sig1.address, "0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("overflow");
+      await shares.connect(owner).setTotalShares(config.totalShares);
+
+    })
+
+    it("Should revert on underflow", async () => {
+      // first set a flag e.g. claim
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, sig4.address);
+      
+      await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("underflow");
+      await draggable.connect(oracle).deleteClaim(sig4.address);
+    })
+
+    it("Should revert when transfer or mint to 0x0 address", async () => {
+      await expect(shares.connect(owner).transfer(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
+      await expect(shares.connect(owner).mint(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
+      await expect(draggable.connect(owner).transfer(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
+    })
   });
 
   describe("Recovery", () => {
