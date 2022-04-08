@@ -12,7 +12,6 @@ use(solidity);
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
-const { wbtcAddress } = require("../scripts/deploy_config.js");
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.providers.Web3Provider(network.provider);
@@ -50,13 +49,9 @@ describe("New PaymentHub", () => {
   );
 
 
-  let draggable;
   let shares;
   let baseCurrency;
   let paymentHub;
-  let offerFactory;
-  let allowlistShares;
-  let allowlistDraggable;
   let brokerbot;
   let brokerbotDAI;
   let daiContract;
@@ -73,19 +68,10 @@ describe("New PaymentHub", () => {
   let signers;
 
   let chance;
-  let name;
-  let symbol;
-  let terms;
-  let dterms;
   let xchfamount
   let daiAmount
   let randomShareAmount
   let path;
-
-  const TYPE_DEFAULT = 0;
-  const TYPE_ALLOWLISTED = 1;
-  const TYPE_FORBIDDEN = 2;
-  const TYPE_POWERLISTED = 3;
 
   before(async () => {
     // get signers and accounts of them
@@ -93,12 +79,6 @@ describe("New PaymentHub", () => {
     signers = [owner,sig1,sig2,sig3,sig4,sig5];
     accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
     chance = new Chance();
-
-    // random test data with chance
-    name = chance.sentence({words: 3});
-    symbol = chance.word({length: chance.natural({min: 1, max: 5})}).toUpperCase();
-    terms = chance.word({length: chance.natural({min: 1, max: 10})});
-    dterms = chance.word({length: chance.natural({min: 1, max: 10})});
 
     // deploy contracts
     baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);

@@ -158,40 +158,121 @@ describe("Brokerbot", () => {
       const increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
         "gwei"
         );
-        await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
-        
-        // 0 cost for 0 shares
-        const priceZeroShares = await brokerbot.getSellPrice(0);
-        expect(priceZeroShares.isZero()).to.eq(true);
-        
-        // getPrice cost for 1 share
-        const priceOneShare = await brokerbot.getSellPrice(1);
-        const quotePrice = await brokerbot.getPrice();
-        expect(priceOneShare).to.eq(quotePrice.sub(increment));
-        
-        // Do 10 times with random number of shares
-        for (let i = 0; i < 10; i++) {
-          const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
-            // Get price from contract
-            const priceRandomNumberShares = await brokerbot.getSellPrice(
-              randomNumberShares
-              );
-              
-              // Calculate the most straightforward way
-              let calculatedPrice = ethers.BigNumber.from(0);
-              let priceForShare = priceOneShare;
-              for (let share = 0; share < randomNumberShares; share++) {
-                calculatedPrice = calculatedPrice.add(priceForShare);
-                priceForShare = priceForShare.sub(increment);
-              }
-              
-              // Check result
-              expect(priceRandomNumberShares).to.eq(calculatedPrice);
+      await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
+      
+      // 0 cost for 0 shares
+      const priceZeroShares = await brokerbot.getSellPrice(0);
+      expect(priceZeroShares.isZero()).to.eq(true);
+      
+      // getPrice cost for 1 share
+      const priceOneShare = await brokerbot.getSellPrice(1);
+      const quotePrice = await brokerbot.getPrice();
+      expect(priceOneShare).to.eq(quotePrice.sub(increment));
+      
+      // Do 10 times with random number of shares
+      for (let i = 0; i < 10; i++) {
+        const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
+          // Get price from contract
+          const priceRandomNumberShares = await brokerbot.getSellPrice(
+            randomNumberShares
+            );
+            
+            // Calculate the most straightforward way
+            let calculatedPrice = ethers.BigNumber.from(0);
+            let priceForShare = priceOneShare;
+            for (let share = 0; share < randomNumberShares; share++) {
+              calculatedPrice = calculatedPrice.add(priceForShare);
+              priceForShare = priceForShare.sub(increment);
             }
+            
+            // Check result
+            expect(priceRandomNumberShares).to.eq(calculatedPrice);
+      }
+    });
+
+    it("Should calculate buy price correctly - no increment - with drift", async () => {
+      // Used Contract: Brokerbot
+      // Initialize with random drift
+      const oneDay = 24 * 60 * 60;
+      const secondsPerStep = 10;
+      const driftIncrement = ethers.utils.parseEther("0.001");
+
+      await brokerbot.connect(owner).setPrice(config.sharePrice, 0);
+      await brokerbot.connect(owner).setDrift(secondsPerStep, driftIncrement);
+      
+      // 0 cost for 0 shares
+      const priceZeroShares = await brokerbot.getBuyPrice(0);
+      expect(priceZeroShares.isZero()).to.eq(true);
+      
+      // getPrice cost for 1 share at start
+      const priceOneShare = await brokerbot.getBuyPrice(1);
+      const quotePrice = await brokerbot.getPrice();
+      expect(priceOneShare).to.eq(quotePrice);
+
+      let currentPrice = priceOneShare;
+      
+      // Do 10 times with random number times after start
+      for (let i = 0; i < 10; i++) {
+        const randomNumberDays = new Chance().natural({ min: 2, max: 30 });
+        // 
+        await ethers.provider.send("evm_increaseTime", [oneDay*randomNumberDays]);
+        await ethers.provider.send("evm_mine");
+        // Get price from contract
+        const priceRandomNumberDays = await brokerbot.getBuyPrice(1);
+        let calculatedPrice = currentPrice.add(driftIncrement.mul((oneDay*randomNumberDays)/secondsPerStep));
+        // Check result
+        expect(priceRandomNumberDays).to.eq(calculatedPrice);
+        currentPrice = calculatedPrice;
+      }
+    });
+
+    it("Should calculate buy price correctly - no increment - with negative drift", async () => {
+      // Used Contract: Brokerbot
+      // Initialize with random drift
+      const oneDay = 24 * 60 * 60;
+      const secondsPerStep = 100;
+      const driftIncrement = ethers.utils.parseEther("-0.0001");
+      const startPrice = ethers.utils.parseEther("5");
+
+      await brokerbot.connect(owner).setPrice(startPrice, 0);
+      await brokerbot.connect(owner).setDrift(secondsPerStep, driftIncrement);
+      
+      // 0 cost for 0 shares
+      const priceZeroShares = await brokerbot.getBuyPrice(0);
+      expect(priceZeroShares.isZero()).to.eq(true);
+      
+      // getPrice cost for 1 share at start
+      const priceOneShare = await brokerbot.getBuyPrice(1);
+      const quotePrice = await brokerbot.getPrice();
+      expect(priceOneShare).to.eq(quotePrice);
+
+      let currentPrice = priceOneShare;
+      
+      // Do 10 times with random number times after start
+      for (let i = 0; i < 10; i++) {
+        const randomNumberDays = new Chance().natural({ min: 2, max: 30 });
+        // 
+        await ethers.provider.send("evm_increaseTime", [oneDay*randomNumberDays]);
+        await ethers.provider.send("evm_mine");
+        // Get price from contract
+        const priceRandomNumberDays = await brokerbot.getBuyPrice(1);
+        let calculatedPrice = currentPrice.add(driftIncrement.mul((oneDay*randomNumberDays)/secondsPerStep));
+        console.log(calculatedPrice.toString());
+        // Check result
+        if(calculatedPrice < 0 ) {
+          expect(priceRandomNumberDays).to.eq(0);
+        } else {
+          expect(priceRandomNumberDays).to.eq(calculatedPrice);
+        }
+        currentPrice = calculatedPrice;
+      }
     });
   });
         
   describe("setting", () => {
+    before(async () => {
+      await brokerbot.connect(owner).setPrice(config.sharePrice, 0);
+    });
     it("should allow enabling/disabling buying/selling.", async () => {
       // Used Contract: Brokerbot
       //await brokerbot.connect(owner).setSettings(BUYING_ENABLED);
