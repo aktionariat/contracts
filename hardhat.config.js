@@ -130,6 +130,24 @@ module.exports = {
         l2: "localArbitrum",
       },
     },
+    kovanOptimism: {
+      url: 'https://kovan.optimism.io',
+      accounts: accounts("optimism_kovan"),
+      chainId: 69,
+      live: true,
+      saveDeployments: true,
+      tags: ["staging"],
+      deploy: ['deploy_optimism']
+    },
+    optimism: {
+        //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
+        url: "https://mainnet.optimism.io",
+        accounts: accounts("optimism"),
+        //chainId: 10,
+        live: true,
+        saveDeployments: true,
+        deploy: ['deploy_optimism']
+    }
   },
   namedAccounts: {
     deployer: {
@@ -177,7 +195,19 @@ module.exports = {
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY,
+      ropsten: process.env.ETHERSCAN_API_KEY,
+      rinkeby: process.env.ETHERSCAN_API_KEY,
+      goerli: process.env.ETHERSCAN_API_KEY,
+      kovan: process.env.ETHERSCAN_API_KEY,
+      // optimism
+      optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+      kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+      // polygon
+      polygon: process.env.POLYGONSCAN_API_KEY,
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY,
+    }
   },
   solidity: {
     compilers: [
