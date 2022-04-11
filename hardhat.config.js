@@ -36,7 +36,7 @@ module.exports = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: accounts("mainnet"),
-      gasPrice: 120 * 1000000000,
+      //gasPrice: 120 * 1000000000,
       chainId: 1,
     },
     localhost: {
@@ -196,7 +196,7 @@ module.exports = {
     },
     owner: {
       default: 1,
-      1: process.env.MULTISIG_DEPLOY, // to multisigwallet
+      1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
@@ -231,7 +231,19 @@ module.exports = {
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY,
+      ropsten: process.env.ETHERSCAN_API_KEY,
+      rinkeby: process.env.ETHERSCAN_API_KEY,
+      goerli: process.env.ETHERSCAN_API_KEY,
+      kovan: process.env.ETHERSCAN_API_KEY,
+      // optimism
+      optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+      kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+      // polygon
+      polygon: process.env.POLYGONSCAN_API_KEY,
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY,
+    }
   },
   solidity: {
     compilers: [
