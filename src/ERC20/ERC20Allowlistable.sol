@@ -52,7 +52,6 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   bool public restrictTransfers;
 
   constructor(){
-    setApplicableInternal(true);
   }
 
   /**
