@@ -36,7 +36,7 @@ module.exports = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: accounts("mainnet"),
-      gasPrice: 120 * 1000000000,
+      //gasPrice: 120 * 1000000000,
       chainId: 1,
     },
     localhost: {
@@ -134,14 +134,22 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
+      3: 1,
+      4: 1,
+      5: 1,
+      42: 1,
+      69: 1
     },
     owner: {
       default: 1,
-      1: process.env.MULTISIG_DEPLOY, // to multisigwallet
-      3: process.env.MULTISIG_DEPLOY, // to multisigwallet
-      4: process.env.MULTISIG_DEPLOY, // to multisigwallet
-      5: process.env.MULTISIG_DEPLOY, // to multisigwallet
-      42: process.env.MULTISIG_DEPLOY // to multisigwallet
+      1: process.env.MULTISIG_DEPLOY, // mainnet
+      10: process.env.MULTISIG_DEPLOY, // optimism
+      3: process.env.MULTISIG_DEPLOY, // ropsten
+      4: process.env.MULTISIG_DEPLOY, // rinkeby
+      5: process.env.MULTISIG_DEPLOY, // goerli
+      42: process.env.MULTISIG_DEPLOY, // kovan
+      69: process.env.MULTISIG_DEPLOY, // optimism kovan
+      42161: process.env.MULTISIG_DEPLOY // arb1
     },
     dev: {
       // Default to 1
@@ -152,9 +160,13 @@ module.exports = {
     multiSigDefaultOwner: {
       default: 0,
       1: process.env.MULTISIG_DEFAULT,
+      10: process.env.MULTISIG_DEFAULT,
       3: process.env.MULTISIG_DEFAULT,
       4: process.env.MULTISIG_DEFAULT,
-      42: process.env.MULTISIG_DEFAULT
+      5: process.env.MULTISIG_DEFAULT,
+      42: process.env.MULTISIG_DEFAULT,
+      69: process.env.MULTISIG_DEFAULT,
+      42161: process.env.MULTISIG_DEFAULT,
     }
   },
   gasReporter: {
@@ -170,7 +182,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.7",
+        version: "0.8.13",
         settings: {
           optimizer: {
             enabled: true,
