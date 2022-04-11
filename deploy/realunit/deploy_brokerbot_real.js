@@ -8,7 +8,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const owner = config.multisigAddress;
   //const shares = await deployments.get('Shares');
-  const shares = await deployments.get("AllowlistDraggableShares" + config.symbol);
+  const shares = await deployments.get("AllowlistShares" + config.symbol);
   const paymentHub = await deployments.get('PaymentHub');
   
   const price = config.sharePrice;
@@ -52,4 +52,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 };
 
 module.exports.tags = ["Brokerbot"+config.symbol];
-module.exports.dependencies = ["AllowlistDraggableShares"+config.symbol, "PaymentHub"];
+module.exports.dependencies = ["AllowlistShares"+config.symbol, "PaymentHub"];
