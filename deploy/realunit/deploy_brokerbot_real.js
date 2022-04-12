@@ -18,7 +18,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   
   if (network.name != "hardhat") {
     console.log("-----------------------");
-    console.log("Deploy Brokerbot Optimism " + config.symbol);
+    console.log("Deploy Brokerbot " + config.symbol);
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
     console.log("shares: %s", shares.address);
@@ -49,7 +49,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
+
+  // auto verify on etherscan
+  await hre.run("etherscan-verify", {
+    license: "None"
+  });
 };
+
+
 
 module.exports.tags = ["Brokerbot"+config.symbol];
 module.exports.dependencies = ["AllowlistShares"+config.symbol, "PaymentHub"];
