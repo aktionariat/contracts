@@ -226,7 +226,7 @@ describe("Brokerbot", () => {
       }
     });
 
-    it("Should calculate buy price correctly - no increment - with negative drift", async () => {
+    it("Should calculate sell price correctly - no increment - with negative drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random drift
       const oneDay = 24 * 60 * 60;
@@ -238,11 +238,11 @@ describe("Brokerbot", () => {
       await brokerbot.connect(owner).setDrift(secondsPerStep, driftIncrement);
       
       // 0 cost for 0 shares
-      const priceZeroShares = await brokerbot.getBuyPrice(0);
+      const priceZeroShares = await brokerbot.getSellPrice(0);
       expect(priceZeroShares.isZero()).to.eq(true);
       
       // getPrice cost for 1 share at start
-      const priceOneShare = await brokerbot.getBuyPrice(1);
+      const priceOneShare = await brokerbot.getSellPrice(1);
       const quotePrice = await brokerbot.getPrice();
       expect(priceOneShare).to.eq(quotePrice);
 
@@ -255,9 +255,8 @@ describe("Brokerbot", () => {
         await ethers.provider.send("evm_increaseTime", [oneDay*randomNumberDays]);
         await ethers.provider.send("evm_mine");
         // Get price from contract
-        const priceRandomNumberDays = await brokerbot.getBuyPrice(1);
+        const priceRandomNumberDays = await brokerbot.getSellPrice(1);
         let calculatedPrice = currentPrice.add(driftIncrement.mul((oneDay*randomNumberDays)/secondsPerStep));
-        console.log(calculatedPrice.toString());
         // Check result
         if(calculatedPrice < 0 ) {
           expect(priceRandomNumberDays).to.eq(0);

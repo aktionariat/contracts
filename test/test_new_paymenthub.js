@@ -122,7 +122,7 @@ describe("New PaymentHub", () => {
     });
   });
 
-  describe("Trading", () => {
+  describe("Trading with ETH", () => {
     beforeEach(async () => {
       const randomAmount = chance.natural({ min: 500, max: 50000 });
       xchfamount = await brokerbot.getBuyPrice(randomAmount);
@@ -255,7 +255,7 @@ describe("New PaymentHub", () => {
       await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbotDAI.address, daiAmount, "0x01");
       const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
 
-      // brokerbot should have after the payment with eth the dai in the balance
+      // brokerbot should have after the payment the dai in the balance
       expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
     });
   });
@@ -307,6 +307,47 @@ describe("New PaymentHub", () => {
       // allowance for payment - uniswaprouter is infinit and always above 0
       expect(await wbtcContract.allowance(paymentHub.address, "0xE592427A0AEce92De3Edee1F18E0157C05861564")).to.be.above(0);
     });
+  });
+
+  describe("Trading with XCHF", async () => {
+    before(async () => {
+      randomShareAmount = chance.natural({ min: 500, max: 50000 });
+      xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
+    });
+
+    it("Should buy shares with XCHF", async () => {
+      // allowance for XCHF
+      await baseCurrency.connect(sig1).approve(paymentHub.address, xchfamount);
+
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, xchfamount, "0x01");
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+
+      // brokerbot should have after the payment the xchf in the balance
+      expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+    })
+    
+    it("Should repay XCHF if too much XCHF was paid", async () => {
+      // allowance for XCHF
+      await baseCurrency.connect(sig1).approve(paymentHub.address, config.infiniteAllowance);
+
+      // overpay amount
+      const overpayDif = ethers.utils.parseEther("0.5");
+      const overpayAmount = xchfamount.add(overpayDif);
+
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const userBalanceBefore = await baseCurrency.balanceOf(sig1.address);
+      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, overpayAmount, "0x01");
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+      const userBalanceAfter = await baseCurrency.balanceOf(sig1.address);
+
+      // brokerbot should have after the payment the xchf in the balance
+      expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+      // user should have deducted the xchf amount not the overpaid ammount
+      expect(userBalanceBefore.sub(xchfamount)).to.equal(userBalanceAfter);
+    })
   });
 
   describe("Trading ERC20 with DAI base", () => {
