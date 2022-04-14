@@ -11,12 +11,6 @@ const { buyingEnabled, sellingEnabled } = require("./helper/index");
 const { expect } = require("chai");
 const exp = require("constants");
 
-// Import contracts to be tested
-const Shares = artifacts.require("Shares");
-const DraggableShares = artifacts.require("DraggableShares");
-const PaymentHub = artifacts.require("PaymentHub");
-const Brokerbot = artifacts.require("Brokerbot");
-
 // Contract hardcoded variables
 const BUYING_ENABLED = 0x1;
 const SELLING_ENABLED = 0x2;
@@ -28,13 +22,17 @@ describe("Brokerbot", () => {
   let draggableShares;
   let deployer;
   let owner;
+  let sig1;
 
   before(async () => {
-    [deployer,owner,] = await ethers.getSigners();
-    accounts = [owner.address];
+    [deployer,owner,sig1] = await ethers.getSigners();
+    accounts = [owner.address,sig1.address];
+
+    //get references
     paymentHub = await ethers.getContract("PaymentHub");
     draggableShares = await ethers.getContract("DraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   });
 
   describe("init", () => {
@@ -331,6 +329,9 @@ describe("Brokerbot", () => {
         sharesToSell,
         "0x20"
       )).to.be.revertedWith("selling disabled");
+
+      // reanable selling 
+      await brokerbot.connect(owner).setEnabled(true, true);
     });
   });
   
@@ -464,13 +465,16 @@ describe("Brokerbot", () => {
       expect(balanceAfter.add(300)).to.eq(balanceBefore);
     })
     
-    it('should allow buying shares with BaseCurrency', async () => {
-      //await brokerbot.onTokenTransfer(accounts[0], )
-      
-    })
-    
     it('should allow selling shares against BaseCurrency', async () => {
-      
+      await brokerbot.connect(owner).setPrice(config.sharePrice, 0);
+      const sellPrice = await brokerbot.getSellPrice(10);
+      const baseCurrencyBefore = await baseCurrency.balanceOf(sig1.address);
+
+      await expect(draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x04"))
+        .to.be.revertedWith("unknown ref");
+      await draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x");
+      const baseCurrencyAfter = await baseCurrency.balanceOf(sig1.address);
+      expect(baseCurrencyBefore.add(sellPrice)).to.be.equal(baseCurrencyAfter);
     })
 
     it("Should revert when onTokenTransfer is called direct", async () => {
@@ -479,6 +483,16 @@ describe("Brokerbot", () => {
 
     it("Should revert when processIncomming is called direct", async () => {
       await expect(brokerbot.connect(owner).processIncoming(config.baseCurrencyAddress, accounts[0], 100, "0x")).to.be.revertedWith("invalid caller");
+    })
+
+    it("Should be able to withdraw erc20 from brokerbot", async () => {
+      await expect(brokerbot.connect(sig1).withdraw(draggableShares.address, owner.address, 10))
+        .to.be.revertedWith("not owner nor hub");
+      const ownerBalBefore = await draggableShares.balanceOf(owner.address);
+      await brokerbot.connect(owner).withdraw(draggableShares.address, owner.address, 10);
+      const ownerBalAfter = await draggableShares.balanceOf(owner.address);
+      expect(ownerBalBefore.add(10)).to.be.equal(ownerBalAfter);
+
     })
   });
   
