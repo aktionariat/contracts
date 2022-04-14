@@ -442,37 +442,44 @@ describe("Brokerbot", () => {
       const totalShares = shares.reduce((a, b) => a + b, 0);
       expect(brokerbotBalanceBefore.sub(totalShares)).to.eq(brokerbotBalanceAfter);
     });
+    
+    // Temporarily disabled - Current Brokerbot doesn't have notifyTrade methods
+    
+    it('should support external trades', async () => {
+      // Used Contract: Brokerbot
+      // Initialize with random increment
+      let increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
+      "gwei"
+      );
+      await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
+      
+      let balanceBefore = await draggableShares.balanceOf(brokerbot.address);
+      let price1 = await brokerbot.getBuyPrice(1);
+      await brokerbot.connect(owner).notifyTrade(accounts[0], 700, "0x");
+      await brokerbot.connect(owner).notifyTradeAndTransfer(accounts[0], 300, "0x");
+      let price2 = await brokerbot.getBuyPrice(1);
+      let balanceAfter = await draggableShares.balanceOf(brokerbot.address);
+      
+      expect(price1.add(increment.mul(1000))).to.eq(price2);
+      expect(balanceAfter.add(300)).to.eq(balanceBefore);
+    })
+    
+    it('should allow buying shares with BaseCurrency', async () => {
+      //await brokerbot.onTokenTransfer(accounts[0], )
+      
+    })
+    
+    it('should allow selling shares against BaseCurrency', async () => {
+      
+    })
+
+    it("Should revert when onTokenTransfer is called direct", async () => {
+      await expect(brokerbot.connect(owner).onTokenTransfer(accounts[0], 100, "0x")).to.be.revertedWith("invalid token");
+    })
+
+    it("Should revert when processIncomming is called direct", async () => {
+      await expect(brokerbot.connect(owner).processIncoming(config.baseCurrencyAddress, accounts[0], 100, "0x")).to.be.revertedWith("invalid caller");
+    })
   });
-
-  /*
-  // Temporarily disabled - Current Brokerbot doesn't have notifyTrade methods
-
-  it('should support external trades', async () => {
-    // Used Contract: Brokerbot
-
-    // Initialize with random increment
-    let increment = web3.utils.toWei(new BN(new Chance().integer({ min: 1, max: 1000 })), 'milli');
-    await brokerbot.setPrice(config.sharePrice, increment);
-
-    let balanceBefore = await draggableShares.balanceOf(brokerbot.address);
-    let price1 = await brokerbot.getBuyPrice(new BN(1));
-    await brokerbot.notifyTrade(accounts[0], 700, "0x");
-    await brokerbot.notifyTradeAndTransfer(accounts[0], 300, "0x");
-    let price2 = await brokerbot.getBuyPrice(new BN(1));
-    let balanceAfter = await draggableShares.balanceOf(brokerbot.address);
-
-    expect(price1.add(increment.mul(1000)).to.eq(price2);
-    expect(balanceAfter.add(300)).to.eq(balanceBefore);
-  })
-
-  it('should allow buying shares with BaseCurrency', async () => {
-    let brokerbot = await Brokerbot.deployed();
-    await brokerbot.onTokenTransfer(accounts[0], )
-    
-  })
-
-  it('should allow selling shares against BaseCurrency', async () => {
-    
-  })
-  */
+  
 });
