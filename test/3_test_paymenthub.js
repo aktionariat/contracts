@@ -113,6 +113,9 @@ describe("PaymentHub", () => {
     const toSend2 = toSendUnit.mul(3);
     const toSend3 = toSendUnit.mul(20);
 
+    // get amount that is higher than account balance
+    const toSendTooMuch = toSendUnit.mul(110);
+
     // Set allowance for paymentHub to spend baseCurrency tokens of account[0]
     await base.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
 
@@ -121,6 +124,14 @@ describe("PaymentHub", () => {
     const balanceBefore1 = await base.balanceOf(accounts[1]);
     const balanceBefore2 = await base.balanceOf(accounts[2]);
     const balanceBefore3 = await base.balanceOf(accounts[3]);
+
+    // check if reverts with too amount higher as balance
+    await expect(paymentHub.connect(owner).multiPay(
+      config.baseCurrencyAddress,
+      [accounts[1], accounts[2], accounts[3]],
+      [toSend1, toSend2, toSendTooMuch]
+      ))
+      .to.be.reverted;
 
     // Pay from accounts[0] to [1], [2] and [3] in one transaction
     await paymentHub.connect(owner).multiPay(

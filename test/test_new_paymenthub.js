@@ -12,6 +12,7 @@ use(solidity);
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
+const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.providers.Web3Provider(network.provider);
@@ -178,6 +179,10 @@ describe("New PaymentHub", () => {
       // overpay in eth to test payback
       const pricePlus = priceInETH.mul(110).div(100);
 
+      //simulate buy inbetween to show adding slippage is accounted for
+      await paymentHub.connect(sig2).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH});
+
+
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const buyerETHBefore = await ethers.provider.getBalance(sig1.address);
       const tx = await paymentHub.connect(sig1).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: pricePlus});
@@ -211,11 +216,12 @@ describe("New PaymentHub", () => {
       await baseCurrency.connect(sig1).transfer(paymentHub.address, wrongSent);
       const balInbetween = await baseCurrency.balanceOf(sig1.address);
       expect(balBefore.sub(wrongSent)).to.equal(balInbetween);
+      await expect(paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent+1)).to.be.reverted;
       await paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent);
       const balInAfter = await baseCurrency.balanceOf(sig1.address);
       expect(balBefore).to.equal(balInAfter);
-
     });
+
   });
 
   describe("Trading with DAI base", () => {
@@ -321,11 +327,32 @@ describe("New PaymentHub", () => {
 
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
       const paymentHubAdr1 = await paymentHub.connect(sig1);
+
+      // revert if want to buy with more xchf than is owned
+      const exceedingAmount = ethers.utils.parseEther("1000000000");
+      await expect(paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, exceedingAmount, "0x01"))
+        .to.be.reverted;
+
       await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, xchfamount, "0x01");
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
 
       // brokerbot should have after the payment the xchf in the balance
       expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+    })
+
+    it("Should be able to buy shares via multiPayAndNotify", async () => {
+      // allowance for XCHF
+      await baseCurrency.connect(sig1).approve(paymentHub.address, xchfamount.mul(2));
+
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      const brokerbots = [brokerbot.address, brokerbot.address];
+      const amounts = [xchfamount, xchfamount];
+      await paymentHubAdr1.multiPayAndNotify(config.baseCurrencyAddress, brokerbots, amounts, "0x01");
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+
+      // brokerbot should have after the payment the xchf in the balance
+      expect(brokerbotBalanceBefore.add(xchfamount.mul(2))).to.equal(brokerbotBalanceAfter);
     })
     
     it("Should repay XCHF if too much XCHF was paid", async () => {
