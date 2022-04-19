@@ -443,8 +443,89 @@ describe("Brokerbot", () => {
       const totalShares = shares.reduce((a, b) => a + b, 0);
       expect(brokerbotBalanceBefore.sub(totalShares)).to.eq(brokerbotBalanceAfter);
     });
-    
-    // Temporarily disabled - Current Brokerbot doesn't have notifyTrade methods
+
+    it("should be able to externaly distribute shares to multiple shareholders", async () => {
+      // Used Contract: Brokerbot, Draggable Shares
+      // Initialize with random increment
+      let increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
+      "gwei"
+      );
+      await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
+
+      const price1 = await brokerbot.getBuyPrice(1);
+
+      const buyers = [
+        "0xae7eedf49d6c7a777452ee5927e5f8cacd82253b",
+        "0xae7eedf49d6c7a777452ee5927e5f8cacd82253b",
+        "0xedd9e0b4b1b8a34dd3c90265dd5ed1b93099f178",
+        "0x7428a69ecbe26b8d5bfc7d6353fcc71de26e4ed8",
+        "0x2f0494ffbdaff332db336dbe8b3ce3c1a049e76a",
+        "0x7af19e35b824a88c7fe8241b560a2e278b569af4",
+        "0xedd9e0b4b1b8a34dd3c90265dd5ed1b93099f178",
+        "0xd9de2e130b6d1d3871a1f2b5301c542542e76063",
+        "0x99c4704b59b4d3072d388b17f5e99c27d1d29a4d",
+        "0x0df9225bd4fb0cce596d41becbc9b2c116233fb2",
+        "0xc4f78b740c7c0cf78670b341487bbe285de2fb7f",
+        "0xc4f78b740c7c0cf78670b341487bbe285de2fb7f",
+        "0x8824ba7d8e47aab3d04e7f9dcbb456334fd029f6",
+        "0xe8fdcee492e7cecce00c0a34fac38cc41679cd8a",
+        "0xb866480b21eb64d2b6e2fd710ba3667ab01b2e2e",
+        "0xb866480b21eb64d2b6e2fd710ba3667ab01b2e2e",
+      ];
+      const shares = [
+        50, 20, 10, 450, 50, 10, 12, 50, 20, 12, 10, 10, 10, 50, 50, 50,
+      ];
+      const ref = [
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+        "0x",
+      ];
+
+      const brokerbotBalanceBefore = await draggableShares.balanceOf(
+        brokerbot.address
+      );
+      const buyerBalancesBefore = await Promise.all(
+        buyers.map(async (address) => {
+          return await draggableShares.balanceOf(address);
+        })
+      );
+
+      const sharesAmount = shares.reduce((a,b) => a+b, 0);
+
+      await brokerbot.connect(owner).notifyTrades(buyers, shares, ref);
+
+      const price2 = await brokerbot.getBuyPrice(1);
+
+      const brokerbotBalanceAfter = await draggableShares.balanceOf(
+        brokerbot.address
+      );
+      const buyerBalancesAfter = await Promise.all(
+        buyers.map(async (address) => {
+          return await draggableShares.balanceOf(address);
+        })
+      );
+
+      for (let i = 0; i < buyers.length; i++) {
+        let balance = buyerBalancesBefore[i];
+        expect(balance).to.eq(buyerBalancesAfter[i]);
+      }
+
+      expect(brokerbotBalanceBefore).to.eq(brokerbotBalanceAfter);
+      expect(price1.add(increment.mul(sharesAmount))).to.eq(price2);
+    });
     
     it('should support external trades', async () => {
       // Used Contract: Brokerbot
@@ -475,6 +556,13 @@ describe("Brokerbot", () => {
       await draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x");
       const baseCurrencyAfter = await baseCurrency.balanceOf(sig1.address);
       expect(baseCurrencyBefore.add(sellPrice)).to.be.equal(baseCurrencyAfter);
+    })
+
+    it("Should allow indirect sale", async () => {
+      const baseCurrencyBefore = await baseCurrency.balanceOf(sig1.address);
+      await draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x02");
+      const baseCurrencyAfter = await baseCurrency.balanceOf(sig1.address);
+      expect(baseCurrencyBefore).to.be.equal(baseCurrencyAfter);
     })
 
     it("Should revert when onTokenTransfer is called direct", async () => {
