@@ -1,7 +1,11 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
-const { expect } = require("chai");
 const Chance = require("chance");
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
+const { setBalance, setBalanceWithAmount } = require("./helper/index");
+const { use, expect } = require("chai");
+const { solidity } = require("ethereum-waffle");
+
+use(solidity);
+
 // Shared  Config
 const config = require("../scripts/deploy_config_optimism.js");
 
@@ -28,10 +32,6 @@ describe("New Standard", () => {
   let oracle;
 
   let chance;
-  let name;
-  let symbol;
-  let terms;
-  let dterms;
 
   const TYPE_DEFAULT = 0;
   const TYPE_ALLOWLISTED = 1;
@@ -47,7 +47,7 @@ describe("New Standard", () => {
     chance = new Chance();
 
     // deploy contracts
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
 
     await deployments.fixture([
       "ReoveryHub",
@@ -119,6 +119,7 @@ describe("New Standard", () => {
   
       it("Should have params specified at the constructor", async() => {
         expect(await draggable.terms()).to.equal(config.terms);
+        expect(await draggable.name()).to.equal(config.name + " SHA");
       }); 
 
       it("Should get right claim deleter", async () => {
@@ -153,28 +154,28 @@ describe("New Standard", () => {
     it("should have some ETH in first 5 accounts", async () => {  
       for (let i = 0; i < 5; i++) {
         const balance = ethers.BigNumber.from(await ethers.provider.getBalance(accounts[i]));
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some BaseCurrency in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await baseCurrency.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some Shares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await shares.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some DraggableShares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await draggable.balanceOf(accounts[i]);
-        assert(!balance.isZero());
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
   });
@@ -221,10 +222,13 @@ describe("New Standard", () => {
       await expect(shares.connect(owner).setTotalShares(await totalSupply.sub(randomChange)))
       .to.be.revertedWith("below supply");
 
+      let totalShares = await shares.totalShares();
+      newTotalShares = totalShares.add(randomChange);
+
       // set correct new total and check if set correct
-      await shares.connect(owner).setTotalShares(totalSupply.add(randomChange));
-      const totalShares = await shares.totalShares();
-      expect(totalShares).to.equal(totalSupply.add(randomChange));
+      await shares.connect(owner).setTotalShares(newTotalShares);
+      totalShares = await shares.totalShares();
+      expect(totalShares).to.equal(newTotalShares);
     });
 
     it("Should declare tokens invalid", async () => {
@@ -273,11 +277,21 @@ describe("New Standard", () => {
       const balanceAfter = await draggable.balanceOf(sig1.address);
       expect(balanceBefore.add(randomAmountToWrap)).to.equal(balanceAfter);
     })
+
+    it("Should allow transfer ownership", async () => {
+      await expect(shares.connect(owner).transferOwnership(sig1.address))
+        .to.emit(shares, "OwnershipTransferred")
+        .withArgs(owner.address, sig1.address);
+      expect(await shares.owner()).to.equal(sig1.address);
+      await shares.connect(sig1).transferOwnership(owner.address)
+    });
   });
 
   describe("Draggable Shares", () => {
     it("Should set new oracle", async () => {
       const newOracle = sig1.address;
+      // revert if not oracle 
+      await expect(draggable.connect(sig1).setOracle(newOracle)).to.be.revertedWith("not oracle");
       await draggable.connect(oracle).setOracle(newOracle);
       expect(await draggable.oracle()).to.equal(newOracle);
       // reset oracle for offer testing
@@ -297,10 +311,49 @@ describe("New Standard", () => {
       await draggable.connect(sig3).burn(randomAmountToBurn);
       const balanceAfter = await shares.balanceOf(draggable.address);
       const balanceAfterDraggable = await draggable.balanceOf(sig3.address);
-      const totalSupplyArfter= await shares.totalSupply();
+      const totalSupplyAfter= await shares.totalSupply();
       expect(balanceBeforeDraggable.sub(randomAmountToBurn)).to.equal(balanceAfterDraggable);
       expect(balanceBefore.sub(randomAmountToBurn)).to.equal(balanceAfter);
-      expect(totalSupplyBefore.sub(randomAmountToBurn)).to.equal(totalSupplyArfter);
+      expect(totalSupplyBefore.sub(randomAmountToBurn)).to.equal(totalSupplyAfter);
+    });
+
+    it("Should revert wrapping(mint) w/o shares", async () => {
+      const amount = 100
+      // wrap from address without token
+      await expect(draggable.connect(deployer).wrap(deployer.address, amount)).to.be.reverted; // should throw underflow panic error
+      // info: correct wrapping is done in the main before 
+    });
+
+    it("Should revert on unwrap", async () => {
+      await expect(draggable.connect(sig2).unwrap(10)).to.be.revertedWith("factor");
+    });
+
+    it("Should revert when onTokenTransfer isn't called from wrapped token (prevent minting)", async () => {
+      await expect(draggable.connect(sig2).onTokenTransfer(sig1.address, 100, "0x01")).to.revertedWith("sender");
+    })
+
+
+    it("Should revert on overflow", async () => {
+      // first set total shares > uint224
+      await shares.connect(owner).setTotalShares("0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+      await expect(shares.connect(owner).mint(sig1.address, "0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("overflow");
+      await shares.connect(owner).setTotalShares(config.totalShares);
+
+    })
+
+    it("Should revert on underflow", async () => {
+      // first set a flag e.g. claim
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, sig4.address);
+      
+      await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("underflow");
+      await draggable.connect(oracle).deleteClaim(sig4.address);
+    })
+
+    it("Should revert when transfer or mint to 0x0 address", async () => {
+      await expect(shares.connect(owner).transfer(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
+      await expect(shares.connect(owner).mint(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
+      await expect(draggable.connect(owner).transfer(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
     })
   });
 
@@ -318,12 +371,30 @@ describe("New Standard", () => {
         .to.be.revertedWith("disabled");
     });
 
+    it("Should revert declare lost with bad collateral", async () => {
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, config.wbtcAddress, sig4.address))
+        .to.be.revertedWith("bad collateral");
+    })
+
+    it("Should revert declare lost on empty address", async () => {
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, deployer.address))
+        .to.be.revertedWith("empty");
+    })
+
+    it("Should revert declare lost if claimer hasn't enough collateral", async () => {
+      await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
+        .to.be.revertedWith("panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)"); // underflow on transfer from
+    })
+
     it("Should set custom claim collateral for shares", async () => {
       // check for custom collateral address("0x0000000000000000000000000000000000000000")
       await shares.connect(owner).setCustomClaimCollateral(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"), 100);
       expect(await shares.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
 
-      // test that only owenr can set
+      // test that collateralRate is not 0
+      await expect(shares.connect(owner).setCustomClaimCollateral(collateralAddress, 0))
+        .to.be.revertedWith("zero");
+      // test that only owner can set
       await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
         .to.be.revertedWith("not owner");
       // test with owner
@@ -342,6 +413,18 @@ describe("New Standard", () => {
       expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate));
     });
 
+    it("Should revert if notifyClaimMade isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).notifyClaimMade(sig1.address)).to.be.revertedWith("not recovery");
+    })
+
+    it("Should revert if notifyClaimDeleted isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).notifyClaimDeleted(sig1.address)).to.be.revertedWith("not recovery");
+    })
+
+    it("Should revert if recover isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).recover(sig2.address, sig1.address)).to.be.revertedWith("not recovery");
+    })
+
     it("Should delete claim", async () => {
       await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
       const claimAdress = sig5.address;
@@ -350,8 +433,23 @@ describe("New Standard", () => {
       const lostAddressBalance = await draggable.balanceOf(lostAddress);
       const balanceClaimer = await draggable.balanceOf(claimAdress);
 
+      // delete without claim should revert
+      await expect(recoveryHub.deleteClaim(lostAddress)).to.be.revertedWith("not found");
+
       // declare token lost
-      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      const tx = await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // get claimant
+      expect(await recoveryHub.getClaimant(draggable.address, lostAddress)).to.be.equal(claimAdress);
+      // get collataral
+      const collateralRate = await draggable.getCollateralRate(draggable.address);
+      expect(await recoveryHub.getCollateral(draggable.address, lostAddress)).to.be.equal(lostAddressBalance.mul(collateralRate));
+      // get collateral type
+      expect(await recoveryHub.getCollateralType(draggable.address, lostAddress)).to.be.equal(draggable.address);
+      // get timestamp
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block= await ethers.provider.getBlock(blockNum);
+      expect(await recoveryHub.getTimeStamp(draggable.address, lostAddress)).to.be.equal(block.timestamp);
+      
       // delete claim as non oracle
       await expect(draggable.connect(sig4).deleteClaim(lostAddress)).to.be.revertedWith("not claim deleter");
       // delete claim as oracle
@@ -367,14 +465,38 @@ describe("New Standard", () => {
 
       // declare token lost
       await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // declare on same addresse should revert
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, lostAddress))
+        .to.be.revertedWith("already claimed");
       // check if flag is set
-      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.true;
       // transfer to lost address
       await draggable.connect(owner).transfer(lostAddress, "10");
       // after transfer to lost address still claim on it
-      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.true;
       // transfer from last address (to clear claim)
       await draggable.connect(lostSigner).transfer(sig5.address, "10");
+      // claim cleared
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.false;
+      // get collateral
+      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
+
+      // move funds back to sig5
+      await draggable.connect(sig4).transfer(sig5.address, lostAddressBalance);
+    });
+    
+    it("Should remove claim when lost address calls clearClaimFromUser", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // check if flag is set
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // clear claim
+      await recoveryHub.connect(lostSigner).clearClaimFromUser(draggable.address);
       // claim cleared
       expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
       // get collateral
@@ -411,42 +533,107 @@ describe("New Standard", () => {
 
   describe("Offer", () => {
     let pricePerShare;
+    let salt;
+    let offer;
+    const overrides = {
+      value: ethers.utils.parseEther("5.0")
+    }
     beforeEach(async () => {
-      const overrides = {
-        value: ethers.utils.parseEther("5.0")
-      }
       pricePerShare = ethers.utils.parseEther("2");
-      const salt = ethers.utils.formatBytes32String('1');
+      salt = ethers.utils.formatBytes32String('1');
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
       const blockNum = await ethers.provider.getBlockNumber();
       const block= await ethers.provider.getBlock(blockNum);
+      offer = await ethers.getContractAt("Offer", await draggable.offer());
     });
+
+    it("Should predict offer address", async () => {
+      const predictedAddress = await offerFactory.predictOfferAddress(salt, sig1.address, draggable.address, pricePerShare, baseCurrency.address, config.quorumBps, config.votePeriodSeconds);
+      expect(predictedAddress).to.equal(await draggable.offer());
+    })
+
     it("Should able to make aquisition offer", async () => {
-      const offer = await draggable.offer();
-      expect(offer).to.exist;
-      expect(offer).to.not.equal("0x0000000000000000000000000000000000000000");
+      const offerAdr = await draggable.offer();
+      expect(offerAdr).to.exist;
+      expect(offerAdr).to.not.equal("0x0000000000000000000000000000000000000000");
     });
     
-    it("Shareholder can vote", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+    it("Should set voted flag and change votes if user votes and changes decision after", async () => {
       await offer.connect(sig1).voteYes();
       // FLAG_VOTED = 1
       expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.true;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.false;
+
+      // Change to no vote
+      await offer.connect(sig1).voteNo();
+      expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.false;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.true;
+
+      // Change back to yes vote
+      await offer.connect(sig1).voteYes();
+      expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.true;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.false;
     });
+
+    it("Should not allow double voting (votes get counted multiple times", async () => {
+      await offer.connect(sig1).voteYes();
+      const yesVotes = await offer.yesVotes();
+      const voterShares = await draggable.balanceOf(sig1.address);
+      expect(yesVotes).to.be.equal(voterShares);
+      
+      // Vote again
+      await offer.connect(sig1).voteYes();
+      const yesVotesAfter = await offer.yesVotes();
+      expect(yesVotes).to.be.equal(voterShares);
+    })
+
+    it("Should update votes if token is moved", async () => {
+      await offer.connect(sig1).voteYes();
+      await offer.connect(sig2).voteNo();
+      const yesVotes = await offer.yesVotes();
+      const noVotes = await offer.noVotes();
+      const randomAmount = chance.natural({ min: 1, max: 100 });
+      await draggable.connect(sig1).transfer(sig2.address, randomAmount);
+      const yesVotesAfter = await offer.yesVotes();
+      const noVotesAfter = await offer.noVotes();
+      expect(yesVotes.sub(randomAmount)).to.be.equal(yesVotesAfter);
+      expect(noVotes.add(randomAmount)).to.be.equal(noVotesAfter);
+    })
+
+    it("Should revert voting if voting is closed", async () => {
+      // move to after voting deadline (60days)
+      const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
+      await ethers.provider.send("evm_increaseTime", [votePeriod]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(offer.connect(sig3).voteYes()).to.be.revertedWith("vote ended");
+    })
+
+    it("Should revert if reportExternalVotes isn't called from oracle or to many votes are reported", async () => {
+      const tooManyExternalTokens = ethers.BigNumber.from(300000000);
+      const externalTokens = ethers.BigNumber.from(3000000);
+      await expect(offer.connect(sig1).reportExternalVotes(externalTokens, 0)).to.be.revertedWith("not oracle");
+      await expect(offer.connect(oracle).reportExternalVotes(tooManyExternalTokens, 0)).to.be.revertedWith("too many votes");
+    })
+
+    it("Should revert cancel if not called from the buyer", async () => {
+      await expect(offer.connect(sig2).cancel()).to.be.revertedWith("invalid caller");
+    })
 
     it("Should able to contest offer after expiry", async () => {
       const threedays = 30*24*60*60;
       const expiry = await draggable.votePeriod().then(period => period.add(threedays));
       await ethers.provider.send("evm_increaseTime", [expiry.toNumber()]);
       await ethers.provider.send("evm_mine");
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.contest();
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
 
     it("Should able to contest offer if declined", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.connect(owner).voteNo();
       await offer.connect(sig2).voteNo();
       await offer.connect(sig3).voteNo();
@@ -454,15 +641,20 @@ describe("New Standard", () => {
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
+
+    it("Should able to contest offer if not well funded", async () => {
+      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
+      await offer.contest();
+      const offerAfterContest = await draggable.offer();
+      expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
+      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+    });
     
     it("Should be able to make better offer", async () => {
       // offer from sig1
       const offerBefore = await draggable.offer();
       expect(offerBefore).to.exist;
       
-      const overrides = {
-        value: ethers.utils.parseEther("5.0")
-      }
       await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("1"), baseCurrency.address, overrides))
         .to.revertedWith("old offer better");
       await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides);
@@ -472,16 +664,65 @@ describe("New Standard", () => {
       expect(offerAfter).to.exist;
       expect(offerAfter).to.not.equal("0x0000000000000000000000000000000000000000");
       expect(offerAfter).to.not.equal(offerBefore);
-      
     });
-    
+
+    it("Should revert if competing offer isn't called from token", async () => {
+      const tx = await offerFactory.connect(sig2).create(
+        ethers.utils.formatBytes32String('3'), sig2.address, ethers.utils.parseEther("2.3"), baseCurrency.address, config.quorumBps, config.votePeriodSeconds, overrides);
+      const { events } = await tx.wait();
+      const { address } = events.find(Boolean);
+      await expect(offer.connect(sig2).makeCompetingOffer(address))
+        .to.be.revertedWith("invalid caller");
+    })
+
+    it("Should revert if notifyMoved isn't called from token", async () => {
+      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1"))).to.be.revertedWith("invalid caller");
+    })
+
+    it("Should revert new offer if old offer is already accepted", async () => {
+      // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
+      const externalTokens = ethers.BigNumber.from(3000000);
+      await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
+      for(let i = 0; i<signers.length; i++){
+        await offer.connect(signers[i]).voteYes();
+      }
+
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+        .to.be.revertedWith("old already accepted");
+    })
+
+    it("Should revert if user account isn't well funded", async () => {
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("100"), baseCurrency.address, overrides))
+        .to.be.revertedWith("not funded");
+    })
+
+    it("Should revert execution if sender isn't buyer", async () => {
+      await expect(offer.connect(sig2).execute()).to.be.revertedWith("not buyer");
+    })
+
+    it("Should revert execution if offer isn't accepted", async () => {
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+    })
+
+    it("Should revert if transfer of offer currency fails", async () => {
+      // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
+      const externalTokens = ethers.BigNumber.from(3000000);
+      await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
+      for(let i = 0; i<signers.length; i++){
+        await offer.connect(signers[i]).voteYes();
+      }
+      //set balance to low to transfer
+      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("insufficient tokens");
+      //set balance back
+      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+    })
 
     it("Should be able to execute offer", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       // buyer share balance before voting/excute
       const buyerBal = await shares.balanceOf(sig1.address);
 
-      // vote and get total of draggable sahres
+      // vote and get total of draggable shares
       let draggableTotal = 0
       for(let i = 0; i<signers.length; i++){
         await offer.connect(signers[i]).voteYes();
@@ -492,7 +733,17 @@ describe("New Standard", () => {
       const externalTokens = ethers.BigNumber.from(100000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
 
-      //execute
+      // execute revert as external+yes in not 75% of total shares
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+
+      // move to after voting deadline (60days)
+      const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
+      await ethers.provider.send("evm_increaseTime", [votePeriod]);
+      await ethers.provider.send("evm_mine");
+
+      expect(await offer.isDeclined()).to.be.false;
+
+      //execute now after deadline only needs more 75% of total votes
       await baseCurrency.connect(sig1).approve(offer.address, config.infiniteAllowance);
       await expect(offer.connect(sig1).execute())
         .to.emit(draggable, "NameChanged")
@@ -511,7 +762,23 @@ describe("New Standard", () => {
       expect(draggableBaseCurrencyBalance).to.equal(await draggableTotalSupply.mul(pricePerShare));
 
       // unwrap conversion factor is base currency balance / totalsupply
-      expect(await draggable.unwrapConversionFactor()).to.equal(await draggableBaseCurrencyBalance.div(draggableTotalSupply));
+      const factor = await draggable.unwrapConversionFactor();
+      expect(factor).to.equal(await draggableBaseCurrencyBalance.div(draggableTotalSupply));
+
+      // revert new offer after execute
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(
+        ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+        .to.be.revertedWith("factor");
+
+      // should be able to unwrap token
+      const baseBefore = await baseCurrency.balanceOf(sig2.address);
+      const draggableBefore = await draggable.balanceOf(sig2.address);
+      //console.log(factor.toString());
+      await draggable.connect(sig2).unwrap(10);
+      const draggableAfter = await draggable.balanceOf(sig2.address);
+      const baseAfter = await baseCurrency.balanceOf(sig2.address);
+      expect(draggableBefore.sub(10)).to.equal(draggableAfter);
+      expect(baseBefore.add(factor.mul(10))).to.equal(baseAfter);
     });
 
     afterEach(async () => {
@@ -531,13 +798,22 @@ describe("New Standard", () => {
     it("Should set forbidden and revert mint", async () => {
       //use sig2 for blacklist
       const forbiddenAddress = sig2.address;
-      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
-      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
-      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
 
+      // mint to non type set works
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1");
+
+      //set type forbidden
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.be.false;
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.be.true;
+
+      // after setting forbidden reverts
       await expect(allowlistShares.connect(owner).mint(forbiddenAddress, "1000")).to.be.revertedWith("not allowed");
       const balanceForbidden = await allowlistShares.balanceOf(forbiddenAddress);
-      expect(balanceForbidden).to.equal(ethers.BigNumber.from(0));
+      expect(balanceForbidden).to.equal(ethers.BigNumber.from(1));
+
+      // forbidden can't transfer
+      await expect(allowlistShares.connect(sig2).transfer(sig1.address, "1")).to.be.revertedWith("not allowed");
     });
 
     it("Should set allowlist for default address when minted from 0 (powerlisted)", async () => {
@@ -645,6 +921,18 @@ describe("New Standard", () => {
 
       expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
     });
+
+    it("Should set type for multiple addresses", async () => {
+      const addressesToAdd = [sig2.address, sig3.address, sig4.address];
+      // first check if revert non-owner
+      await expect(allowlistShares.connect(sig1)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN))
+        .to.be.revertedWith("not owner");
+      // second check if works with owner
+      await allowlistShares.connect(owner)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN);
+      for( let i = 0; i < addressesToAdd.length; i++) {
+        expect(await allowlistShares.isForbidden(addressesToAdd[i])).to.be.true;
+      }
+    })
   });
 
   describe("Allowlist Draggable", () => {
@@ -671,7 +959,7 @@ describe("New Standard", () => {
     });
 
     it("Should revert wrap to forbidden", async () => {
-      //use sig2 for blacklist
+      //use sig2 for forbidden
       const forbiddenAddress = sig2.address;
 
       // mint shares
@@ -783,7 +1071,6 @@ describe("New Standard", () => {
       const lostAddress = sig3.address;
       const lostSigner = sig3;
       const lostAddressBalance = await allowlistDraggable.balanceOf(lostAddress);
-      console.log(await lostAddressBalance.toString());
 
       // declare token lost
       await recoveryHub.connect(sig1).declareLost(allowlistDraggable.address, allowlistDraggable.address, lostAddress);

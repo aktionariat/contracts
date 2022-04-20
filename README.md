@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/aktionariat/contracts/badge.svg?branch=master)](https://coveralls.io/github/aktionariat/contracts?branch=master)
+
 # Aktionariat Contracts
 
 The public repository for all smart contracts used by Aktionariat.
