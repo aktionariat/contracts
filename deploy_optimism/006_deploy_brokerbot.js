@@ -6,7 +6,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const { deployer, owner } = await getNamedAccounts();
 
-  const shares = await deployments.get('Shares');
+  const shares = await deployments.get('DraggableShares');
   //const shares = await ethers.getContractAt('Shares', "0xE4294c9698ca44F244575185E669BdB447DaF2E5");
   const paymentHub = await deployments.get('PaymentHub');
   
@@ -51,5 +51,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 };
 
 module.exports.tags = ["Brokerbot"];
-module.exports.dependencies = ["Shares", "PaymentHub"];
+module.exports.dependencies = ["DraggableShares", "PaymentHub"];
 //module.exports.dependencies = ["PaymentHub"];
