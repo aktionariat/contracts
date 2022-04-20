@@ -55,7 +55,6 @@
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.17",
-    "truffle-assertions": "^0.9.2",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.5",
     "web3": "^1.6.1"
@@ -64,7 +63,7 @@
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "test": "hardhat test",
-    "coverage": "hardhat coverage && cat coverage/lcov.info",
+    "coverage": "hardhat coverage",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
     "prettier:solidity": "./node_modules/.bin/prettier --write src/**/*.sol"
   }

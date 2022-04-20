@@ -1,6 +1,10 @@
 const {network, ethers, deployments } = require("hardhat");
-const { expect } = require("chai");
 const config = require("../scripts/deploy_config.js");
+const { sendEther } = require("./helper/index");
+const { use, expect } = require("chai");
+const { solidity } = require("ethereum-waffle");
+
+use(solidity);
 
 describe("Multisig", () => {
   let multiSigMaster;
@@ -127,4 +131,14 @@ describe("Multisig", () => {
     const msBlanceAfter = await ethers.provider.getBalance(address);
     console.log("multisig balance after: %s", msBlanceAfter);
   });
+
+  it("Should emit event when ether received", async () => {
+    const value = ethers.utils.parseEther("1");
+      await expect(owner.sendTransaction({
+        to: multiSigClone.address,
+        value: value
+      }))
+        .to.emit(multiSigClone, 'Received')
+        .withArgs(owner.address, value);
+  })
 })

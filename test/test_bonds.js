@@ -51,7 +51,7 @@ describe("Bond Contract", () => {
     bondBot = await ethers.getContract("BondbotDAI");
     paymentHub = await ethers.getContract("PaymentHub");
 
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
 
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
@@ -137,13 +137,13 @@ describe("Bond Contract", () => {
 
   describe("Deployment", () => {
     it("should deploy", async () => {
-      assert(bond.address !== "");
+      expect(bond.address).to.exist;
     });
   
     it("should get constructor params correctly", async () => {
-      assert.equal(await bond.symbol(), config.symbol);
-      assert.equal(await bond.name(), config.name);
-      assert.equal(await bond.terms(), config.terms);
+      expect(await bond.symbol()).to.eq(config.symbol);
+      expect(await bond.name()).to.eq(config.name);
+      expect(await bond.terms()).to.eq(config.terms);
     });
     it("Should set the right owner", async () =>{
       expect(await bond.owner()).to.equal(owner.address);
@@ -158,27 +158,27 @@ describe("Bond Contract", () => {
     it("should have some ETH in first 5 accounts", async () => {  
       for (let i = 0; i < 5; i++) {
         const balance = ethers.BigNumber.from(await ethers.provider.getBalance(accounts[i]));
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
   
     it("should have some BaseCurrency in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await baseCurrency.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some Bonds in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await bond.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have BaseCurrency deposited into the Brokerbot", async () => {
       const baseBalance = await baseCurrency.balanceOf(bondBot.address);
-      assert(!baseBalance.isZero());
+      expect(baseBalance.isZero(), "Balance is 0").to.be.false;
     });
   });
 

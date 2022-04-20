@@ -1,15 +1,18 @@
 const {network, ethers, deployments, } = require("hardhat");
-const { expect } = require("chai");
+const { setBalances } = require("./helper/index");
 const Chance = require("chance");
 const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
+const { use, expect } = require("chai");
+const { solidity } = require("ethereum-waffle");
 
-const { mintBaseCurrency, mintERC20, setBalance } = require("./helper/index");
+use(solidity);
+
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
-const { wbtcAddress } = require("../scripts/deploy_config.js");
+const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.providers.Web3Provider(network.provider);
@@ -47,13 +50,9 @@ describe("New PaymentHub", () => {
   );
 
 
-  let draggable;
   let shares;
   let baseCurrency;
   let paymentHub;
-  let offerFactory;
-  let allowlistShares;
-  let allowlistDraggable;
   let brokerbot;
   let brokerbotDAI;
   let daiContract;
@@ -70,59 +69,42 @@ describe("New PaymentHub", () => {
   let signers;
 
   let chance;
-  let name;
-  let symbol;
-  let terms;
-  let dterms;
   let xchfamount
   let daiAmount
   let randomShareAmount
   let path;
 
-  const TYPE_DEFAULT = 0;
-  const TYPE_ALLOWLISTED = 1;
-  const TYPE_FORBIDDEN = 2;
-  const TYPE_POWERLISTED = 3;
-
   before(async () => {
     // get signers and accounts of them
     [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
-    signers = [owner,sig1,sig2,sig3,sig4];
+    signers = [owner,sig1,sig2,sig3,sig4,sig5];
     accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
     chance = new Chance();
 
-    // random test data with chance
-    name = chance.sentence({words: 3});
-    symbol = chance.word({length: chance.natural({min: 1, max: 5})}).toUpperCase();
-    terms = chance.word({length: chance.natural({min: 1, max: 10})});
-    dterms = chance.word({length: chance.natural({min: 1, max: 10})});
-
     // deploy contracts
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    daiContract = await ethers.getContractAt("ERC20Basic", config.daiAddress);
-    wbtcContract = await ethers.getContractAt("ERC20Basic", config.wbtcAddress)
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+    daiContract = await ethers.getContractAt("ERC20Named", config.daiAddress);
+    wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress)
 
-    await deployments.fixture(["Shares", "PaymentHub", "Brokerbot", "BrokerbotDAI"]);
+    await deployments.fixture(["Shares", "DraggableShares", "PaymentHub", "Brokerbot", "BrokerbotDAI"]);
     paymentHub = await ethers.getContract("PaymentHub");
     shares = await ethers.getContract("Shares");
+    draggableShares = await ethers.getContract("DraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
     brokerbotDAI = await ethers.getContract("BrokerbotDAI");
 
-    // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    //await mintERC20(forceSend, baseCurrency, config.baseCurrencyMinterAddress, accounts);
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
-    // Set (manipulate local) DAI balance for first 5 accounts
-    await setBalance(daiContract, config.daiBalanceSlot, accounts);
-    // Set (manipulate local) WBTC balance for first 5 accounts
-    await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
+    // Set (manipulate local) balances (xchf,dai,wbtc) for first 5 accounts
+    await setBalances(accounts, baseCurrency, daiContract, wbtcContract);
 
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
-      await shares.connect(owner).mint(accounts[i], 1000000);
+      await shares.connect(owner).mint(accounts[i], 2000000);
+      await shares.connect(signers[i]).approve(draggableShares.address, config.infiniteAllowance);
+      await draggableShares.connect(signers[i]).wrap(accounts[i], 600000);
     }
 
     // Deposit some shares to Brokerbot
-    await shares.connect(owner).transfer(brokerbot.address, 500000 );
+    await draggableShares.connect(owner).transfer(brokerbot.address, 500000 );
     await shares.connect(owner).transfer(brokerbotDAI.address, 500000);
     await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
   });
@@ -141,7 +123,7 @@ describe("New PaymentHub", () => {
     });
   });
 
-  describe("Trading", () => {
+  describe("Trading with ETH", () => {
     beforeEach(async () => {
       const randomAmount = chance.natural({ min: 500, max: 50000 });
       xchfamount = await brokerbot.getBuyPrice(randomAmount);
@@ -152,7 +134,7 @@ describe("New PaymentHub", () => {
       
       const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"), await brokerbot.base());
       // rework to not use static value
-      expect(await ethers.utils.formatEther(priceInETH)).to.equal("0.244787563584463807")
+      expect(ethers.utils.formatEther(priceInETH)).to.equal("0.244787563584463807")
     });
 
     it("Should buy shares with ETH and trade it to XCHF", async () => {
@@ -197,6 +179,10 @@ describe("New PaymentHub", () => {
       // overpay in eth to test payback
       const pricePlus = priceInETH.mul(110).div(100);
 
+      //simulate buy inbetween to show adding slippage is accounted for
+      await paymentHub.connect(sig2).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH});
+
+
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const buyerETHBefore = await ethers.provider.getBalance(sig1.address);
       const tx = await paymentHub.connect(sig1).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: pricePlus});
@@ -230,11 +216,12 @@ describe("New PaymentHub", () => {
       await baseCurrency.connect(sig1).transfer(paymentHub.address, wrongSent);
       const balInbetween = await baseCurrency.balanceOf(sig1.address);
       expect(balBefore.sub(wrongSent)).to.equal(balInbetween);
+      await expect(paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent+1)).to.be.reverted;
       await paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent);
       const balInAfter = await baseCurrency.balanceOf(sig1.address);
       expect(balBefore).to.equal(balInAfter);
-
     });
+
   });
 
   describe("Trading with DAI base", () => {
@@ -270,12 +257,11 @@ describe("New PaymentHub", () => {
       await daiContract.connect(sig1).approve(paymentHub.address, daiAmount);
 
       const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
-      //await paymentHub.connect(sig1).payAndNotify(brokerbotDAI.address, daiAmount, "0x01");
       const paymentHubAdr1 = await paymentHub.connect(sig1);
       await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbotDAI.address, daiAmount, "0x01");
       const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
 
-      // brokerbot should have after the payment with eth the dai in the balance
+      // brokerbot should have after the payment the dai in the balance
       expect(brokerbotBalanceBefore.add(daiAmount)).to.equal(brokerbotBalanceAfter);
     });
   });
@@ -311,10 +297,10 @@ describe("New PaymentHub", () => {
 
       //trade and log balance change
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-      const sharesBefore = await shares.balanceOf(sig1.address);
+      const sharesBefore = await draggableShares.balanceOf(sig1.address);
       //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
       await paymentHub.connect(sig1).payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, path, "0x01");
-      const sharesAfter = await shares.balanceOf(sig1.address);
+      const sharesAfter = await draggableShares.balanceOf(sig1.address);
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
       //console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
 
@@ -327,6 +313,68 @@ describe("New PaymentHub", () => {
       // allowance for payment - uniswaprouter is infinit and always above 0
       expect(await wbtcContract.allowance(paymentHub.address, "0xE592427A0AEce92De3Edee1F18E0157C05861564")).to.be.above(0);
     });
+  });
+
+  describe("Trading with XCHF", async () => {
+    before(async () => {
+      randomShareAmount = chance.natural({ min: 500, max: 50000 });
+      xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
+    });
+
+    it("Should buy shares with XCHF", async () => {
+      // allowance for XCHF
+      await baseCurrency.connect(sig1).approve(paymentHub.address, xchfamount);
+
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const paymentHubAdr1 = await paymentHub.connect(sig1);
+
+      // revert if want to buy with more xchf than is owned
+      const exceedingAmount = ethers.utils.parseEther("1000000000");
+      await expect(paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, exceedingAmount, "0x01"))
+        .to.be.reverted;
+
+      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, xchfamount, "0x01");
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+
+      // brokerbot should have after the payment the xchf in the balance
+      expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+    })
+
+    it("Should be able to buy shares via multiPayAndNotify", async () => {
+      // allowance for XCHF
+      await baseCurrency.connect(sig1).approve(paymentHub.address, xchfamount.mul(2));
+
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      const brokerbots = [brokerbot.address, brokerbot.address];
+      const amounts = [xchfamount, xchfamount];
+      await paymentHubAdr1.multiPayAndNotify(config.baseCurrencyAddress, brokerbots, amounts, "0x01");
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+
+      // brokerbot should have after the payment the xchf in the balance
+      expect(brokerbotBalanceBefore.add(xchfamount.mul(2))).to.equal(brokerbotBalanceAfter);
+    })
+    
+    it("Should repay XCHF if too much XCHF was paid", async () => {
+      // allowance for XCHF
+      await baseCurrency.connect(sig1).approve(paymentHub.address, config.infiniteAllowance);
+
+      // overpay amount
+      const overpayDif = ethers.utils.parseEther("0.5");
+      const overpayAmount = xchfamount.add(overpayDif);
+
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const userBalanceBefore = await baseCurrency.balanceOf(sig1.address);
+      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, overpayAmount, "0x01");
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+      const userBalanceAfter = await baseCurrency.balanceOf(sig1.address);
+
+      // brokerbot should have after the payment the xchf in the balance
+      expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+      // user should have deducted the xchf amount not the overpaid ammount
+      expect(userBalanceBefore.sub(xchfamount)).to.equal(userBalanceAfter);
+    })
   });
 
   describe("Trading ERC20 with DAI base", () => {
