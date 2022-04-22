@@ -1,4 +1,5 @@
 const Confirm = require('prompt-confirm');
+const config = require("../scripts/deploy_config_optimism.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -7,10 +8,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const recoveryHub = await deployments.get("RecoveryHub");
 
-  const symbol = "OES";
-  const name = "Optimistic Example AG Shares";
-  const terms = "test.ch/terms";
-  const totalShares = 10000000;
+  const symbol = config.symbol;
+  const name = config.name;
+  const terms = config.terms;
+  const totalShares = config.totalShares;
   
   if (network.name != "hardhat") {
     console.log("-----------------------")

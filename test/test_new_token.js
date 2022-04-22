@@ -713,7 +713,7 @@ describe("New Standard", () => {
       }
       //set balance to low to transfer
       await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
-      await expect(offer.connect(sig1).execute()).to.be.revertedWith("insufficient tokens");
+      await expect(offer.connect(sig1).execute()).to.be.reverted;
       //set balance back
       await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
     })

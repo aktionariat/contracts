@@ -1,5 +1,5 @@
 // Shared Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_optimism.js");
 
 // Libraries
 const BN = require("bn.js");

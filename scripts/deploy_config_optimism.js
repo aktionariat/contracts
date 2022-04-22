@@ -5,7 +5,7 @@ module.exports = {
   terms: "test.ch/terms",
   totalShares: 10000000,
   sharePrice: "1000000000000000000",
-  baseCurrencyAddress: "0xE4F27b04cC7729901876B44f4EAA5102EC150265", // optimism dai
+  baseCurrencyAddress: "0xE4F27b04cC7729901876B44f4EAA5102EC150265", // optimism xchf
   baseCurrencyMinterAddress: "0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7", //optimism
   baseCurrencyName: "CryptoFranc",
   baseCurrencySymbol: "XCHF",

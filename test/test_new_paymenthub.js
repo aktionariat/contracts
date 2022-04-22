@@ -1,5 +1,5 @@
 const {network, ethers, deployments, } = require("hardhat");
-const { setBalances } = require("./helper/index");
+const { setBalances, sendEther } = require("./helper/index");
 const Chance = require("chance");
 const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
@@ -127,7 +127,8 @@ describe("New PaymentHub", () => {
       xchfamount = await brokerbot.getBuyPrice(randomAmount);
     });
 
-    it("Should get price in ETH", async () => {
+    // not used with optimism
+    it.skip("Should get price in ETH", async () => {
       const priceeth = await paymentHub.getLatestPriceETHUSD();
       // console.log(await priceeth.toString());
       
@@ -135,6 +136,7 @@ describe("New PaymentHub", () => {
       // rework to not use static value
       expect(ethers.utils.formatEther(priceInETH)).to.equal("0.244787563584463807")
     });
+    
 
     it("Should buy shares with ETH and trade it to XCHF", async () => {
       const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
@@ -156,7 +158,8 @@ describe("New PaymentHub", () => {
       await expect(paymentHub.connect(sig1).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: lowerPriceInETH})).to.be.reverted;
     });
 
-    it("Should buy shares with ETH and keep ETH", async () => {
+    // not used with optimism
+    it.skip("Should buy shares with ETH and keep ETH", async () => {
       const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
       // console.log(await ethers.utils.formatEther(priceInETH));
       // console.log(await priceInETH.toString());
@@ -183,7 +186,9 @@ describe("New PaymentHub", () => {
       expect(buyerETHBefore.sub(priceInETH).sub(gasPaid)).to.equal(buyerETHAfter);
     });
 
-    it("Should be able to withdraw ETH from brokerbot as owner", async () => {
+    // on optimism brokerbot can't receive ether
+    it.skip("Should be able to withdraw ETH from brokerbot as owner", async () => {
+      await sendEther(deployer, brokerbot.address, "1");
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const ownerETHBefore = await ethers.provider.getBalance(owner.address);
       await expect(brokerbot.withdrawEther(brokerbotETHBefore)).to.be.revertedWith("not owner nor hub");
@@ -354,7 +359,8 @@ describe("New PaymentHub", () => {
     })
   });
 
-  describe("Trading ERC20 with DAI base", () => {
+  // auto router dosen't work with optimism
+  describe.skip("Trading ERC20 with DAI base", () => {
     before(async () => {
       randomShareAmount = chance.natural({ min: 500, max: 50000 });
       daiAmount = await brokerbotDAI.getBuyPrice(randomShareAmount);

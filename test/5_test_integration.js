@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 
 // Shared Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_optimism.js");
 
 const { setup } = require("./helper/index");
 

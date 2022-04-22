@@ -10,8 +10,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   //const shares = await ethers.getContractAt('Shares', "0xE4294c9698ca44F244575185E669BdB447DaF2E5");
   const paymentHub = await deployments.get('PaymentHub');
   
-  const price = "10000000000000000";
-  const increment = 10;
+  const price = config.sharePrice;
+  const increment = 0;
   const baseCurrencyContract = config.baseCurrencyAddress;
   
   
