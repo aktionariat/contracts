@@ -131,6 +131,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
         // it is not allowlisted, but we can make it so
         // we know the recipient is neither forbidden, allowlisted or powerlisted, so we can set flag directly
         setFlag(to, FLAG_INDEX_ALLOWLIST, true);
+        emit AddressTypeUpdate(to, FLAG_INDEX_ALLOWLIST);
       }
       // if we made it to here, the target must be a free address and we are not powerlisted
       else if (hasFlagInternal(from, FLAG_INDEX_ALLOWLIST)){
