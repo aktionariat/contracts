@@ -823,7 +823,9 @@ describe("New Standard", () => {
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
 
-      await allowlistShares.connect(owner).mint(defaultAddress, "1000");
+      await expect(allowlistShares.connect(owner).mint(defaultAddress, "1000"))
+        .to.emit(allowlistShares, "AddressTypeUpdate")
+        .withArgs(defaultAddress, TYPE_ALLOWLISTED);
       
       // after mint is allowlisted
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
