@@ -12,19 +12,25 @@
 */
 pragma solidity ^0.8.0;
 
+import "./IBrokerbot.sol";
+import "../ERC20/IERC20.sol";
 import "../utils/Ownable.sol";
 
 contract BrokerbotRegistry is Ownable {
 
-  mapping(address => mapping(address => address)) public getBrokerbot;
+  mapping(IERC20 => mapping(IERC20 => IBrokerbot)) public getBrokerbot;
+
+  event RegisterBrokerbot(IBrokerbot brokerbot, IERC20 base, IERC20 token);
+  event SyncBrokerbot(IBrokerbot indexed brokerbot);
   constructor(address _owner) Ownable(_owner) {}
 
-  function addBrokerbot(address ) external onlyOwner() {
-
+  function registerBrokerbot(IBrokerbot _brokerbot, IERC20 _base, IERC20 _token ) external onlyOwner() {
+    getBrokerbot[_base][_token] = _brokerbot;
+    emit RegisterBrokerbot(_brokerbot, _base, _token);
   }
 
-  function removeBrokerbot() external onlyOwner() {
-
+  function syncBrokerbot(IBrokerbot brokerbot) external {
+    emit SyncBrokerbot(brokerbot);
   }
 
 }
