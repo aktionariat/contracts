@@ -7,10 +7,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     
   if (network.name != "hardhat") {
     console.log("-----------------------")
-    console.log("Deploy Brokerbot DAI")
+    console.log("Deploy Brokerbot Registry")
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
+    console.log("owner: %s", deployer);  // don't forget to set it in hardhat.config.js as the multsig account
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -25,7 +25,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     contract: "BrokerbotRegistry",
     from: deployer,
     args: [
-      owner],
+      deployer],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
