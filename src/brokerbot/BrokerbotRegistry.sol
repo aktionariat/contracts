@@ -20,8 +20,9 @@ import "../utils/Ownable.sol";
 /// @notice Holds a registry from all deployed active brokerbots
 contract BrokerbotRegistry is Ownable {
   /// @notice Returns the brokerbot address for a given pair base and share token, or address 0 if it does not exist
+  /// @dev mapping is [base][token] = brokerbotAddress
   /// @return brokerbot The brokerbot address
-  mapping(IERC20 => mapping(IERC20 => IBrokerbot)) public getBrokerbots;
+  mapping(IERC20 => mapping(IERC20 => IBrokerbot)) public getBrokerbot;
 
   /// @notice Emitted when brokerbot is registered.
   /// @param brokerbot The address of the brokerbot
@@ -32,7 +33,7 @@ contract BrokerbotRegistry is Ownable {
   /// @notice Emmitted when calling syncBrokerbot function
   /// @param brokerbot The brokerbot address that is synced
   event SyncBrokerbot(IBrokerbot indexed brokerbot);
-  
+
   constructor(address _owner) Ownable(_owner) {}
 
   /// @notice Per network only one active brokerbot should exist per base/share pair
@@ -40,7 +41,7 @@ contract BrokerbotRegistry is Ownable {
   /// @param _base The contract of the base currency of the brokerbot.
   /// @param _token The contract of the share token of the brokerbot.
   function registerBrokerbot(IBrokerbot _brokerbot, IERC20 _base, IERC20 _token ) external onlyOwner() {
-    getBrokerbots[_base][_token] = _brokerbot;
+    getBrokerbot[_base][_token] = _brokerbot;
     emit RegisterBrokerbot(_brokerbot, _base, _token);
   }
 
