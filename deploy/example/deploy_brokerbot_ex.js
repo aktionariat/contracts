@@ -9,7 +9,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const owner = config.multisigAddress;
   //const shares = await deployments.get('Shares');
   const shares = await deployments.get("DraggableShares" + config.symbol);
-  const paymentHub = await deployments.get('PaymentHub');
+  const paymentHub = await deployments.get("PaymentHub");
   
   const price = config.sharePrice;
   const increment = config.increment;
@@ -50,12 +50,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     maxFeePerGas: feeData.maxFeePerGas
   });
 
+  // register brokerbot at registry
+  brokerbotRegistry = await ethers.getContract("BrokerbotRegistry")
+  brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shares.address);
+
   // auto verify on etherscan
-  await hre.run("etherscan-verify", {
-    license: "None"
-  });
+  if (network.name != "hardhat") {
+    await hre.run("etherscan-verify", {
+      license: "None"
+    });
+  }
 };
 
 
 module.exports.tags = ["Brokerbot"+config.symbol];
-module.exports.dependencies = ["DraggableShares"+config.symbol, "PaymentHub"];
+module.exports.dependencies = ["DraggableShares"+config.symbol, "PaymentHub", "BrokerbotRegistry"];

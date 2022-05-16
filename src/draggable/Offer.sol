@@ -62,7 +62,7 @@ contract Offer is IOffer {
 
     event VotesChanged(uint256 yesVotes, uint256 noVotes);
     event OfferCreated(address indexed buyer, IDraggable indexed token, uint256 pricePerShare, IERC20 indexed currency);
-    event OfferEnded(address indexed buyer, bool indexed success, string message);
+    event OfferEnded(address indexed buyer, bool success, string message); // not sure if it makes sense to index success here
 
     // Not checked here, but buyer should make sure it is well funded from the beginning
     constructor(
