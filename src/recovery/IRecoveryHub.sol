@@ -11,4 +11,6 @@ interface IRecoveryHub {
     // clears claim and transfers collateral to holder
     function clearClaimFromToken(address holder) external;
 
+    function clearClaimFromUser(address token) external;
+
 }
