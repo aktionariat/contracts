@@ -125,8 +125,8 @@ contract RecoveryHub is IRecoveryHub {
         clearClaim(IRecoverable(msg.sender), holder);
     }
 
-    function clearClaimFromUser(IRecoverable token) external {
-        clearClaim(token, msg.sender);
+    function clearClaimFromUser(address token) external override {
+        clearClaim(IRecoverable(token), msg.sender);
     }
 
     function clearClaim(IRecoverable token, address holder) private {
