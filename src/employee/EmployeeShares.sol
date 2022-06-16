@@ -23,11 +23,11 @@ contract EmployeeShares is Ownable, IERC677Receiver {
 
     // TODO: events on creation and notable actions
 
-    constructor(address employee, address company_, IERC20 token_, uint256 vestingPeriod, uint256 lockupPeriod) Ownable(employee){
+    constructor(address employee, address company_, IERC20 token_, uint256 vestingStart_, uint256 vestingPeriod, uint256 lockupPeriod) Ownable(employee){
         company = company_;
         token = token_;
-        vestingStart = block.timestamp;
-        vestingEnd = vestingStart + vestingPeriod;
+        vestingStart = vestingStart_;
+        vestingEnd = vestingStart_ + vestingPeriod;
         lockupEnd = block.timestamp + lockupPeriod;
     }
 
@@ -51,7 +51,9 @@ contract EmployeeShares is Ownable, IERC677Receiver {
      */
     function vested() public view returns (uint256) {
         uint256 time = block.timestamp;
-        if (time >= vestingEnd){
+        if (time <= vestingStart){
+            return 0;
+        } else if (time >= vestingEnd){
             return received;
         } else {
             uint256 passed = time - vestingStart;
