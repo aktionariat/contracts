@@ -201,9 +201,10 @@ describe("New PaymentHub", () => {
     it("Should be able to withdraw ETH from brokerbot as owner", async () => {
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const ownerETHBefore = await ethers.provider.getBalance(owner.address);
-      await expect(brokerbot.withdrawEther(brokerbotETHBefore)).to.be.revertedWith("not owner nor hub");
-      await expect(brokerbot.connect(owner).withdrawEther(brokerbotETHBefore.add(1))).to.be.revertedWith("Transfer failed.");     
-      await brokerbot.connect(owner).withdrawEther(brokerbotETHBefore);
+      await expect(brokerbot.connect(owner)["withdrawEther(address,uint256)"](draggableShares.address, brokerbotETHBefore)).to.be.revertedWith('Transfer failed');
+      await expect(brokerbot["withdrawEther(uint256)"](brokerbotETHBefore)).to.be.revertedWith("not owner nor hub");
+      await expect(brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore.add(1))).to.be.revertedWith("Transfer failed");     
+      await brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore);
       const brokerbotETHAfter = await ethers.provider.getBalance(brokerbot.address);
       const ownerETHAfter = await ethers.provider.getBalance(owner.address);
       expect(brokerbotETHAfter.isZero()).to.be.true;
