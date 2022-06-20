@@ -85,7 +85,7 @@ contract EmployeeShares is Ownable, IERC677Receiver {
      * Protect deposited tokens from false recovery claims.
      */
     function protect() external onlyOwner {
-        IRecoveryHub(IRecoverable(address(token)).recovery()).clearClaimFromUser(address(this));
+        IRecoveryHub(IRecoverable(address(token)).recovery()).clearClaimFromUser(IRecoverable(address(this)));
     }
 
 }

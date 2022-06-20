@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./IRecoverable.sol";
+
 interface IRecoveryHub {
 
     function setRecoverable(bool flag) external;
@@ -11,6 +13,6 @@ interface IRecoveryHub {
     // clears claim and transfers collateral to holder
     function clearClaimFromToken(address holder) external;
 
-    function clearClaimFromUser(address token) external;
+    function clearClaimFromUser(IRecoverable token) external;
 
 }
