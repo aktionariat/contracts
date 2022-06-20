@@ -57,7 +57,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
 
     uint256 constant CLAIM_PERIOD = 180 days;
 
-    IRecoveryHub public immutable recovery;
+    IRecoveryHub public override immutable recovery;
 
     constructor(IRecoveryHub recoveryHub){
         recovery = recoveryHub;
