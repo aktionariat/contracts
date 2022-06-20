@@ -248,7 +248,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     function withdrawEther(address target, uint256 amount) public ownerOrHub() {
-        (bool success, ) = target.call{value:amount}("");
+        (bool success, ) = payable(target).call{value:amount}("");
         require(success, "Transfer failed");
     }
 
