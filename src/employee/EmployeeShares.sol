@@ -24,6 +24,8 @@ contract EmployeeShares is Ownable, IERC677Receiver {
     uint256 public lockupEnd;
 
     // TODO: events on creation and notable actions
+    event VestingUpdated(address indexed token, address indexed beneficiary, uint256 lockup, uint256 vestingstart, uint256 vestingEnd);
+    event VestedTokensDeposited(address indexed token, uint256 totalReceived);
 
     constructor(address employee, address company_, IERC20 token_, uint256 vestingStart_, uint256 vestingPeriod, uint256 lockupPeriod) Ownable(employee){
         company = company_;
@@ -31,6 +33,7 @@ contract EmployeeShares is Ownable, IERC677Receiver {
         vestingStart = vestingStart_;
         vestingEnd = vestingStart_ + vestingPeriod;
         lockupEnd = block.timestamp + lockupPeriod;
+        emit VestingUpdated(address(token_), employee, lockupEnd, vestingStart_, vestingEnd);
     }
 
     /**
@@ -45,11 +48,13 @@ contract EmployeeShares is Ownable, IERC677Receiver {
     function liftLockup() external {
         require(msg.sender == company);
         lockupEnd = block.timestamp;
+        emit VestingUpdated(address(token), owner, lockupEnd, vestingStart, vestingEnd);
     }
 
     function endVesting() external {
         require(msg.sender == company);
         vestingEnd = block.timestamp;
+        emit VestingUpdated(address(token), owner, lockupEnd, vestingStart, vestingEnd);
     }
 
     /**
@@ -95,6 +100,7 @@ contract EmployeeShares is Ownable, IERC677Receiver {
     function onTokenTransfer(address, uint256 amount, bytes calldata) external override returns (bool) {
         require(msg.sender == address(token));
         received += amount;
+        emit VestedTokensDeposited(msg.sender, received);
         return true;
     }
 
