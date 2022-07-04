@@ -55,6 +55,10 @@ contract Cancellation {
         return "---";
     }
 
+    function migrate() external {
+        IDraggable(target).migrate();
+    }
+
     function balanceOf(address account) public view returns (uint256) {
         if (account == target){
             return IERC20(base).balanceOf(address(this));
