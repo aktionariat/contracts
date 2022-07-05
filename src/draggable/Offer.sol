@@ -211,11 +211,11 @@ contract Offer is IOffer {
         noExternal = no;
     }
 
-    function voteYes() external {
+    function voteYes() override external {
         vote(Vote.YES);
     }
 
-    function voteNo() external { 
+    function voteNo() override external { 
         vote(Vote.NO);
     }
 
