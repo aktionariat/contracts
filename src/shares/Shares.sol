@@ -52,7 +52,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
 
     // Version history:
     // 1: everything before 2022-07-19
-    // 2: added mintMany and mintManyAndCall
+    // 2: added mintMany and mintManyAndCall, added VERSION field
 
     string public terms;
 
