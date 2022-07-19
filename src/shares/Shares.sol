@@ -142,8 +142,29 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
         require(IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data));
     }
 
+    function mintManyAndCall(address[] calldata target, address callee, uint256[] calldata amount, bytes calldata data) external {
+        uint256 len = target.length;
+        require(len == amount.length);
+        uint256 total = 0;
+        for (uint256 i = 0; i<len; i++){
+            total += amount[i];
+        }
+        mint(callee, total);
+        for (uint256 i = 0; i<len; i++){
+            require(IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data));
+        }
+    }
+
     function mint(address target, uint256 amount) public onlyOwner {
         _mint(target, amount);
+    }
+
+    function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
+        uint256 len = target.length;
+        require(len == amount.length);
+        for (uint256 i = 0; i<len; i++){
+            _mint(target[i], amount[i]);
+        }
     }
 
     function _mint(address account, uint256 amount) internal virtual override {
