@@ -48,6 +48,12 @@ import "../shares/IShares.sol";
  */
 contract Shares is ERC20Recoverable, ERC20Named, IShares{
 
+    uint8 public constant VERSION = 2;
+
+    // Version history:
+    // 1: everything before 2022-07-19
+    // 2: added mintMany and mintManyAndCall
+
     string public terms;
 
     uint256 public override totalShares; // total number of shares, maybe not all tokenized
