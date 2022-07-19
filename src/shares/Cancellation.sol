@@ -38,7 +38,7 @@ contract Cancellation {
 
     constructor(address target_) {
         target = target_;
-        base = IDraggable(target).wrapped();
+        base = address(IDraggable(target_).wrapped());
     }
 
     function burnThemAll() external {
