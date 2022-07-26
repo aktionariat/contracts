@@ -2,11 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "../ERC20/IERC20.sol";
+import "./IOffer.sol";
 interface IDraggable {
     
-    function wrapped() external view returns (address);
+    function wrapped() external view returns (IERC20);
     function unwrap(uint256 amount) external;
-    function offer() external view returns (address);
+    function offer() external view returns (IOffer);
     function oracle() external view returns (address);
     function drag(address buyer, IERC20 currency) external;
     function notifyOfferEnded() external;

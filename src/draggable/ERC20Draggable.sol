@@ -56,14 +56,14 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	// current offer (if any) when transferring tokens.
 	uint8 private constant FLAG_VOTE_HINT = 1;
 
-	IERC20 public wrapped; // The wrapped contract
+	IERC20 public override wrapped; // The wrapped contract
 	IOfferFactory public immutable factory;
 
 	// If the wrapped tokens got replaced in an acquisition, unwrapping might yield many currency tokens
 	uint256 public unwrapConversionFactor = 0;
 
 	// The current acquisition attempt, if any. See initiateAcquisition to see the requirements to make a public offer.
-	IOffer public offer;
+	IOffer public override offer;
 
 	uint256 private constant QUORUM_MULTIPLIER = 10000;
 
@@ -148,7 +148,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	}
 
 	/** Decrease the number of drag-along tokens. The user gets back their shares in return */
-	function unwrap(uint256 amount) external {
+	function unwrap(uint256 amount) external override{
 		require(!isBinding(), "factor");
 		unwrap(msg.sender, amount, unwrapConversionFactor);
 	}
