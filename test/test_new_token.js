@@ -270,6 +270,41 @@ describe("New Standard", () => {
       expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
     });
 
+    it("Should mint and call on shares for multiple addresses", async() => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const totalShares = await shares.totalShares();
+
+      //set new total shares as we mint more
+      await shares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint*2));
+      const balance2Before = await draggable.balanceOf(sig2.address);
+      const balance3Before = await draggable.balanceOf(sig3.address);
+      // mint shares and wrap them in draggable
+      await shares.connect(owner).mintManyAndCall([sig2.address, sig3.address], draggable.address, [randomAmountToMint, randomAmountToMint], "0x01");
+      const balance2After = await draggable.balanceOf(sig2.address);
+      const balance3After = await draggable.balanceOf(sig3.address);
+
+      expect(balance2Before.add(randomAmountToMint)).to.equal(balance2After);
+      expect(balance3Before.add(randomAmountToMint)).to.equal(balance3After);
+    });
+
+    it("Should mint shares to multiple addresses", async() => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const randomAmountToMint2 = chance.natural({min:1, max: 5000});
+      const totalShares = await shares.totalShares();
+
+      //set new total shares as we mint more
+      await shares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint+randomAmountToMint2));
+      const balance2Before = await shares.balanceOf(sig2.address);
+      const balance3Before = await shares.balanceOf(sig3.address);
+      // mint shares
+      await shares.connect(owner).mintMany([sig2.address, sig3.address], [randomAmountToMint, randomAmountToMint2]);
+      const balance2After = await shares.balanceOf(sig2.address);
+      const balance3After = await shares.balanceOf(sig3.address);
+
+      expect(balance2Before.add(randomAmountToMint)).to.equal(balance2After);
+      expect(balance3Before.add(randomAmountToMint2)).to.equal(balance3After);
+    });
+
     it("Should wrap some more shares with transferAndCall", async () => {
       const randomAmountToWrap = chance.natural({min: 1, max: 500});
       const balanceBefore = await draggable.balanceOf(sig1.address);
