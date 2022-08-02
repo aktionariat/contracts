@@ -1,10 +1,7 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
 const Chance = require("chance");
 const { setBalance, setBalanceWithAmount } = require("./helper/index");
-const { use, expect } = require("chai");
-const { solidity } = require("ethereum-waffle");
-
-use(solidity);
+const { expect } = require("chai");
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");

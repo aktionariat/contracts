@@ -4,11 +4,7 @@ const Chance = require("chance");
 const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
-const { use, expect } = require("chai");
-const { solidity } = require("ethereum-waffle");
-
-use(solidity);
-
+const { expect } = require("chai");
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
