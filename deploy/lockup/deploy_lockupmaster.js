@@ -20,7 +20,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("LockupMaster", {
+  const { address } = await deploy("LockupSharesMaster", {
     contract: "LockupShares",
     from: deployer,
     args: [],
@@ -30,4 +30,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["LockupMaster"];
+module.exports.tags = ["LockupSharesMaster"];

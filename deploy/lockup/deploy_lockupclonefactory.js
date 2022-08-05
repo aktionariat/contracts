@@ -5,7 +5,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
 
-  const lockupMaster = await deployments.get('LockupMaster');
+  const lockupMaster = await deployments.get('LockupSharesMaster');
 
 
   if (network.name != "hardhat") {
@@ -13,7 +13,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Deploy Lockup Clone Factory")
     console.log("------------------------------")
     console.log(`deployer: ${deployer}`);
-    console.log(`LockupMaster: ${lockupMaster.address}`);
+    console.log(`LockupSharesMaster: ${LockupSharesMaster.address}`);
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -35,4 +35,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["LockupFactory"];
-module.exports.dependencies = ['LockupMaster'];
+module.exports.dependencies = ['LockupSharesMaster'];
