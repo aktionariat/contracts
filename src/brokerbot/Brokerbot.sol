@@ -41,8 +41,9 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version 2: added ability to process bank orders even if buying disabled
     // Version 3: added various events, removed license fee
     // Version 4: made version field public so it is actually usable
-    uint8 public constant VERSION = 0x4;
-
+    // Version 5: added target address for withdrawEther
+    uint8 public constant VERSION = 0x5;
+    
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
 
