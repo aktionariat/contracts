@@ -31,6 +31,11 @@ contract LockupShares is Ownable, Initializable, IERC677Receiver {
     event LockupUpdated(IERC20 indexed token, address indexed beneficiary, uint256 lockupEnd);
     event LockupToken(IERC20 indexed token, address indexed beneficiary, uint256 amount);
 
+    modifier onlyCompany() {
+        require(company == msg.sender, "not company");
+        _;
+    }
+
     constructor() Ownable(address(0)) {}
 
     function initialize(address beneficiary, address _company, IERC20 _token, uint256 LockupPeriod) external initializer {
@@ -44,13 +49,11 @@ contract LockupShares is Ownable, Initializable, IERC677Receiver {
     /**
      * Allows the company to claw back some shares that have not vested yet.
      */
-    function clawback(address target, uint256 amount) external {
-        require(msg.sender == company);
+    function clawback(address target, uint256 amount) external onlyCompany() {
         token.transfer(target, amount);
     }
 
-    function changeLockup(uint256 LockupPeriod) external {
-        require(msg.sender == company);
+    function changeLockup(uint256 LockupPeriod) external onlyCompany() {
         lockupEnd = block.timestamp + LockupPeriod;
         emit LockupUpdated(token, owner, lockupEnd);
     }
