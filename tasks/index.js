@@ -19,6 +19,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
     .addParam("salt", "The salt for the multsig")
     .setAction(async ({ factory, owner, salt }, { getNamedAccounts, ethers }) => {
         const { deployer, multiSigDefaultOwner } = await getNamedAccounts();
+        const ds = await ethers.getSigner(deployer);
         if (factory == undefined) {
             switch   (network.name) {
                 case "mainnet":
@@ -26,6 +27,9 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                     break;
                 case "kovan":
                     factory = "0xAF21E166ADc362465A27AeDc15315DcFc0c51624"; // kovan factory
+                    break;
+                case "goerli":
+                    factory = "0x1776C349696CccAE06541542C5ED954CDf9859cC"; // goerli factory
                     break;
                 case "ropsten":
                     factory = "0xd350a14834d0cFdfC40013A9b605Ecc9CA1024Ce" // ropsten factory
@@ -60,7 +64,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
             }
         }
 
-        const tx = await multiSigCloneFactory.create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000 });
+        const tx = await multiSigCloneFactory.connect(ds).create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000 });
         const { events } = await tx.wait();
         const { address } = events.find(Boolean);
         console.log(`MultiSig cloned at: ${address}`);

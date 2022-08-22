@@ -51,8 +51,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   });
 
   // register brokerbot at registry
+  const ds = await ethers.getSigner(deployer);
   brokerbotRegistry = await ethers.getContract("BrokerbotRegistry")
-  brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shares.address);
+  await brokerbotRegistry.connect(ds).registerBrokerbot(address, baseCurrencyContract, shares.address);
 
   // auto verify on etherscan
   if (network.name != "hardhat") {

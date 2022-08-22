@@ -85,8 +85,8 @@ module.exports = {
       live: true,
       saveDeployments: true,
       tags: ["staging"],
-      gasPrice: 5000000000,
-      gasMultiplier: 2,
+      gasPrice: 1000000000,
+      gasMultiplier: 1
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
