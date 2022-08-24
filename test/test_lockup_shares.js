@@ -9,13 +9,13 @@ describe("Lockup Shares", () => {
   let draggable;
   let shares;
   let recoveryHub;
-  let baseCurrency;
   let offerFactory;
+  let baseCurrency
   let lockupFactory;
   let lockupSharesMaster;
 
   let deployer
-  let owner;
+  let company;
   let treasury
   let sig1;
   let sig2;
@@ -27,7 +27,7 @@ describe("Lockup Shares", () => {
   let oracle;
 
   let chance;
-
+  let offer;
 
   const salts = [
     ethers.utils.formatBytes32String('1'),
@@ -36,13 +36,12 @@ describe("Lockup Shares", () => {
     ethers.utils.formatBytes32String('4'),
     ethers.utils.formatBytes32String('5')]
 
-
   before(async () => {
     // get signers and accounts of them
-    [deployer,owner,treasury, sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
-    signers = [owner,treasury, sig1,sig2,sig3,sig4,sig5];
-    accounts = [owner.address, treasury, sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
-    oracle = owner;
+    [deployer,company,treasury, sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
+    signers = [company,treasury, sig1,sig2,sig3,sig4,sig5];
+    accounts = [company.address, treasury.address, sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
+    oracle = company;
     chance = new Chance();
 
     // deploy contracts
@@ -62,14 +61,23 @@ describe("Lockup Shares", () => {
     lockupSharesMaster = await ethers.getContract("LockupSharesMaster");
     lockupFactory = await ethers.getContract("LockupFactory");
 
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
     
     //Mint shares to treasury
-      //await shares.connect(owner).mint(accounts[i], 1000000);
-      await shares.connect(owner).mintAndCall(treasury.address, draggable.address, 100000, 0x0);
+      //await shares.connect(company).mint(accounts[i], 1000000);
+      await shares.connect(company).mintAndCall(treasury.address, draggable.address, 100000, 0x0);
     
-    // Convert some Shares to DraggableShares
-    //await shares.connect().approve(draggable.address, config.infiniteAllowance);
-    //await draggable.connect(signers[i]).wrap(accounts[i], 900000);
+    // make offer
+    let pricePerShare = ethers.utils.parseEther("2");
+    let salt = ethers.utils.formatBytes32String('1');
+    const overrides = {
+      value: ethers.utils.parseEther("5.0")
+    }
+    await draggable.connect(sig2).makeAcquisitionOffer(salt, pricePerShare, config.baseCurrencyAddress, overrides)
+    offer = await ethers.getContractAt("Offer", await draggable.offer());
+
+    await baseCurrency.connect(sig2).approve(offer.address, config.infiniteAllowance);
   
 
   });
@@ -89,7 +97,7 @@ describe("Lockup Shares", () => {
       const lockupSharesAddress = await lockupFactory.predict(salts[0]);
       expect(lockupSharesAddress).to.exist;
 
-      const tx1 = await lockupFactory.create(sig1.address, owner.address, draggable.address, 1, salts[0]);
+      const tx1 = await lockupFactory.create(sig1.address, company.address, draggable.address, 1, salts[0]);
       const { gasUsed: createGasUsed, events } = await tx1.wait();
       const { address } = events.find(Boolean);
       // log gas usage
@@ -101,12 +109,12 @@ describe("Lockup Shares", () => {
       lockupShareClone = await ethers.getContractAt("LockupShares",address);
 
       // initialize is already called with create and should revert
-      await expect(lockupShareClone.initialize(sig1.address, owner.address, draggable.address, 1)).to.be
+      await expect(lockupShareClone.initialize(sig1.address, company.address, draggable.address, 1)).to.be
           .revertedWith("already initialized");
     });
 
     it("Should create unique contract storage for clone", async () => {
-      const tx2 = await lockupFactory.create(sig2.address, owner.address, draggable.address, 1, salts[1]);
+      const tx2 = await lockupFactory.create(sig2.address, company.address, draggable.address, 1, salts[1]);
       const { events } = await tx2.wait();
       const { address } = events.find(Boolean);
       lockupShareClone2 = await ethers.getContractAt("LockupShares",address);
@@ -119,7 +127,7 @@ describe("Lockup Shares", () => {
     let lockupClone;
     beforeEach(async() => {
       const salt = ethers.utils.formatBytes32String(Date.now().toString());
-      const tx = await lockupFactory.create(sig1.address, owner.address, draggable.address, 84600, salt);
+      const tx = await lockupFactory.create(sig1.address, company.address, draggable.address, 84600, salt);
       const { events } = await tx.wait();
       const { address } = events.find(Boolean);
       lockupClone = await ethers.getContractAt("LockupShares",address);
@@ -131,16 +139,16 @@ describe("Lockup Shares", () => {
     });
 
     it("Should not be able to withdraw shares", async() => {
-      await expect(lockupClone.connect(sig2).withdrawShares(draggable.address, sig2.address, 10))
+      await expect(lockupClone.connect(sig2).withdraw(draggable.address, sig2.address, 10))
         .to.be.revertedWith("not owner");
-      await expect(lockupClone.connect(sig1).withdrawShares(draggable.address, sig1.address, 10))
+      await expect(lockupClone.connect(sig1).withdraw(draggable.address, sig1.address, 10))
         .to.be.revertedWith("Lockup");
     });
 
     it("Should be able to clawback if company", async() => {
-      const balanceBefore = await draggable.balanceOf(owner.address);
-      await lockupClone.connect(owner).clawback(owner.address, 10);
-      const balanceAfter = await draggable.balanceOf(owner.address);
+      const balanceBefore = await draggable.balanceOf(company.address);
+      await lockupClone.connect(company).clawback(company.address, 10);
+      const balanceAfter = await draggable.balanceOf(company.address);
       expect(balanceBefore.add(10)).to.be.equal(balanceAfter);
     });
 
@@ -150,22 +158,81 @@ describe("Lockup Shares", () => {
 
       const blockTimestamp = await (await ethers.provider.getBlock()).timestamp
       
-      await expect(lockupClone.connect(owner).changeLockup(0))
+      await expect(lockupClone.connect(company).changeLockup(0))
         .to.emit(lockupClone, "LockupUpdated");
 
       const balanceBefore = await draggable.balanceOf(sig1.address);
-      await lockupClone.connect(sig1).withdrawShares(draggable.address, sig1.address, 10)
+      await lockupClone.connect(sig1).withdraw(draggable.address, sig1.address, 10)
       const balanceAfter = await draggable.balanceOf(sig1.address);
       expect(balanceBefore.add(10)).to.be.equal(balanceAfter);
       
     });
 
-    it("Should be possible to vote on the draggable", async()=>{
+    it("Should be possible to vote on the draggable offer", async() => {
+      await expect(lockupClone.connect(sig2).vote(true))
+        .to.revertedWith("not owner");
 
+      // FLAG_VOTED = 1
+      expect(await draggable.hasFlag(lockupClone.address, 1)).to.equal(false);
+      expect(await offer.hasVotedYes(lockupClone.address)).to.be.false;
+      expect(await offer.hasVotedNo(lockupClone.address)).to.be.false;
+
+      // Change to no vote
+      await lockupClone.connect(sig1).vote(false);
+      expect(await draggable.hasFlag(lockupClone.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(lockupClone.address)).to.be.false;
+      expect(await offer.hasVotedNo(lockupClone.address)).to.be.true;
+
+      // Change back to yes vote
+      await lockupClone.connect(sig1).vote(true);
+      expect(await draggable.hasFlag(lockupClone.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(lockupClone.address)).to.be.true;
+      expect(await offer.hasVotedNo(lockupClone.address)).to.be.false;
     });
 
-    it("Should be possible to unwrap after acquisition", async() => {
+    it.only("Should be possible to unwrap after acquisition", async() => {
+      const balanceBefore = await lockupClone.balance();
+      console.log(balanceBefore.toString())
+      // move to after voting deadline (60days)
+      await lockupClone.connect(sig1).vote(true);
+      const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
+      await ethers.provider.send("evm_increaseTime", [votePeriod]);
+      await ethers.provider.send("evm_mine");
+      expect(await offer.isDeclined()).to.be.false;
+      // execute
+      await offer.connect(sig2).execute();
+      // check unwrap
+      await lockupClone.connect(company).unwrap(false)
+      const balanceBaseCurrency = await baseCurrency.balanceOf(lockupClone.address);
+      const unwrapConversionFactor = await draggable.unwrapConversionFactor();
+      console.log(unwrapConversionFactor.toString());
+      console.log(balanceBaseCurrency.toString());
+      expect(balanceBefore.mul(unwrapConversionFactor)).to.be.equal(balanceBaseCurrency);
+    });
 
+    //ERC20
+    it("Should get decimals, name and symbol corrcet", async() => {
+      // decimals
+      expect(await lockupClone.decimals()).to.be.equal(0);
+      // symbol
+      expect(await lockupClone.symbol()).to.be.equal("l" + await draggable.symbol())
+      // name
+      expect(await lockupClone.name()).to.be.equal("locked " + await draggable.name())
+    });
+
+    it("Should not be possible to transfer locked tokens", async() => {
+      // approve reverts
+      await expect(lockupClone.connect(sig1).approve(sig2.address, 100))
+        .to.revertedWith("Locked tockens can't be transfered")
+      // allowance reverts
+      await expect(lockupClone.connect(sig1).allowance(sig2.address, sig1.address))
+        .to.revertedWith("Locked tockens can't be transfered")
+      // transfer reverts
+      await expect(lockupClone.connect(sig1).transfer(sig2.address, 100))
+        .to.revertedWith("Locked tockens can't be transfered")
+      // transferFrom reverts
+      await expect(lockupClone.connect(sig1).transferFrom(sig2.address, sig1.address, 100))
+        .to.revertedWith("Locked tockens can't be transfered")
     });
 
   });
