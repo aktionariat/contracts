@@ -68,7 +68,7 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 	 * Allow the withdrawal of any token deposited in this contract.
 	 * For the vested token, Lockup and vesting need to be respected.
 	 */
-	function withdrawShares(IERC20 ercAddress, address to, uint256 amount) external onlyOwner {
+	function withdraw(IERC20 ercAddress, address to, uint256 amount) external onlyOwner {
 		if (ercAddress == token) {
 			require(block.timestamp >= lockupEnd, "Lockup");
 		}
@@ -97,8 +97,7 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 	 * for acquisitions. If it is set, the vesting and Lockup will continue
 	 * to apply for the new unwrapped token.
 	 */
-	function unwrap(bool keepRestrictions) external {
-		require(msg.sender == company);
+	function unwrap(bool keepRestrictions) external onlyCompany {
 		uint256 startBalance = balance();
 		IDraggable draggable = IDraggable(address(token));
 		draggable.unwrap(startBalance);
