@@ -37,23 +37,23 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 
 	constructor() Ownable(address(0)) {}
 
-	function initialize(address beneficiary, address _company, IERC20 _token, uint256 LockupPeriod) external initializer {
-		owner = beneficiary;
+	function initialize(address _beneficiary, address _company, IERC20 _token, uint256 _lockupPeriod) external initializer {
+		owner = _beneficiary;
 		company = _company;
 		token = _token;
-		lockupEnd = block.timestamp + LockupPeriod;
-		emit LockupCreated(_token, beneficiary, lockupEnd);
+		lockupEnd = block.timestamp + _lockupPeriod;
+		emit LockupCreated(_token, _beneficiary, lockupEnd);
 	}
 
 	/**
 	 * Allows the company to claw back some shares that have not vested yet.
 	 */
 	function clawback(address target, uint256 amount) external onlyCompany {
-		token.transfer(target, amount);
+		require(token.transfer(target, amount), "clawback failed");
 	}
 
-	function changeLockup(uint256 LockupPeriod) external onlyCompany {
-		lockupEnd = block.timestamp + LockupPeriod;
+	function changeLockup(uint256 lockupPeriod) external onlyCompany {
+		lockupEnd = block.timestamp + lockupPeriod;
 		emit LockupUpdated(token, owner, lockupEnd);
 	}
 
@@ -72,14 +72,14 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 		if (ercAddress == token) {
 			require(block.timestamp >= lockupEnd, "Lockup");
 		}
-		ercAddress.transfer(to, amount);
+		require(ercAddress.transfer(to, amount), "withdraw failed");
 	}
 
 	/**
 	 * Deposit more tokens for which vesting applies.
 	 */
 	function onTokenTransfer(address, uint256 amount, bytes calldata) external override returns (bool) {
-		require(msg.sender == address(token));
+		require(msg.sender == address(token), "Wrong token sent");
 		emit LockupToken(token, msg.sender, amount);
 		return true;
 	}
@@ -98,14 +98,13 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 	 * to apply for the new unwrapped token.
 	 */
 	function unwrap(bool keepRestrictions) external onlyCompany {
-		uint256 startBalance = balance();
 		IDraggable draggable = IDraggable(address(token));
-		draggable.unwrap(startBalance);
 		if (keepRestrictions) {
 			token = IERC20(draggable.wrapped());
 		} else {
 			// owner is now free to withdraw the new token
 		}
+		draggable.unwrap(balance());
 	}
 
 	/**
@@ -142,18 +141,18 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
     }
 
 	function transfer(address, uint256) external pure override returns (bool) {
-        revert("Locked tockens can't be transfered");
+        revert("Locked tockens can't be transferred");
     }
 
 	function allowance(address, address) external pure override returns (uint256) {
-        revert("Locked tockens can't be transfered");
+        revert("Locked tockens can't be transferred");
     }
 
 	function approve(address, uint256) external pure override returns (bool) {
-        revert("Locked tockens can't be transfered");
+        revert("Locked tockens can't be transferred");
     }
 
 	function transferFrom(address, address, uint256)  external pure override returns (bool) {
-        revert("Locked tockens can't be transfered");
+        revert("Locked tockens can't be transferred");
     }
 }

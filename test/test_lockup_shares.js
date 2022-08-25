@@ -220,16 +220,16 @@ describe("Lockup Shares", () => {
     it("Should not be possible to transfer locked tokens", async() => {
       // approve reverts
       await expect(lockupClone.connect(sig1).approve(sig2.address, 100))
-        .to.revertedWith("Locked tockens can't be transfered")
+        .to.revertedWith("Locked tockens can't be transferred")
       // allowance reverts
       await expect(lockupClone.connect(sig1).allowance(sig2.address, sig1.address))
-        .to.revertedWith("Locked tockens can't be transfered")
+        .to.revertedWith("Locked tockens can't be transferred")
       // transfer reverts
       await expect(lockupClone.connect(sig1).transfer(sig2.address, 100))
-        .to.revertedWith("Locked tockens can't be transfered")
+        .to.revertedWith("Locked tockens can't be transferred")
       // transferFrom reverts
       await expect(lockupClone.connect(sig1).transferFrom(sig2.address, sig1.address, 100))
-        .to.revertedWith("Locked tockens can't be transfered")
+        .to.revertedWith("Locked tockens can't be transferred")
     });
 
   });
