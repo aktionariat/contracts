@@ -192,7 +192,6 @@ describe("Lockup Shares", () => {
 
     it.only("Should be possible to unwrap after acquisition", async() => {
       const balanceBefore = await lockupClone.balance();
-      console.log(balanceBefore.toString())
       // move to after voting deadline (60days)
       await lockupClone.connect(sig1).vote(true);
       const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
@@ -205,8 +204,6 @@ describe("Lockup Shares", () => {
       await lockupClone.connect(company).unwrap(false)
       const balanceBaseCurrency = await baseCurrency.balanceOf(lockupClone.address);
       const unwrapConversionFactor = await draggable.unwrapConversionFactor();
-      console.log(unwrapConversionFactor.toString());
-      console.log(balanceBaseCurrency.toString());
       expect(balanceBefore.mul(unwrapConversionFactor)).to.be.equal(balanceBaseCurrency);
     });
 
