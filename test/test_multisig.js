@@ -25,6 +25,9 @@ describe("Multisig", () => {
       ethers.utils.formatBytes32String('2'),
       ethers.utils.formatBytes32String('3')]
 
+  const lowerRealV = 27;
+  const chain_id_inc = 35;
+
   before(async () => {
     [owner,adr1,adr2,adr3,adr4] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
@@ -146,15 +149,19 @@ describe("Multisig", () => {
     await wallet.sendTransaction(tx_send);
     const msBlanceBefore = await ethers.provider.getBalance(address);
     console.log("multisig balance: %s", msBlanceBefore);
-    const seq = 2
+    const seq = "0x0114"
+    const chainid = '0x01';
+    console.log("chainid: %s", chainid);
     const tx_send_ms = {
       nonce: seq,
       gasPrice: await multiSig.connect(wallet).contractId(),
       gasLimit: 21000,
       to: wallet.address,
+      from: wallet.address,
       value: ethers.utils.parseEther("0.5"),
       //data: 0x0,
-      chainId: 1
+      chainId: 1,
+      //type: 0x01
     };
     const flatSig = await wallet.signTransaction(tx_send_ms);
     //console.log(await ethers.utils.parseTransaction(flatSig));
@@ -169,7 +176,10 @@ describe("Multisig", () => {
     const nonce = ethers.provider.getTransactionCount(wallet.address,"latest");
     console.log(await multiSig.signers(wallet.address));
     console.log(wallet.address);
-    const found = await multiSig.verifySignatures(tx1.hash, [28], [tx1.r], [tx1.s]);
+    const vEIP155 = ethers.BigNumber.from(tx1.v).sub(lowerRealV).add(chainid*2).add(chain_id_inc);
+    console.log(vEIP155);
+    console.log(ethers.utils.formatBytes32String(tx1.r));
+    const found = await multiSig.verifySignatures(tx1.hash, [vEIP155], [tx1.r], [tx1.s]);
     console.log(found);
     await multiSig.execute(seq, wallet.address, ethers.utils.parseEther("0.5"), tx1.data, [28], [tx1.r], [tx1.s]);
     //await multiSig.execute(nonce, owner.address, ethers.utils.parseEther("0.5"), [], [sig.v], [sig.r], [sig.s]);
