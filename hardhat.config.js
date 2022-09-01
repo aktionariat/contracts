@@ -54,7 +54,8 @@ module.exports = {
       },
       live: false,
       saveDeployments: true,
-      chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      chainId: 1, // 1 for forking mainnet test
       tags: ["test", "local"],
     },
     ropsten: {

@@ -23,7 +23,8 @@ describe("Multisig", () => {
   const salts = [
       ethers.utils.formatBytes32String('1'),
       ethers.utils.formatBytes32String('2'),
-      ethers.utils.formatBytes32String('3')]
+      ethers.utils.formatBytes32String('3'),
+      ethers.utils.formatBytes32String('4')]
 
   const lowerRealV = 27;
   const chain_id_inc = 35;
@@ -97,42 +98,42 @@ describe("Multisig", () => {
         .withArgs(owner.address, value);
   });
 
-  it.skip("Should execute", async () => {
-    const msBlanceBefore = await ethers.provider.getBalance(multiSigClone.address);
-    console.log("multisig balance: %s", msBlanceBefore);
-    const seq = 1000
-    const tx_send_ms = {
-      from: multiSigClone.address,
-      to: owner.address,
-      value: ethers.utils.parseEther("0.5"),
-      gasPrice: await multiSigClone.connect(owner).contractId(),
-      gasLimit: 21000,
-      nonce: seq
-      //nonce: await ethers.provider.getTransactionCount(
-        //  owner.address,
-          //"latest"
-    //  )
-      };
-    const signedTx = await owner.signTransaction(tx_send_ms);
-    const signerVars = await ethers.utils.splitSignature(signedTx);
-    console.log("signature v: %s", signerVars.v);
-    console.log("signature r: %s", signerVars.r);
-    console.log("signature s: %s", signerVars.s);
-    await expect(multiSigClone.checkExecution(owner.address, ethers.utils.parseEther("0.5"), [])).to.be.
-    revertedWith("Test passed. Reverting.");
+  it("Should check signatures successful", async () => {
+    const wallet =  ethers.Wallet.createRandom().connect(ethers.provider);
+    const tx = await multiSigCloneFactory.create(wallet.address, salts[2]);
+    const { gasUsed: createGasUsed, events } = await tx.wait();
+    const { address } = events.find(Boolean);
+    const multiSig = await ethers.getContractAt("MultiSigWalletV2",address);
 
-    const found = await multiSigClone.checkSignatures(seq, owner.address, ethers.utils.parseEther("0.5"), 0x0);
-    console.log(found);
+    // tx info
+    const net = await ethers.provider.getNetwork();
+    const chainid = net.chainId;
+    const valueTx = ethers.utils.parseEther("0.5")
+    for (let seq = 0; seq < 260; seq++) {
+      const tx_send_ms = {
+        nonce: seq,
+        gasPrice: await multiSig.connect(wallet).contractId(),
+        gasLimit: 21000,
+        to: wallet.address,
+        value: valueTx,
+        data: 0x0,
+        chainId: chainid,
+      };
+      const flatSig = await wallet.signTransaction(tx_send_ms);
+      const tx1 = ethers.utils.parseTransaction(flatSig);
+      // console.log(tx1);
+      const found = await multiSig.checkSignatures(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]);
+      expect(found[0]).to.be.equal(wallet.address);
+    }
+   
   });
 
-  // is tested via java-backend
   it("Should execute ETH transfer", async () => {
-    const wallet = await ethers.Wallet.createRandom().connect(ethers.provider);
-    //await wallet.connect(ethers.provider);
+    const wallet = ethers.Wallet.createRandom().connect(ethers.provider);
     await owner.sendTransaction({
       to: wallet.address,
       value: ethers.utils.parseEther("2")});
-    const tx = await multiSigCloneFactory.create(wallet.address, salts[2]);
+    const tx = await multiSigCloneFactory.create(wallet.address, salts[3]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
     const multiSig = await ethers.getContractAt("MultiSigWalletV2",address);
@@ -148,43 +149,27 @@ describe("Multisig", () => {
       )};
     await wallet.sendTransaction(tx_send);
     const msBlanceBefore = await ethers.provider.getBalance(address);
-    console.log("multisig balance: %s", msBlanceBefore);
-    const seq = "0x0114"
-    const chainid = '0x01';
-    console.log("chainid: %s", chainid);
+    //console.log("multisig balance: %s", msBlanceBefore);
+    const seq = 1;
+    const net = await ethers.provider.getNetwork();
+    const chainid = net.chainId;
+    const valueTx = ethers.utils.parseEther("0.5")
     const tx_send_ms = {
       nonce: seq,
       gasPrice: await multiSig.connect(wallet).contractId(),
       gasLimit: 21000,
       to: wallet.address,
-      from: wallet.address,
-      value: ethers.utils.parseEther("0.5"),
-      //data: 0x0,
-      chainId: 1,
-      //type: 0x01
+      value: valueTx,
+      data: 0x0,
+      chainId: chainid,
     };
     const flatSig = await wallet.signTransaction(tx_send_ms);
-    //console.log(await ethers.utils.parseTransaction(flatSig));
     const tx1 = ethers.utils.parseTransaction(flatSig);
-    //const flatSig1 = await owner.signMessage("");
-    console.log(flatSig);
-    console.log(tx1);
-    //console.log(flatSig1);
-    //const sig = ethers.utils.splitSignature(flatSig);
-    await expect(multiSig.checkExecution(wallet.address, ethers.utils.parseEther("0.5"), [])).to.be.
-    revertedWith("Test passed. Reverting.");
-    const nonce = ethers.provider.getTransactionCount(wallet.address,"latest");
-    console.log(await multiSig.signers(wallet.address));
-    console.log(wallet.address);
-    const vEIP155 = ethers.BigNumber.from(tx1.v).sub(lowerRealV).add(chainid*2).add(chain_id_inc);
-    console.log(vEIP155);
-    console.log(ethers.utils.formatBytes32String(tx1.r));
-    const found = await multiSig.verifySignatures(tx1.hash, [vEIP155], [tx1.r], [tx1.s]);
-    console.log(found);
-    await multiSig.execute(seq, wallet.address, ethers.utils.parseEther("0.5"), tx1.data, [28], [tx1.r], [tx1.s]);
-    //await multiSig.execute(nonce, owner.address, ethers.utils.parseEther("0.5"), [], [sig.v], [sig.r], [sig.s]);
+    // console.log(tx1);
+    await multiSig.execute(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]);
     const msBlanceAfter = await ethers.provider.getBalance(address);
-    console.log("multisig balance after: %s", msBlanceAfter);
+    //console.log("multisig balance after: %s", msBlanceAfter);
+    expect(msBlanceBefore.sub(valueTx)).to.be.equal(msBlanceAfter);
   });
 
 
