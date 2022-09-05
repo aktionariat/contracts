@@ -54,7 +54,8 @@ module.exports = {
       },
       live: false,
       saveDeployments: true,
-      chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      chainId: 1, // 1 for forking mainnet test
       tags: ["test", "local"],
     },
     ropsten: {
@@ -160,7 +161,7 @@ module.exports = {
     },
     owner: {
       default: 1,
-      1: process.env.MULTISIG_DEPLOY, // mainnet
+      //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
