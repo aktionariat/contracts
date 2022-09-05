@@ -3,6 +3,7 @@ const config = require("../scripts/deploy_config.js");
 const { sendEther } = require("./helper/index");
 const { use, expect } = require("chai");
 const { solidity } = require("ethereum-waffle");
+require("dotenv").config();
 
 use(solidity);
 
@@ -172,7 +173,26 @@ describe("Multisig", () => {
     expect(msBlanceBefore.sub(valueTx)).to.be.equal(msBlanceAfter);
   });
 
-
+  it("Should execute setSigner called from multisig", async () => {
+    const dataTX = await multiSigClone.populateTransaction.setSigner(adr2.address, 2);
+    const seq = 1;
+    const net = await ethers.provider.getNetwork();
+    const chainid = net.chainId;
+    const tx_send_ms = {
+      nonce: seq,
+      gasPrice: await multiSigClone.connect(owner).contractId(),
+      gasLimit: 21000,
+      to: multiSigClone.address,
+      data: dataTX.data,
+      chainId: chainid,
+    };
+    const mnemonic = process.env.MNEMONIC;
+    const ownerWallet = ethers.Wallet.fromMnemonic(mnemonic).connect(ethers.provider);
+    const flatSig = await ownerWallet.signTransaction(tx_send_ms);
+    const tx1 = ethers.utils.parseTransaction(flatSig);
+    await multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]);
+    expect(await multiSigClone.signers(adr2.address)).to.be.equal(2);
+  });
 
   describe("RLPEncode", () => {
     // skipped: needs public encode methed in multisig contract
