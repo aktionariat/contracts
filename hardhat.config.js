@@ -161,7 +161,7 @@ module.exports = {
     },
     owner: {
       default: 1,
-      1: process.env.MULTISIG_DEPLOY, // mainnet
+      //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
