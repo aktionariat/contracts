@@ -21,13 +21,28 @@ import "../utils/Initializable.sol";
 /// @title Lockup Shares
 /// @notice Contract with a strict lock up. Lockup shares can be taken back by the company. No shares can be withdrawn until the lock up ended. After the end of the Lockup, the shares can be withdrawn.
 contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
+    /// @return The company address that locks the tokens.
 	address public company;
+    /// @return The token address of the locked up tokens.
 	IERC20 public token;
-
+    /// @return The timestamp at which the lockup period ends.
 	uint256 public lockupEnd;
 
-	event LockupCreated(IERC20 indexed token, address indexed beneficiary, uint256 lockupEnd);
+    /// @notice Emitted when new lockup contract is created.
+    /// @param token The token that is locked up in the contract.
+    /// @param beneficiary The beneficiary address of the contract.
+    /// @param company The company address of the contract.
+    /// @param lockupEnd The time when the lockup ends.
+	event LockupCreated(IERC20 indexed token, address indexed beneficiary, address indexed company, uint256 lockupEnd);
+    /// @notice Emitted when the lockup time gets updated.
+    /// @param token The token that is locked up in the contract.
+    /// @param beneficiary The beneficiary of the contract.
+    /// @param lockupEnd The time when the lockup ends.
 	event LockupUpdated(IERC20 indexed token, address indexed beneficiary, uint256 lockupEnd);
+    /// @notice Emitted when new tokens get transfered into the lockup.
+    /// @param token The token that is locked up in the contract.
+    /// @param beneficiary The beneficiary of the contract.
+    /// @param amount The amount of tokens that get locked up.
 	event LockupToken(IERC20 indexed token, address indexed beneficiary, uint256 amount);
 
 	modifier onlyCompany() {
@@ -42,32 +57,34 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 		company = _company;
 		token = _token;
 		lockupEnd = block.timestamp + _lockupPeriod;
-		emit LockupCreated(_token, _beneficiary, lockupEnd);
+		emit LockupCreated(_token, _beneficiary, _company, lockupEnd);
 	}
 
-	/**
-	 * Allows the company to claw back some shares that have not vested yet.
-	 */
+	/// @notice Allows the company to claw back some shares that have not vested yet.
+    /// @param target Address where to claw back the tokens to.
+    /// @param amount How many tokens to claw back.
 	function clawback(address target, uint256 amount) external onlyCompany {
 		require(token.transfer(target, amount), "clawback failed");
 	}
 
+    /// @notice Changes the lockup period of this contract.
+    /// @param lockupPeriod The period the withdrawl is locked from the current block time.
 	function changeLockup(uint256 lockupPeriod) external onlyCompany {
 		lockupEnd = block.timestamp + lockupPeriod;
 		emit LockupUpdated(token, owner, lockupEnd);
 	}
 
-	/**
-	 * The number of tokens currently residing on this contract.
-	 */
+	/// @notice The number of tokens currently residing on this contract.
+    /// @return The token balance that is locked up in this contract.
 	function balance() public view returns (uint256) {
 		return token.balanceOf(address(this));
 	}
 
-	/**
-	 * Allow the withdrawal of any token deposited in this contract.
-	 * For the vested token, Lockup and vesting need to be respected.
-	 */
+	/// @notice Allow the withdrawal of any token deposited in this contract.
+	/// @dev For locked up tokens the lockup period needs to be respected.
+    /// @param ercAddress The erc20 token address.
+    /// @param to The addresse where to withdraw the tokens to.
+    /// @param amount The amount of tokens to withdraw.
 	function withdraw(IERC20 ercAddress, address to, uint256 amount) external onlyOwner {
 		if (ercAddress == token) {
 			require(block.timestamp >= lockupEnd, "Lockup");
@@ -75,28 +92,23 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 		require(ercAddress.transfer(to, amount), "withdraw failed");
 	}
 
-	/**
-	 * Deposit more tokens for which vesting applies.
-	 */
+	/// @notice Deposit more tokens for which lockup applies.
+	/// @param amount The amount of tokens that gets added.
+    /// @return true if transfer was successful.
 	function onTokenTransfer(address, uint256 amount, bytes calldata) external override returns (bool) {
 		require(msg.sender == address(token), "Wrong token sent");
 		emit LockupToken(token, msg.sender, amount);
 		return true;
 	}
 
-	/**
-	 * Protect deposited tokens from false recovery claims.
-	 */
+	/// @dev Protect deposited tokens from false recovery claims.
 	function protect() external onlyOwner {
 		IRecoveryHub(IRecoverable(address(token)).recovery()).clearClaimFromUser(IRecoverable(address(this)));
 	}
 
-	/**
-	 * Unwrap draggable shares after a migration of acquisition.
-	 * Typically, keepRestriction should be true for migrations and false
-	 * for acquisitions. If it is set, the vesting and Lockup will continue
-	 * to apply for the new unwrapped token.
-	 */
+	/// @notice Unwrap draggable shares after a migration of acquisition. 
+    /// @dev Typically, keepRestriction should be true for migrations and false for acquisitions. If it is set, the lockup will continue to apply for the new unwrapped token.
+    /// @param keepRestrictions Takes over restrictions to migrated token.
 	function unwrap(bool keepRestrictions) external onlyCompany {
 		IDraggable draggable = IDraggable(address(token));
 		if (keepRestrictions) {
@@ -107,9 +119,8 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 		draggable.unwrap(balance());
 	}
 
-	/**
-	 * Vote in the draggable contract.
-	 */
+	/// @notice Vote in the draggable contract.
+    /// @param yes Indicates if the vote is yes or not.
 	function vote(bool yes) external onlyOwner {
 		IOffer offer = IOffer(IDraggable(address(token)).offer());
 		if (yes) {
