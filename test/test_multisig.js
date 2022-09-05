@@ -69,7 +69,7 @@ describe("Multisig", () => {
     const { events } = await tx2.wait();
     const event = events.find(x => x.event === "ContractCreated");
     const address = event.args[0];
-    multiSigClone2 = await ethers.getContractAt("MultiSigWallet",address);
+    multiSigClone2 = await ethers.getContractAt("MultiSigWalletV2",address);
     expect(await multiSigClone.contractId()).not.to.equal(await multiSigClone2.contractId())
   });
 
