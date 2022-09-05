@@ -65,8 +65,10 @@ describe("Multisig", () => {
 
   it("Should create unique contract id for clone", async () => {
     const tx2 = await multiSigCloneFactory.create(owner.address, salts[1]);
+    console.log(multiSigCloneFactory.address);
     const { events } = await tx2.wait();
-    const { address } = events.find(Boolean);
+    const event = events.find(x => x.event === "ContractCreated");
+    const address = event.args[0];
     multiSigClone2 = await ethers.getContractAt("MultiSigWallet",address);
     expect(await multiSigClone.contractId()).not.to.equal(await multiSigClone2.contractId())
   });

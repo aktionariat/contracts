@@ -99,7 +99,8 @@ describe("Lockup Shares", () => {
 
       const tx1 = await lockupFactory.create(sig1.address, company.address, draggable.address, 1, salts[0]);
       const { gasUsed: createGasUsed, events } = await tx1.wait();
-      const { address } = events.find(Boolean);
+      const event = events.find(x => x.event === "ContractCreated");
+      const address = event.args[0];
       // log gas usage
       // console.log(`lockupFactory.create: ${createGasUsed.toString()}`);
       
@@ -116,7 +117,8 @@ describe("Lockup Shares", () => {
     it("Should create unique contract storage for clone", async () => {
       const tx2 = await lockupFactory.create(sig2.address, company.address, draggable.address, 1, salts[1]);
       const { events } = await tx2.wait();
-      const { address } = events.find(Boolean);
+      const event = events.find(x => x.event === "ContractCreated");
+      const address = event.args[0];
       lockupShareClone2 = await ethers.getContractAt("LockupShares",address);
       expect(await lockupShareClone.address).not.to.equal(await lockupShareClone2.address);
       expect(await lockupShareClone.owner()).not.to.equal(await lockupShareClone2.owner());
@@ -129,7 +131,8 @@ describe("Lockup Shares", () => {
       const salt = ethers.utils.formatBytes32String(Date.now().toString());
       const tx = await lockupFactory.create(sig1.address, company.address, draggable.address, 84600, salt);
       const { events } = await tx.wait();
-      const { address } = events.find(Boolean);
+      const event = events.find(x => x.event === "ContractCreated");
+      const address = event.args[0];
       lockupClone = await ethers.getContractAt("LockupShares",address);
       await draggable.connect(treasury).transfer(lockupClone.address, 10);
     });
@@ -190,7 +193,7 @@ describe("Lockup Shares", () => {
       expect(await offer.hasVotedNo(lockupClone.address)).to.be.false;
     });
 
-    it.only("Should be possible to unwrap after acquisition", async() => {
+    it("Should be possible to unwrap after acquisition", async() => {
       const balanceBefore = await lockupClone.balance();
       // move to after voting deadline (60days)
       await lockupClone.connect(sig1).vote(true);
