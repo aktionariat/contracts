@@ -1,6 +1,6 @@
-const {network, ethers, getNamedAccounts} = require("hardhat");
+const {network, ethers } = require("hardhat");
 const Chance = require("chance");
-const { setBalance, setBalanceWithAmount } = require("./helper/index");
+const { setBalance } = require("./helper/index");
 const { expect } = require("chai");
 
 const config = require("../scripts/deploy_config.js");
@@ -13,6 +13,7 @@ describe("Lockup Shares", () => {
   let baseCurrency
   let lockupFactory;
   let lockupSharesMaster;
+
 
   let deployer
   let company;
@@ -65,8 +66,9 @@ describe("Lockup Shares", () => {
     await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
     
     //Mint shares to treasury
-      //await shares.connect(company).mint(accounts[i], 1000000);
+      await shares.connect(company).mint(treasury.address, 100);
       await shares.connect(company).mintAndCall(treasury.address, draggable.address, 100000, 0x0);
+      await shares.connect(company).mintAndCall(sig2.address, draggable.address, 10, 0x0);
     
     // make offer
     let pricePerShare = ethers.utils.parseEther("2");
@@ -93,6 +95,7 @@ describe("Lockup Shares", () => {
   });
 
   describe("Cloning", () => {
+    let lockupShareClone;
     it("Should deploy a cloned lockup shares contract", async () => {
       const lockupSharesAddress = await lockupFactory.predict(salts[0]);
       expect(lockupSharesAddress).to.exist;
@@ -134,7 +137,7 @@ describe("Lockup Shares", () => {
       const event = events.find(x => x.event === "ContractCreated");
       const address = event.args[0];
       lockupClone = await ethers.getContractAt("LockupShares",address);
-      await draggable.connect(treasury).transfer(lockupClone.address, 10);
+      await draggable.connect(treasury).transferAndCall(lockupClone.address, 10, 0x0);
     });
 
     it("Should have shares locked up", async() => {
@@ -149,6 +152,7 @@ describe("Lockup Shares", () => {
     });
 
     it("Should be able to clawback if company", async() => {
+      await expect(lockupClone.connect(company).clawback(company.address, 1000000)).to.be.reverted;
       const balanceBefore = await draggable.balanceOf(company.address);
       await lockupClone.connect(company).clawback(company.address, 10);
       const balanceAfter = await draggable.balanceOf(company.address);
@@ -164,11 +168,30 @@ describe("Lockup Shares", () => {
       await expect(lockupClone.connect(company).changeLockup(0))
         .to.emit(lockupClone, "LockupUpdated");
 
+      await expect(lockupClone.connect(sig1).withdraw(draggable.address, sig1.address, 100000))
+      .to.be.reverted;
+
       const balanceBefore = await draggable.balanceOf(sig1.address);
       await lockupClone.connect(sig1).withdraw(draggable.address, sig1.address, 10)
       const balanceAfter = await draggable.balanceOf(sig1.address);
       expect(balanceBefore.add(10)).to.be.equal(balanceAfter);
       
+    });
+
+    it("Should be able to protect contract from recover", async() => {
+      // call declare lost for lockup contract 
+      const dBalanceSig2 = await draggable.balanceOf(sig2.address);
+      await draggable.connect(sig2).approve(recoveryHub.address, dBalanceSig2);
+      await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, lockupClone.address)
+      // check if claim got created correctly
+      const claim = await recoveryHub.claims(draggable.address, lockupClone.address);
+      expect(claim.claimant).to.be.equal(sig2.address);
+      // call protect to clear claim
+      await expect(lockupClone.connect(sig2).protect()).to.be.revertedWith("not owner");
+      await lockupClone.connect(sig1).protect();
+      // check if claim got cleared
+      const claim1 = await recoveryHub.claims(draggable.address, lockupClone.address);
+      expect(claim1.claimant).to.be.equal(ethers.constants.AddressZero);
     });
 
     it("Should be possible to vote on the draggable offer", async() => {
@@ -211,13 +234,18 @@ describe("Lockup Shares", () => {
     });
 
     //ERC20
-    it("Should get decimals, name and symbol corrcet", async() => {
+    it("Should get decimals, name, symbol, totalsuplly and balanceOf corrcet", async() => {
       // decimals
       expect(await lockupClone.decimals()).to.be.equal(0);
       // symbol
       expect(await lockupClone.symbol()).to.be.equal("l" + await draggable.symbol())
       // name
       expect(await lockupClone.name()).to.be.equal("locked " + await draggable.name())
+      // total supply
+      expect(await lockupClone.totalSupply()).to.be.equal(await draggable.balanceOf(lockupClone.address));
+      // balance of
+      await expect(lockupClone.balanceOf(sig2.address)).to.be.revertedWith("only beneficiary");
+      expect(await lockupClone.balanceOf(sig1.address)).to.be.equal(await draggable.balanceOf(lockupClone.address));
     });
 
     it("Should not be possible to transfer locked tokens", async() => {
@@ -234,7 +262,6 @@ describe("Lockup Shares", () => {
       await expect(lockupClone.connect(sig1).transferFrom(sig2.address, sig1.address, 100))
         .to.revertedWith("Locked tockens can't be transferred")
     });
-
   });
 
 });
