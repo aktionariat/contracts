@@ -103,7 +103,7 @@ contract LockupShares is Ownable, Initializable, IERC20, IERC677Receiver {
 
 	/// @dev Protect deposited tokens from false recovery claims.
 	function protect() external onlyOwner {
-		IRecoveryHub(IRecoverable(address(token)).recovery()).clearClaimFromUser(IRecoverable(address(this)));
+		IRecoveryHub(IRecoverable(address(token)).recovery()).clearClaimFromUser(IRecoverable(address(token)));
 	}
 
 	/// @notice Unwrap draggable shares after a migration of acquisition. 
