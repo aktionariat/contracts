@@ -1,11 +1,9 @@
 require("dotenv").config();
 
-require("@nomiclabs/hardhat-etherscan");
-require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
-require("solidity-coverage");
+require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-deploy");
-require("@nomiclabs/hardhat-truffle5");
+require("hardhat-deploy-ethers");
+
 require("./tasks");
 
 function getMnemonic(networkName) {

@@ -1,11 +1,8 @@
 const {network, ethers, deployments } = require("hardhat");
 const config = require("../scripts/deploy_config.js");
 const { sendEther } = require("./helper/index");
-const { use, expect } = require("chai");
-const { solidity } = require("ethereum-waffle");
-require("dotenv").config();
+const { expect } = require("chai");
 
-use(solidity);
 
 describe("Multisig", () => {
   let multiSigMaster;
