@@ -1,9 +1,9 @@
 require("dotenv").config();
 
 require("@nomicfoundation/hardhat-toolbox");
-require("@nomicfoundation/hardhat-chai-matchers");
 require("hardhat-deploy");
-require("@nomiclabs/hardhat-truffle5");
+require("hardhat-deploy-ethers");
+
 require("./tasks");
 
 function getMnemonic(networkName) {
