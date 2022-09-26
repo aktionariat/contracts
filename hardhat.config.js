@@ -175,6 +175,15 @@ module.exports = {
       tags: ["staging"],
       deploy: ['deploy_optimism']
     },
+    goerliOptimism: {
+      url: 'https://goerli.optimism.io',
+      accounts: accounts("optimism_goerli"),
+      chainId: 420,
+      live: true,
+      saveDeployments: true,
+      tags: ["staging"],
+      deploy: ['deploy_optimism']
+    },
     optimism: {
         //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
         url: "https://mainnet.optimism.io",
@@ -192,7 +201,8 @@ module.exports = {
       4: 1,
       5: 1,
       42: 1,
-      69: 1
+      69: 1,
+      420: 1
     },
     owner: {
       default: 1,
@@ -203,6 +213,7 @@ module.exports = {
       5: process.env.MULTISIG_DEPLOY, // goerli
       42: process.env.MULTISIG_DEPLOY, // kovan
       69: process.env.MULTISIG_DEPLOY, // optimism kovan
+      420: process.env.MULTISIG_DEPLOY, // optimism goerli
       42161: process.env.MULTISIG_DEPLOY // arb1
     },
     dev: {
@@ -220,6 +231,7 @@ module.exports = {
       5: process.env.MULTISIG_DEFAULT,
       42: process.env.MULTISIG_DEFAULT,
       69: process.env.MULTISIG_DEFAULT,
+      420: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
     }
   },
