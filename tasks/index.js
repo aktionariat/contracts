@@ -1,13 +1,14 @@
 const { task, subtask } = require("hardhat/config");
 const Confirm = require('prompt-confirm');
 const chalk = require('chalk');
+const fs = require('fs-extra');
 const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
 const { getCompanyId, registerMultiSignature, registerToken, registerBrokerbot } = require("../scripts/register-helper");
-
 const { ethers: { constants: { MaxUint256 }}} = require("ethers");
 const { askNetwork, askCompanySymbol, askWhatToRegister, askMultiSigAddress, askTokenAddress, askBrokrebotAddress, askBlockNumber, askBrokerbotAddress } = require("./lib/inquirer");
-const { createDirectory, copyDirectory } = require("./lib/files");
+const {config} = require('./default_config.js');
+const nconf = require('nconf');
 
 task("gas-price", "Prints gas price").setAction(async function({ address }, { ethers }) {
   console.log("Gas price", (await ethers.provider.getGasPrice()).toString())
@@ -72,7 +73,17 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
         console.log(`MultiSig cloned at: ${address}`);
 })
 
-task("initDeploy", "creates files for client deployment").setAction(async ({network}) =>{
+task("initDeploy", "creates files for client deployment").setAction(async (taskArgs, hre) =>{
+    console.log(config);
+    fs.writeFileSync(config.deployConfig, "{}");
+    nconf.add("deploy", {type: "file", file: config.deployConfig});
+    nconf.set("test", "test");
+    nconf.save();
+
+    await hre.run("ttt");
+    fs.unlinkSync(config.deployConfig);
+
+    /*
     let networkName;
     if (network) {
         networkName = network.name;
@@ -80,6 +91,7 @@ task("initDeploy", "creates files for client deployment").setAction(async ({netw
         networkName = await askNetwork();
     }
     const companySymbol = await askCompanySymbol();
+    /*
     let pathTemplate;
     let pathDestination;
     switch (networkName) {
@@ -95,9 +107,11 @@ task("initDeploy", "creates files for client deployment").setAction(async ({netw
             console.error("network not supported");
             process.exit();
     }
-    createDirectory(pathDestination);
-    copyDirectory(pathTemplate, pathDestination);
-    console.log(await files.getCurrentDirectoryBase());
+    */
+})
+
+task("ttt", "test").setAction(async (taskArgs, hre) => {
+    console.log(nconf.stores);
 })
 
 
