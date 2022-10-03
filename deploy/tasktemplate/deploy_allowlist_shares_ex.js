@@ -1,23 +1,23 @@
 const Confirm = require('prompt-confirm');
-const config = require("./deploy_config.json");
+const nconf = require('nconf');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
 
-  const owner = config.multisigAddress;
+  const owner = nconf.get("multisigAddress");
 
   const recoveryHub = await deployments.get("RecoveryHub");
   
-  const symbol = config.symbol;
-  const name = config.name;
-  const terms = config.terms;
-  const totalShares = config.totalShares;
+  const symbol = nconf.get("symbol");
+  const name = nconf.get("name");
+  const terms = nconf.get("terms");
+  const totalShares = nconf.get("totalShares");
 
   if (network.name != "hardhat") {
     console.log("-----------------------")
-    console.log("Deploy Allowlist Shares " + config.symbol)
+    console.log("Deploy Allowlist Shares " + symbol)
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
     console.log("owner: %s", owner)  // don't forget to set it in deploy_config.js as the multsigadr
@@ -31,7 +31,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("AllowlistShares"+config.symbol, {
+  const { address } = await deploy("AllowlistShares"+symbol, {
     contract: "AllowlistShares",
     from: deployer,
     args: [
@@ -45,6 +45,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
+  nconf.set("addres.allowlist.shares", address);
 };
 
 module.exports.tags = ["AllowlistShares"+config.symbol];

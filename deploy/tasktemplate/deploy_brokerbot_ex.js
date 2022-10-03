@@ -1,27 +1,38 @@
 const Confirm = require('prompt-confirm');
-const config = require("./deploy_config.json");
+const nconf = require('nconf');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
 
-  const owner = config.multisigAddress;
-  //const shares = await deployments.get('Shares');
-  const shares = await deployments.get("DraggableShares" + config.symbol);
+  const owner = nconf.get("multisigAddress");
+  
+  let sharesAddress;
+  if(nconf.get("allowlist")){
+    if (nconf.get("draggable")){
+      sharesAddress = nconf.get("address.allowlist.draggable");
+    } else {
+      sharesAddress = nconf.get("address.allowlist.shares");
+    }
+  } else if (nconf.get("draggable")){
+    sharesAddress = nconf.get("address.draggable");
+  } else {
+    sharesAddress = nconf.get("address.shares");
+  }
   const paymentHub = await deployments.get("PaymentHub");
   
-  const price = config.sharePrice;
-  const increment = config.increment;
-  const baseCurrencyContract = config.baseCurrencyAddress;
+  const price = nconf.get("sharePrice");
+  const increment = nconf.get("increment");
+  const baseCurrencyContract = nconf.get("baseCurrencyAddress");
   
   
   if (network.name != "hardhat") {
     console.log("-----------------------");
-    console.log("Deploy Brokerbot " + config.symbol);
+    console.log("Deploy Brokerbot " + nconf.get("symbol"));
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
-    console.log("shares: %s", shares.address);
+    console.log("shares: %s", sharesAddress);
     console.log("paymentHub: %s", paymentHub.address);
     console.log("base xchf: %s", baseCurrencyContract);
     console.log("owner: %s", owner);  // don't forget to set it in deploy_config.js as the multsigadr
@@ -39,7 +50,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     contract: "Brokerbot",
     from: deployer,
     args: [
-      shares.address,
+      sharesAddress,
       price,
       increment,
       baseCurrencyContract,
@@ -49,10 +60,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
+  nconf.sen("address.brokerbot", address);
 
   // register brokerbot at registry
   brokerbotRegistry = await ethers.getContract("BrokerbotRegistry")
-  brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shares.address);
+  brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shareAddress);
 
   // auto verify on etherscan
   if (network.name != "hardhat") {
@@ -64,4 +76,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
 
 module.exports.tags = ["Brokerbot"+config.symbol];
-module.exports.dependencies = ["DraggableShares"+config.symbol, "PaymentHub", "BrokerbotRegistry"];
+module.exports.dependencies = ["PaymentHub", "BrokerbotRegistry"];

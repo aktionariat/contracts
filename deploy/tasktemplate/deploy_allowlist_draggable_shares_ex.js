@@ -1,5 +1,5 @@
 const Confirm = require('prompt-confirm');
-const config = require("./deploy_config.json");
+const nconf = require('nconf');
 
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
@@ -7,18 +7,19 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer } = await getNamedAccounts();
 
-  const owner = config.multisigAddress;
-  const shares = await deployments.get('AllowlistShares'+config.symbol);
+  const owner = nconf.get("multisigAddress");
+  const symbol = nconf.get("symbol");
+  const shares = await deployments.get('AllowlistShares'+symbol);
   const recoveryHub = await deployments.get("RecoveryHub");
   const offerFactory = await deployments.get("OfferFactory");
   
-  const terms = config.terms;
-  const quorumBps = config.quorumBps;
-  const votePeriodSeconds = config.votePeriodSeconds;
+  const terms = nconf.get("terms");
+  const quorumBps = nconf.get("quorumBps");
+  const votePeriodSeconds = nconf.get("votePeriodSeconds");
 
   if (network.name != "hardhat") {
     console.log("-----------------------")
-    console.log("Deploy Allowlist DraggableShares " + config.symbol)
+    console.log("Deploy Allowlist DraggableShares " + symbol)
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
     console.log("shares: %s", shares.address);
@@ -35,7 +36,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("AllowlistDraggableShares"+config.symbol, {
+  const { address } = await deploy("AllowlistDraggableShares"+symbol, {
     contract: "AllowlistDraggableShares",
     from: deployer,
     args: [
@@ -52,7 +53,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     maxFeePerGas: feeData.maxFeePerGas,
     gasLimit: 3000000
   });
+  nconf.set("address.allowlist.draggable");
 };
 
-module.exports.tags = ["AllowlistDraggableShares"+config.symbol];
-module.exports.dependencies = ["RecoveryHub", "OfferFactory", "AllowlistShares"+config.symbol];
+module.exports.tags = ["AllowlistDraggableShares"+nconf.get("symbol")];
+module.exports.dependencies = ["RecoveryHub", "OfferFactory", "AllowlistShares"+nconf.get("symbol")];

@@ -1,24 +1,24 @@
 const Confirm = require('prompt-confirm');
-const config = require("./deploy_config.json");
+const nconf = require('nconf');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
 
-  const owner = config.multisigAddress;
-  
-  const shares = await deployments.get('Shares'+config.symbol);
+  const owner = nconf.get("multisigAddress");
+  const symbol = nconf.get("symbol");
+  const shares = await deployments.get('Shares'+symbol);
   const recoveryHub = await deployments.get("RecoveryHub");
   const offerFactory = await deployments.get("OfferFactory");
   
-  const terms = config.terms;
-  const quorumBps = config.quorumBps;
-  const votePeriodSeconds = config.votePeriodSeconds;
+  const terms = nconf.get("terms");
+  const quorumBps = nconf.get("quorumBps");
+  const votePeriodSeconds = nconf.get("votePeriodSeconds");
   
   if (network.name != "hardhat") {
     console.log("-----------------------");
-    console.log("Deploy DraggableShares " + config.symbol);
+    console.log("Deploy DraggableShares " + symbol);
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
     console.log("shares: %s", shares.address);
@@ -35,7 +35,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("DraggableShares"+config.symbol, {
+  const { address } = await deploy("DraggableShares"+symbol, {
     contract: "DraggableShares",
     from: deployer,
     args: [
@@ -50,7 +50,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
+  nconf.set("address.draggable", address);
 };
 
-module.exports.tags = ["DraggableShares"+config.symbol];
-module.exports.dependencies = ["Shares"+config.symbol, "RecoveryHub", "OfferFactory"];
+module.exports.tags = ["DraggableShares"+nconf.get("symbol")];
+module.exports.dependencies = ["Shares"+nconf.get("symbol"), "RecoveryHub", "OfferFactory"];
