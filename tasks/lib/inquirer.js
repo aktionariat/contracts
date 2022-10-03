@@ -79,10 +79,10 @@ module.exports = {
     },
     {
       name: 'totalNumber',
-      type: 'number',
+      type: 'input',
       message: 'Enter the total number of shares:',
       validate: function( value ) {
-        if (value.length) {
+        if (!isNaN(value)) {
           return true;
         } else {
           return 'Please enter the total number of shares.';
@@ -91,10 +91,10 @@ module.exports = {
     },
     {
       name: 'price',
-      type: 'number',
+      type: 'input',
       message: 'Enter the price per share (in CHF):',
       validate: function( value ) {
-        if (value.length) {
+        if (!isNaN(value)) {
           return true;
         } else {
           return 'Please enter the price per share.';
@@ -103,10 +103,10 @@ module.exports = {
     },
     {
       name: 'increment',
-      type: 'number',
+      type: 'inupt',
       message: 'Enter the increment per share bought (in CHF):',
       validate: function( value ) {
-        if (value.length) {
+        if (!isNaN(value)) {
           return true;
         } else {
           return 'Please enter increment.';
@@ -114,9 +114,36 @@ module.exports = {
       }
     },
     {
+      name: 'quorum',
+      type: 'inupt',
+      message: 'Enter the quorum in %:',
+      default: 75,
+      validate: function( value ) {
+        if (!isNaN(value)) {
+          return true;
+        } else {
+          return 'Please enter quorum.';
+        }
+      }
+    },
+    {
+      name: 'votePeriod',
+      type: 'inupt',
+      message: 'Enter the voting period in days:',
+      default: 60,
+      validate: function( value ) {
+        if (!isNaN(value)) {
+          return true;
+        } else {
+          return 'Please enter voting period.';
+        }
+      }
+    },
+    {
       name: 'allowlist',
       type: 'confirm',
-      message: 'Does the smartcontract needs allowlisting?'
+      message: 'Does the smartcontract needs allowlisting?',
+      default: false,
     },
     {
       name: 'draggable',
@@ -126,6 +153,17 @@ module.exports = {
     
     ]
     return inquirer.prompt(questions);
+  },
+
+  askReviewConfirm: () => {
+    const questions = [
+      {
+        name: 'confirm',
+        type: 'confirm',
+        message: 'Are the values correct?'
+      }
+    ];
+    return inquirer.prompt(questions).then( answer => {return answer.confirm});
   },
 
   // ================================
