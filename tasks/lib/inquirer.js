@@ -79,7 +79,7 @@ module.exports = {
     },
     {
       name: 'totalNumber',
-      type: 'input',
+      type: 'number',
       message: 'Enter the total number of shares:',
       validate: function( value ) {
         if (value.length) {
@@ -91,7 +91,7 @@ module.exports = {
     },
     {
       name: 'price',
-      type: 'input',
+      type: 'number',
       message: 'Enter the price per share (in CHF):',
       validate: function( value ) {
         if (value.length) {
@@ -103,7 +103,7 @@ module.exports = {
     },
     {
       name: 'increment',
-      type: 'input',
+      type: 'number',
       message: 'Enter the increment per share bought (in CHF):',
       validate: function( value ) {
         if (value.length) {
