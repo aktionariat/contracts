@@ -243,19 +243,7 @@ module.exports = {
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
   etherscan: {
-    apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY,
-      ropsten: process.env.ETHERSCAN_API_KEY,
-      rinkeby: process.env.ETHERSCAN_API_KEY,
-      goerli: process.env.ETHERSCAN_API_KEY,
-      kovan: process.env.ETHERSCAN_API_KEY,
-      // optimism
-      optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
-      kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
-      // polygon
-      polygon: process.env.POLYGONSCAN_API_KEY,
-      polygonMumbai: process.env.POLYGONSCAN_API_KEY,
-    }
+    apiKey: process.env.OPTIMISM_ETHERSCAN_API_KEY
   },
   solidity: {
     compilers: [
