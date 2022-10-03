@@ -6,7 +6,7 @@ const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
 const { getCompanyId, registerMultiSignature, registerToken, registerBrokerbot } = require("../scripts/register-helper");
 const { ethers: { constants: { MaxUint256 }}} = require("ethers");
-const { askNetwork, askCompanySymbol, askWhatToRegister, askMultiSigAddress, askTokenAddress, askBrokrebotAddress, askBlockNumber, askBrokerbotAddress } = require("./lib/inquirer");
+const { askNetwork, askCompanySymbol, askWhatToRegister, askMultiSigAddress, askTokenAddress, askBrokrebotAddress, askBlockNumber, askBrokerbotAddress, askDeployConfig } = require("./lib/inquirer");
 const {config} = require('./default_config.js');
 const nconf = require('nconf');
 
@@ -83,14 +83,15 @@ task("initDeploy", "creates files for client deployment").setAction(async (taskA
     await hre.run("ttt");
     fs.unlinkSync(config.deployConfig);
 
-    /*
     let networkName;
-    if (network) {
+    if (network && network.name != "hardhat") {
         networkName = network.name;
     } else {
         networkName = await askNetwork();
     }
-    const companySymbol = await askCompanySymbol();
+    const deployConfig = await askDeployConfig();
+    displayDeployConfig(deployConfig);
+    //const companySymbol = await askCompanySymbol();
     /*
     let pathTemplate;
     let pathDestination;
@@ -244,4 +245,18 @@ function formatAddress (networkName, address) {
             process.exit();
     }
     return formattedAddress;
+}
+
+function displayDeployConfig(deployConfig) {
+    console.log("============================");
+    console.log("====Review Deploy Config ===");
+    console.log("============================");
+    console.log(`Symbol: ${deployConfig.symbol}`);
+    console.log(`Name: ${deployConfig.shareName}`);
+    console.log(`Terms: ${deployConfig.terms}`);
+    console.log(`Number of Shares: ${deployConfig.totalNumber}`);
+    console.log(`Price per Shares: ${deployConfig.price}`);
+    console.log(`Increment: ${deployConfig.increment}`);
+    console.log(`Allowlist: ${deployConfig.allowlist}`);
+    console.log(`Draggable: ${deployConfig.draggable}`);
 }

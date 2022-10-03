@@ -1,6 +1,7 @@
 const inquirer = require('inquirer');
 
 module.exports = {
+  // needed for company id
   askCompanyName: () => {
     const questions = [
       {
@@ -35,6 +36,101 @@ module.exports = {
     ]
     return inquirer.prompt(questions).then((answer) => {return answer.symbol});
   },
+  // ===============================
+  // questions for deployment
+  // ===============================
+  askDeployConfig: () => {
+    const questions = [
+      {
+        name: 'symbol',
+        type: 'input',
+        message: 'Enter the symbol of the shares:',
+        validate: function( value ) {
+          if (value.length) {
+            return true;
+          } else {
+            return 'Please enter the symbol of the shares.';
+          }
+        }
+    },
+    {
+      name: 'shareName',
+      type: 'input',
+      message: 'Enter the name of the base share:',
+      validate: function( value ) {
+        if (value.length) {
+          return true;
+        } else {
+          return 'Please enter the name of the share.';
+        }
+      }
+    },
+    {
+      name: 'terms',
+      type: 'input',
+      message: 'Enter the terms of the shares:',
+      validate: function( value ) {
+        if (value.length) {
+          return true;
+        } else {
+          return 'Please enter the terms of the company.';
+        }
+      }
+    },
+    {
+      name: 'totalNumber',
+      type: 'input',
+      message: 'Enter the total number of shares:',
+      validate: function( value ) {
+        if (value.length) {
+          return true;
+        } else {
+          return 'Please enter the total number of shares.';
+        }
+      }
+    },
+    {
+      name: 'price',
+      type: 'input',
+      message: 'Enter the price per share (in CHF):',
+      validate: function( value ) {
+        if (value.length) {
+          return true;
+        } else {
+          return 'Please enter the price per share.';
+        }
+      }
+    },
+    {
+      name: 'increment',
+      type: 'input',
+      message: 'Enter the increment per share bought (in CHF):',
+      validate: function( value ) {
+        if (value.length) {
+          return true;
+        } else {
+          return 'Please enter increment.';
+        }
+      }
+    },
+    {
+      name: 'allowlist',
+      type: 'confirm',
+      message: 'Does the smartcontract needs allowlisting?'
+    },
+    {
+      name: 'draggable',
+      type: 'confirm',
+      message: 'Does the smartcontract needs to be draggable?'
+    },
+    
+    ]
+    return inquirer.prompt(questions);
+  },
+
+  // ================================
+  // register questions
+  // =================================
   askMultiSigAddress: () => {
     const questions = [
       {
