@@ -6,7 +6,7 @@ const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
 const { getCompanyId, registerMultiSignature, registerToken, registerBrokerbot } = require("../scripts/register-helper");
 const { ethers: { constants: { MaxUint256 }}} = require("ethers");
-const { askNetwork, askCompanySymbol, askWhatToRegister, askMultiSigAddress, askTokenAddress, askBrokrebotAddress, askBlockNumber, askBrokerbotAddress, askDeployConfig } = require("./lib/inquirer");
+const { askReviewConfirm, askNetwork, askCompanySymbol, askWhatToRegister, askMultiSigAddress, askTokenAddress, askBrokrebotAddress, askBlockNumber, askBrokerbotAddress, askDeployConfig } = require("./lib/inquirer");
 const {config} = require('./default_config.js');
 const nconf = require('nconf');
 
@@ -77,20 +77,65 @@ task("initDeploy", "creates files for client deployment").setAction(async (taskA
     console.log(config);
     fs.writeFileSync(config.deployConfig, "{}");
     nconf.add("deploy", {type: "file", file: config.deployConfig});
-    nconf.set("test", "test");
-    nconf.save();
-
-    await hre.run("ttt");
-    fs.unlinkSync(config.deployConfig);
-
+    nconf.set("multisigAddress", "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be");
+    
+    
     let networkName;
     if (network && network.name != "hardhat") {
         networkName = network.name;
     } else {
         networkName = await askNetwork();
     }
-    const deployConfig = await askDeployConfig();
-    displayDeployConfig(deployConfig);
+    nconf.set("network", networkName);
+    /// set basecurrecny - right now only XCHF supported
+    nconf.set("baseCurrencyAddress", networkName == "mainnet" ? config.xchf.mainnet : config.xchf.optimism);
+    // get deployment config parameter
+    let reviewCorrect;
+    let deployConfig
+    do {
+        deployConfig = await askDeployConfig();
+        displayDeployConfig(deployConfig);
+        reviewCorrect = await askReviewConfirm();
+    } while (!reviewCorrect)
+    
+    writeConfig(deployConfig);
+    // deploy shares
+    if ( deployConfig.allowlist ) {
+        await hre.run("deploy", {
+            tags: "AllowlistShares"+deployConfig.symbol,
+            network: networkName
+        });
+    } else {
+        await hre.run("deploy", {
+            tags: "Shares"+deployConfig.symbol,
+            network: networkName
+        });
+    }
+
+    // deploy draggable
+    if ( deployConfig.allowlist ) {
+        await hre.run("deploy", {
+            tags: "AllowlistDraggableShares"+deployConfig.symbol,
+            network: networkName
+        });
+    } else {
+        await hre.run("deploy", {
+            tags: "DraggableShares"+deployConfig.symbol,
+            network: networkName
+        });
+    }
+
+    // deploy brokerbot
+    await hre.run("deploy", {
+        tags: "Brokerbot"+deployConfig.symbol,
+        network: networkName
+    });
+    
+    await hre.run("ttt");
+    await askReviewConfirm()
+    fs.unlinkSync(config.deployConfig);
+
+
     //const companySymbol = await askCompanySymbol();
     /*
     let pathTemplate;
@@ -247,16 +292,33 @@ function formatAddress (networkName, address) {
     return formattedAddress;
 }
 
+function writeConfig(deployConfig) {
+    nconf.set('symbol', deployConfig.symbol);
+    nconf.set('name', deployConfig.shareName);
+    nconf.set('terms', deployConfig.terms);
+    nconf.set('totalShares', deployConfig.totalNumber);
+    nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
+    nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
+    nconf.set('quorumBps', deployConfig.quorum*100);
+    nconf.set('votePeriodSeconds', deployConfig.votePeriod*24*60*60);
+    nconf.set('Allowlist', deployConfig.allowlist);
+    nconf.set('Draggable', deployConfig.draggable);
+    nconf.save();
+}
+
 function displayDeployConfig(deployConfig) {
-    console.log("============================");
-    console.log("====Review Deploy Config ===");
-    console.log("============================");
+    console.log("=============================");
+    console.log("==== Review Deploy Config ===");
+    console.log("=============================");
     console.log(`Symbol: ${deployConfig.symbol}`);
     console.log(`Name: ${deployConfig.shareName}`);
     console.log(`Terms: ${deployConfig.terms}`);
     console.log(`Number of Shares: ${deployConfig.totalNumber}`);
     console.log(`Price per Shares: ${deployConfig.price}`);
     console.log(`Increment: ${deployConfig.increment}`);
+    console.log(`Quorum (%): ${deployConfig.quorum}`);
+    console.log(`Voting Period (days): ${deployConfig.votePeriod}`);
     console.log(`Allowlist: ${deployConfig.allowlist}`);
     console.log(`Draggable: ${deployConfig.draggable}`);
+    console.log("=============================");
 }
