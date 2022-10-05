@@ -5,29 +5,20 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
+  const deployerSigner = await ethers.getSigner(deployer);
 
   const owner = nconf.get("multisigAddress");
-  
-  let sharesAddress;
-  if(nconf.get("allowlist")){
-    if (nconf.get("draggable")){
-      sharesAddress = nconf.get("address.allowlist.draggable");
-    } else {
-      sharesAddress = nconf.get("address.allowlist.shares");
-    }
-  } else if (nconf.get("draggable")){
-    sharesAddress = nconf.get("address.draggable");
-  } else {
-    sharesAddress = nconf.get("address.shares");
-  }
+
+  const sharesAddress = nconf.get("brokerbot:shares")
   const paymentHub = await deployments.get("PaymentHub");
+  nconf.set("address:paymentHub", paymentHub.address);
   
   const price = nconf.get("sharePrice");
   const increment = nconf.get("increment");
   const baseCurrencyContract = nconf.get("baseCurrencyAddress");
   
   
-  if (network.name != "hardhat") {
+  if (network.name != "hardhat"&& !nconf.get("silent")) {
     console.log("-----------------------");
     console.log("Deploy Brokerbot " + nconf.get("symbol"));
     console.log("-----------------------");
@@ -46,7 +37,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("Brokerbot"+config.symbol, {
+  const { address } = await deploy(nconf.get("symbol")+"Brokerbot", {
     contract: "Brokerbot",
     from: deployer,
     args: [
@@ -60,20 +51,19 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
-  nconf.sen("address.brokerbot", address);
-
+  const brokerbotContract = await ethers.getContract(nconf.get("symbol")+"Brokerbot");
+  const version = await brokerbotContract.VERSION();
+  
   // register brokerbot at registry
   brokerbotRegistry = await ethers.getContract("BrokerbotRegistry")
-  brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shareAddress);
-
-  // auto verify on etherscan
-  if (network.name != "hardhat") {
-    await hre.run("etherscan-verify", {
-      license: "None"
-    });
-  }
+  await brokerbotRegistry.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, sharesAddress, { gasLimit: 50000});
+  
+  //set config
+  nconf.set("address:brokerbot", address);
+  nconf.set("address:brokerbotRegistry", brokerbotRegistry.address);
+  nconf.set("version:brokerbot", version);
 };
 
 
-module.exports.tags = ["Brokerbot"+config.symbol];
+module.exports.tags = [nconf.get("symbol")+"Brokerbot"];
 module.exports.dependencies = ["PaymentHub", "BrokerbotRegistry"];

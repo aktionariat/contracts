@@ -1,6 +1,6 @@
 const Confirm = require('prompt-confirm');
-const config = require("./deploy_config.json");
 const nconf = require('nconf');
+const { recoverAddress } = require('ethers/lib/utils');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -10,13 +10,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const owner = nconf.get("multisigAddress");
   
   const recoveryHub = await deployments.get("RecoveryHub");
+  nconf.set("address:recoveryHub", recoveryHub.address);
 
   const symbol = nconf.get("symbol");
   const name = nconf.get("name");
   const terms = nconf.get("terms");
   const totalShares = nconf.get("totalShares");
   
-  if (network.name != "hardhat") {
+  if (network.name != "hardhat" && !nconf.get("silent")) {
     console.log("-----------------------")
     console.log("Deploy Shares "+ symbol)
     console.log("-----------------------")
@@ -33,7 +34,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("Shares"+symbol, {
+  const { address, receipt } = await deploy(symbol+"Shares", {
     contract: "Shares",
     from: deployer,
     args: [
@@ -47,8 +48,15 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
-  nconf.set("address.share", address);
+  const sharesContract = await ethers.getContract(symbol+"Shares");
+  const version = await sharesContract.VERSION();
+
+  // set config 
+  nconf.set("brokerbot:shares", address);
+  nconf.set("address:share", address);
+  nconf.set("blocknumber", receipt.blockNumber);
+  nconf.set("version:shares", version);
 };
 
-module.exports.tags = ["Shares"+nconf.get("symbol")];
+module.exports.tags = [nconf.get("symbol")+"Shares"];
 module.exports.dependencies = ["RecoveryHub"];

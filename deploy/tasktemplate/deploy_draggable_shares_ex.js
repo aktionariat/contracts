@@ -8,15 +8,17 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const owner = nconf.get("multisigAddress");
   const symbol = nconf.get("symbol");
-  const shares = await deployments.get('Shares'+symbol);
+  const shares = await deployments.get(symbol+"Shares");
   const recoveryHub = await deployments.get("RecoveryHub");
   const offerFactory = await deployments.get("OfferFactory");
+  nconf.set("address:recoveryHub", recoveryHub.address);
+  nconf.set("address:offerFactory", offerFactory.address)
   
   const terms = nconf.get("terms");
   const quorumBps = nconf.get("quorumBps");
   const votePeriodSeconds = nconf.get("votePeriodSeconds");
   
-  if (network.name != "hardhat") {
+  if (network.name != "hardhat" && !nconf.get("silent")) {
     console.log("-----------------------");
     console.log("Deploy DraggableShares " + symbol);
     console.log("-----------------------");
@@ -35,7 +37,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("DraggableShares"+symbol, {
+  const { address, receipt } = await deploy(symbol+"DraggableShares", {
     contract: "DraggableShares",
     from: deployer,
     args: [
@@ -50,8 +52,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
-  nconf.set("address.draggable", address);
+
+  // set config
+  nconf.set("brokerbot:shares", address);
+  nconf.set("address:draggable", address);
+  nconf.set("blocknumber", receipt.blockNumber);
 };
 
-module.exports.tags = ["DraggableShares"+nconf.get("symbol")];
-module.exports.dependencies = ["Shares"+nconf.get("symbol"), "RecoveryHub", "OfferFactory"];
+module.exports.tags = [nconf.get("symbol")+"DraggableShares"];
+module.exports.dependencies = [nconf.get("symbol")+"Shares", "RecoveryHub", "OfferFactory"];

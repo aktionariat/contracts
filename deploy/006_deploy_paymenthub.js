@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
 const config = require("../scripts/deploy_config.js");
+const nconf = require('nconf');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -13,7 +14,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
   let prompt;
-  if (network.name != "hardhat") {
+  if (network.name != "hardhat" && !nconf.get("silent")) {
     console.log("-----------------------");
     console.log("Deploy Paymenthub");
     console.log("-----------------------");

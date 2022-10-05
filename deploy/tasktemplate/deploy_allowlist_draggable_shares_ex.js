@@ -9,15 +9,17 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const owner = nconf.get("multisigAddress");
   const symbol = nconf.get("symbol");
-  const shares = await deployments.get('AllowlistShares'+symbol);
+  const shares = await deployments.get(symbol+"AllowlistShares");
   const recoveryHub = await deployments.get("RecoveryHub");
   const offerFactory = await deployments.get("OfferFactory");
+  nconf.set("address:recoveryHub", recoveryHub.address);
+  nconf.set("address:offerFactory", offerFactory.address);
   
   const terms = nconf.get("terms");
   const quorumBps = nconf.get("quorumBps");
   const votePeriodSeconds = nconf.get("votePeriodSeconds");
 
-  if (network.name != "hardhat") {
+  if (network.name != "hardhat" && !nconf.get("silent")) {
     console.log("-----------------------")
     console.log("Deploy Allowlist DraggableShares " + symbol)
     console.log("-----------------------")
@@ -36,7 +38,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("AllowlistDraggableShares"+symbol, {
+  const { address, receipt } = await deploy(symbol+"AllowlistDraggableShares", {
     contract: "AllowlistDraggableShares",
     from: deployer,
     args: [
@@ -53,8 +55,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     maxFeePerGas: feeData.maxFeePerGas,
     gasLimit: 3000000
   });
-  nconf.set("address.allowlist.draggable");
+
+  // set config
+  nconf.set("brokerbot:shares", address);
+  nconf.set("address:allowlist:draggable", address);
+  nconf.set("blocknumber", receipt.blockNumber);
 };
 
-module.exports.tags = ["AllowlistDraggableShares"+nconf.get("symbol")];
-module.exports.dependencies = ["RecoveryHub", "OfferFactory", "AllowlistShares"+nconf.get("symbol")];
+module.exports.tags = [nconf.get("symbol")+"AllowlistDraggableShares"];
+module.exports.dependencies = ["RecoveryHub", "OfferFactory", nconf.get("symbol")+"AllowlistShares"];
