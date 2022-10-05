@@ -95,26 +95,9 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
 task("init-deploy", "creates files for client deployment")
     .addOptionalParam("silent", "Silence log to minimum")
     .setAction(async (taskArgs, hre) =>{
-    console.log(config);
-    nconf.add("deploy", {type: "file", file: config.deployConfig});
-    if (taskArgs.silent) {
-        nconf.set("silent", true);
-    }
-
-
-    //nconf.set("multisigAddress", "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be");
-    
-    
-    let networkName;
-    if (network && network.name != "hardhat") {
-        networkName = network.name;
-    } else {
-        networkName = await askNetwork();
-    }
-    nconf.set("network", networkName);
-
-    setBaseCurrency();
-
+    console.log("=================================================")
+    console.log("============ AKTIONARIAT DEPLOYER ===============")
+    console.log("=================================================")
     // get deployment config parameter
     let reviewCorrect;
     let deployConfig
@@ -123,7 +106,26 @@ task("init-deploy", "creates files for client deployment")
         displayDeployConfig(deployConfig);
         reviewCorrect = await askConfirmWithMsg("Are the values correct?");
     } while (!reviewCorrect)
-    
+
+    // create deploy log
+    if(!files.directoryExists(config.deployLogDir)) {
+        files.createDirectory(config.deployLogDir)
+    }
+    fs.writeFileSync(`${config.deployLogDir}/${deployConfig.symbol}.json`, "{}");
+    nconf.add("deploy", {type: "file", file: `${config.deployLogDir}/${deployConfig.symbol}.json`});
+
+    // set config
+    if (taskArgs.silent) {
+        nconf.set("silent", true);
+    }
+    let networkName;
+    if (network && network.name != "hardhat") {
+        networkName = network.name;
+    } else {
+        networkName = await askNetwork();
+    }
+    nconf.set("network", networkName);
+    setBaseCurrency();
     writeConfig(deployConfig);
 
     // deploy multisig
@@ -164,19 +166,20 @@ task("init-deploy", "creates files for client deployment")
         network: networkName
     });
 
+    // write deploy log
+    nconf.save();
+
     // verify on etherscan
-    if (network.name != "hardhat" && !askConfirmWithMsg("Do you want to verify on etherscan?")) {
+    const verify = await askConfirmWithMsg("Do you want to verify on etherscan?");
+    if (network.name != "hardhat" && verify) {
         await hre.run("etherscan-verify", {
         license: "None"
         });
     }
-  
-    nconf.save();
-    await hre.run("ttt");
-    await askConfirmWithMsg("Are the values correct?");
-    fs.unlinkSync(config.deployConfig);
 
-    if (network.name != "hardhat" && !askConfirmWithMsg("Do you want to register the contracts in the back-end?")) {
+    // register at the backend
+    const doRegister = await askConfirmWithMsg("Do you want to register the contracts in the back-end?");
+    if (network.name != "hardhat" && doRegister) {
         await hre.run("register", {
             choices: ["MultiSig", "Token", "Brokerbot"],
             name: nconf.get("companyName"),
@@ -185,11 +188,6 @@ task("init-deploy", "creates files for client deployment")
             brokerbotAddress: nconf.get("address:brokerbot")
         });
     }
-
-})
-
-task("ttt", "test").setAction(async (taskArgs, hre) => {
-    console.log(nconf.stores);
 })
 
 
