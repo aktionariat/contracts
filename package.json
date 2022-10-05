@@ -71,6 +71,8 @@
   "scripts": {
     "compile": "hardhat compile",
     "clean": "hardhat clean",
+    "deploy": "hardhat init-deploy",
+    "deploy-s": "hardhat init-deploy --silent true",
     "test": "hardhat test",
     "coverage": "hardhat coverage",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
