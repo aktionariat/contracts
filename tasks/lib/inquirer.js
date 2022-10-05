@@ -19,6 +19,7 @@ module.exports = {
     ]
     return inquirer.prompt(questions).then((answer) => {return answer.companyName});
   },
+
   askCompanySymbol: () => {
     const questions = [
       {
@@ -36,11 +37,24 @@ module.exports = {
     ]
     return inquirer.prompt(questions).then((answer) => {return answer.symbol});
   },
+
   // ===============================
   // questions for deployment
   // ===============================
   askDeployConfig: () => {
     const questions = [
+      {
+        name: 'multisigSigner',
+        type: 'input',
+        message: 'Enter the first signer address of the multisig:',
+        validate: function( value ) {
+          if (value.length) {
+            return true;
+          } else {
+            return 'Please enter address of first signer.';
+          }
+        }
+    },
       {
         name: 'symbol',
         type: 'input',
@@ -94,7 +108,7 @@ module.exports = {
       type: 'input',
       message: 'Enter the price per share (in CHF):',
       validate: function( value ) {
-        if (!isNaN(value)) {
+        if (!isNaN(value) && value.length) {
           return true;
         } else {
           return 'Please enter the price per share.';
@@ -105,8 +119,9 @@ module.exports = {
       name: 'increment',
       type: 'inupt',
       message: 'Enter the increment per share bought (in CHF):',
+      default: 0,
       validate: function( value ) {
-        if (!isNaN(value)) {
+        if (!isNaN(value) && value.length) {
           return true;
         } else {
           return 'Please enter increment.';
@@ -155,12 +170,12 @@ module.exports = {
     return inquirer.prompt(questions);
   },
 
-  askReviewConfirm: () => {
+  askConfirmWithMsg: (msg) => {
     const questions = [
       {
         name: 'confirm',
         type: 'confirm',
-        message: 'Are the values correct?'
+        message: msg
       }
     ];
     return inquirer.prompt(questions).then( answer => {return answer.confirm});
