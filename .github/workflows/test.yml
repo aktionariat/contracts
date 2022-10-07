@@ -28,7 +28,7 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
 
       - name: Install package
         run: |
@@ -41,6 +41,9 @@ jobs:
         
       - name: Install dependencies
         run: yarn install
+
+      - name: Install hardhat-deploy dependencies
+        run: yarn add -D hardhat-deploy-ethers
       
       - run: CI=true yarn test  # When CI environment variable is set to true eth-gas-reporter will create a 'gasReporterOutput.json' file
       

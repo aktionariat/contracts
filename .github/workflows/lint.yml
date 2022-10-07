@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Install hardhat-deploy dependencies
+        run: yarn add -D hardhat-deploy-ethers
+
       - name: Run linters
         uses: wearerequired/lint-action@a8497ddb33fb1205941fd40452ca9fff07e0770d
         with:
