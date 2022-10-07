@@ -1,11 +1,8 @@
 require("dotenv").config();
 
-require("@nomiclabs/hardhat-etherscan");
-require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
-require("solidity-coverage");
+require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-deploy");
-require("@nomiclabs/hardhat-truffle5");
+require("hardhat-deploy-ethers");
 require("./tasks");
 
 function getMnemonic(networkName) {
@@ -68,7 +65,8 @@ module.exports = {
       },
       live: false,
       saveDeployments: true,
-      chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+    chainId: 1, // 1 for forking mainnet test
       tags: ["test", "local"],
       deploy: ['deploy_optimism']
     },
@@ -206,7 +204,7 @@ module.exports = {
     },
     owner: {
       default: 1,
-      1: process.env.MULTISIG_DEPLOY, // mainnet
+      //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby

@@ -1,13 +1,12 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
 const Chance = require("chance");
 const { setBalance, setBalanceWithAmount } = require("./helper/index");
-const { use, expect } = require("chai");
-const { solidity } = require("ethereum-waffle");
-
-use(solidity);
+const { expect } = require("chai");
+const { PANIC_CODES } = require("@nomicfoundation/hardhat-chai-matchers/panic");
 
 // Shared  Config
 const config = require("../scripts/deploy_config_optimism.js");
+const exp = require("constants");
 
 describe("New Standard", () => {
   let draggable
@@ -32,6 +31,10 @@ describe("New Standard", () => {
   let oracle;
 
   let chance;
+  let name;
+  let symbol;
+  let terms;
+  let dterms;
 
   const TYPE_DEFAULT = 0;
   const TYPE_ALLOWLISTED = 1;
@@ -418,7 +421,7 @@ describe("New Standard", () => {
 
     it("Should revert declare lost if claimer hasn't enough collateral", async () => {
       await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
-        .to.be.revertedWith("panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)"); // underflow on transfer from
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // underflow on transfer from
     })
 
     it("Should set custom claim collateral for shares", async () => {

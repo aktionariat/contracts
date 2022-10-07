@@ -47,7 +47,7 @@ describe("Migration", () => {
    
   it("should have some ETH in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
-      const balance = new BN(await web3.eth.getBalance(accounts[i]));
+      const balance = await ethers.provider.getBalance(accounts[i]);
       expect(balance.isZero(), "Balance is 0").to.be.false;
     }
   });
