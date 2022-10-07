@@ -1,13 +1,28 @@
 const { task, subtask } = require("hardhat/config");
 const Confirm = require('prompt-confirm');
 const chalk = require('chalk');
+const simpleGit = require("simple-git");
+const fs = require('fs-extra');
 const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
 const { getCompanyId, registerMultiSignature, registerToken, registerBrokerbot } = require("../scripts/register-helper");
-
 const { ethers: { constants: { MaxUint256 }}} = require("ethers");
-const { askNetwork, askCompanySymbol, askWhatToRegister, askMultiSigAddress, askTokenAddress, askBrokrebotAddress, askBlockNumber, askBrokerbotAddress } = require("./lib/inquirer");
-const { createDirectory, copyDirectory } = require("./lib/files");
+const {
+    askReviewConfirm,
+    askNetwork, 
+    askCompanySymbol, 
+    askWhatToRegister, 
+    askMultiSigAddress, 
+    askTokenAddress, 
+    askBrokrebotAddress, 
+    askBlockNumber, 
+    askBrokerbotAddress, 
+    askDeployConfig,
+    askConfirmWithMsg
+ } = require("./lib/inquirer");
+const {config} = require('./default_config.js');
+const nconf = require('nconf');
+const git = simpleGit();
 
 task("gas-price", "Prints gas price").setAction(async function({ address }, { ethers }) {
   console.log("Gas price", (await ethers.provider.getGasPrice()).toString())
@@ -25,6 +40,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
     .addParam("salt", "The salt for the multsig")
     .setAction(async ({ factory, owner, salt }, { getNamedAccounts, ethers }) => {
         const { deployer, multiSigDefaultOwner } = await getNamedAccounts();
+        const deployerSigner = await ethers.getSigner(deployer);
         if (factory == undefined) {
             switch   (network.name) {
                 case "mainnet":
@@ -32,6 +48,9 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                     break;
                 case "kovan":
                     factory = "0xAF21E166ADc362465A27AeDc15315DcFc0c51624"; // kovan factory
+                    break;
+                case "goerli":
+                    factory = "0x1776C349696CccAE06541542C5ED954CDf9859cC"; // goerli factory
                     break;
                 case "ropsten":
                     factory = "0xd350a14834d0cFdfC40013A9b605Ecc9CA1024Ce" // ropsten factory
@@ -50,15 +69,15 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
 
         multiSigCloneFactory = await ethers.getContractAt("MultiSigCloneFactory", factory);
 
-        console.log("-----------------------")
-        console.log("Deploy Multisig")
-        console.log("-----------------------")
-        console.log("deployer: %s", deployer);
-        console.log("factory: %s", factory);
-        console.log("owner: %s", owner)
-        console.log("salt: %s", salt)
+        if (network.name != "hardhat" && !nconf.get("silent")) {
+            console.log("-----------------------")
+            console.log("Deploy Multisig")
+            console.log("-----------------------")
+            console.log("deployer: %s", deployer);
+            console.log("factory: %s", factory);
+            console.log("owner: %s", owner)
+            console.log("salt: %s", salt)
 
-        if (network.name != "hardhat") {
             const prompt = await new Confirm("Addresses correct?").run();
             if(!prompt) {
                 console.log("exiting");
@@ -66,38 +85,113 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
             }
         }
 
-        const tx = await multiSigCloneFactory.create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000 });
+        const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000 });
+        console.log(`deploying MultiSigWallet Clone (tx: ${tx.hash}) with Nonce: ${tx.nonce}`);
         const { events } = await tx.wait();
         const { address } = events.find(Boolean);
         console.log(`MultiSig cloned at: ${address}`);
+
+        nconf.set("multisigAddress", address);
 })
 
-task("initDeploy", "creates files for client deployment").setAction(async ({network}) =>{
+task("init-deploy", "creates files for client deployment")
+    .addOptionalParam("silent", "Silence log to minimum")
+    .setAction(async (taskArgs, hre) =>{
+    console.log("=================================================")
+    console.log("============ AKTIONARIAT DEPLOYER ===============")
+    console.log("=================================================")
     let networkName;
-    if (network) {
+    if (network && network.name != "hardhat") {
         networkName = network.name;
     } else {
         networkName = await askNetwork();
     }
-    const companySymbol = await askCompanySymbol();
-    let pathTemplate;
-    let pathDestination;
-    switch (networkName) {
-        case "mainnet":
-            pathTemplate = "./deploy/example";
-            pathDestination = `./deploy/${companySymbol}`;
-            break;
-        case "optimism":
-            pathTemplate = "./deploy_optimism/example";
-            pathDestination = `./deploy_optimism/${companySymbol}`;
-            break;
-        default:
-            console.error("network not supported");
-            process.exit();
+    await switchToBranch(networkName);
+    // get deployment config parameter
+    let reviewCorrect;
+    let deployConfig
+    do {
+        deployConfig = await askDeployConfig();
+        displayDeployConfig(deployConfig);
+        reviewCorrect = await askConfirmWithMsg("Are the values correct?");
+    } while (!reviewCorrect)
+
+    // create deploy log
+    if(!files.directoryExists(config.deployLogDir)) {
+        files.createDirectory(config.deployLogDir)
     }
-    createDirectory(pathDestination);
-    copyDirectory(pathTemplate, pathDestination);
-    console.log(await files.getCurrentDirectoryBase());
+    fs.writeFileSync(`${config.deployLogDir}/${deployConfig.symbol}.json`, "{}");
+    nconf.add("deploy", {type: "file", file: `${config.deployLogDir}/${deployConfig.symbol}.json`});
+
+    // set config
+    if (taskArgs.silent) {
+        nconf.set("silent", true);
+    }
+
+    nconf.set("network", networkName);
+    setBaseCurrency();
+    writeConfig(deployConfig);
+
+    // deploy multisig
+    await hre.run("create-multisig-clone", {
+        salt: deployConfig.symbol,
+        owner: nconf.get("multisigSigner")
+    })
+
+    // deploy shares
+    if ( deployConfig.allowlist ) {
+        await hre.run("deploy", {
+            tags: deployConfig.symbol+"AllowlistShares",
+            network: networkName
+        });
+    } else {
+        await hre.run("deploy", {
+            tags: deployConfig.symbol+"Shares",
+            network: networkName
+        });
+    }
+
+    // deploy draggable
+    if ( deployConfig.allowlist ) {
+        await hre.run("deploy", {
+            tags: deployConfig.symbol+"AllowlistDraggableShares",
+            network: networkName
+        });
+    } else {
+        await hre.run("deploy", {
+            tags: deployConfig.symbol+"DraggableShares",
+            network: networkName
+        });
+    }
+
+    // deploy brokerbot
+    await hre.run("deploy", {
+        tags: deployConfig.symbol+"Brokerbot",
+        network: networkName
+    });
+
+    // write deploy log
+    nconf.save();
+
+    // verify on etherscan
+    const verify = await askConfirmWithMsg("Do you want to verify on etherscan?");
+    if (network.name != "hardhat" && verify) {
+        await hre.run("etherscan-verify", {
+        license: "None"
+        });
+    }
+
+    // register at the backend
+    const doRegister = await askConfirmWithMsg("Do you want to register the contracts in the back-end?");
+    if (network.name != "hardhat" && doRegister) {
+        await hre.run("register", {
+            choices: ["MultiSig", "Token", "Brokerbot"],
+            name: nconf.get("companyName"),
+            tokenAddress: nconf.get("brokerbot:shares"),
+            multisigAddress: nconf.get("multisigAddress"),
+            brokerbotAddress: nconf.get("address:brokerbot")
+        });
+    }
 })
 
 
@@ -111,7 +205,14 @@ task("companyId", "Gives back the company id")
         console.log(companyNr);
 })
 
-task("register", "Register contracts in the backend").setAction( async(taskArgs, hre) => {
+task("register", "Register contracts in the backend")
+    .addOptionalParam("choices", "List of contracts types to register")
+    .addOptionalParam("name", "The company name")
+    .addOptionalParam("tokenAddress", "The (draggable)share address")
+    .addOptionalParam("multisigAddress", "The multisig address")
+    .addOptionalParam("brokerbotAddress", "The brokerbot address")
+    .addOptionalParam("blocknumber", "The blocknumber the shares got deployed")
+    .setAction( async(taskArgs, hre) => {
     const networkName = await askNetwork();
     const registerChoices = await askWhatToRegister();
     const name = await inquirer.askCompanyName();
@@ -123,18 +224,22 @@ task("register", "Register contracts in the backend").setAction( async(taskArgs,
     if (registerChoices.includes('MultiSig')) {
         await hre.run("registerMultisig", {
             companyId: companyId.toString(),
-            networkName: networkName
+            networkName: networkName,
+            address: taskArgs.multisigAddress
         })
     }
     if (registerChoices.includes('Token')) {
         await hre.run("registerToken", {
             companyId: companyId.toString(),
-            networkName: networkName
+            networkName: networkName,
+            address: taskArgs.tokenAddress,
+            blocknumber: taskArgs.blocknumber
         })
     }
     if (registerChoices.includes('Brokerbot')) {
         await hre.run("registerBrokerbot", {
-            networkName: networkName
+            networkName: networkName,
+            address: taskArgs.brokerbotAddress
         })
     }
 })
@@ -230,4 +335,58 @@ function formatAddress (networkName, address) {
             process.exit();
     }
     return formattedAddress;
+}
+
+function writeConfig(deployConfig) {
+    nconf.set("multisigSigner", deployConfig.multisigSigner);
+    nconf.set('symbol', deployConfig.symbol);
+    nconf.set('name', deployConfig.shareName);
+    nconf.set('terms', deployConfig.terms);
+    nconf.set('totalShares', deployConfig.totalNumber);
+    nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
+    nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
+    nconf.set('quorumBps', deployConfig.quorum*100);
+    nconf.set('votePeriodSeconds', deployConfig.votePeriod*24*60*60);
+    nconf.set('Allowlist', deployConfig.allowlist);
+    nconf.set('Draggable', deployConfig.draggable);
+    nconf.save();
+}
+
+function displayDeployConfig(deployConfig) {
+    console.log("=============================");
+    console.log("==== Review Deploy Config ===");
+    console.log("=============================");
+    console.log(`First Signer: ${deployConfig.multisigSigner}`);
+    console.log(`Symbol: ${deployConfig.symbol}`);
+    console.log(`Name: ${deployConfig.shareName}`);
+    console.log(`Terms: ${deployConfig.terms}`);
+    console.log(`Number of Shares: ${deployConfig.totalNumber}`);
+    console.log(`Price per Shares: ${deployConfig.price}`);
+    console.log(`Increment: ${deployConfig.increment}`);
+    console.log(`Quorum (%): ${deployConfig.quorum}`);
+    console.log(`Voting Period (days): ${deployConfig.votePeriod}`);
+    console.log(`Allowlist: ${deployConfig.allowlist}`);
+    console.log(`Draggable: ${deployConfig.draggable}`);
+    console.log("=============================");
+}
+
+function setBaseCurrency() {
+    const networkName = nconf.get("network");
+    // set basecurrecny - right now only XCHF supported
+    // TODO: switches for test nets
+    nconf.set("baseCurrencyAddress", networkName == "mainnet" ? config.xchf.mainnet : config.xchf.optimism);
+}
+
+async function switchToBranch(networkName) {
+    switch (networkName) {
+        case "optimism":
+            await git.checkout("op-deploy-template");
+            break;
+        case "goerliOptimism":
+            await git.checkout("op-deploy-template");
+            break;
+        default:
+            await git.checkout("deployment-template")
+            break;
+    }
 }

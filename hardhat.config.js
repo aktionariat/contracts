@@ -84,7 +84,6 @@ module.exports = {
       live: true,
       saveDeployments: true,
       tags: ["staging"],
-      gasPrice: 5000000000,
       gasMultiplier: 2,
     },
     kovan: {
@@ -193,20 +192,22 @@ module.exports = {
     // url: "http://192.168.0.100:8546",
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
-  etherscan: {
-    apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY,
-      ropsten: process.env.ETHERSCAN_API_KEY,
-      rinkeby: process.env.ETHERSCAN_API_KEY,
-      goerli: process.env.ETHERSCAN_API_KEY,
-      kovan: process.env.ETHERSCAN_API_KEY,
-      // optimism
-      optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
-      kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
-      // polygon
-      polygon: process.env.POLYGONSCAN_API_KEY,
-      polygonMumbai: process.env.POLYGONSCAN_API_KEY,
-    }
+  verify: {
+    etherscan: {
+      apiKey: {
+        mainnet: process.env.ETHERSCAN_API_KEY,
+        ropsten: process.env.ETHERSCAN_API_KEY,
+        rinkeby: process.env.ETHERSCAN_API_KEY,
+        goerli: process.env.ETHERSCAN_API_KEY,
+        kovan: process.env.ETHERSCAN_API_KEY,
+        // optimism
+        optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+        kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+        // polygon
+        polygon: process.env.POLYGONSCAN_API_KEY,
+        polygonMumbai: process.env.POLYGONSCAN_API_KEY,
+      }
+    },
   },
   solidity: {
     compilers: [
