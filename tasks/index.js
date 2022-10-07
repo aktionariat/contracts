@@ -1,7 +1,7 @@
 const { task, subtask } = require("hardhat/config");
 const Confirm = require('prompt-confirm');
 const chalk = require('chalk');
-const git = require("simple-git");
+const simpleGit = require("simple-git");
 const fs = require('fs-extra');
 const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
@@ -22,6 +22,7 @@ const {
  } = require("./lib/inquirer");
 const {config} = require('./default_config.js');
 const nconf = require('nconf');
+const git = simpleGit();
 
 task("gas-price", "Prints gas price").setAction(async function({ address }, { ethers }) {
   console.log("Gas price", (await ethers.provider.getGasPrice()).toString())
@@ -105,7 +106,7 @@ task("init-deploy", "creates files for client deployment")
     } else {
         networkName = await askNetwork();
     }
-    switchToBranch(networkName);
+    await switchToBranch(networkName);
     // get deployment config parameter
     let reviewCorrect;
     let deployConfig
@@ -376,16 +377,16 @@ function setBaseCurrency() {
     nconf.set("baseCurrencyAddress", networkName == "mainnet" ? config.xchf.mainnet : config.xchf.optimism);
 }
 
-function switchToBranch(networkName) {
+async function switchToBranch(networkName) {
     switch (networkName) {
         case "optimism":
-            git.checkout("op-deploy-template");
+            await git.checkout("op-deploy-template");
             break;
         case "goerliOptimism":
-            git.checkout("op-deploy-template");
+            await git.checkout("op-deploy-template");
             break;
         default:
-            git.checkout("deployment-template")
+            await git.checkout("deployment-template")
             break;
     }
 }
