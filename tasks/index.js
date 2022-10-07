@@ -1,6 +1,7 @@
 const { task, subtask } = require("hardhat/config");
 const Confirm = require('prompt-confirm');
 const chalk = require('chalk');
+const git = require("simple-git");
 const fs = require('fs-extra');
 const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
@@ -98,6 +99,13 @@ task("init-deploy", "creates files for client deployment")
     console.log("=================================================")
     console.log("============ AKTIONARIAT DEPLOYER ===============")
     console.log("=================================================")
+    let networkName;
+    if (network && network.name != "hardhat") {
+        networkName = network.name;
+    } else {
+        networkName = await askNetwork();
+    }
+    switchToBranch(networkName);
     // get deployment config parameter
     let reviewCorrect;
     let deployConfig
@@ -118,12 +126,7 @@ task("init-deploy", "creates files for client deployment")
     if (taskArgs.silent) {
         nconf.set("silent", true);
     }
-    let networkName;
-    if (network && network.name != "hardhat") {
-        networkName = network.name;
-    } else {
-        networkName = await askNetwork();
-    }
+
     nconf.set("network", networkName);
     setBaseCurrency();
     writeConfig(deployConfig);
@@ -371,4 +374,18 @@ function setBaseCurrency() {
     // set basecurrecny - right now only XCHF supported
     // TODO: switches for test nets
     nconf.set("baseCurrencyAddress", networkName == "mainnet" ? config.xchf.mainnet : config.xchf.optimism);
+}
+
+function switchToBranch(networkName) {
+    switch (networkName) {
+        case optimism:
+            git.checkout("op-deploy-template");
+            break;
+        case goerliOptimism:
+            git.checkout("op-deploy-template");
+            break;
+        default:
+            git.checkout("deployment-template")
+            break;
+    }
 }
