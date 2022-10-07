@@ -378,10 +378,10 @@ function setBaseCurrency() {
 
 function switchToBranch(networkName) {
     switch (networkName) {
-        case optimism:
+        case "optimism":
             git.checkout("op-deploy-template");
             break;
-        case goerliOptimism:
+        case "goerliOptimism":
             git.checkout("op-deploy-template");
             break;
         default:
