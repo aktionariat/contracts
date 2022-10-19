@@ -1,10 +1,8 @@
 const {network, ethers, getNamedAccounts, deployments} = require("hardhat");
-const { use, expect } = require("chai");
-const { solidity } = require("ethereum-waffle");
+const { expect } = require("chai");
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
 
-use(solidity);
 
 describe("Brokerbot Registry", () => {
   let brokerbotRegistry;
