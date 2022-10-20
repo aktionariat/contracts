@@ -87,13 +87,23 @@ yarn hardhat --network ropsten etherscan-verify
 
 (don't forget to set ETHERSCAN_API_KEY in .env)
 
-#### Clone hardhat tasks
+#### Multisig deploy hardhat tasks
 task to create a multisig clone from the clonefactory: create-multisig-clone
 
 ```bash
 yarn hardhat create-multisig-clone --factory <multisigCloneFactory_Address> --owner <address> --salt <string_which_gets_formated_in_byte32>
 ```
 (it will run on your default network, to run on a different network use --network <name>)
+
+#### Guided deployment of contracts
+(.env configuration is needed as seen in .env.template, at minimum the mnemonic of the network you deploy to and Infura/Alchemy ApiKey)
+To be guided through the contract deployment use
+```bash
+yarn deploy
+```
+this script also includes:
+(optional) verification of contracts (.env needs ETHERSCAN_API_KEY)
+(optional) registration in the aktionariat back-end (.env needs AKTIONARIAT_API_KEY and AKTIONARIAT_API_URL)
 
 ## License
 
