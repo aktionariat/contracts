@@ -100,13 +100,10 @@ task("init-deploy", "creates files for client deployment")
     console.log("=================================================")
     console.log("============ AKTIONARIAT DEPLOYER ===============")
     console.log("=================================================")
-    let networkName;
-    if (network && network.name != "hardhat") {
-        networkName = network.name;
-    } else {
-        networkName = await askNetwork();
+    if (! network || network.name == "hardhat") {
+        hre.changeNetwork(await askNetwork());
     }
-    await switchToBranch(networkName);
+    await switchToBranch(network.name);
     // get deployment config parameter
     let reviewCorrect;
     let deployConfig
@@ -128,26 +125,30 @@ task("init-deploy", "creates files for client deployment")
         nconf.set("silent", true);
     }
 
-    nconf.set("network", networkName);
+    nconf.set("network", network.name);
     setBaseCurrency();
     writeConfig(deployConfig);
 
     // deploy multisig
-    await hre.run("create-multisig-clone", {
-        salt: deployConfig.symbol,
-        owner: nconf.get("multisigSigner")
-    })
+    const newMultisig = await askConfirmWithMsg("Do you want to deploy a new multisig wallet?");
+    if (newMultisig){
+        await hre.run("create-multisig-clone", {
+            salt: deployConfig.symbol,
+            owner: nconf.get("multisigSigner"),
+        })
+    } else {
+        const existingMultisig = await askMultiSigAddress();
+        nconf.set("multisigAddress", existingMultisig);
+    }
 
     // deploy shares
     if ( deployConfig.allowlist ) {
         await hre.run("deploy", {
             tags: deployConfig.symbol+"AllowlistShares",
-            network: networkName
         });
     } else {
         await hre.run("deploy", {
             tags: deployConfig.symbol+"Shares",
-            network: networkName
         });
     }
 
@@ -155,19 +156,16 @@ task("init-deploy", "creates files for client deployment")
     if ( deployConfig.allowlist ) {
         await hre.run("deploy", {
             tags: deployConfig.symbol+"AllowlistDraggableShares",
-            network: networkName
         });
     } else {
         await hre.run("deploy", {
             tags: deployConfig.symbol+"DraggableShares",
-            network: networkName
         });
     }
 
     // deploy brokerbot
     await hre.run("deploy", {
         tags: deployConfig.symbol+"Brokerbot",
-        network: networkName
     });
 
     // write deploy log
@@ -185,11 +183,12 @@ task("init-deploy", "creates files for client deployment")
     const doRegister = await askConfirmWithMsg("Do you want to register the contracts in the back-end?");
     if (network.name != "hardhat" && doRegister) {
         await hre.run("register", {
-            choices: ["MultiSig", "Token", "Brokerbot"],
+            choices: "MultiSig Token Brokerbot",
             name: nconf.get("companyName"),
             tokenAddress: nconf.get("brokerbot:shares"),
             multisigAddress: nconf.get("multisigAddress"),
-            brokerbotAddress: nconf.get("address:brokerbot")
+            brokerbotAddress: nconf.get("address:brokerbot"),
+            blocknumber: nconf.get("blocknumber")
         });
     }
 })
@@ -213,9 +212,21 @@ task("register", "Register contracts in the backend")
     .addOptionalParam("brokerbotAddress", "The brokerbot address")
     .addOptionalParam("blocknumber", "The blocknumber the shares got deployed")
     .setAction( async(taskArgs, hre) => {
-    const networkName = await askNetwork();
-    const registerChoices = await askWhatToRegister();
-    const name = await inquirer.askCompanyName();
+    if (! network || network.name == "hardhat") {
+        hre.changeNetwork(await askNetwork());
+    }
+    let registerChoices;
+    if (taskArgs.choices) {
+        registerChoices = choices.split(" ");
+    } else {
+        registerChoices = await askWhatToRegister();
+    }
+    let name;
+    if (taskArgs.name) {
+        name = taskArgs.name;
+    } else {
+        name = await inquirer.askCompanyName();
+    }   
     const companyId = await getCompanyId(name);
     if( companyId == undefined ) {
         console.log(chalk.red("=== Company not found! - exiting ==="));
@@ -224,21 +235,18 @@ task("register", "Register contracts in the backend")
     if (registerChoices.includes('MultiSig')) {
         await hre.run("registerMultisig", {
             companyId: companyId.toString(),
-            networkName: networkName,
             address: taskArgs.multisigAddress
         })
     }
     if (registerChoices.includes('Token')) {
         await hre.run("registerToken", {
             companyId: companyId.toString(),
-            networkName: networkName,
             address: taskArgs.tokenAddress,
             blocknumber: taskArgs.blocknumber
         })
     }
     if (registerChoices.includes('Brokerbot')) {
         await hre.run("registerBrokerbot", {
-            networkName: networkName,
             address: taskArgs.brokerbotAddress
         })
     }
@@ -247,14 +255,12 @@ task("register", "Register contracts in the backend")
 subtask("registerMultisig", "Registers the multisig address in the backend")
     .addOptionalParam("companyId", "Id of the company")
     .addOptionalParam("address", "The address of the multisignature")
-    .addOptionalParam("networkName", "The blockchain network ")
     .setAction( async (taskArgs) => {
         console.log("============================");
         console.log("----- Register MultiSig ----");
         console.log("============================");
-        let networkName = taskArgs.networkName;
-        if (networkName == undefined) {
-            const networkName = await askNetwork();
+        if (! network || network.name == "hardhat") {
+            hre.changeNetwork(await askNetwork());
         }
         let companyId = taskArgs.companyId;
         if (companyId == undefined) {
@@ -265,7 +271,7 @@ subtask("registerMultisig", "Registers the multisig address in the backend")
         if (address == undefined) {
             address = await askMultiSigAddress();
         }
-        let formattedAddress = formatAddress(taskArgs.networkName, address);
+        let formattedAddress = formatAddress(network.name, address);
         await registerMultiSignature(companyId, formattedAddress);
         console.log(chalk.green(`=> MultiSignature Address(${formattedAddress}) registered succesfully.`));
 })
@@ -273,15 +279,13 @@ subtask("registerMultisig", "Registers the multisig address in the backend")
 subtask("registerToken", "Registers the token address in the backend")
     .addOptionalParam("companyId", "Id of the company")
     .addOptionalParam("address", "The address of the token")
-    .addOptionalParam("networkName", "The blockchain network ")
     .addOptionalParam("blocknumber", "The block number at of the transaction of the deployment")
     .setAction( async (taskArgs) => {
         console.log("==========================");
         console.log("----- Register Token ----");
         console.log("==========================");
-        let networkName = taskArgs.networkName;
-        if (networkName == undefined) {
-            const networkName = await askNetwork();
+        if (! network || network.name == "hardhat") {
+            hre.changeNetwork(await askNetwork());
         }
         let companyId = taskArgs.companyId;
         if (companyId == undefined) {
@@ -296,26 +300,24 @@ subtask("registerToken", "Registers the token address in the backend")
         if (blocknumber == undefined) {
             blocknumber = await askBlockNumber();
         }
-        let formattedAddress = formatAddress(taskArgs.networkName, address);
+        let formattedAddress = formatAddress(network.name, address);
         await registerToken(companyId, formattedAddress, blocknumber.toString());
         console.log(chalk.green(`=> Token Address(${formattedAddress}) registered succesfully.`));
 })
 subtask("registerBrokerbot", "Registers the brokerbot address in the backend")
     .addOptionalParam("address", "The address of the token")
-    .addOptionalParam("networkName", "The blockchain network ")
     .setAction( async (taskArgs) => {
         console.log("=============================");
         console.log("----- Register Brokerbot ----");
         console.log("=============================");
-        let networkName = taskArgs.networkName;
-        if (networkName == undefined) {
-            const networkName = await askNetwork();
+        if (! network || network.name == "hardhat") {
+            hre.changeNetwork(await askNetwork());
         }
         let address = taskArgs.address;
         if (address == undefined) {
             address = await askBrokerbotAddress();
         }
-        let formattedAddress = formatAddress(taskArgs.networkName, address);
+        let formattedAddress = formatAddress(network.name, address);
         await registerBrokerbot(formattedAddress);
         console.log(chalk.green(`=> Brokerbot Address(${formattedAddress}) registered succesfully.`));
 })
@@ -338,6 +340,7 @@ function formatAddress (networkName, address) {
 }
 
 function writeConfig(deployConfig) {
+    nconf.set("companyName", deployConfig.companyName);
     nconf.set("multisigSigner", deployConfig.multisigSigner);
     nconf.set('symbol', deployConfig.symbol);
     nconf.set('name', deployConfig.shareName);
@@ -356,6 +359,7 @@ function displayDeployConfig(deployConfig) {
     console.log("=============================");
     console.log("==== Review Deploy Config ===");
     console.log("=============================");
+    console.log(`Company Name: ${deployConfig.companyName}`);
     console.log(`First Signer: ${deployConfig.multisigSigner}`);
     console.log(`Symbol: ${deployConfig.symbol}`);
     console.log(`Name: ${deployConfig.shareName}`);

@@ -44,6 +44,18 @@ module.exports = {
   askDeployConfig: () => {
     const questions = [
       {
+        name: 'companyName',
+        type: 'input',
+        message: 'Enter the name of the company (which is used to get the id from):',
+        validate: function( value ) {
+          if (value.length) {
+            return true;
+          } else {
+            return 'Please enter then name of the company.';
+          }
+        }
+      },
+      {
         name: 'multisigSigner',
         type: 'input',
         message: 'Enter the first signer address of the multisig:',

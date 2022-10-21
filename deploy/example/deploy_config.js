@@ -9,5 +9,5 @@ module.exports = {
   quorumBps: 7500,
   votePeriodSeconds: 5184000,
   baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08", // mainent xchf
-  multisigAddress: "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be"
+  multisigAddress: "--"
 };
