@@ -56,7 +56,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   
   // register brokerbot at registry
   brokerbotRegistry = await ethers.getContract("BrokerbotRegistry")
-  await brokerbotRegistry.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, sharesAddress, { gasLimit: 50000});
+  const prompt = await new Confirm("Register brokerbot?").run();
+    if(prompt) {
+      await brokerbotRegistry.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, sharesAddress, { gasLimit: 50000});
+    }
   
   //set config
   nconf.set("address:brokerbot", address);
