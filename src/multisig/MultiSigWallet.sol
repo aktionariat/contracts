@@ -10,6 +10,7 @@ import "./RLPEncode.sol";
 import "./Nonce.sol";
 
 /**
+ *  Not in use anymore!
  * Documented in ../../doc/multisig.md
  */
 contract MultiSigWallet is Nonce, Initializable {
@@ -122,6 +123,7 @@ contract MultiSigWallet is Nonce, Initializable {
   function verifySignatures(bytes32 transactionHash, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s)
     public view returns (address[] memory) {
     address[] memory found = new address[](r.length);
+    require(r.length > 0, "sig missing");
     for (uint i = 0; i < r.length; i++) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
       uint8 signaturesNeeded = signers[signer];

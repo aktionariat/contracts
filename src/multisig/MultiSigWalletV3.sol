@@ -10,10 +10,9 @@ import "./RLPEncode.sol";
 import "./Nonce.sol";
 
 /**
- *  Not in use anymore!
  * Documented in ../../doc/multisig.md
  */
-contract MultiSigWalletV2 is Nonce, Initializable {
+contract MultiSigWalletV3 is Nonce, Initializable {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
