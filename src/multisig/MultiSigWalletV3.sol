@@ -10,10 +10,9 @@ import "./RLPEncode.sol";
 import "./Nonce.sol";
 
 /**
- *  Not in use anymore!
  * Documented in ../../doc/multisig.md
  */
-contract MultiSigWalletV2 is Nonce, Initializable {
+contract MultiSigWalletV3 is Nonce, Initializable {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
@@ -125,8 +124,8 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
 
   function verifySignatures(bytes32 transactionHash, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s)
     public view returns (address[] memory) {
+    require(r.length > 0, "no signature data");
     address[] memory found = new address[](r.length);
-    require(r.length > 0, "sig missing");
     for (uint i = 0; i < r.length; i++) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
       uint8 signaturesNeeded = signers[signer];

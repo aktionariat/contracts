@@ -44,7 +44,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
         if (factory == undefined) {
             switch   (network.name) {
                 case "mainnet":
-                    factory = "0xAA0cb4CA7aF641C7d046604Bb6AdFf0805f1dfbF"; // mainnet factory
+                    factory = "0xC894ef112CC26741397053248F9f677398Eb56e2"; // mainnet factory
                     break;
                 case "kovan":
                     factory = "0xAF21E166ADc362465A27AeDc15315DcFc0c51624"; // kovan factory
@@ -59,7 +59,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                     factory = "0x1abD8b5194D733691D64c3F898300f88Ba0035d5" // optimism kovan factory
                     break;
                 case "optimism":
-                    factory = "0x12d57174b35D64Fc2798E7AA62F8379Bb49C2250" // optimism factory
+                    factory = "0xB2A8D3cc37D914c8868d3fC8d011A65A266d56a8" // optimism factory
                     break;
             }
         }
@@ -321,6 +321,21 @@ subtask("registerBrokerbot", "Registers the brokerbot address in the backend")
         await registerBrokerbot(formattedAddress);
         console.log(chalk.green(`=> Brokerbot Address(${formattedAddress}) registered succesfully.`));
 })
+
+task("deploy-multisig-batch", "deploys multiple multisigs at once")
+    .setAction( async(taskArgs, hre) => {
+        nconf.use('memory');
+        nconf.set("silent", true);
+        const firstSigner = "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b";
+        for (let index = 0; index < 22; index++) {            
+            let saltName = "fixv2"+index
+            await hre.run("create-multisig-clone", {
+                salt: saltName,
+                owner: firstSigner,
+            })
+        }
+    })
+
 
 
 function formatAddress (networkName, address) {
