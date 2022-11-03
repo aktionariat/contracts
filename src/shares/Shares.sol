@@ -28,6 +28,7 @@
 pragma solidity ^0.8.0;
 
 import "../ERC20/ERC20Named.sol";
+import "../ERC20/ERC20PermitLight.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "../recovery/ERC20Recoverable.sol";
 import "../shares/IShares.sol";
@@ -46,7 +47,7 @@ import "../shares/IShares.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract Shares is ERC20Recoverable, ERC20Named, IShares{
+contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
 
     uint8 public constant VERSION = 2;
 
@@ -74,6 +75,7 @@ contract Shares is ERC20Recoverable, ERC20Named, IShares{
     )
         ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
+        ERC20PermitLight(_name)
     {
         totalShares = _totalShares;
         terms = _terms;

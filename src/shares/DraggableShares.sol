@@ -29,6 +29,7 @@ pragma solidity ^0.8.0;
 
 import "../recovery/ERC20Recoverable.sol";
 import "../draggable/ERC20Draggable.sol";
+import "../ERC20/ERC20PermitLight.sol";
 
 /**
  * @title CompanyName AG Shares SHA
@@ -37,7 +38,7 @@ import "../draggable/ERC20Draggable.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract DraggableShares is ERC20Draggable, ERC20Recoverable {
+contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
 
     string public terms;
 
@@ -51,7 +52,8 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable {
         address _oracle
     )
         ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle)
-        ERC20Recoverable(_recoveryHub) 
+        ERC20Recoverable(_recoveryHub)
+        ERC20PermitLight(string(abi.encodePacked(_wrappedToken.name(), " SHA"))) 
     {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
         _recoveryHub.setRecoverable(false);
