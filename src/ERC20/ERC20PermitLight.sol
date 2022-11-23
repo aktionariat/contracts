@@ -17,21 +17,15 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
 
     bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;
 
-    bytes32 private immutable _HASHED_NAME;
-
     mapping(address => uint256) public override nonces;
 
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
-      string memory _name
-    ) {
-        bytes32 hashedName = keccak256(bytes(_name));
+    constructor() {
         INITIAL_CHAIN_ID = block.chainid;
-        _HASHED_NAME = hashedName;
-        INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator(hashedName);
+        INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator();
     }
 
   /*//////////////////////////////////////////////////////////////
@@ -82,19 +76,17 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
             _approve(recoveredAddress, spender, value);
         }
 
-        emit Approval(owner, spender, value);
+        // emit Approval(owner, spender, value);
     }
 
     function DOMAIN_SEPARATOR() public view override returns (bytes32) {
-        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator(_HASHED_NAME);
+        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator();
     }
 
-    function computeDomainSeparator(bytes32 nameHash) internal view virtual returns (bytes32) {
+    function computeDomainSeparator() internal view virtual returns (bytes32) {
         return
             keccak256(
                 abi.encode(
-                    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                    nameHash,
                     keccak256("1"),
                     block.chainid,
                     address(this)
