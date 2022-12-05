@@ -168,9 +168,11 @@ task("init-deploy", "creates files for client deployment")
         tags: deployConfig.symbol+"Brokerbot",
     });
 
+    
     // write deploy log
     nconf.save();
-
+    await readDeployValues();
+    
     // verify on etherscan
     const verify = await askConfirmWithMsg("Do you want to verify on etherscan?");
     if (network.name != "hardhat" && verify) {
@@ -217,7 +219,7 @@ task("register", "Register contracts in the backend")
     }
     let registerChoices;
     if (taskArgs.choices) {
-        registerChoices = choices.split(" ");
+        registerChoices = taskArgs.choices.split(" ");
     } else {
         registerChoices = await askWhatToRegister();
     }
@@ -408,4 +410,22 @@ async function switchToBranch(networkName) {
             await git.checkout("deployment-template")
             break;
     }
+}
+
+async function readDeployValues() {
+    const shares = await ethers.getContractAt("Shares", nconf.get("address:share"));
+    const draggable = await ethers.getContractAt("DraggableShares", nconf.get("address:draggable"));
+    const brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));
+    console.log("=============================================================")
+    console.log("===== Deployment Finished with following on-chain data ======")
+    console.log("=============================================================")
+    console.log("Draggable named: %s", await draggable.name());
+    console.log("Draggable symbol: %s", await draggable.symbol());
+    console.log("draggable terms: %s", await draggable.terms());
+    console.log("draggable quorum: %s", await draggable.quorum());
+    console.log("Draggable oracle: %s", await draggable.oracle());
+    console.log("Share version: %s", await shares.VERSION());
+    console.log("Brokerbot version: %s", await brokerbot.VERSION());
+    console.log("Brokerbot base: %s", await brokerbot.base());
+    console.log("Brokerbot token: %s", await brokerbot.token());
 }
