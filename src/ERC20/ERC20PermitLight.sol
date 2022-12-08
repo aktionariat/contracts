@@ -13,26 +13,7 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
                             EIP-2612 STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    uint256 internal immutable INITIAL_CHAIN_ID;
-
-    bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;
-
-    bytes32 private immutable _HASHED_NAME;
-
     mapping(address => uint256) public override nonces;
-
-    /*//////////////////////////////////////////////////////////////
-                               CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
-
-    constructor(
-      string memory _name
-    ) {
-        bytes32 hashedName = keccak256(bytes(_name));
-        INITIAL_CHAIN_ID = block.chainid;
-        _HASHED_NAME = hashedName;
-        INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator(hashedName);
-    }
 
   /*//////////////////////////////////////////////////////////////
                              EIP-2612 LOGIC
@@ -49,8 +30,6 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
     ) public override {
         require(deadline >= block.timestamp, "PERMIT_DEADLINE_EXPIRED");
 
-        // Unchecked because the only math done is incrementing
-        // the owner's nonce which cannot realistically overflow.
         unchecked {
             address recoveredAddress = ecrecover(
                 keccak256(
@@ -59,9 +38,8 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
                         DOMAIN_SEPARATOR(),
                         keccak256(
                             abi.encode(
-                                keccak256(
-                                    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-                                ),
+                                // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                                bytes32(0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9),
                                 owner,
                                 spender,
                                 value,
@@ -82,20 +60,13 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
             _approve(recoveredAddress, spender, value);
         }
 
-        emit Approval(owner, spender, value);
+        // emit Approval(owner, spender, value);
     }
 
     function DOMAIN_SEPARATOR() public view override returns (bytes32) {
-        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator(_HASHED_NAME);
-    }
-
-    function computeDomainSeparator(bytes32 nameHash) internal view virtual returns (bytes32) {
         return
             keccak256(
                 abi.encode(
-                    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                    nameHash,
-                    keccak256("1"),
                     block.chainid,
                     address(this)
                 )

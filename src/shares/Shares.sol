@@ -75,7 +75,7 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
     )
         ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
-        ERC20PermitLight(_name)
+        ERC20PermitLight()
     {
         totalShares = _totalShares;
         terms = _terms;
