@@ -40,8 +40,9 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version history
     // Version 2: added ability to process bank orders even if buying disabled
     // Version 3: added various events, removed license fee
-    // Version 4: made version field public so it is actually usable
-    uint8 public constant VERSION = 0x4;
+    // Version 4: made version field public so it is actually usable    
+    // Version 5: added target address for withdrawEther
+    uint8 public constant VERSION = 0x5;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
@@ -247,9 +248,13 @@ contract Brokerbot is IBrokerbot, Ownable {
         return min;
     }
 
+    function withdrawEther(address target, uint256 amount) public ownerOrHub() {
+        (bool success, ) = payable(target).call{value:amount}("");
+        require(success, "Transfer failed");
+    }
+
     function withdrawEther(uint256 amount) external ownerOrHub() {
-        (bool success, ) = msg.sender.call{value:amount}("");
-        require(success, "Transfer failed.");
+        withdrawEther(msg.sender, amount);
     }
 
     function approve(address erc20, address who, uint256 amount) external onlyOwner() {
