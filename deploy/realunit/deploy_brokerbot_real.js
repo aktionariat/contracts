@@ -8,8 +8,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const owner = config.multisigAddress;
   //const shares = await deployments.get('Shares');
-  const shares = await deployments.get("AllowlistShares" + config.symbol);
-  const paymentHub = await deployments.get('PaymentHub');
+  //const shares = await deployments.get("AllowlistShares" + config.symbol);
+  const shares = "0x553C7f9C780316FC1D34b8e14ac2465Ab22a090B"
+  //const paymentHub = await deployments.get('PaymentHub');
+  const paymentHub = "0xfb330379134EA1EfCE9Cf6F28E2CcB917899e007";
   
   const price = config.sharePrice;
   const increment = config.increment;
@@ -21,8 +23,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("Deploy Brokerbot " + config.symbol);
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
-    console.log("shares: %s", shares.address);
-    console.log("paymentHub: %s", paymentHub.address);
+    console.log("shares: %s", shares);
+    console.log("paymentHub: %s", paymentHub);
     console.log("base xchf: %s", baseCurrencyContract);
     console.log("owner: %s", owner);  // don't forget to set it in deploy_config.js as the multsigadr
 
@@ -39,12 +41,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     contract: "Brokerbot",
     from: deployer,
     args: [
-      shares.address,
+      shares,
       price,
       increment,
       baseCurrencyContract,
       owner,
-      paymentHub.address],
+      paymentHub],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -59,4 +61,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
 
 module.exports.tags = ["Brokerbot"+config.symbol];
-module.exports.dependencies = ["AllowlistShares"+config.symbol, "PaymentHub"];
+//module.exports.dependencies = ["AllowlistShares"+config.symbol, "PaymentHub"];
