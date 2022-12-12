@@ -73,8 +73,6 @@ describe("Permit", () => {
       domainName = await shares.name();
       contractAddress = shares.address;
       domain = {
-        name: domainName,
-        version: domainVersion,
         chainId: chainId,
         verifyingContract: contractAddress,
       }
@@ -124,8 +122,6 @@ describe("Permit", () => {
       domainName = await draggable.name();
       contractAddress = draggable.address;
       domain = {
-        name: domainName,
-        version: domainVersion,
         chainId: chainId,
         verifyingContract: contractAddress,
       }
@@ -174,8 +170,6 @@ describe("Permit", () => {
       domainName = await allowlistShares.name();
       contractAddress = allowlistShares.address;
       domain = {
-        name: domainName,
-        version: domainVersion,
         chainId: chainId,
         verifyingContract: contractAddress,
       }
@@ -224,8 +218,6 @@ describe("Permit", () => {
       domainName = await allowlistDraggable.name();
       contractAddress = allowlistDraggable.address;
       domain = {
-        name: domainName,
-        version: domainVersion,
         chainId: chainId,
         verifyingContract: contractAddress,
       }

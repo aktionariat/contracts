@@ -67,6 +67,8 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
         return
             keccak256(
                 abi.encode(
+                    //keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
+                    bytes32(0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218),
                     block.chainid,
                     address(this)
                 )
