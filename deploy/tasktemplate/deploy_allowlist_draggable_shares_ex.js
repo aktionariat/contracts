@@ -59,7 +59,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   // set config
   nconf.set("brokerbot:shares", address);
   nconf.set("address:allowlist:draggable", address);
-  nconf.set("blocknumber", receipt.blockNumber);
+  nconf.set("blocknumber", String(receipt.blockNumber));
 };
 
 module.exports.tags = [nconf.get("symbol")+"AllowlistDraggableShares"];

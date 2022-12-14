@@ -49,8 +49,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   // set config
   nconf.set("brokerbot:shares", address);
-  nconf.set("addres:allowlist:shares", address);
-  nconf.set("blocknumber", receipt.blockNumber);
+  nconf.set("address:allowlist:shares", address);
+  nconf.set("blocknumber", String(receipt.blockNumber));
 };
 
 module.exports.tags = [nconf.get("symbol")+"AllowlistShares"];

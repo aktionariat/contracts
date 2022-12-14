@@ -54,7 +54,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   // set config 
   nconf.set("brokerbot:shares", address);
   nconf.set("address:share", address);
-  nconf.set("blocknumber", receipt.blockNumber);
+  nconf.set("blocknumber", String(receipt.blockNumber));
   nconf.set("version:shares", version);
 };
 
