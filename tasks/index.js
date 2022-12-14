@@ -59,7 +59,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                     factory = "0x1abD8b5194D733691D64c3F898300f88Ba0035d5" // optimism kovan factory
                     break;
                 case "optimism":
-                    factory = "0x12d57174b35D64Fc2798E7AA62F8379Bb49C2250" // optimism factory
+                    factory = "0xB2A8D3cc37D914c8868d3fC8d011A65A266d56a8" // optimism factory
                     break;
             }
         }
@@ -168,9 +168,11 @@ task("init-deploy", "creates files for client deployment")
         tags: deployConfig.symbol+"Brokerbot",
     });
 
+    
     // write deploy log
     nconf.save();
-
+    await readDeployValues();
+    
     // verify on etherscan
     const verify = await askConfirmWithMsg("Do you want to verify on etherscan?");
     if (network.name != "hardhat" && verify) {
@@ -217,7 +219,7 @@ task("register", "Register contracts in the backend")
     }
     let registerChoices;
     if (taskArgs.choices) {
-        registerChoices = choices.split(" ");
+        registerChoices = taskArgs.choices.split(" ");
     } else {
         registerChoices = await askWhatToRegister();
     }
@@ -327,7 +329,7 @@ task("deploy-multisig-batch", "deploys multiple multisigs at once")
         nconf.use('memory');
         nconf.set("silent", true);
         const firstSigner = "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b";
-        for (let index = 0; index < 27; index++) {            
+        for (let index = 0; index < 22; index++) {            
             let saltName = "fixv2"+index
             await hre.run("create-multisig-clone", {
                 salt: saltName,
@@ -408,4 +410,22 @@ async function switchToBranch(networkName) {
             await git.checkout("deployment-template")
             break;
     }
+}
+
+async function readDeployValues() {
+    const shares = await ethers.getContractAt("Shares", nconf.get("address:share"));
+    const draggable = await ethers.getContractAt("DraggableShares", nconf.get("address:draggable"));
+    const brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));
+    console.log("=============================================================")
+    console.log("===== Deployment Finished with following on-chain data ======")
+    console.log("=============================================================")
+    console.log("Draggable named: %s", await draggable.name());
+    console.log("Draggable symbol: %s", await draggable.symbol());
+    console.log("draggable terms: %s", await draggable.terms());
+    console.log("draggable quorum: %s", await draggable.quorum());
+    console.log("Draggable oracle: %s", await draggable.oracle());
+    console.log("Share version: %s", await shares.VERSION());
+    console.log("Brokerbot version: %s", await brokerbot.VERSION());
+    console.log("Brokerbot base: %s", await brokerbot.base());
+    console.log("Brokerbot token: %s", await brokerbot.token());
 }
