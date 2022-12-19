@@ -29,6 +29,7 @@ pragma solidity ^0.8.0;
 
 import "../utils/Address.sol";
 import "../ERC20/IERC20.sol";
+import "../ERC20/IERC20Permit.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
@@ -236,6 +237,28 @@ contract PaymentHub {
         IBrokerbot(recipient).processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
     }
 
+    /**
+     * @notice Sell shares with permit
+     * 
+     * @param recipient The brokerbot to recive the shares.
+     * @param seller The address of the seller.
+     * @param amountToSell The amount the seller wants to sell.
+     * @param deadline The deadline of the permit.
+     * @param ref Reference of the insider declaration and the type of sell.
+     * @param v Part of the permit signature.
+     * @param r Part of the permit signature.
+     * @param s Part of the permit signature.
+     */
+    function sellSharesWithPermit(address recipient, address seller, uint256 amountToSell, uint256 deadline, bytes calldata ref, uint8 v, bytes32 r, bytes32 s) external {
+        IERC20Permit token = IBrokerbot(recipient).token();
+        // Call permit 
+        token.permit(seller, address(this), amountToSell, deadline, v, r,s);
+        // send token to brokerbot
+        token.transferFrom(seller, recipient, amountToSell);
+        // process sell
+        IBrokerbot(recipient).processIncoming(IERC20(token), seller, amountToSell, ref);
+    }
+    
     /**
      * Checks if the recipient(brokerbot) has setting enabled to keep ether
      */
