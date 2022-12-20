@@ -44,6 +44,8 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
  */
 contract PaymentHub {
 
+    address immutable trustedForwarder;
+
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
     address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
@@ -55,7 +57,8 @@ contract PaymentHub {
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
 
-    constructor(IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
+    constructor(address _trustedForwarder, IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
+        trustedForwarder = _trustedForwarder;
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
         priceFeedCHFUSD = _aggregatorCHFUSD;
@@ -250,6 +253,7 @@ contract PaymentHub {
      * @param s Part of the permit signature.
      */
     function sellSharesWithPermit(address recipient, address seller, uint256 amountToSell, uint256 exFee, uint256 deadline, bytes calldata ref, uint8 v, bytes32 r, bytes32 s) external {
+        require(msg.sender == trustedForwarder || msg.sender == seller, "not trusted");
         IERC20Permit token = IBrokerbot(recipient).token();
         // Call permit 
         token.permit(seller, address(this), amountToSell, deadline, v, r,s);

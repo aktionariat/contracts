@@ -43,6 +43,8 @@ describe("Permit", () => {
   let chainId = 1 ;
   let contractAddress;
 
+  const fee = "100000000000000000";
+
   before(async() => {
     // deploy contracts and set up signers
     [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
@@ -203,8 +205,30 @@ describe("Permit", () => {
        )).to.be.revertedWith("INVALID_SIGNER");
    });
 
+   it("Should revert sell shares with permit for crypto if not from trusted relayer", async () => {
+    const relayer = sig1;
+    // sign permit with sig3
+    const seller = sig3;
+    const nonce = await draggable.connect(seller).nonces(seller.address);
+    const deadline = ethers.constants.MaxUint256;
+    const value = 200;
+    const spender = paymentHub.address;
+    const permitOwner = seller.address;
+    const permitValue =  {
+      owner: permitOwner,
+      spender,
+      value,
+      nonce,
+      deadline,
+    }
+    const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
+    // relayer calls sell via paymenthub
+    await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, fee, deadline, "0x01", v, r, s))
+      .to.be.revertedWith("not trusted");
+  });
+
     it("Should sell shares with permit for crypto", async () => {
-      const relayer = sig1;
+      const relayer = deployer;
       // sign permit with sig3
       const seller = sig3;
       const nonce = await draggable.connect(seller).nonces(seller.address);
@@ -224,15 +248,15 @@ describe("Permit", () => {
       const sellPrice = await brokerbot.getSellPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, deadline, "0x01", v, r, s);
+      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, fee, deadline, "0x01", v, r, s);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
-      expect(baseCurrencyBefore.add(sellPrice)).to.be.equal(baseCurrencyAfter);
+      expect(baseCurrencyBefore.add(sellPrice).sub(fee)).to.be.equal(baseCurrencyAfter);
       expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
     });
 
     it("Should sell shares with permit for fiat", async () => {
-      const relayer = sig1;
+      const relayer = deployer;
       // sign permit with sig3
       const seller = sig3;
       const nonce = await draggable.connect(seller).nonces(seller.address);
@@ -252,7 +276,8 @@ describe("Permit", () => {
       const sellPrice = await brokerbot.getSellPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, deadline, "0x02", v, r, s);
+      // fee should be 0 on sell for fiat
+      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, 0, deadline, "0x02", v, r, s);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
       expect(baseCurrencyBefore).to.be.equal(baseCurrencyAfter);
