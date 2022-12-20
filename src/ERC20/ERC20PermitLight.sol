@@ -54,9 +54,9 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
                 s
             );
 
+            require(recoveredAddress != address(0) && recoveredAddress == owner, "INVALID_SIGNER");
+            _approve(recoveredAddress, spender, value);
         }
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "INVALID_SIGNER");
-        _approve(recoveredAddress, spender, value);
     }
 
     function DOMAIN_SEPARATOR() public view override returns (bytes32) {
