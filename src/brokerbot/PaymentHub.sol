@@ -249,14 +249,21 @@ contract PaymentHub {
      * @param r Part of the permit signature.
      * @param s Part of the permit signature.
      */
-    function sellSharesWithPermit(address recipient, address seller, uint256 amountToSell, uint256 deadline, bytes calldata ref, uint8 v, bytes32 r, bytes32 s) external {
+    function sellSharesWithPermit(address recipient, address seller, uint256 amountToSell, uint256 exFee, uint256 deadline, bytes calldata ref, uint8 v, bytes32 r, bytes32 s) external {
         IERC20Permit token = IBrokerbot(recipient).token();
         // Call permit 
         token.permit(seller, address(this), amountToSell, deadline, v, r,s);
         // send token to brokerbot
         token.transferFrom(seller, recipient, amountToSell);
         // process sell
-        IBrokerbot(recipient).processIncoming(IERC20(token), seller, amountToSell, ref);
+        if (exFee > 0){
+            uint256 proceeds = IBrokerbot(recipient).processIncoming(IERC20(token), address(this), amountToSell, ref);
+            IERC20 currency = IBrokerbot(recipient).base();
+            currency.transfer(msg.sender, exFee);
+            currency.transfer(seller, proceeds - exFee);
+        } else {
+            IBrokerbot(recipient).processIncoming(IERC20(token), seller, amountToSell, ref);
+        }
     }
     
     /**
