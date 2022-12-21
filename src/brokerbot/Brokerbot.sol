@@ -43,7 +43,8 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version 3: added various events, removed license fee
     // Version 4: made version field public so it is actually usable    
     // Version 5: added target address for withdrawEther
-    uint8 public constant VERSION = 0x5;
+    // Version 6: added costs field to notifyTrade
+    uint8 public constant VERSION = 0x6;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
@@ -122,7 +123,8 @@ contract Brokerbot is IBrokerbot, Ownable {
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
         require(hasSetting(BUYING_ENABLED), "buying disabled");
         uint shares = getShares(paid);
-        uint costs = notifyTraded(from, shares, ref);
+        uint costs = getBuyPrice(shares);
+        notifyTraded(from, shares, costs, ref);
         if (costs < paid){
             IERC20(base).transfer(from, paid - costs);
         }
@@ -131,33 +133,32 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     // Callers must verify that (hasSetting(BUYING_ENABLED) || msg.sender == owner) holds!
-    function notifyTraded(address from, uint256 shares, bytes calldata ref) internal returns (uint256) {
+    function notifyTraded(address from, uint256 shares, uint256 costs, bytes calldata ref) internal returns (uint256) {
         // disabling the requirement below for efficiency as this always holds once we reach this point
         // require(hasSetting(BUYING_ENABLED) || msg.sender == owner, "buying disabled");
-        uint costs = getBuyPrice(shares);
         price = price + (shares * increment);
         emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
         return costs;
     }
 
-    function notifyTrade(address buyer, uint256 shares, bytes calldata ref) external onlyOwner {
-        notifyTraded(buyer, shares, ref);
+    function notifyTrade(address buyer, uint256 shares, uint256 costs, bytes calldata ref) external onlyOwner {
+        notifyTraded(buyer, shares, costs, ref);
     }
 
-    function notifyTradeAndTransfer(address buyer, uint256 shares, bytes calldata ref) public onlyOwner {
-        notifyTraded(buyer, shares, ref);
+    function notifyTradeAndTransfer(address buyer, uint256 shares, uint256 costs, bytes calldata ref) public onlyOwner {
+        notifyTraded(buyer, shares, costs, ref);
         IERC20(token).transfer(buyer, shares);
     }
 
-    function notifyTrades(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) external onlyOwner {
+    function notifyTrades(address[] calldata buyers, uint256[] calldata shares, uint256[] calldata costs, bytes[] calldata ref) external onlyOwner {
         for (uint i = 0; i < buyers.length; i++) {
-            notifyTraded(buyers[i], shares[i], ref[i]);
+            notifyTraded(buyers[i], shares[i], costs[i], ref[i]);
         }
     }
 
-    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata shares, bytes[] calldata ref) external onlyOwner {
+    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata shares, uint256[] calldata costs, bytes[] calldata ref) external onlyOwner {
         for (uint i = 0; i < buyers.length; i++) {
-            notifyTradeAndTransfer(buyers[i], shares[i], ref[i]);
+            notifyTradeAndTransfer(buyers[i], shares[i], costs[i], ref[i]);
         }
     }
 
