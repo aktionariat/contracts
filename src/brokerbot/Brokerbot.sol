@@ -14,6 +14,7 @@ pragma solidity ^0.8.0;
 
 import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";
+import "../ERC20/IERC20Permit.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "./IBrokerbot.sol";
 
@@ -22,7 +23,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     address public paymenthub;
 
     IERC20 public override immutable base;  // ERC-20 currency
-    IERC20 public immutable token; // ERC-20 share token
+    IERC20Permit public override immutable token; // ERC-20 share token
 
     uint256 private price; // current offer price in base currency, without drift
     uint256 public increment; // increment step the price in/decreases when buying/selling
@@ -40,21 +41,22 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version history
     // Version 2: added ability to process bank orders even if buying disabled
     // Version 3: added various events, removed license fee
-    // Version 4: made version field public so it is actually usable
+    // Version 4: made version field public so it is actually usable    
+    // Version 5: added target address for withdrawEther
     // Version 6: added costs field to notifyTrade
     uint8 public constant VERSION = 0x6;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
 
-    event Trade(IERC20 indexed token, address who, bytes ref, int amount, IERC20 base, uint totPrice, uint fee, uint newprice);
+    event Trade(IERC20Permit indexed token, address who, bytes ref, int amount, IERC20 base, uint totPrice, uint fee, uint newprice);
     event PaymentHubUpdate(address indexed paymentHub);
     event PriceSet(uint256 price, uint256 increment);
     event DriftSet(uint256 timeToDrift, int256 driftIncrement);
     event SettingsChange(uint256 setting);
 
     constructor(
-        IERC20 _token,
+        IERC20Permit _token,
         uint256 _price,
         uint256 _increment,
         IERC20 _base,

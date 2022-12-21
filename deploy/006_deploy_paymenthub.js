@@ -37,6 +37,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     contract: "PaymentHub",
     from: deployer,
     args: [
+      deployer,
       uniswapQuoter,
       uniswapRouter,
       priceFeedCHFUSD,
