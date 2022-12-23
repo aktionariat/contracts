@@ -49,11 +49,11 @@ import "../shares/IShares.sol";
  */
 contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
 
-    uint8 public constant VERSION = 2;
-
     // Version history:
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
+    // 3: added permit
+    uint8 public constant VERSION = 3;
 
     string public terms;
 
