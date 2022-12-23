@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
+const { recoverAddress } = require('ethers/lib/utils');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -7,25 +8,21 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deployer } = await getNamedAccounts();
 
   const owner = nconf.get("multisigAddress");
-  const symbol = nconf.get("symbol");
-  const shares = await deployments.get(symbol+"Shares");
-  const recoveryHub = await deployments.get("RecoveryHub");
-  const offerFactory = await deployments.get("OfferFactory");
-  nconf.set("address:recoveryHub", recoveryHub.address);
-  nconf.set("address:offerFactory", offerFactory.address)
   
+  const recoveryHub = await deployments.get("RecoveryHub");
+  nconf.set("address:recoveryHub", recoveryHub.address);
+
+  const symbol = nconf.get("symbol");
+  const name = nconf.get("name");
   const terms = nconf.get("terms");
-  const quorumBps = nconf.get("quorumBps");
-  const votePeriodSeconds = nconf.get("votePeriodSeconds");
+  const totalShares = nconf.get("totalShares");
   
   if (network.name != "hardhat" && !nconf.get("silent")) {
-    console.log("-----------------------");
-    console.log("Deploy DraggableShares " + symbol);
-    console.log("-----------------------");
+    console.log("-----------------------")
+    console.log("Deploy Shares "+ symbol)
+    console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("shares: %s", shares.address);
     console.log("recoveryHub: %s", recoveryHub.address);
-    console.log("offer factory: %s", offerFactory.address);
     console.log("owner: %s", owner); // don't forget to set it in deploy_config.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
@@ -37,27 +34,29 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address, receipt } = await deploy(symbol+"DraggableShares", {
-    contract: "DraggableShares",
+  const { address, receipt } = await deploy(symbol+"Shares", {
+    contract: "Shares",
     from: deployer,
     args: [
+      symbol,
+      name,
       terms,
-      shares.address,
-      quorumBps,
-      votePeriodSeconds,
-      recoveryHub.address,
-      offerFactory.address,
-      owner],
+      totalShares,
+      owner,
+      recoveryHub.address],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
+  const sharesContract = await ethers.getContract(symbol+"Shares");
+  const version = await sharesContract.VERSION();
 
-  // set config
+  // set config 
   nconf.set("brokerbot:shares", address);
-  nconf.set("address:draggable", address);
-  nconf.set("blocknumber", String(receipt.blockNumber));
+  nconf.set("address:share", address);
+  nconf.set("blocknumber", receipt.blockNumber);
+  nconf.set("version:shares", version);
 };
 
-module.exports.tags = [nconf.get("symbol")+"DraggableShares"];
-module.exports.dependencies = [nconf.get("symbol")+"Shares", "RecoveryHub", "OfferFactory"];
+module.exports.tags = [nconf.get("symbol")+"Shares"];
+module.exports.dependencies = ["RecoveryHub"];

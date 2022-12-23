@@ -14,4 +14,8 @@ interface IOffer {
 	function price() external view returns (uint256);
 
 	function isWellFunded() external view returns (bool);
+
+	function voteYes() external;
+
+	function voteNo() external;
 }
