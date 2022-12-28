@@ -55,7 +55,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const version = await brokerbotContract.VERSION();
   
   // register brokerbot at registry
-  brokerbotRegistry = await ethers.getContract("BrokerbotRegistry")
+  brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"); // is fixed address (change will mess up subgraph)
   const prompt = await new Confirm("Register brokerbot?").run();
     if(prompt) {
       await brokerbotRegistry.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, sharesAddress, { gasLimit: 50000});
@@ -69,4 +69,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
 
 module.exports.tags = [nconf.get("symbol")+"Brokerbot"];
-module.exports.dependencies = ["PaymentHub", "BrokerbotRegistry"];
+module.exports.dependencies = ["PaymentHub"];
