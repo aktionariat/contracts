@@ -1,0 +1,34 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "Sportsparadise Switzerland AG",
+  "multisigSigner": "0x0fe9cf98e4e813b766edb1b58dc764e2622d64ef",
+  "symbol": "SPO",
+  "name": "Sportsparadise Switzerland AG Shares",
+  "terms": "https://www.sportsparadise.ch/page/crowdinvesting",
+  "totalShares": "1651040",
+  "sharePrice": "1800000000000000000",
+  "increment": "5000000000000",
+  "quorumBps": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x42AD6513979694794947475f82eB5E3D74d0C4cD",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "share": "0xDe9b911A2C3984bA956ae2415A3E938aaC840e13",
+    "offerFactory": "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531",
+    "draggable": "0x0D82b5d3a8420c285c6d353a6BDc30d164bB50f0",
+    "paymentHub": "0x06512E6bAB2712fCa9F4D123C80FCE34de2bC2D7",
+    "brokerbot": "0xB1335b28d5e9BD5924e93b640C24f106CFb8Aeb3",
+    "brokerbotRegistry": "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093"
+  },
+  "brokerbot": {
+    "shares": "0x0D82b5d3a8420c285c6d353a6BDc30d164bB50f0"
+  },
+  "blocknumber": "56656155",
+  "version": {
+    "shares": 3,
+    "brokerbot": 6
+  }
+}
