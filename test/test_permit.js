@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const { setup } = require("./helper/index");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_optimism.js");
 
 describe("Permit", () => {
   let draggable;

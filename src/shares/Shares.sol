@@ -163,7 +163,7 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
         }
     }
 
-    function mint(address target, uint256 amount) public onlyOwner {
+    function mint(address target, uint256 amount) virtual public onlyOwner {
         _mint(target, amount);
     }
 
@@ -180,7 +180,7 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
         super._mint(account, amount);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable, IERC20) public returns (bool) {
         return super.transfer(to, value);
     }
 
