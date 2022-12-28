@@ -44,7 +44,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
  */
 contract PaymentHub {
 
-    address immutable trustedForwarder;
+    address public trustedForwarder;
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
@@ -57,12 +57,20 @@ contract PaymentHub {
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
 
+    event ForwarderChanged(address _oldForwarder, address _newForwarder);
+
     constructor(address _trustedForwarder, IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
         trustedForwarder = _trustedForwarder;
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
         priceFeedCHFUSD = _aggregatorCHFUSD;
         priceFeedETHUSD = _aggregatorETHUSD;
+    }
+
+    function changeForwarder(address newForwarder) external {
+        require(msg.sender == trustedForwarder, "not forwarder");
+        trustedForwarder = newForwarder;
+        emit ForwarderChanged(msg.sender, newForwarder);
     }
 
     /*  
