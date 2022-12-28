@@ -24,6 +24,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Deploy Paymenthub");
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
+    console.log("forwarder: %s", forwarder);
     console.log("chainlink chf usd: %s", priceFeedCHFUSD);
     console.log("chainlink eth usd: %s", priceFeedETHUSD);
     console.log("uniswap qouter: %s", uniswapQuoter);
