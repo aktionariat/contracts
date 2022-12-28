@@ -118,6 +118,19 @@ describe("New PaymentHub", () => {
     });
   });
 
+  describe("Forwarder", () => {
+    it("Should change forwarder", async () => {
+      expect(await paymentHub.trustedForwarder()).to.be.equal(deployer.address);
+      await expect(paymentHub.connect(deployer).changeForwarder(sig1.address))
+        .to.emit(paymentHub, 'ForwarderChanged')
+        .withArgs(deployer.address, sig1.address);
+      expect(await paymentHub.trustedForwarder()).to.be.equal(sig1.address);
+      await expect(paymentHub.connect(deployer).changeForwarder(deployer.address))
+        .to.revertedWith("not forwarder");
+      await paymentHub.connect(sig1).changeForwarder(deployer.address)
+    })
+  })
+
   describe("Trading with ETH", () => {
     beforeEach(async () => {
       const randomAmount = chance.natural({ min: 500, max: 50000 });

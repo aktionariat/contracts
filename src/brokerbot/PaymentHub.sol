@@ -42,7 +42,7 @@ import "./IBrokerbot.sol";
  */
 contract PaymentHub {
 
-    address immutable trustedForwarder;
+    address public trustedForwarder;
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint24 private constant LOW_FEE = 500;
@@ -52,13 +52,21 @@ contract PaymentHub {
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
 
+    event ForwarderChanged(address _oldForwarder, address _newForwarder);
+
     constructor(address _trustedForwarder, IQuoter _quoter, ISwapRouter swapRouter) {
         trustedForwarder = _trustedForwarder;
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
     }
 
-    /*  
+    function changeForwarder(address newForwarder) external {
+        require(msg.sender == trustedForwarder, "not forwarder");
+        trustedForwarder = newForwarder;
+        emit ForwarderChanged(msg.sender, newForwarder);
+    }
+
+    /*
      * Get price in ERC20
      * This is the method that the Brokerbot widget should use to quote the price to the user.
      * @param amountInBase The amount of the base currency for the exact output.
@@ -208,7 +216,6 @@ contract PaymentHub {
 
     /**
      * @notice Sell shares with permit
-     *
      * @param recipient The brokerbot to recive the shares.
      * @param seller The address of the seller.
      * @param amountToSell The amount the seller wants to sell.
