@@ -7,7 +7,7 @@ const config = require("../scripts/deploy_config_optimism.js");
 // Libraries
 const Chance = require("chance");
 const { ethers } = require("hardhat");
-const { buyingEnabled, sellingEnabled } = require("./helper/index");
+const { buyingEnabled, sellingEnabled, setup } = require("./helper/index");
 const { expect } = require("chai");
 const exp = require("constants");
 
@@ -27,6 +27,8 @@ describe("Brokerbot", () => {
   before(async () => {
     [deployer,owner,sig1] = await ethers.getSigners();
     accounts = [owner.address,sig1.address];
+    // deploy contracts
+    await setup();
 
     //get references
     paymentHub = await ethers.getContract("PaymentHub");
@@ -390,6 +392,24 @@ describe("Brokerbot", () => {
       const shares = [
         50, 20, 10, 450, 50, 10, 12, 50, 20, 12, 10, 10, 10, 50, 50, 50,
       ];
+      const costs = [
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+      ];
       const ref = [
         "0x",
         "0x",
@@ -418,7 +438,7 @@ describe("Brokerbot", () => {
         })
       );
 
-      await brokerbot.connect(owner).notifyTradesAndTransfer(buyers, shares, ref);
+      await brokerbot.connect(owner).notifyTradesAndTransfer(buyers, shares, costs, ref);
 
       const brokerbotBalanceAfter = await draggableShares.balanceOf(
         brokerbot.address
@@ -475,6 +495,24 @@ describe("Brokerbot", () => {
       const shares = [
         50, 20, 10, 450, 50, 10, 12, 50, 20, 12, 10, 10, 10, 50, 50, 50,
       ];
+      const costs = [
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+        "1000000000000000000",
+      ];
       const ref = [
         "0x",
         "0x",
@@ -505,7 +543,7 @@ describe("Brokerbot", () => {
 
       const sharesAmount = shares.reduce((a,b) => a+b, 0);
 
-      await brokerbot.connect(owner).notifyTrades(buyers, shares, ref);
+      await brokerbot.connect(owner).notifyTrades(buyers, shares, costs, ref);
 
       const price2 = await brokerbot.getBuyPrice(1);
 
@@ -537,12 +575,23 @@ describe("Brokerbot", () => {
       
       let balanceBefore = await draggableShares.balanceOf(brokerbot.address);
       let price1 = await brokerbot.getBuyPrice(1);
-      await brokerbot.connect(owner).notifyTrade(accounts[0], 700, "0x");
-      await brokerbot.connect(owner).notifyTradeAndTransfer(accounts[0], 300, "0x");
+      const amountBuy1 = 700;
+      const priceAfterBuy1 = price1.add(increment.mul(amountBuy1));
+      await expect(brokerbot.connect(owner).notifyTrade(accounts[0], amountBuy1, price1.mul(amountBuy1), "0x"))
+        .to.emit(brokerbot, 'Trade').withArgs(
+          draggableShares.address, accounts[0], "0x", amountBuy1, baseCurrency.address, price1.mul(amountBuy1), 0, priceAfterBuy1
+        );
+      const amountBuy2 = 300;
+      const priceAfterBuy2 = priceAfterBuy1.add(increment.mul(amountBuy2));
+      await expect(await brokerbot.connect(owner).notifyTradeAndTransfer(accounts[0], amountBuy2, price1.mul(amountBuy2), "0x"))
+        .to.emit(brokerbot, 'Trade').withArgs(
+          draggableShares.address, accounts[0], "0x", amountBuy2, baseCurrency.address, price1.mul(amountBuy2), 0, priceAfterBuy2
+        );
       let price2 = await brokerbot.getBuyPrice(1);
       let balanceAfter = await draggableShares.balanceOf(brokerbot.address);
       
-      expect(price1.add(increment.mul(1000))).to.eq(price2);
+      expect(price1.add(increment.mul(amountBuy1+amountBuy2))).to.eq(price2);
+      // only the amount at buy2 (300) with transfer should change balance
       expect(balanceAfter.add(300)).to.eq(balanceBefore);
     })
     
@@ -553,7 +602,10 @@ describe("Brokerbot", () => {
 
       await expect(draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x04"))
         .to.be.revertedWith("unknown ref");
-      await draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x");
+      expect(await draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x"))
+        .to.emit(brokerbot, "Trade").withArgs(
+          draggableShares.address, sig1.address, 10, baseCurrency.address, "1000000000000000000", 0, sellPrice
+        );
       const baseCurrencyAfter = await baseCurrency.balanceOf(sig1.address);
       expect(baseCurrencyBefore.add(sellPrice)).to.be.equal(baseCurrencyAfter);
     })

@@ -1,0 +1,33 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "multisigSigner": "0xbFE09bd590cCb62EE3EE49940520E597602D8Cce",
+  "symbol": "DAXT",
+  "name": "Daxtro Swiss SA Shares",
+  "terms": "https://www.daxtroswiss.ch/investors",
+  "totalShares": "100000",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 5100,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0xbadfF10E63d7Da5e86Dd7fbB5AE4611f0C535145",
+  "address": {
+    "recoveryHub": "0x2b2B237d8f9a42706bdCD4083C20a2b799C8B45C",
+    "share": "0xD151546e3315Bd3594F4C47DFf81E57Aa9945Ce8",
+    "offerFactory": "0x2BC8102bC1EaB3689f0dAdB53071AB5965cEEfd4",
+    "draggable": "0xC69f6321A4B78A9e8a59149e0dC48dED4b9e567b",
+    "paymentHub": "0xfb330379134EA1EfCE9Cf6F28E2CcB917899e007",
+    "brokerbot": "0xFfEd1d4E809523cC47164DD07973BD77B1b07577",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0xC69f6321A4B78A9e8a59149e0dC48dED4b9e567b"
+  },
+  "blocknumber": 15796462,
+  "version": {
+    "shares": 2,
+    "brokerbot": 5
+  }
+}

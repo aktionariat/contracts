@@ -1,11 +1,12 @@
 const Confirm = require('prompt-confirm');
+const nconf = require('nconf');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
 
   const { deployer, owner } = await getNamedAccounts();
     
-  if (network.name != "hardhat") {
+  if (network.name != "hardhat" && !nconf.get("silent")) {
     console.log("-----------------------")
     console.log("Deploy Brokerbot Registry")
     console.log("-----------------------")

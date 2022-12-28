@@ -1,0 +1,34 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Somapharm AG",
+  "multisigSigner": "0x0fe9cf98e4e813b766edb1b58dc764e2622d64ef",
+  "symbol": "SOMA",
+  "name": "Somapharm AG Shares",
+  "terms": "http://www.somapharm.ch/investoren",
+  "totalShares": "10000000",
+  "sharePrice": "6450000000000000000",
+  "increment": "5000000000000",
+  "quorumBps": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0xAA4350E9086EE16c3675D4fDa69904c086920D69",
+  "address": {
+    "recoveryHub": "0x2b2B237d8f9a42706bdCD4083C20a2b799C8B45C",
+    "share": "0x60B04b30E8e6e0121d121077124876b5559D9E21",
+    "offerFactory": "0x2BC8102bC1EaB3689f0dAdB53071AB5965cEEfd4",
+    "draggable": "0x09445a10fF503fB696D0F81723c71966Fa3348C7",
+    "paymentHub": "0xfb330379134EA1EfCE9Cf6F28E2CcB917899e007",
+    "brokerbot": "0x85a4821068334c3B219aeF4cD6461061eFD0be9d",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x09445a10fF503fB696D0F81723c71966Fa3348C7"
+  },
+  "blocknumber": 16068752,
+  "version": {
+    "shares": 2,
+    "brokerbot": 5
+  }
+}

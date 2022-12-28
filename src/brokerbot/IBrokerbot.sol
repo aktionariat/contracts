@@ -2,10 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "../ERC20/IERC20.sol";
+import "../ERC20/IERC20Permit.sol";
 
 interface IBrokerbot {
 
   function base() external view returns (IERC20);
+
+  function token() external view returns (IERC20Permit);
   
   function settings() external view returns (uint256);
 

@@ -1,0 +1,35 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "CAM Schweiz AG",
+  "multisigSigner": "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be",
+  "symbol": "CAM",
+  "name": "CAM Schweiz AG",
+  "terms": "www.c-am.ch/shares",
+  "totalShares": "11924000",
+  "sharePrice": "10000000000000000",
+  "increment": "0",
+  "quorumBps": 6600,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": true,
+  "Draggable": true,
+  "multisigAddress": "0x9BC2D8bb6Cf6Df1D79AE22aE796b1A697fA36d48",
+  "address": {
+    "recoveryHub": "0x2b2B237d8f9a42706bdCD4083C20a2b799C8B45C",
+    "allowlist": {
+      "shares": "0x801bB49EfAdf9b8a9Ad7dC0B8275Ec94B92D2497",
+      "draggable": "0x48ce1476B47Bb4E2946839Ee624dEECC7DfEf16B"
+    },
+    "offerFactory": "0x2BC8102bC1EaB3689f0dAdB53071AB5965cEEfd4",
+    "paymentHub": "0xfb330379134EA1EfCE9Cf6F28E2CcB917899e007",
+    "brokerbot": "0x9F524C14005881c90F5E044DD83a0fA9405BcB40",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x48ce1476B47Bb4E2946839Ee624dEECC7DfEf16B"
+  },
+  "blocknumber": "16197335",
+  "version": {
+    "brokerbot": 5
+  }
+}

@@ -111,6 +111,7 @@ async function setup() {
     "OfferFactory",
     "Shares",
     "DraggableShares",
+    "AllowlistShares",
     "PaymentHub",
     "Brokerbot"
   ]);
@@ -133,6 +134,8 @@ async function setup() {
 
   // Mint baseCurrency Tokens (xchf) to first 5 accounts
   await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+  // set baseCurrency Token (xchf) at brokerbot to sell shares
+  await setBalance(baseCurrency, config.xchfBalanceSlot, [brokerbot.address]);
 
   //Mint shares to first 5 accounts
   for( let i = 0; i < accounts.length; i++) {

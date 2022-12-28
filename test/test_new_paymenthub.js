@@ -233,11 +233,12 @@ describe("New PaymentHub", () => {
     });
 
     it("Should buy shares and pay with DAI", async () => {
+      const buyer = sig1;
       // allowance for DAI
-      await daiContract.connect(sig1).approve(paymentHub.address, daiAmount);
+      await daiContract.connect(buyer).approve(paymentHub.address, daiAmount);
 
       const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
-      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      const paymentHubAdr1 = await paymentHub.connect(buyer);
       await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbotDAI.address, daiAmount, "0x01");
       const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
 
@@ -263,6 +264,7 @@ describe("New PaymentHub", () => {
 
     it("Should buy shares with WBTC and trade it to XCHF", async () => {
       const base = await brokerbot.base();
+      const buyer = sig1;
       //approve WBTC in the paymenthub
       await paymentHub.approveERC20(config.wbtcAddress);
 
@@ -273,14 +275,14 @@ describe("New PaymentHub", () => {
       const priceInWBTCWithSlippage = priceInWBTC.mul(101).div(100);
 
       // approve wbtc for the user
-      await wbtcContract.connect(sig1).approve(paymentHub.address, priceInWBTCWithSlippage);
+      await wbtcContract.connect(buyer).approve(paymentHub.address, priceInWBTCWithSlippage);
 
       //trade and log balance change
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
       const sharesBefore = await draggableShares.balanceOf(sig1.address);
       //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
-      await paymentHub.connect(sig1).payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, path, "0x01");
-      const sharesAfter = await draggableShares.balanceOf(sig1.address);
+      await paymentHub.connect(buyer).payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, path, "0x01");
+      const sharesAfter = await draggableShares.balanceOf(buyer.address);
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
       //console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
 
@@ -302,11 +304,12 @@ describe("New PaymentHub", () => {
     });
 
     it("Should buy shares with XCHF", async () => {
+      const buyer = sig1;
       // allowance for XCHF
-      await baseCurrency.connect(sig1).approve(paymentHub.address, xchfamount);
+      await baseCurrency.connect(buyer).approve(paymentHub.address, xchfamount);
 
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      const paymentHubAdr1 = await paymentHub.connect(buyer);
 
       // revert if want to buy with more xchf than is owned
       const exceedingAmount = ethers.utils.parseEther("1000000000");
@@ -321,11 +324,12 @@ describe("New PaymentHub", () => {
     })
 
     it("Should be able to buy shares via multiPayAndNotify", async () => {
+      const buyer = sig1;
       // allowance for XCHF
-      await baseCurrency.connect(sig1).approve(paymentHub.address, xchfamount.mul(2));
+      await baseCurrency.connect(buyer).approve(paymentHub.address, xchfamount.mul(2));
 
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      const paymentHubAdr1 = await paymentHub.connect(buyer);
       const brokerbots = [brokerbot.address, brokerbot.address];
       const amounts = [xchfamount, xchfamount];
       await paymentHubAdr1.multiPayAndNotify(config.baseCurrencyAddress, brokerbots, amounts, "0x01");
@@ -336,19 +340,20 @@ describe("New PaymentHub", () => {
     })
     
     it("Should repay XCHF if too much XCHF was paid", async () => {
+      const buyer = sig1;
       // allowance for XCHF
-      await baseCurrency.connect(sig1).approve(paymentHub.address, config.infiniteAllowance);
+      await baseCurrency.connect(buyer).approve(paymentHub.address, config.infiniteAllowance);
 
       // overpay amount
       const overpayDif = ethers.utils.parseEther("0.5");
       const overpayAmount = xchfamount.add(overpayDif);
 
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-      const userBalanceBefore = await baseCurrency.balanceOf(sig1.address);
-      const paymentHubAdr1 = await paymentHub.connect(sig1);
+      const userBalanceBefore = await baseCurrency.balanceOf(buyer.address);
+      const paymentHubAdr1 = await paymentHub.connect(buyer);
       await paymentHubAdr1["payAndNotify(address,uint256,bytes)"](brokerbot.address, overpayAmount, "0x01");
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
-      const userBalanceAfter = await baseCurrency.balanceOf(sig1.address);
+      const userBalanceAfter = await baseCurrency.balanceOf(buyer.address);
 
       // brokerbot should have after the payment the xchf in the balance
       expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
@@ -385,6 +390,7 @@ describe("New PaymentHub", () => {
     });
 
     it("Should buy shares with XCHF and trade it to DAI", async () => {
+      const buyer = sig1;
       //approve XCHF in the paymenthub
       await paymentHub.approveERC20(config.baseCurrencyAddress);
 
@@ -395,14 +401,14 @@ describe("New PaymentHub", () => {
       const priceInXCHFWithSlippage = priceInXCHF.mul(101).div(100);
 
       // approve xchf for the user
-      await baseCurrency.connect(sig1).approve(paymentHub.address, priceInXCHFWithSlippage);
+      await baseCurrency.connect(buyer).approve(paymentHub.address, priceInXCHFWithSlippage);
 
       //trade and log balance change
       const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
-      const sharesBefore = await shares.balanceOf(sig1.address);
+      const sharesBefore = await shares.balanceOf(buyer.address);
       //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
       await paymentHub.connect(sig1).payFromERC20AndNotify(brokerbotDAI.address, daiAmount, baseCurrency.address, priceInXCHFWithSlippage, path, "0x01");
-      const sharesAfter = await shares.balanceOf(sig1.address);
+      const sharesAfter = await shares.balanceOf(buyer.address);
       const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
       //console.log("after: %s", await ethers.utils.formatEther(brokerbotBalanceAfter));
 

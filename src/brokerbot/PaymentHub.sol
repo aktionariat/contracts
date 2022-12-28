@@ -28,6 +28,7 @@
 pragma solidity ^0.8.0;
 
 import "../ERC20/IERC20.sol";
+import "../ERC20/IERC20Permit.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
@@ -41,6 +42,8 @@ import "./IBrokerbot.sol";
  */
 contract PaymentHub {
 
+    address immutable trustedForwarder;
+
     uint24 private constant DEFAULT_FEE = 3000;
     uint24 private constant LOW_FEE = 500;
     address private constant XCHF = 0xE4F27b04cC7729901876B44f4EAA5102EC150265;
@@ -49,7 +52,8 @@ contract PaymentHub {
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
 
-    constructor(IQuoter _quoter, ISwapRouter swapRouter) {
+    constructor(address _trustedForwarder, IQuoter _quoter, ISwapRouter swapRouter) {
+        trustedForwarder = _trustedForwarder;
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
     }
@@ -200,6 +204,36 @@ contract PaymentHub {
         uint256 balanceAfter = IERC20(base).balanceOf(recipient);
         require(amountBase == (balanceAfter - balanceBefore), "swap error");
         IBrokerbot(recipient).processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
+    }
+
+    /**
+     * @notice Sell shares with permit
+     *
+     * @param recipient The brokerbot to recive the shares.
+     * @param seller The address of the seller.
+     * @param amountToSell The amount the seller wants to sell.
+     * @param deadline The deadline of the permit.
+     * @param ref Reference of the insider declaration and the type of sell.
+     * @param v Part of the permit signature.
+     * @param r Part of the permit signature.
+     * @param s Part of the permit signature.
+     */
+    function sellSharesWithPermit(address recipient, address seller, uint256 amountToSell, uint256 exFee, uint256 deadline, bytes calldata ref, uint8 v, bytes32 r, bytes32 s) external {
+        require(msg.sender == trustedForwarder || msg.sender == seller, "not trusted");
+        IERC20Permit token = IBrokerbot(recipient).token();
+        // Call permit
+        token.permit(seller, address(this), amountToSell, deadline, v, r,s);
+        // send token to brokerbot
+        token.transferFrom(seller, recipient, amountToSell);
+        // process sell
+        if (exFee > 0){
+            uint256 proceeds = IBrokerbot(recipient).processIncoming(IERC20(token), address(this), amountToSell, ref);
+            IERC20 currency = IBrokerbot(recipient).base();
+            currency.transfer(msg.sender, exFee);
+            currency.transfer(seller, proceeds - exFee);
+        } else {
+            IBrokerbot(recipient).processIncoming(IERC20(token), seller, amountToSell, ref);
+        }
     }
 
     /**

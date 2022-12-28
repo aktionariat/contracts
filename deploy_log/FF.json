@@ -1,0 +1,39 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "FinanceFarm AG",
+  "multisigSigner": "0x0fe9cf98e4e813b766edb1b58dc764e2622d64ef",
+  "symbol": "FF",
+  "name": "FinanceFarm Shares",
+  "terms": "https://financefarm.ch/invest",
+  "totalShares": "1000000",
+  "sharePrice": "100000000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": true,
+  "Draggable": true,
+  "multisigAddress": "0x8bAE8FC137FbD8DF4c3b2dEEF76dd4952ae83CcF",
+  "address": {
+    "recoveryHub": "0x2b2B237d8f9a42706bdCD4083C20a2b799C8B45C",
+    "offerFactory": "0x2BC8102bC1EaB3689f0dAdB53071AB5965cEEfd4",
+    "allowlist": {
+      "draggable": "0xeb3A8874eeE15A55CB0380540A93DBeeac1B13B2"
+    },
+    "paymentHub": "0xfb330379134EA1EfCE9Cf6F28E2CcB917899e007",
+    "brokerbot": "0x0791BC1d8251C7C220Bf61C2BDF953d7fB21aFeA",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0xeb3A8874eeE15A55CB0380540A93DBeeac1B13B2"
+  },
+  "addres": {
+    "allowlist": {
+      "shares": "0xa68Bf91161Bb2d8be367350b8f7c48Ef41b02813"
+    }
+  },
+  "blocknumber": 16120073,
+  "version": {
+    "brokerbot": 5
+  }
+}
