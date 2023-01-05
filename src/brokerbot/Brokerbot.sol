@@ -54,6 +54,9 @@ contract Brokerbot is IBrokerbot, Ownable {
     event PriceSet(uint256 price, uint256 increment);
     event DriftSet(uint256 timeToDrift, int256 driftIncrement);
     event SettingsChange(uint256 setting);
+    // ETH in/out events
+    event Received(uint amountETH, uint amountBase);
+    event Withdrawn(address indexed target, uint amountETH);
 
     constructor(
         IERC20Permit _token,
@@ -163,10 +166,19 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     /**
-     * Payment hub might actually have sent another accepted token, including Ether.
+     * @notice Payment hub might actually have sent another accepted token, including Ether.
+     * @dev Is either called from payment hub or from transferAndCall of the share token (via onTokenTransfer).
+     * @param incomingAsset the erc20 address of either base currency or the share token.
+     * @param from Who iniciated the sell/buy.
+     * @param amount The amount of shares the are sold / The base amount paid to buy sharees.
+     * @param ref Reference data blob.
+     * @return The amount of shares bought / The amount paid to buy shares. 
      */
     function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
         require(msg.sender == address(incomingAsset) || msg.sender == paymenthub, "invalid caller");
+        if(msg.value > 0) {
+            emit Received(msg.value, amount);
+        }
         if (incomingAsset == token){
             return sell(from, amount, ref);
         } else if (incomingAsset == base){
@@ -253,6 +265,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     function withdrawEther(address target, uint256 amount) public ownerOrHub() {
         (bool success, ) = payable(target).call{value:amount}("");
         require(success, "Transfer failed");
+        emit Withdrawn(target, amount);
     }
 
     function withdrawEther(uint256 amount) external ownerOrHub() {
