@@ -32,7 +32,7 @@ describe("Multisig", () => {
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
 
     await deployments.fixture(["MultiSigCloneFactory"]);
-    multiSigMaster = await ethers.getContract("MultiSigWalletMasterV3");
+    multiSigMaster = await ethers.getContract("MultiSigWalletMasterV4");
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
 
   });
@@ -58,7 +58,7 @@ describe("Multisig", () => {
     //check is predicted address is created address
     expect(multiSigAddress).to.equal(address);
 
-    multiSigClone = await ethers.getContractAt("MultiSigWalletV3",address);
+    multiSigClone = await ethers.getContractAt("MultiSigWalletV4",address);
 
     // initialize is already called with create and should revert
     await expect(multiSigClone.initialize(adr1.address)).to.be
@@ -69,7 +69,7 @@ describe("Multisig", () => {
     const tx2 = await multiSigCloneFactory.create(owner.address, salts[1]);
     const { events } = await tx2.wait();
     const { address } = events.find(Boolean);
-    multiSigClone2 = await ethers.getContractAt("MultiSigWalletV3",address);
+    multiSigClone2 = await ethers.getContractAt("MultiSigWalletV4",address);
     expect(await multiSigClone.contractId()).not.to.equal(await multiSigClone2.contractId())
   });
 
@@ -101,7 +101,7 @@ describe("Multisig", () => {
     const tx = await multiSigCloneFactory.create(wallet.address, salts[2]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
-    const multiSig = await ethers.getContractAt("MultiSigWalletV3",address);
+    const multiSig = await ethers.getContractAt("MultiSigWalletV4",address);
 
     // tx info
     const net = await ethers.provider.getNetwork();
@@ -134,7 +134,7 @@ describe("Multisig", () => {
     const tx = await multiSigCloneFactory.create(wallet.address, salts[3]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
-    const multiSig = await ethers.getContractAt("MultiSigWalletV3",address);
+    const multiSig = await ethers.getContractAt("MultiSigWalletV4",address);
 
     //send eth
     const tx_send = {

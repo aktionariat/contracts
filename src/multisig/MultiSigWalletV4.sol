@@ -11,8 +11,9 @@ import "./Nonce.sol";
 
 /**
  * Documented in ../../doc/multisig.md
+ * Version 4: include SentEth event
  */
-contract MultiSigWalletV3 is Nonce, Initializable {
+contract MultiSigWalletV4 is Nonce, Initializable {
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
@@ -31,6 +32,7 @@ contract MultiSigWalletV3 is Nonce, Initializable {
   );
 
   event Received(address indexed sender, uint amount);
+  event SentEth(address indexed target, uint amount);
 
   function initialize(address owner) external initializer {
     // We use the gas price field to get a unique id into our transactions.
