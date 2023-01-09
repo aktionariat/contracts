@@ -75,6 +75,7 @@ contract MultiSigWalletV4 is Nonce, Initializable {
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
     flagUsed(nonce);
     emit Transacted(to, extractSelector(data), found);
+    emit SentEth(to, value);
     return returndata;
   }
 

@@ -164,7 +164,8 @@ describe("Multisig", () => {
     const flatSig = await wallet.signTransaction(tx_send_ms);
     const tx1 = ethers.utils.parseTransaction(flatSig);
     // console.log(tx1);
-    await multiSig.execute(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]);
+    await expect(multiSig.execute(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]))
+      .to.emit(multiSig, "SentEth").withArgs(wallet.address, valueTx);
     const msBlanceAfter = await ethers.provider.getBalance(address);
     //console.log("multisig balance after: %s", msBlanceAfter);
     expect(msBlanceBefore.sub(valueTx)).to.be.equal(msBlanceAfter);
