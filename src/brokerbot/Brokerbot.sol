@@ -44,7 +44,8 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version 4: made version field public so it is actually usable    
     // Version 5: added target address for withdrawEther
     // Version 6: added costs field to notifyTrade
-    uint8 public constant VERSION = 0x6;
+    // Version 7: added withdraw eth event
+    uint8 public constant VERSION = 0x7;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
