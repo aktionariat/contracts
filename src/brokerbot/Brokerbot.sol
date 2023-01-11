@@ -56,7 +56,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     event DriftSet(uint256 timeToDrift, int256 driftIncrement);
     event SettingsChange(uint256 setting);
     // ETH in/out events
-    event Received(uint amountETH, uint amountBase);
+    event Received(address indexed from, uint amountETH, uint amountBase);
     event Withdrawn(address indexed target, uint amountETH);
 
     constructor(
@@ -178,7 +178,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
         require(msg.sender == address(incomingAsset) || msg.sender == paymenthub, "invalid caller");
         if(msg.value > 0) {
-            emit Received(msg.value, amount);
+            emit Received(from, msg.value, amount);
         }
         if (incomingAsset == token){
             return sell(from, amount, ref);

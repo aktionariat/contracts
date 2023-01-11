@@ -177,7 +177,7 @@ describe("New PaymentHub", () => {
 
       //simulate buy inbetween to show adding slippage is accounted for
       await expect(paymentHub.connect(sig2).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH}))
-        .to.emit(brokerbot, "Received").withArgs(priceInETH, xchfamount);
+        .to.emit(brokerbot, "Received").withArgs(sig2.address, priceInETH, xchfamount);
 
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const buyerETHBefore = await ethers.provider.getBalance(sig1.address);
