@@ -26,6 +26,14 @@ function accounts(networkName){
   return {mnemonic: getMnemonic(networkName)};
 }
 
+function getForkUrl() {
+  if (process.env.LOCAL) {
+    return `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`;
+  } else {
+    return `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`;
+  }
+}
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -48,7 +56,7 @@ module.exports = {
       accounts: accounts(),
       forking: {
         //enabled: process.env.FORKING === "true",
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        url: getForkUrl(),
         blockNumber: 13759520,
       },
       live: false,
