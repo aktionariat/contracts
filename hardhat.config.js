@@ -28,9 +28,9 @@ function accounts(networkName){
 
 function getForkUrl() {
   if (process.env.LOCAL) {
-    return `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`;
-  } else {
     return `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`;
+  } else {
+    return `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`;
   }
 }
 
