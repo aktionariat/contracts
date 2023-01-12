@@ -178,8 +178,8 @@ describe("New PaymentHub", () => {
       const pricePlus = priceInETH.mul(110).div(100);
 
       //simulate buy inbetween to show adding slippage is accounted for
-      await paymentHub.connect(sig2).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH});
-
+      await expect(paymentHub.connect(sig2).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETH}))
+        .to.emit(brokerbot, "Received").withArgs(sig2.address, priceInETH, xchfamount);
 
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const buyerETHBefore = await ethers.provider.getBalance(sig1.address);
@@ -204,7 +204,8 @@ describe("New PaymentHub", () => {
       await expect(brokerbot.connect(owner)["withdrawEther(address,uint256)"](draggableShares.address, brokerbotETHBefore)).to.be.revertedWith('Transfer failed');
       await expect(brokerbot["withdrawEther(uint256)"](brokerbotETHBefore)).to.be.revertedWith("not owner nor hub");
       await expect(brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore.add(1))).to.be.revertedWith("Transfer failed");     
-      await brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore);
+      await expect(brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore))
+        .to.emit(brokerbot, 'Withdrawn').withArgs(owner.address, brokerbotETHBefore);
       const brokerbotETHAfter = await ethers.provider.getBalance(brokerbot.address);
       const ownerETHAfter = await ethers.provider.getBalance(owner.address);
       expect(brokerbotETHAfter.isZero()).to.be.true;

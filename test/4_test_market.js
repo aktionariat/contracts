@@ -41,6 +41,10 @@ describe("Brokerbot", () => {
     it("should deploy", async () => {
       expect(brokerbot.address).to.exist;
     });
+
+    it("should have updated version number", async () => {
+      expect(await brokerbot.VERSION()).to.be.equal(7);
+    });
     
     it("should get constructor params correctly", async () => {
       const baseCurrency = await brokerbot.base();

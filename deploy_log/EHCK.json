@@ -1,0 +1,32 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "EHC Kloten Sport AG",
+  "multisigSigner": "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be",
+  "symbol": "EHCK",
+  "name": "EHC Kloten Partizipationsschein",
+  "terms": "https://ehc-kloten.ch/investor",
+  "totalShares": "1122476",
+  "sharePrice": "88000000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": false,
+  "multisigAddress": "0xe47dBa0fD9AFa05b386C21e8Be5Cf4b0c6e9C4f0",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0x17f7FEa5F87d0F289d9827be78fc96027F8Ed724",
+    "paymentHub": "0xbB55b164b641cD0eC89E901884d79f920f310605",
+    "brokerbot": "0x2f7bA68774060Cce1D0B1FC0D20F712f311b49C0",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x17f7FEa5F87d0F289d9827be78fc96027F8Ed724"
+  },
+  "blocknumber": "16389723",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  }
+}
