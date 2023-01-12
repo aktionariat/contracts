@@ -44,7 +44,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
         if (factory == undefined) {
             switch   (network.name) {
                 case "mainnet":
-                    factory = "0xC894ef112CC26741397053248F9f677398Eb56e2"; // mainnet factory
+                    factory = "0x9C6471DC5B5BC216a74fC37056042256fd5E95B3"; // mainnet factory V4
                     break;
                 case "kovan":
                     factory = "0xAF21E166ADc362465A27AeDc15315DcFc0c51624"; // kovan factory
@@ -153,14 +153,16 @@ task("init-deploy", "creates files for client deployment")
     }
 
     // deploy draggable
-    if ( deployConfig.allowlist ) {
-        await hre.run("deploy", {
-            tags: deployConfig.symbol+"AllowlistDraggableShares",
-        });
-    } else {
-        await hre.run("deploy", {
-            tags: deployConfig.symbol+"DraggableShares",
-        });
+    if ( deployConfig.draggable ) {
+        if ( deployConfig.allowlist ) {
+            await hre.run("deploy", {
+                tags: deployConfig.symbol+"AllowlistDraggableShares",
+            });
+        } else {
+            await hre.run("deploy", {
+                tags: deployConfig.symbol+"DraggableShares",
+            });
+        }
     }
 
     // deploy brokerbot
