@@ -59,7 +59,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                     factory = "0x1abD8b5194D733691D64c3F898300f88Ba0035d5" // optimism kovan factory
                     break;
                 case "optimism":
-                    factory = "0xB2A8D3cc37D914c8868d3fC8d011A65A266d56a8" // optimism factory
+                    factory = "0xaE52FDaaDEbfe4D943546d3f60640Ba6959B8fcb" // optimism factory
                     break;
             }
         }
