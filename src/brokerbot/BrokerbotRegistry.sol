@@ -8,7 +8,7 @@
 * named Brokerbot.sol that can be used under an MIT License with Automated License Fee Payments,
 * or you can get in touch with use to negotiate a license to use LicensedBrokerbot.sol .
 *
-* Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com), All rights reserved.
 */
 pragma solidity ^0.8.0;
 
