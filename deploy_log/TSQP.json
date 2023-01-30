@@ -1,0 +1,33 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "Trust Square Service AG",
+  "multisigSigner": "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be",
+  "symbol": "TSQP",
+  "name": "Trust Square Service AG Participation Certificates",
+  "terms": "https://www.trustsquare.ch/investor-relations",
+  "totalShares": "2743000",
+  "sharePrice": "10000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": true,
+  "Draggable": false,
+  "multisigAddress": "0xfae67F2036219AaC08f9C3B70A1c861A3b8EbC6E",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "paymentHub": "0x06512E6bAB2712fCa9F4D123C80FCE34de2bC2D7",
+    "brokerbot": "0x71Bb2879ac6b9fD2A262c0D9b0e152804b4B2036",
+    "brokerbotRegistry": "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093",
+    "allowlist": {
+      "shares": "0x606795077CeF55d61bcffF343Ff0919D1dC497a3"
+    }
+  },
+  "brokerbot": {
+    "shares": "0x606795077CeF55d61bcffF343Ff0919D1dC497a3"
+  },
+  "blocknumber": 71246004,
+  "version": {
+    "brokerbot": 7
+  }
+}
