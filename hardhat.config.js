@@ -183,8 +183,8 @@ module.exports = {
       deploy: ['deploy_optimism']
     },
     optimism: {
-        url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
-        //url: "https://mainnet.optimism.io",
+        //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
+        url: "https://mainnet.optimism.io",
         accounts: accounts("optimism"),
         //chainId: 10,
         live: true,

@@ -415,8 +415,8 @@ async function switchToBranch(networkName) {
 }
 
 async function readDeployValues() {
-    const shares = await ethers.getContractAt("Shares", nconf.get("address:share"));
-    const draggable = await ethers.getContractAt("DraggableShares", nconf.get("address:draggable"));
+    const shares = await ethers.getContractAt("Shares", nconf.get("Allowlist") ? nconf.get("address:allowlist:shares") : nconf.get("address:share"));
+    const draggable = await ethers.getContractAt("DraggableShares", nconf.get("Allowlist") ? nconf.get("address:allowlist:draggable") : nconf.get("address:draggable"));
     const brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));
     console.log("=============================================================")
     console.log("===== Deployment Finished with following on-chain data ======")

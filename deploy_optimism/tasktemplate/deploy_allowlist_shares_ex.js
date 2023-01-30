@@ -46,11 +46,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
+  const sharesContract = await ethers.getContract(symbol+"AllowlistShares");
+  const version = await sharesContract.VERSION();
 
   // set config
   nconf.set("brokerbot:shares", address);
-  nconf.set("addres:allowlist:shares", address);
+  nconf.set("address:allowlist:shares", address);
   nconf.set("blocknumber", receipt.blockNumber);
+  nconf.set("version:shares", version);
 };
 
 module.exports.tags = [nconf.get("symbol")+"AllowlistShares"];
