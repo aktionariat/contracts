@@ -8,7 +8,6 @@ import "../utils/Address.sol";
 import "../utils/Initializable.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
-import "hardhat/console.sol";
 
 /**
  * Documented in ../../doc/multisig.md
