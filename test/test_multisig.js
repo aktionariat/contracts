@@ -27,12 +27,15 @@ describe("Multisig", () => {
   const lowerRealV = 27;
   const chain_id_inc = 35;
 
+  let chainid = 3
+
+
   before(async () => {
     [owner,adr1,adr2,adr3,adr4,adr5] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
 
     await deployments.fixture(["MultiSigCloneFactory"]);
-    multiSigMaster = await ethers.getContract("MultiSigWalletMasterV4");
+    multiSigMaster = await ethers.getContract("MultiSigWalletMaster");
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
 
   });
@@ -58,7 +61,7 @@ describe("Multisig", () => {
     //check is predicted address is created address
     expect(multiSigAddress).to.equal(address);
 
-    multiSigClone = await ethers.getContractAt("MultiSigWalletV4",address);
+    multiSigClone = await ethers.getContractAt("MultiSigWalletMaster",address);
 
     // initialize is already called with create and should revert
     await expect(multiSigClone.initialize(adr1.address)).to.be
@@ -69,7 +72,7 @@ describe("Multisig", () => {
     const tx2 = await multiSigCloneFactory.create(owner.address, salts[1]);
     const { events } = await tx2.wait();
     const { address } = events.find(Boolean);
-    multiSigClone2 = await ethers.getContractAt("MultiSigWalletV4",address);
+    multiSigClone2 = await ethers.getContractAt("MultiSigWalletMaster",address);
     expect(await multiSigClone.contractId()).not.to.equal(await multiSigClone2.contractId())
   });
 
@@ -101,13 +104,12 @@ describe("Multisig", () => {
     const tx = await multiSigCloneFactory.create(wallet.address, salts[2]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
-    const multiSig = await ethers.getContractAt("MultiSigWalletV4",address);
+    const multiSig = await ethers.getContractAt("MultiSigWalletMaster",address);
 
     // tx info
     const net = await ethers.provider.getNetwork();
-    const chainid = net.chainId;
     const valueTx = ethers.utils.parseEther("0.5")
-    for (let seq = 0; seq < 260; seq++) {
+    for (let seq = 10000; seq < 10001; seq++) {
       const tx_send_ms = {
         nonce: seq,
         gasPrice: await multiSig.connect(wallet).contractId(),
@@ -119,8 +121,8 @@ describe("Multisig", () => {
       };
       const flatSig = await wallet.signTransaction(tx_send_ms);
       const tx1 = ethers.utils.parseTransaction(flatSig);
-      // console.log(tx1);
-      const found = await multiSig.checkSignatures(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]);
+      //console.log(tx1);
+      const found = await multiSig.checkSignatures(seq, wallet.address, valueTx, [], [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]);
       expect(found[0]).to.be.equal(wallet.address);
     }
    
@@ -134,7 +136,7 @@ describe("Multisig", () => {
     const tx = await multiSigCloneFactory.create(wallet.address, salts[3]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
-    const multiSig = await ethers.getContractAt("MultiSigWalletV4",address);
+    const multiSig = await ethers.getContractAt("MultiSigWalletMaster",address);
 
     //send eth
     const tx_send = {
@@ -147,35 +149,38 @@ describe("Multisig", () => {
       )};
     await wallet.sendTransaction(tx_send);
     const msBlanceBefore = await ethers.provider.getBalance(address);
+    const walletBalBefore = await ethers.provider.getBalance(wallet.address);
     //console.log("multisig balance: %s", msBlanceBefore);
     const seq = 1;
     const net = await ethers.provider.getNetwork();
-    const chainid = net.chainId;
     const valueTx = ethers.utils.parseEther("0.5")
     const tx_send_ms = {
       nonce: seq,
       gasPrice: await multiSig.connect(wallet).contractId(),
       gasLimit: 21000,
-      to: wallet.address,
+      to: owner.address,
       value: valueTx,
       data: 0x0,
       chainId: chainid,
     };
     const flatSig = await wallet.signTransaction(tx_send_ms);
     const tx1 = ethers.utils.parseTransaction(flatSig);
+    // check for replayability 
+    await expect(ethers.provider.sendTransaction(flatSig)).to.be.rejected;
     // console.log(tx1);
-    await expect(multiSig.execute(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]))
-      .to.emit(multiSig, "SentEth").withArgs(wallet.address, valueTx);
+    await expect(multiSig.execute(seq, owner.address, valueTx, [], [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]))
+    .to.emit(multiSig, "SentEth").withArgs(owner.address, valueTx);
     const msBlanceAfter = await ethers.provider.getBalance(address);
+    const walletBalAfter = await ethers.provider.getBalance(wallet.address);
     //console.log("multisig balance after: %s", msBlanceAfter);
     expect(msBlanceBefore.sub(valueTx)).to.be.equal(msBlanceAfter);
+    expect(walletBalBefore).to.be.equal(walletBalAfter);
   });
 
   it("Should execute setSigner called from multisig", async () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(adr2.address, 2);
     const seq = 1;
     const net = await ethers.provider.getNetwork();
-    const chainid = net.chainId;
     const tx_send_ms = {
       nonce: seq,
       gasPrice: await multiSigClone.connect(owner).contractId(),
@@ -188,7 +193,7 @@ describe("Multisig", () => {
     const ownerWallet = ethers.Wallet.fromMnemonic(mnemonic).connect(ethers.provider);
     const flatSig = await ownerWallet.signTransaction(tx_send_ms);
     const tx1 = ethers.utils.parseTransaction(flatSig);
-    await multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]);
+    await multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]);
     expect(await multiSigClone.signers(adr2.address)).to.be.equal(2);
   });
 

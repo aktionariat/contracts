@@ -8,12 +8,18 @@ import "../utils/Address.sol";
 import "../utils/Initializable.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
+import "hardhat/console.sol";
 
 /**
  * Documented in ../../doc/multisig.md
  * Version 4: include SentEth event
  */
-contract MultiSigWalletV4 is Nonce, Initializable {
+contract MultiSigWalletMaster is Nonce, Initializable {
+
+  // Version history
+  // Version 4: added event for send value
+  // Version 5: added version field and changed chain id
+  uint8 public constant VERSION = 0x5;
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
@@ -106,15 +112,15 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
 
   // Note: does not work with contract creation
   function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
-    internal view returns (bytes32){
+    internal pure returns (bytes32){
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
-    all[2] = bytes("\x82\x52\x08"); // 21000 gas limit
+    all[2] = bytes("\x82\x52\x08"); // 21000 gas limitation
     all[3] = abi.encodePacked (bytes1 (0x94), to);
     all[4] = toBytes(value);
     all[5] = data;
-    all[6] = toBytes(block.chainid);
+    all[6] = toBytes(3); //chain Identifier
     all[7] = new bytes(0);
     for (uint i = 0; i<8; i++){
       if (i != 2 && i!= 3) {
