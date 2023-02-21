@@ -80,7 +80,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
     flagUsed(nonce);
     emit Transacted(to, extractSelector(data), found);
-    emit SentEth(to, value);
+    if (value > 0) {emit SentEth(to, value);}
     return returndata;
   }
 
