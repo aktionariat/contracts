@@ -67,7 +67,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
             owner = multiSigDefaultOwner;
         }
 
-        multiSigCloneFactory = await ethers.getContractAt("MultiSigCloneFactory", factory);
+        multiSigCloneFactory = await ethers.getContractAt("MultiSigCloneFactory.sol:MultiSigCloneFactory", factory);
 
         if (network.name != "hardhat" && !nconf.get("silent")) {
             console.log("-----------------------")
