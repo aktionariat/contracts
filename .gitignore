@@ -13,3 +13,7 @@ artifacts/*
 # Unit test / coverage reports
 coverage
 coverage.*
+
+# ZkSync
+artifacts-zk
+cache-zk
