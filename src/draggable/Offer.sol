@@ -64,6 +64,12 @@ contract Offer is IOffer {
     event OfferCreated(address indexed buyer, IDraggable indexed token, uint256 pricePerShare, IERC20 indexed currency);
     event OfferEnded(address indexed buyer, bool success, string message); // not sure if it makes sense to index success here
 
+    bool isOpen;
+    modifier onlyIfOpen() {
+        isOfferOpen();
+        _;
+    }
+
     // Not checked here, but buyer should make sure it is well funded from the beginning
     constructor(
         address _buyer,
@@ -87,6 +93,7 @@ contract Offer is IOffer {
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
         payable(LICENSE_FEE_ADDRESS).transfer(3 ether);
+        isOpen = true;
     }
 
     function makeCompetingOffer(IOffer betterOffer) external override {
@@ -237,9 +244,16 @@ contract Offer is IOffer {
     }
 
     function kill(bool success, string memory message) internal {
-        emit OfferEnded(buyer, success, message);
+        isOpen = false;
         token.notifyOfferEnded();
-        selfdestruct(payable(buyer));
+        //selfdestruct(payable(buyer));
+        (bool transferOK, ) = payable(buyer).call{value:address(this).balance}("");
+        require(transferOK, "Return Ether failed");
+        emit OfferEnded(buyer, success, message);
+    }
+
+    function isOfferOpen() view public {
+        require(isOpen, "Offer is closed");
     }
 
 }
