@@ -289,4 +289,9 @@ contract PaymentHub {
     receive() external payable {
         // Important to receive ETH refund from Uniswap
     }
+
+    function transferEther(address to) external payable {
+        (bool success, ) = payable(to).call{value:msg.value}("");
+        require(success, "Transfer failed");
+    }
 }
