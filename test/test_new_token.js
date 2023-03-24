@@ -383,8 +383,13 @@ describe("New Standard", () => {
       // first set a flag e.g. claim
       await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
       await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, sig4.address);
+      const bal = await draggable.balanceOf(sig4.address);
+      console.log(bal.toString());
       
-      await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("underflow");
+      //await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("underflow");
+      await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
+        .to.be.revertedWithCustomError(draggable, "ERC20InsufficientBalance")
+        .withArgs(sig4.address, await draggable.balanceOf(sig4.address), "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
       await draggable.connect(oracle).deleteClaim(sig4.address);
     })
 

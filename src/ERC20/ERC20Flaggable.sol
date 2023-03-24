@@ -13,8 +13,9 @@
 pragma solidity ^0.8.0;
 
 import "./IERC20.sol";
+import "./ERC20Errors.sol";
 import "./IERC677Receiver.sol";
-
+import "hardhat/console.sol";
 /**
  * @dev Implementation of the `IERC20` interface.
  *
@@ -39,7 +40,7 @@ import "./IERC677Receiver.sol";
  * allowances. See `IERC20.approve`.
  */
 
-abstract contract ERC20Flaggable is IERC20 {
+abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     // as Documented in /doc/infiniteallowance.md
     // 0x8000000000000000000000000000000000000000000000000000000000000000
@@ -228,7 +229,11 @@ abstract contract ERC20Flaggable is IERC20 {
     function decreaseBalance(address sender, uint256 amount) private {
         uint256 oldBalance = _balances[sender];
         uint256 newBalance = oldBalance - amount;
-        require(oldBalance & FLAGGING_MASK == newBalance & FLAGGING_MASK, "underflow");
+        //require(oldBalance & FLAGGING_MASK == newBalance & FLAGGING_MASK, "underflow");
+        if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
+            console.log(amount);
+            revert ERC20InsufficientBalance(sender, balanceOf(sender), amount);
+        }
         _balances[sender] = newBalance;
     }
 
