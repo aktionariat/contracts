@@ -26,6 +26,14 @@ function accounts(networkName){
   return {mnemonic: getMnemonic(networkName)};
 }
 
+function getForkUrl() {
+  if (process.env.LOCAL) {
+    return `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`;
+  } else {
+    return `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`;
+  }
+}
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -93,22 +101,23 @@ module.exports = {
       gasMultiplier: 2,
     },
     goerli: {
-      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      //url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_GOERLI}`,
       accounts: accounts("goerli"),
       chainId: 5,
       live: true,
       saveDeployments: true,
       tags: ["staging"],
       gasMultiplier: 2,
+      gas: 3000000
     },
-    kovan: {
-      url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: accounts("kovan"),
-      chainId: 42,
+    sepolia: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_SEPOLIA}`,
+      accounts: accounts("sepolia"),
+      chainId: 11155111,
       live: true,
       saveDeployments: true,
       tags: ["staging"],
-      gasPrice: 20000000000,
       gasMultiplier: 2,
     },
     arbitrum: {
@@ -198,7 +207,7 @@ module.exports = {
       3: 1,
       4: 1,
       5: 1,
-      42: 1,
+      11155111: 1,
       69: 1,
       420: 1
     },
@@ -209,7 +218,7 @@ module.exports = {
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli
-      42: process.env.MULTISIG_DEPLOY, // kovan
+      11155111: process.env.MULTISIG_DEPLOY, // sepolia
       69: process.env.MULTISIG_DEPLOY, // optimism kovan
       420: process.env.MULTISIG_DEPLOY, // optimism goerli
       42161: process.env.MULTISIG_DEPLOY // arb1
@@ -227,7 +236,7 @@ module.exports = {
       3: process.env.MULTISIG_DEFAULT,
       4: process.env.MULTISIG_DEFAULT,
       5: process.env.MULTISIG_DEFAULT,
-      42: process.env.MULTISIG_DEFAULT,
+      11155111: process.env.MULTISIG_DEFAULT,
       69: process.env.MULTISIG_DEFAULT,
       420: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
@@ -247,7 +256,7 @@ module.exports = {
         ropsten: process.env.ETHERSCAN_API_KEY,
         rinkeby: process.env.ETHERSCAN_API_KEY,
         goerli: process.env.ETHERSCAN_API_KEY,
-        kovan: process.env.ETHERSCAN_API_KEY,
+        sepolia: process.env.ETHERSCAN_API_KEY,
         // optimism
         optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
         kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
