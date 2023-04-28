@@ -119,6 +119,21 @@ describe("New PaymentHub", () => {
     });
   });
 
+  describe("Recover token", () => {
+    it("Should be able to recover token sent to paymenthub", async () => {
+      const wrongSent = chance.natural({ min: 1, max: 500 });
+      const balBefore = await baseCurrency.balanceOf(sig1.address);
+      await baseCurrency.connect(sig1).transfer(paymentHub.address, wrongSent);
+      const balInbetween = await baseCurrency.balanceOf(sig1.address);
+      expect(balBefore.sub(wrongSent)).to.equal(balInbetween);
+      await expect(paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent+1))
+        .to.be.reverted;
+      await paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent);
+      const balInAfter = await baseCurrency.balanceOf(sig1.address);
+      expect(balBefore).to.equal(balInAfter);
+    });
+  });
+
   describe("Trading with ETH", () => {
     beforeEach(async () => {
       const randomAmount = chance.natural({ min: 500, max: 50000 });
@@ -207,19 +222,6 @@ describe("New PaymentHub", () => {
       expect(brokerbotETHAfter.isZero()).to.be.true;
       expect(ownerETHAfter).to.be.above(ownerETHBefore);
     });
-
-    it("Should be able to recover token sent to paymenthub", async () => {
-      const wrongSent = chance.natural({ min: 1, max: 500 });
-      const balBefore = await baseCurrency.balanceOf(sig1.address);
-      await baseCurrency.connect(sig1).transfer(paymentHub.address, wrongSent);
-      const balInbetween = await baseCurrency.balanceOf(sig1.address);
-      expect(balBefore.sub(wrongSent)).to.equal(balInbetween);
-      await expect(paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent+1)).to.be.reverted;
-      await paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent);
-      const balInAfter = await baseCurrency.balanceOf(sig1.address);
-      expect(balBefore).to.equal(balInAfter);
-    });
-
   });
 
   describe("Trading with DAI base", () => {

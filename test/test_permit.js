@@ -258,7 +258,8 @@ describe("Permit", () => {
     const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
     // relayer calls sell via paymenthub
     await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, fee, deadline, "0x01", v, r, s))
-      .to.be.revertedWith("not trusted");
+      .to.be.revertedWithCustomError(paymentHub, "PaymentHub_NonTrustedForwader")
+      .withArgs(relayer.address);
   });
 
     it("Should sell shares with permit for crypto", async () => {
