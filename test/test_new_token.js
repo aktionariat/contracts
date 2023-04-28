@@ -858,12 +858,16 @@ describe("New Standard", () => {
       expect(await allowlistShares.isForbidden(forbiddenAddress)).to.be.true;
 
       // after setting forbidden reverts
-      await expect(allowlistShares.connect(owner).mint(forbiddenAddress, "1000")).to.be.revertedWith("not allowed");
+      await expect(allowlistShares.connect(owner).mint(forbiddenAddress, "1000"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_ReceiverIsForbidden")
+        .withArgs(forbiddenAddress);
       const balanceForbidden = await allowlistShares.balanceOf(forbiddenAddress);
       expect(balanceForbidden).to.equal(ethers.BigNumber.from(1));
 
-      // forbidden can't transfer
-      await expect(allowlistShares.connect(sig2).transfer(sig1.address, "1")).to.be.revertedWith("not allowed");
+      // forbidden can't transfer (sig2.address = forbidden)
+      await expect(allowlistShares.connect(sig2).transfer(sig1.address, "1"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_SenderIsForbidden")
+        .withArgs(sig2.address);
     });
 
     it("Should set allowlist for default address when minted from 0 (powerlisted)", async () => {
@@ -922,7 +926,9 @@ describe("New Standard", () => {
       // is not possible to send from default(sig3) to forbidden(sig2)
       const forbiddenAddress = sig2.address
       expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
-      await expect(allowlistShares.connect(sig3).transfer(forbiddenAddress, "100")).to.be.revertedWith("not allowed");
+      await expect(allowlistShares.connect(sig3).transfer(forbiddenAddress, "100"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_ReceiverIsForbidden")
+        .withArgs(forbiddenAddress);
 
       // is possible to send from default(sig3) to fresh/default(sig5)
       const freshAddress = sig5.address
@@ -957,7 +963,9 @@ describe("New Standard", () => {
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
 
       // transfer from allowlist(sig4) to default(sig5) should fail
-      await expect(allowlistShares.connect(sig4).transfer(defaultAddress, "100")).to.be.revertedWith("not allowed");
+      await expect(allowlistShares.connect(sig4).transfer(defaultAddress, "100"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_ReceiverNotAllowlisted")
+        .withArgs(defaultAddress);
     });
 
     it("Should mint and call on allowlistShares to allowlistDraggable", async () => {
@@ -1026,7 +1034,8 @@ describe("New Standard", () => {
 
       // excpect revert on wrap
       await expect(allowlistDraggable.connect(sig2).wrap(forbiddenAddress, "10"))
-        .to.be.revertedWith("not allowed");
+        .to.be.revertedWithCustomError(allowlistDraggable, "Allowlist_ReceiverIsForbidden")
+        .withArgs(forbiddenAddress);
       const balanceForbidden = await allowlistDraggable.balanceOf(forbiddenAddress);
       expect(balanceForbidden).to.equal(ethers.BigNumber.from(0));
     });
