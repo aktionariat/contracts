@@ -374,7 +374,11 @@ describe("New Standard", () => {
     it("Should revert on overflow", async () => {
       // first set total shares > uint224
       await shares.connect(owner).setTotalShares("0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-      await expect(shares.connect(owner).mint(sig1.address, "0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("overflow");
+      const largeNumber = "0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+      await expect(shares.connect(owner).mint(sig1.address, largeNumber))
+        .to.be.revertedWithCustomError(shares, "ERC20BalanceOverflow")
+        .withArgs(sig1.address, largeNumber);
+      // set total shares back 
       await shares.connect(owner).setTotalShares(config.totalShares);
 
     })
@@ -383,10 +387,7 @@ describe("New Standard", () => {
       // first set a flag e.g. claim
       await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
       await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, sig4.address);
-      const bal = await draggable.balanceOf(sig4.address);
-      console.log(bal.toString());
       
-      //await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).to.be.revertedWith("underflow");
       await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
         .to.be.revertedWithCustomError(draggable, "ERC20InsufficientBalance")
         .withArgs(sig4.address, await draggable.balanceOf(sig4.address), "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
@@ -394,9 +395,15 @@ describe("New Standard", () => {
     })
 
     it("Should revert when transfer or mint to 0x0 address", async () => {
-      await expect(shares.connect(owner).transfer(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
-      await expect(shares.connect(owner).mint(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
-      await expect(draggable.connect(owner).transfer(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
+      await expect(shares.connect(owner).transfer(ethers.constants.AddressZero, 1))
+        .to.be.revertedWithCustomError(shares, "ERC20InvalidReceiver")
+        .withArgs(ethers.constants.AddressZero);
+      await expect(shares.connect(owner).mint(ethers.constants.AddressZero, 1))
+        .to.be.revertedWithCustomError(shares, "ERC20InvalidReceiver")
+        .withArgs(ethers.constants.AddressZero);
+      await expect(draggable.connect(owner).transfer(ethers.constants.AddressZero, 1))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidReceiver")
+        .withArgs(ethers.constants.AddressZero);
     })
   });
 

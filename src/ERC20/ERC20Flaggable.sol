@@ -66,6 +66,9 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     event NameChanged(string name, string symbol);
 
+    /// Overflow on minting transfer
+    error ERC20BalanceOverflow(address receiver, uint256 amount);
+
     constructor(uint8 _decimals) {
         decimals = _decimals;
     }
@@ -200,10 +203,14 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     }
 
     function increaseBalance(address recipient, uint256 amount) private {
-        require(recipient != address(0x0), "0x0"); // use burn instead
+        if (recipient == address(0x0)) {
+            revert ERC20InvalidReceiver(recipient); //use burn instead
+        }
         uint256 oldBalance = _balances[recipient];
         uint256 newBalance = oldBalance + amount;
-        require(oldBalance & FLAGGING_MASK == newBalance & FLAGGING_MASK, "overflow");
+        if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
+            revert ERC20BalanceOverflow(recipient, amount);
+        }
         _balances[recipient] = newBalance;
     }
 
@@ -229,9 +236,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     function decreaseBalance(address sender, uint256 amount) private {
         uint256 oldBalance = _balances[sender];
         uint256 newBalance = oldBalance - amount;
-        //require(oldBalance & FLAGGING_MASK == newBalance & FLAGGING_MASK, "underflow");
         if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
-            console.log(amount);
             revert ERC20InsufficientBalance(sender, balanceOf(sender), amount);
         }
         _balances[sender] = newBalance;
