@@ -312,12 +312,12 @@ describe("Brokerbot", () => {
       // Base payment should fail
       await expect(paymentHub.connect(owner)["payAndNotify(address,uint256,bytes)"](
         brokerbot.address, buyPrice, "0x20"))
-        .to.be.revertedWith("buying disabled");
+          .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");
         
       // ETH payment should fail
       await expect(paymentHub.connect(owner).payFromEtherAndNotify(
         brokerbot.address, buyPrice, "0x20", { value: buyPriceInETH }))
-        .to.be.revertedWith("buying disabled");
+          .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");
     });
         
     it("should not allow selling shares when selling is disabled", async () => {
@@ -334,7 +334,7 @@ describe("Brokerbot", () => {
         brokerbot.address,
         sharesToSell,
         "0x20"
-      )).to.be.revertedWith("selling disabled");
+      )).to.be.revertedWithCustomError(brokerbot, "Brokerbot_SellingDisabled");
 
       // reanable selling 
       await brokerbot.connect(owner).setEnabled(true, true);
@@ -626,12 +626,15 @@ describe("Brokerbot", () => {
     })
 
     it("Should revert when processIncomming is called direct", async () => {
-      await expect(brokerbot.connect(owner).processIncoming(config.baseCurrencyAddress, accounts[0], 100, "0x")).to.be.revertedWith("invalid caller");
+      await expect(brokerbot.connect(owner).processIncoming(config.baseCurrencyAddress, accounts[0], 100, "0x"))
+        .to.be.revertedWithCustomError(brokerbot, "Brokerbot_InvalidSender")
+        .withArgs(owner.address);
     })
 
     it("Should be able to withdraw erc20 from brokerbot", async () => {
       await expect(brokerbot.connect(sig1).withdraw(draggableShares.address, owner.address, 10))
-        .to.be.revertedWith("not owner nor hub");
+        .to.be.revertedWithCustomError(brokerbot, "Brokerbot_NotAuthorized")
+        .withArgs(sig1.address);
       const ownerBalBefore = await draggableShares.balanceOf(owner.address);
       await brokerbot.connect(owner).withdraw(draggableShares.address, owner.address, 10);
       const ownerBalAfter = await draggableShares.balanceOf(owner.address);
