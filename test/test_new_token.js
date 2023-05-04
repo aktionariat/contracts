@@ -385,8 +385,8 @@ describe("New Standard", () => {
 
     it("Should revert on underflow", async () => {
       // first set a flag e.g. claim
-      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
-      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, sig4.address);
+      await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
+      await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig4.address);
       
       await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
         .to.be.revertedWithCustomError(draggable, "ERC20InsufficientBalance")
@@ -418,23 +418,33 @@ describe("New Standard", () => {
 
     it("Should revert declare lost on disabled recovery", async () => {
       await expect(recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig1.address))
-        .to.be.revertedWith("disabled");
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_RecoveryDisabled")
+        .withArgs(sig1.address);
     });
 
     it("Should revert declare lost with bad collateral", async () => {
       await expect(recoveryHub.connect(sig1).declareLost(draggable.address, config.wbtcAddress, sig4.address))
-        .to.be.revertedWith("bad collateral");
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_BadCollateral")
+        .withArgs(config.wbtcAddress);
     })
 
     it("Should revert declare lost on empty address", async () => {
       await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, deployer.address))
-        .to.be.revertedWith("empty");
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_NothingToRecover")
+        .withArgs(draggable.address, deployer.address);
+    })
+
+    it("Should revert declare lost if there was no allowance set to recoveryhub", async () => {
+      await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // underflow on transfeFrom because allowance 0
     })
 
     it("Should revert declare lost if claimer hasn't enough collateral", async () => {
+      await draggable.connect(deployer).approve(recoveryHub.address, config.infiniteAllowance);
       await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
-        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // underflow on transfer from
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // underflow on transfeFrom because balance 0
     })
+
 
     it("Should set custom claim collateral for shares", async () => {
       // check for custom collateral address("0x0000000000000000000000000000000000000000")
@@ -484,7 +494,8 @@ describe("New Standard", () => {
       const balanceClaimer = await draggable.balanceOf(claimAdress);
 
       // delete without claim should revert
-      await expect(recoveryHub.deleteClaim(lostAddress)).to.be.revertedWith("not found");
+      await expect(recoveryHub.deleteClaim(lostAddress))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_ClaimNotFound");
 
       // declare token lost
       const tx = await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
@@ -517,7 +528,8 @@ describe("New Standard", () => {
       await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
       // declare on same addresse should revert
       await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, lostAddress))
-        .to.be.revertedWith("already claimed");
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_AlreadyClaimed")
+        .withArgs(draggable.address, lostAddress);
       // check if flag is set
       expect(await draggable.hasFlag(lostAddress, 10)).to.be.true;
       // transfer to lost address
@@ -553,25 +565,42 @@ describe("New Standard", () => {
       expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
     });
 
+    it("Should revert recover if there is no claim", async () => {
+      await expect(recoveryHub.connect(sig1).recover(draggable.address, deployer.address))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_ClaimNotFound")
+        .withArgs(deployer.address);
+    })
+
     it("Should able to recover token", async () => {
-      await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
-      const amountLost = await draggable.balanceOf(sig3.address);
-      const amountClaimer = await draggable.balanceOf(sig2.address);
+      const claimer = sig2;
+      const lostAddress = sig3.address;
+      await draggable.connect(claimer).approve(recoveryHub.address, config.infiniteAllowance);
+      const amountLost = await draggable.balanceOf(lostAddress);
+      const amountClaimer = await draggable.balanceOf(claimer.address);
       // sig2 declares lost funds at sig3
-      await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig3.address);
+      await recoveryHub.connect(claimer).declareLost(draggable.address, draggable.address, lostAddress);
 
       // check if flag is set
       // FLAG_CLAIM_PRESENT = 10
-      expect(await draggable.hasFlag(sig3.address, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
 
       // revert if not the claimer tries to recover
-      await expect(recoveryHub.connect(sig4).recover(draggable.address, sig3.address)).to.be.revertedWith("not claimant");
+      await expect(recoveryHub.connect(sig4).recover(draggable.address, lostAddress))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_InvalidSender")
+        .withArgs(sig4.address);
 
       // revert if to early
-      await expect(recoveryHub.connect(sig2).recover(draggable.address, sig3.address)).to.be.revertedWith("too early");
+      const claim = await recoveryHub.claims(draggable.address, lostAddress);
+      const claimPeriod = await draggable.claimPeriod().then(p => p.toNumber());
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNum);
+      const blockTimestamp = ethers.BigNumber.from(block.timestamp);
+      await expect(recoveryHub.connect(claimer).recover(draggable.address, lostAddress))
+        //.to.be.revertedWith("too early");
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_InClaimPeriod")
+        .withArgs(claim.timestamp.add(claimPeriod), blockTimestamp.add(1));
 
       // add claim period (180 days)
-      const claimPeriod = await draggable.claimPeriod().then(p => p.toNumber());
       await ethers.provider.send("evm_increaseTime", [claimPeriod]);
       await ethers.provider.send("evm_mine");
 

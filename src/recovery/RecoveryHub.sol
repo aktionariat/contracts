@@ -49,6 +49,31 @@ contract RecoveryHub is IRecoveryHub {
     event ClaimDeleted(IRecoverable indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
     event ClaimResolved(IRecoverable indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
 
+    /// Recovery can be disabled per address.
+    /// @param lostAddress The address for which the recovery is disabled.
+    error RecoveryHub_RecoveryDisabled(address lostAddress);
+    /// No valid collateral type
+    /// @param collateralType The address of collateral type token
+    error RecoveryHub_BadCollateral(IERC20 collateralType);
+    /// No token to able to recover on the lost address
+    /// @param token The token address which is checked for recovery.
+    /// @param lostAddress The lost address.
+    error RecoveryHub_NothingToRecover(IERC20 token, address lostAddress);
+    /// The was arleady a claim for this token and address.
+    /// @param token The token address.
+    /// @param lostAddress The lost address.
+    error RecoveryHub_AlreadyClaimed(IERC20 token, address lostAddress);
+    /// Sender has to be claimant
+    /// @param sender The msg.sender of the call
+    error RecoveryHub_InvalidSender(address sender);
+    /// No claim for this address exists
+    /// @param lostAddress The checked address 
+    error RecoveryHub_ClaimNotFound(address lostAddress);
+    /// Recover can only be called after the claim period
+    /// @param claimPeriodEnd The timestamp when the period ends
+    /// @param currentTimestamp The block timestamp of the call
+    error RecoveryHub_InClaimPeriod(uint256 claimPeriodEnd, uint256 currentTimestamp);
+
     function setRecoverable(bool enabled) external override {
         recoveryDisabled[msg.sender] = !enabled;
     }
@@ -77,14 +102,24 @@ contract RecoveryHub is IRecoveryHub {
     * through a shareholder register).
     */
     function declareLost(IRecoverable token, IERC20 collateralType, address lostAddress) external {
-        require(isRecoverable(lostAddress), "disabled");
+        if(recoveryDisabled[lostAddress]) {
+            revert RecoveryHub_RecoveryDisabled(lostAddress);
+        }
         uint256 collateralRate = IRecoverable(token).getCollateralRate(collateralType);
-        require(collateralRate > 0, "bad collateral");
+        if (collateralRate == 0) {
+            // if the there is no rate the collateral isn't accepted
+            revert RecoveryHub_BadCollateral(collateralType);
+        }
         uint256 balance = IERC20(token).balanceOf(lostAddress);
-        require(balance > 0, "empty");
+        if (balance == 0) {
+            // if lost address has no balance, there also nothing to recover
+            revert RecoveryHub_NothingToRecover(token, lostAddress);
+        }
         uint256 collateral = balance * collateralRate;
         IERC20 currency = IERC20(collateralType);
-        require(claims[token][lostAddress].collateral == 0, "already claimed");
+        if (claims[token][lostAddress].collateral > 0) {
+            revert RecoveryHub_AlreadyClaimed(token, lostAddress);
+        }
 
         claims[token][lostAddress] = Claim({
             claimant: msg.sender,
@@ -95,9 +130,9 @@ contract RecoveryHub is IRecoveryHub {
             currencyUsed: collateralType
         });
         emit ClaimMade(token, lostAddress, msg.sender, balance);
-        
+        // custom error is here more expensive
+        // errors like no allowance/no balance revert generally in the transferFrom
         require(currency.transferFrom(msg.sender, address(this), collateral), "transfer failed");
-
         IRecoverable(token).notifyClaimMade(lostAddress);
     }
 
@@ -134,6 +169,7 @@ contract RecoveryHub is IRecoveryHub {
         if (claim.collateral > 0){
             IERC20 currency = IERC20(claim.currencyUsed);
             delete claims[token][holder];
+            // custom error more expensive
             require(currency.transfer(holder, claim.collateral), "could not return collateral");
             emit ClaimCleared(token, holder, claim.collateral);
         }
@@ -146,17 +182,25 @@ contract RecoveryHub is IRecoveryHub {
     */
     function recover(IRecoverable token, address lostAddress) external {
         Claim memory claim = claims[token][lostAddress];
-        address claimant = claim.claimant;
-        require(claimant == msg.sender, "not claimant");
         uint256 collateral = claim.collateral;
-        IERC20 currency = IERC20(claim.currencyUsed);
-        require(collateral != 0, "not found");
+        if (collateral == 0) {
+            revert RecoveryHub_ClaimNotFound(lostAddress);
+        }
+        address claimant = claim.claimant;
+        if (claimant != msg.sender) {
+            revert RecoveryHub_InvalidSender(msg.sender);
+        }
         // rely on time stamp is ok, no exact time stamp needed
         // solhint-disable-next-line not-rely-on-time
-        require(claim.timestamp + IRecoverable(token).claimPeriod() <= block.timestamp, "too early");
+        uint256 claimPeriodEnd = claim.timestamp + IRecoverable(token).claimPeriod();
+        if (claimPeriodEnd > block.timestamp) {
+            revert RecoveryHub_InClaimPeriod(claimPeriodEnd, block.timestamp);
+        }
         delete claims[token][lostAddress];
         emit ClaimResolved(token, lostAddress, claimant, collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
+        IERC20 currency = IERC20(claim.currencyUsed);
+        // custom error more expensive
         require(currency.transfer(claimant, collateral), "transfer failed");
         IRecoverable(token).recover(lostAddress, claimant);
     }
@@ -169,10 +213,13 @@ contract RecoveryHub is IRecoveryHub {
         IRecoverable token = IRecoverable(msg.sender);
         Claim memory claim = claims[token][lostAddress];
         IERC20 currency = IERC20(claim.currencyUsed);
-        require(claim.collateral != 0, "not found");
+        if (claim.collateral == 0) {
+            revert RecoveryHub_ClaimNotFound(lostAddress);
+        }
         delete claims[token][lostAddress];
         emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
+        // custom error more expensive
         require(currency.transfer(claim.claimant, claim.collateral), "transfer failed");
     }
 
