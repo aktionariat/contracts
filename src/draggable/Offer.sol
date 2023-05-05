@@ -90,17 +90,17 @@ contract Offer is IOffer {
     }
 
     modifier onlyBuyer {
-        checkSender(buyer);
+        _checkSender(buyer);
         _;
     }
 
     modifier onlyToken {
-        checkSender(address(token));
+        _checkSender(address(token));
         _;
     }
 
     modifier onlyOracle {
-        checkSender(token.oracle());
+        _checkSender(token.oracle());
         _;
     }
 
@@ -264,7 +264,11 @@ contract Offer is IOffer {
         selfdestruct(payable(buyer));
     }
 
-    function checkSender(address validSender) internal view {
+    /**
+     * Checks if msg.sender is an authorized address.
+     * @param validSender The authorized address.
+     */
+    function _checkSender(address validSender) internal view {
         if (msg.sender != validSender) {
             revert Offer_InvalidSender(msg.sender);
         }
