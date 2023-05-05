@@ -329,7 +329,8 @@ describe("New Standard", () => {
     it("Should set new oracle", async () => {
       const newOracle = sig1.address;
       // revert if not oracle 
-      await expect(draggable.connect(sig1).setOracle(newOracle)).to.be.revertedWith("not oracle");
+      await expect(draggable.connect(sig1).setOracle(newOracle))
+        .to.be.revertedWith("not oracle");
       await draggable.connect(oracle).setOracle(newOracle);
       expect(await draggable.oracle()).to.equal(newOracle);
       // reset oracle for offer testing
@@ -688,23 +689,32 @@ describe("New Standard", () => {
       await ethers.provider.send("evm_increaseTime", [votePeriod]);
       await ethers.provider.send("evm_mine");
 
-      await expect(offer.connect(sig3).voteYes()).to.be.revertedWith("vote ended");
+      await expect(offer.connect(sig3).voteYes())
+        .to.be.revertedWithCustomError(offer, "Offer_VotingEnded");
     })
 
     it("Should revert if reportExternalVotes isn't called from oracle or to many votes are reported", async () => {
       const tooManyExternalTokens = ethers.BigNumber.from(300000000);
       const externalTokens = ethers.BigNumber.from(3000000);
-      await expect(offer.connect(sig1).reportExternalVotes(externalTokens, 0)).to.be.revertedWith("not oracle");
-      await expect(offer.connect(oracle).reportExternalVotes(tooManyExternalTokens, 0)).to.be.revertedWith("too many votes");
+      const totalVotingTokens = await draggable.totalVotingTokens();
+      const totalSupply = await draggable.totalSupply();
+      await expect(offer.connect(sig1).reportExternalVotes(externalTokens, 0))
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig1.address);
+      await expect(offer.connect(oracle).reportExternalVotes(tooManyExternalTokens, 0))
+        .to.be.revertedWithCustomError(offer, "Offer_TooManyVotes")
+        .withArgs(totalVotingTokens, totalSupply.add(tooManyExternalTokens));
     })
 
     it("Should revert cancel if not called from the buyer", async () => {
-      await expect(offer.connect(sig2).cancel()).to.be.revertedWith("invalid caller");
+      await expect(offer.connect(sig2).cancel())
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
     })
 
     it("Should able to contest offer after expiry", async () => {
-      const threedays = 30*24*60*60;
-      const expiry = await draggable.votePeriod().then(period => period.add(threedays));
+      const thirtydays = 30*24*60*60;
+      const expiry = await draggable.votePeriod().then(period => period.add(thirtydays));
       await ethers.provider.send("evm_increaseTime", [expiry.toNumber()]);
       await ethers.provider.send("evm_mine");
       await offer.contest();
@@ -735,7 +745,8 @@ describe("New Standard", () => {
       expect(offerBefore).to.exist;
       
       await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("1"), baseCurrency.address, overrides))
-        .to.revertedWith("old offer better");
+        .to.be.revertedWithCustomError(offer, "Offer_OldOfferBetter")
+        .withArgs(await offer.price(),ethers.utils.parseEther("1"));
       await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides);
       
       // new offer from sig1
@@ -751,11 +762,14 @@ describe("New Standard", () => {
       const { events } = await tx.wait();
       const { address } = events.find(Boolean);
       await expect(offer.connect(sig2).makeCompetingOffer(address))
-        .to.be.revertedWith("invalid caller");
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
     })
 
     it("Should revert if notifyMoved isn't called from token", async () => {
-      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1"))).to.be.revertedWith("invalid caller");
+      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1")))
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig1.address);
     })
 
     it("Should revert new offer if old offer is already accepted", async () => {
@@ -767,20 +781,23 @@ describe("New Standard", () => {
       }
 
       await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
-        .to.be.revertedWith("old already accepted");
+        .to.be.revertedWithCustomError(offer, "Offer_AlreadyAccepted");
     })
 
     it("Should revert if user account isn't well funded", async () => {
       await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("100"), baseCurrency.address, overrides))
-        .to.be.revertedWith("not funded");
+        .to.be.revertedWithCustomError(offer, "Offer_NotWellFunded");
     })
 
     it("Should revert execution if sender isn't buyer", async () => {
-      await expect(offer.connect(sig2).execute()).to.be.revertedWith("not buyer");
+      await expect(offer.connect(sig2).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
     })
 
     it("Should revert execution if offer isn't accepted", async () => {
-      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+      await expect(offer.connect(sig1).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_NotAccepted");
     })
 
     it("Should revert if transfer of offer currency fails", async () => {
@@ -813,7 +830,8 @@ describe("New Standard", () => {
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
 
       // execute revert as external+yes in not 75% of total shares
-      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+      await expect(offer.connect(sig1).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_NotAccepted");
 
       // move to after voting deadline (60days)
       const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
