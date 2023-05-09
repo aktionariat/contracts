@@ -486,7 +486,7 @@ function setBaseCurrency() {
         case "mainnet":
             nconf.set("baseCurrencyAddress", config.xchf.mainnet);
             break;
-        case "optimsim":
+        case "optimism":
             nconf.set("baseCurrencyAddress", config.xchf.optimism);
             break;
         case "goerli":
