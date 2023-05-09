@@ -173,15 +173,6 @@ module.exports = {
       },
       deploy: ['deploy_optimism']
     },
-    kovanOptimism: {
-      url: 'https://kovan.optimism.io',
-      accounts: accounts("optimism_kovan"),
-      chainId: 69,
-      live: true,
-      saveDeployments: true,
-      tags: ["staging"],
-      deploy: ['deploy_optimism']
-    },
     goerliOptimism: {
       url: 'https://goerli.optimism.io',
       accounts: accounts("optimism_goerli"),
@@ -208,7 +199,6 @@ module.exports = {
       4: 1,
       5: 1,
       11155111: 1,
-      69: 1,
       420: 1
     },
     owner: {
@@ -219,7 +209,6 @@ module.exports = {
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli
       11155111: process.env.MULTISIG_DEPLOY, // sepolia
-      69: process.env.MULTISIG_DEPLOY, // optimism kovan
       420: process.env.MULTISIG_DEPLOY, // optimism goerli
       42161: process.env.MULTISIG_DEPLOY // arb1
     },
@@ -237,7 +226,6 @@ module.exports = {
       4: process.env.MULTISIG_DEFAULT,
       5: process.env.MULTISIG_DEFAULT,
       11155111: process.env.MULTISIG_DEFAULT,
-      69: process.env.MULTISIG_DEFAULT,
       420: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
     }
@@ -259,7 +247,7 @@ module.exports = {
         sepolia: process.env.ETHERSCAN_API_KEY,
         // optimism
         optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
-        kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+        goerliOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
         // polygon
         polygon: process.env.POLYGONSCAN_API_KEY,
         polygonMumbai: process.env.POLYGONSCAN_API_KEY,
@@ -269,7 +257,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.12",
+        version: "0.8.19",
         settings: {
           optimizer: {
             enabled: true,
