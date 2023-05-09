@@ -1,0 +1,16 @@
+{
+  "network": "goerliOptimism",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Goerli OP Test",
+  "multisigSigner": "0xbB3c2C7D631E94bdf279302CEA8DBbE42fB23A74",
+  "symbol": "GOT",
+  "name": "Goerli OP Test",
+  "terms": "www.terms.ch",
+  "totalShares": "1000000",
+  "sharePrice": "10000000000000000",
+  "increment": "100000000000000",
+  "quorumBps": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true
+}
