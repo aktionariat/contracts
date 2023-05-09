@@ -9,8 +9,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const owner = nconf.get("multisigAddress");
   const symbol = nconf.get("symbol");
   const shares = await deployments.get(symbol+"Shares");
-  const recoveryHub = await deployments.get("RecoveryHub");
-  const offerFactory = await deployments.get("OfferFactory");
+  //const recoveryHub = await deployments.get("RecoveryHub");
+  const recoveryHub = await ethers.getContractAt("RecoveryHub", "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3");
+  //const offerFactory = await deployments.get("OfferFactory");
+  const offerFactory = await ethers.getContractAt("OfferFactory", "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531");
   nconf.set("address:recoveryHub", recoveryHub.address);
   nconf.set("address:offerFactory", offerFactory.address)
   
@@ -60,4 +62,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = [nconf.get("symbol")+"DraggableShares"];
-module.exports.dependencies = [nconf.get("symbol")+"Shares", "RecoveryHub", "OfferFactory"];
+module.exports.dependencies = [nconf.get("symbol")+"Shares"];
