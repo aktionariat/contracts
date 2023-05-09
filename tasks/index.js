@@ -61,6 +61,9 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                 case "kovanOptimism":
                     factory = "0x1abD8b5194D733691D64c3F898300f88Ba0035d5" // optimism kovan factory
                     break;
+                case "goerliOptimism":
+                    factory = "0xd8680241F16541648158BE9E218561FF5152560A" // optimism goerli factory
+                    break;
                 case "optimism":
                     factory = "0xaE52FDaaDEbfe4D943546d3f60640Ba6959B8fcb" // optimism factory
                     break;
@@ -70,7 +73,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
             owner = multiSigDefaultOwner;
         }
 
-        multiSigCloneFactory = await ethers.getContractAt("MultiSigCloneFactory.sol:MultiSigCloneFactory", factory);
+        multiSigCloneFactory = await ethers.getContractAt("src/multisig/MultiSigCloneFactory.sol:MultiSigCloneFactory", factory);
 
         if (network.name != "hardhat" && !nconf.get("silent")) {
             console.log("-----------------------")
