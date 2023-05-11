@@ -330,7 +330,8 @@ describe("New Standard", () => {
       const newOracle = sig1.address;
       // revert if not oracle 
       await expect(draggable.connect(sig1).setOracle(newOracle))
-        .to.be.revertedWith("not oracle");
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
       await draggable.connect(oracle).setOracle(newOracle);
       expect(await draggable.oracle()).to.equal(newOracle);
       // reset oracle for offer testing
@@ -359,18 +360,39 @@ describe("New Standard", () => {
     it("Should revert wrapping(mint) w/o shares", async () => {
       const amount = 100
       // wrap from address without token
-      await expect(draggable.connect(deployer).wrap(deployer.address, amount)).to.be.reverted; // should throw underflow panic error
-      // info: correct wrapping is done in the main before 
+      await expect(draggable.connect(deployer).wrap(deployer.address, amount))
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // should throw underflow panic error
+      // info: correct wrapping is done in the first before starting loc 44
     });
 
     it("Should revert on unwrap", async () => {
-      await expect(draggable.connect(sig2).unwrap(10)).to.be.revertedWith("factor");
+      await expect(draggable.connect(sig2).unwrap(10))
+        .to.be.revertedWithCustomError(draggable, "Draggable_IsBinding");
     });
 
     it("Should revert when onTokenTransfer isn't called from wrapped token (prevent minting)", async () => {
-      await expect(draggable.connect(sig2).onTokenTransfer(sig1.address, 100, "0x01")).to.revertedWith("sender");
+      await expect(draggable.connect(sig2).onTokenTransfer(sig1.address, 100, "0x01"))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
     })
 
+    it("Should revert if drag isn't called from offer contract", async () => {
+      await expect(draggable.connect(sig2).drag(sig2.address, config.baseCurrencyAddress))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
+    })
+    it("Should revert if notifyOfferEnded isn't called from offer contract", async () => {
+      await expect(draggable.connect(sig2).notifyOfferEnded())
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
+    })
+    it("Should revert if dnotifyVoted isn't called from offer contract", async () => {
+      await expect(draggable.connect(sig2).notifyVoted(sig2.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
+    })
+
+    
 
     it("Should revert on overflow", async () => {
       // first set total shares > uint224
@@ -865,7 +887,7 @@ describe("New Standard", () => {
       // revert new offer after execute
       await expect(draggable.connect(sig1).makeAcquisitionOffer(
         ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
-        .to.be.revertedWith("factor");
+          .to.be.revertedWithCustomError(draggable, "Draggable_NotBinding");
 
       // should be able to unwrap token
       const baseBefore = await baseCurrency.balanceOf(sig2.address);

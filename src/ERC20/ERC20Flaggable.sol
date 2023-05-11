@@ -279,4 +279,14 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
         // intentionally left blank
     }
 
+    /**
+     * Checks if msg.sender is an authorized address.
+     * @param validSender The authorized address.
+     */
+    function _checkSender(address validSender) internal view {
+        if (msg.sender != validSender) {
+            revert ERC20InvalidSender(msg.sender);
+        }
+    }
+
 }
