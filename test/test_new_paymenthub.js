@@ -217,7 +217,6 @@ describe("New PaymentHub", () => {
         .to.be.revertedWithCustomError(brokerbot, "Brokerbot_WithdrawFailed")
         .withArgs(draggableShares.address, brokerbotETHBefore);
       await expect(brokerbot["withdrawEther(uint256)"](brokerbotETHBefore))
-        //.to.be.revertedWith("not owner nor hub");
         .to.be.revertedWithCustomError(brokerbot, "Brokerbot_NotAuthorized")
         .withArgs(deployer.address);
       await expect(brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore.add(1)))

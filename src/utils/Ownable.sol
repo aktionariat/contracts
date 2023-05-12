@@ -27,12 +27,19 @@ contract Ownable {
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
+    error Ownable_NotOwner(address sender);
+
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
     constructor (address initialOwner) {
         owner = initialOwner;
         emit OwnershipTransferred(address(0), owner);
+    }
+
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
     }
 
     /**
@@ -44,8 +51,9 @@ contract Ownable {
         owner = newOwner;
     }
 
-    modifier onlyOwner() {
-        require(owner == msg.sender, "not owner");
-        _;
+    function _checkOwner() internal view {
+        if (msg.sender != owner) {
+            revert Ownable_NotOwner(msg.sender);
+        }
     }
 }

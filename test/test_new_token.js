@@ -508,7 +508,8 @@ describe("New Standard", () => {
         .to.be.revertedWith("zero");
       // test that only owner can set
       await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
-        .to.be.revertedWith("not owner");
+        .to.be.revertedWithCustomError(shares, "Ownable_NotOwner")
+        .withArgs(sig1.address);
       // test with owner
       await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
       expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
@@ -992,7 +993,9 @@ describe("New Standard", () => {
       expect(await allowlistShares.isPowerlisted(powerlistAddress)).to.equal(true);
 
       // powerlist can't mint
-      await expect(allowlistShares.connect(sig1).mint(powerlistAddress, "1000")).to.be.revertedWith("not owner");
+      await expect(allowlistShares.connect(sig1).mint(powerlistAddress, "1000"))
+        .to.be.revertedWithCustomError(allowlistShares, "Ownable_NotOwner")
+        .withArgs(sig1.address);
 
       // mint to powerlist
       await await allowlistShares.connect(owner).mint(powerlistAddress, "1000");
@@ -1084,7 +1087,8 @@ describe("New Standard", () => {
       const addressesToAdd = [sig2.address, sig3.address, sig4.address];
       // first check if revert non-owner
       await expect(allowlistShares.connect(sig1)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN))
-        .to.be.revertedWith("not owner");
+        .to.be.revertedWithCustomError(allowlistShares, "Ownable_NotOwner")
+        .withArgs(sig1.address);
       // second check if works with owner
       await allowlistShares.connect(owner)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN);
       for( let i = 0; i < addressesToAdd.length; i++) {
@@ -1099,7 +1103,8 @@ describe("New Standard", () => {
       // use sig1 for allowlist
       const allowlistAddress = sig1.address;
       await expect(allowlistDraggable.connect(sig1)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED))
-        .to.be.revertedWith("not owner");
+        .to.be.revertedWithCustomError(allowlistDraggable, "Ownable_NotOwner")
+        .withArgs(sig1.address);
     });
 
     it("Should allow wrap on allowlist", async () => {
@@ -1162,8 +1167,12 @@ describe("New Standard", () => {
       expect(await allowlistDraggable.restrictTransfers()).to.equal(true);
 
       // can only be set by owner
-      await expect(allowlistShares.setApplicable(false)).to.be.revertedWith("not owner");
-      await expect(allowlistDraggable.setApplicable(false)).to.be.revertedWith("not owner");
+      await expect(allowlistShares.setApplicable(false))
+        .to.be.revertedWithCustomError(allowlistShares, "Ownable_NotOwner")
+        .withArgs(deployer.address);
+      await expect(allowlistDraggable.setApplicable(false))
+        .to.be.revertedWithCustomError(allowlistDraggable, "Ownable_NotOwner")
+        .withArgs(deployer.address);
 
       await allowlistShares.connect(owner).setApplicable(false);
       await allowlistDraggable.connect(owner).setApplicable(false);
