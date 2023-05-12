@@ -1,0 +1,16 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "SDX Integration Test",
+  "multisigSigner": "0xdcaa50578efe0a2ab95767a6dc41d104d543e8d9",
+  "symbol": "SITS",
+  "name": "SDX Integration Test Shares",
+  "terms": "https://www.sdx.com/",
+  "totalShares": "1000000",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true
+}
