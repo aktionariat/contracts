@@ -222,8 +222,9 @@ describe("New Standard", () => {
       let newTotalShares = await totalSupply.add(randomChange);
 
       // should revert if new total shares is < than valid supply
-      await expect(shares.connect(owner).setTotalShares(await totalSupply.sub(randomChange)))
-      .to.be.revertedWith("below supply");
+      await expect(shares.connect(owner).setTotalShares(totalSupply.sub(randomChange)))
+        .to.be.revertedWithCustomError(shares, "Shares_InvalidTotalShares")
+        .withArgs(totalSupply, totalSupply.sub(randomChange));
 
       let totalShares = await shares.totalShares();
       newTotalShares = totalShares.add(randomChange);
@@ -241,7 +242,8 @@ describe("New Standard", () => {
 
       // try to declare too many tokens invalid
       await expect(shares.connect(owner).declareInvalid(sig4.address, holderBalance.add(1), "more than I have"))
-        .to.be.revertedWith("amount too high");
+        .to.be.revertedWithCustomError(shares, "ERC20InsufficientBalance")
+        .withArgs(sig4.address, holderBalance, holderBalance.add(1));
 
       await expect(shares.connect(owner).declareInvalid(sig4.address, randomdAmount, "test"))
         .to.emit(shares, "TokensDeclaredInvalid")
@@ -259,6 +261,22 @@ describe("New Standard", () => {
       expect(balanceBefore.sub(randomAmountToBurn)).to.equal(balanceAfter);
     });
 
+    it("Should revert when trying to mint more shares than total shares", async () => {
+      const totalShares = await shares.totalShares();
+      const totalValidSupply = await shares.totalValidSupply();
+      const amountToMint = totalShares.sub(totalValidSupply).add(1);
+      await expect(shares.connect(owner).mint(sig1.address, amountToMint))
+        .to.be.revertedWithCustomError(shares, "Shares_InsufficientTotalShares")
+        .withArgs(totalShares, totalValidSupply.add(amountToMint));
+    })
+
+    it("Should revert with overflow when trying to mint more than uint256 shares", async () => {
+      const totalValidSupply = await shares.totalValidSupply();
+      const amountToMint = ethers.constants.MaxUint256.sub(totalValidSupply).add(1);
+      await expect(shares.connect(owner).mint(sig1.address, amountToMint))
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW);
+    })
+
     it("Should mint and call on shares", async () => {
       const randomAmountToMint = chance.natural({min:1, max: 5000});
       const totalShares = await shares.totalShares();
@@ -272,6 +290,17 @@ describe("New Standard", () => {
 
       expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
     });
+
+    it("Should revert if mintMany(AndCall) is called with unequal array lengths", async () => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const randomAmountToMint2 = chance.natural({min:1, max: 5000});
+      await expect(shares.connect(owner).mintMany([sig2.address], [randomAmountToMint, randomAmountToMint2]))
+        .to.be.revertedWithCustomError(shares, "Shares_UnequalLength")
+        .withArgs(1, 2);
+      await expect(shares.connect(owner).mintManyAndCall([sig2.address], draggable.address, [randomAmountToMint, randomAmountToMint], "0x01"))
+        .to.be.revertedWithCustomError(shares, "Shares_UnequalLength")
+        .withArgs(1, 2);
+    })
 
     it("Should mint and call on shares for multiple addresses", async() => {
       const randomAmountToMint = chance.natural({min:1, max: 5000});
