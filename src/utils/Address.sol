@@ -5,6 +5,9 @@
 pragma solidity ^0.8.0;
 
 library Address {
+
+    error Address_NotTransferNorContract(address target);
+
     /**
      * @dev Returns true if `account` is a contract.
      *
@@ -30,7 +33,10 @@ library Address {
     }
 
     function functionCallWithValue(address target, bytes memory data, uint256 weiValue) internal returns (bytes memory) {
-        require(data.length == 0 || isContract(target), "transfer or contract");
+        //require(data.length == 0 || isContract(target), "transfer or contract");
+        if (data.length != 0 && !isContract(target)) {
+            revert Address_NotTransferNorContract(target);
+        }
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = target.call{ value: weiValue }(data);
         if (success) {
