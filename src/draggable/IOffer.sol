@@ -27,6 +27,7 @@ interface IOffer {
 	/// @param maxVotes The max possible votes for the token.
 	/// @param reportedVotes The external reported votes + circulating supply of the token.
 	error Offer_TooManyVotes(uint256 maxVotes, uint256 reportedVotes);
+	error Offer_TransferFailed();
 
 	function makeCompetingOffer(IOffer newOffer) external;
 

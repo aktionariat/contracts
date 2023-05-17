@@ -57,7 +57,6 @@ contract PaymentHub {
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
 
-    /// Transfer failed.
     error PaymentHub_TransferFailed();
     /// Forwarder not trusted.
     /// @param forwarder The msg.sender of this transaction.
@@ -197,7 +196,9 @@ contract PaymentHub {
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
-            require(IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]));
+            if (!IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i])) {
+                revert PaymentHub_TransferFailed();
+            }
         }
     }
 
@@ -217,7 +218,10 @@ contract PaymentHub {
     }
 
     function payAndNotify(IERC20 token, address recipient, uint256 amount, bytes calldata ref) public {
-        require(IERC20(token).transferFrom(msg.sender, recipient, amount)); // failsafe that processIncomming isn't executed if transfer failed
+         // failsafe that processIncomming isn't executed if transfer failed
+        if (!IERC20(token).transferFrom(msg.sender, recipient, amount)) {
+            revert PaymentHub_TransferFailed();
+        }
         IBrokerbot(recipient).processIncoming(token, msg.sender, amount, ref);
     }
 

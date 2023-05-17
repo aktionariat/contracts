@@ -33,7 +33,6 @@ library Address {
     }
 
     function functionCallWithValue(address target, bytes memory data, uint256 weiValue) internal returns (bytes memory) {
-        //require(data.length == 0 || isContract(target), "transfer or contract");
         if (data.length != 0 && !isContract(target)) {
             revert Address_NotTransferNorContract(target);
         }

@@ -143,8 +143,9 @@ contract Offer is IOffer {
             revert Offer_NotAccepted();
         }
         uint256 totalPrice = getTotalPrice();
-        // custom error more expensive
-        require(currency.transferFrom(buyer, address(token), totalPrice), "transfer failed");
+        if (!currency.transferFrom(buyer, address(token), totalPrice)) {
+            revert Offer_TransferFailed();
+        }
         token.drag(buyer, currency);
         kill(true, "success");
     }
