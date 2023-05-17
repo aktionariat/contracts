@@ -22,7 +22,8 @@ describe("Multisig", () => {
       ethers.utils.formatBytes32String('1'),
       ethers.utils.formatBytes32String('2'),
       ethers.utils.formatBytes32String('3'),
-      ethers.utils.formatBytes32String('4')]
+      ethers.utils.formatBytes32String('4'),
+      ethers.utils.formatBytes32String('5')]
 
   const lowerRealV = 27;
   const chain_id_inc = 35;
@@ -275,6 +276,33 @@ describe("Multisig", () => {
     expect(await multiSigClone.signerCount()).to.be.equal(3);
     expect(await multiSigClone.signers(adr4.address)).to.be.equal(0);
     expect(await multiSigClone.signers(adr3.address)).to.be.equal(2);
+  })
+
+  it("Should revert whenn nonce is used multiple times", async () => {
+    const tx = await multiSigCloneFactory.create(randomWallet.address, salts[4]);
+    const { gasUsed: createGasUsed, events } = await tx.wait();
+    const { address } = events.find(Boolean);
+    const multiSigNonce = await ethers.getContractAt("MultiSigWalletV4",address);
+
+    // tx info
+    const dataTX = await multiSigClone.populateTransaction.setSigner(adr1.address, 2);
+    const contractId = await multiSigNonce.connect(owner).contractId();
+    const seq = await multiSigNonce.nextNonce();
+    const net = await ethers.provider.getNetwork();
+    const chainid = net.chainId;
+    const tx_send_ms = {
+      nonce: seq,
+      gasPrice: contractId,
+      gasLimit: 21000,
+      to: multiSigNonce.address,
+      data: dataTX.data,
+      chainId: chainid,
+    };
+    const flatSig = await randomWallet.signTransaction(tx_send_ms);
+    const tx1 = ethers.utils.parseTransaction(flatSig);
+    await multiSigNonce.connect(randomWallet).execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]);
+    await expect(multiSigNonce.connect(randomWallet).execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]))
+      .to.be.rejectedWith("used");
   })
 
   describe("RLPEncode", () => {
