@@ -6,6 +6,9 @@ import "./IRecoveryHub.sol";
 
 interface IRecoverable is IERC20{
 
+    error Recoverable_RateZero();
+    error Recoverable_TransferFailed();
+
     // returns the recovery hub
     function recovery() external view returns (IRecoveryHub);
 

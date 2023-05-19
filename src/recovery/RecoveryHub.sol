@@ -49,31 +49,6 @@ contract RecoveryHub is IRecoveryHub {
     event ClaimDeleted(IRecoverable indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
     event ClaimResolved(IRecoverable indexed token, address indexed lostAddress, address indexed claimant, uint256 collateral);
 
-    /// Recovery can be disabled per address.
-    /// @param lostAddress The address for which the recovery is disabled.
-    error RecoveryHub_RecoveryDisabled(address lostAddress);
-    /// No valid collateral type
-    /// @param collateralType The address of collateral type token
-    error RecoveryHub_BadCollateral(IERC20 collateralType);
-    /// No token to able to recover on the lost address
-    /// @param token The token address which is checked for recovery.
-    /// @param lostAddress The lost address.
-    error RecoveryHub_NothingToRecover(IERC20 token, address lostAddress);
-    /// The was arleady a claim for this token and address.
-    /// @param token The token address.
-    /// @param lostAddress The lost address.
-    error RecoveryHub_AlreadyClaimed(IERC20 token, address lostAddress);
-    /// Sender has to be claimant
-    /// @param sender The msg.sender of the call
-    error RecoveryHub_InvalidSender(address sender);
-    /// No claim for this address exists
-    /// @param lostAddress The checked address 
-    error RecoveryHub_ClaimNotFound(address lostAddress);
-    /// Recover can only be called after the claim period
-    /// @param claimPeriodEnd The timestamp when the period ends
-    /// @param currentTimestamp The block timestamp of the call
-    error RecoveryHub_InClaimPeriod(uint256 claimPeriodEnd, uint256 currentTimestamp);
-
     function setRecoverable(bool enabled) external override {
         recoveryDisabled[msg.sender] = !enabled;
     }
@@ -130,9 +105,10 @@ contract RecoveryHub is IRecoveryHub {
             currencyUsed: collateralType
         });
         emit ClaimMade(token, lostAddress, msg.sender, balance);
-        // custom error is here more expensive
         // errors like no allowance/no balance revert generally in the transferFrom
-        require(currency.transferFrom(msg.sender, address(this), collateral), "transfer failed");
+        if (!currency.transferFrom(msg.sender, address(this), collateral)) {
+            revert RecoveryHub_TransferFailed();
+        }
         IRecoverable(token).notifyClaimMade(lostAddress);
     }
 
@@ -169,8 +145,9 @@ contract RecoveryHub is IRecoveryHub {
         if (claim.collateral > 0){
             IERC20 currency = IERC20(claim.currencyUsed);
             delete claims[token][holder];
-            // custom error more expensive
-            require(currency.transfer(holder, claim.collateral), "could not return collateral");
+            if (!currency.transfer(holder, claim.collateral)) {
+                revert RecoveryHub_TransferFailed();
+            }
             emit ClaimCleared(token, holder, claim.collateral);
         }
         IRecoverable(token).notifyClaimDeleted(holder);
@@ -200,8 +177,9 @@ contract RecoveryHub is IRecoveryHub {
         emit ClaimResolved(token, lostAddress, claimant, collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
         IERC20 currency = IERC20(claim.currencyUsed);
-        // custom error more expensive
-        require(currency.transfer(claimant, collateral), "transfer failed");
+        if (!currency.transfer(claimant, collateral)) {
+            revert RecoveryHub_TransferFailed();
+        }
         IRecoverable(token).recover(lostAddress, claimant);
     }
 
@@ -219,8 +197,9 @@ contract RecoveryHub is IRecoveryHub {
         delete claims[token][lostAddress];
         emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
-        // custom error more expensive
-        require(currency.transfer(claim.claimant, claim.collateral), "transfer failed");
+        if (!currency.transfer(claim.claimant, claim.collateral)) {
+            revert RecoveryHub_TransferFailed();
+        }
     }
 
 }

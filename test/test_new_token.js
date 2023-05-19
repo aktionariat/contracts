@@ -505,7 +505,7 @@ describe("New Standard", () => {
 
       // test that collateralRate is not 0
       await expect(shares.connect(owner).setCustomClaimCollateral(collateralAddress, 0))
-        .to.be.revertedWith("zero");
+        .to.be.revertedWithCustomError(shares, "Recoverable_RateZero");
       // test that only owner can set
       await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
         .to.be.revertedWithCustomError(shares, "Ownable_NotOwner")
@@ -527,15 +527,21 @@ describe("New Standard", () => {
     });
 
     it("Should revert if notifyClaimMade isn't called from RecoveryHub", async () => {
-      await expect(draggable.connect(sig1).notifyClaimMade(sig1.address)).to.be.revertedWith("not recovery");
+      await expect(draggable.connect(sig1).notifyClaimMade(sig1.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
     })
 
     it("Should revert if notifyClaimDeleted isn't called from RecoveryHub", async () => {
-      await expect(draggable.connect(sig1).notifyClaimDeleted(sig1.address)).to.be.revertedWith("not recovery");
+      await expect(draggable.connect(sig1).notifyClaimDeleted(sig1.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
     })
 
     it("Should revert if recover isn't called from RecoveryHub", async () => {
-      await expect(draggable.connect(sig1).recover(sig2.address, sig1.address)).to.be.revertedWith("not recovery");
+      await expect(draggable.connect(sig1).recover(sig2.address, sig1.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
     })
 
     it("Should delete claim", async () => {
@@ -565,7 +571,9 @@ describe("New Standard", () => {
       expect(await recoveryHub.getTimeStamp(draggable.address, lostAddress)).to.be.equal(block.timestamp);
       
       // delete claim as non oracle
-      await expect(draggable.connect(sig4).deleteClaim(lostAddress)).to.be.revertedWith("not claim deleter");
+      await expect(draggable.connect(sig4).deleteClaim(lostAddress))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig4.address);
       // delete claim as oracle
       await draggable.connect(oracle).deleteClaim(lostAddress);
       expect(await draggable.balanceOf(claimAdress)).to.equal(balanceClaimer);
