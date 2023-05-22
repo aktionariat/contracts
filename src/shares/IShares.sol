@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 
 interface IShares {
 
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+	//////////////////////////////////////////////////////////////*/
 	/// New total shares can't be below current valid supply
 	/// @param totalSupply  The current valid supply. 
 	/// @param newTotalShares  The new max shares. 

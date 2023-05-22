@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 
 library Address {
 
+    /// @param target Target address to call the function on.
     error Address_NotTransferNorContract(address target);
 
     /**

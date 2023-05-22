@@ -34,6 +34,9 @@ contract MultiSigWalletV4 is Nonce, Initializable {
   event Received(address indexed sender, uint amount);
   event SentEth(address indexed target, uint amount);
 
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+	//////////////////////////////////////////////////////////////*/
   /// Call needs to provide signature data. 
   error Multisig_SignatureMissing();
   /// Sinature data isn't valid for the transaction or insufficient signer have signed the transaction. 

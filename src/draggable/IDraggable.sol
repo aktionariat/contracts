@@ -5,6 +5,9 @@ import "../ERC20/IERC20.sol";
 import "./IOffer.sol";
 interface IDraggable {
 
+    /*//////////////////////////////////////////////////////////////
+                            Custom errors
+    //////////////////////////////////////////////////////////////*/
     /// conversion factor has to be > 0 for this transaction. 
     error Draggable_NotBinding();
     /// conversion factor has to be = 0 for this transaction. 

@@ -8,15 +8,6 @@ import "./ERC20Flaggable.sol";
 import "./IERC20Permit.sol";
 abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
 
-
-    /// Block timestamp must to be before deadline.
-    /// @param deadline The deadline of the permit.
-    /// @param blockTimestamp The timestamp of the execution block.
-    error Permit_DeadlineExpired(uint256 deadline, uint256 blockTimestamp);
-    /// Recovered address must be owner and not zero address.
-    /// @param signerAddress The recovered signer address.
-    error Permit_InvalidSigner(address signerAddress);
-   
    /*//////////////////////////////////////////////////////////////
                             EIP-2612 STORAGE
     //////////////////////////////////////////////////////////////*/

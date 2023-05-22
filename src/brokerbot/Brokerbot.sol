@@ -59,19 +59,6 @@ contract Brokerbot is IBrokerbot, Ownable {
     event Received(address indexed from, uint amountETH, uint amountBase);
     event Withdrawn(address indexed target, uint amountETH);
     
-    error Brokerbot_BuyingDisabled();
-    error Brokerbot_SellingDisabled();
-    /// Sender(msg.sender) has to be incoming token or paymenthub.
-    /// @param sender The msg.sender.
-    error Brokerbot_InvalidSender(address sender);
-    /// target.call() wasn't succesfull.
-    /// @param target The receiver of the Eth.
-    /// @param amount The withdraw amount.
-    error Brokerbot_WithdrawFailed(address target, uint256 amount);
-    /// Sender(msg.sender) needs to be owner or paymenthub.
-    /// @param sender The msg.sender.
-    error Brokerbot_NotAuthorized(address sender);
-
     constructor(
         IERC20Permit _token,
         uint256 _price,
