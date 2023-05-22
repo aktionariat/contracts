@@ -121,7 +121,7 @@ describe("Permit", () => {
 
       // advance time by 1 and mine new block
       //await time.increase(1);
-      console.log(deadline.toString());
+      //console.log(deadline.toString());
 
       // execute permit with sig1
       expect(await shares.allowance(permitOwner, spender)).to.be.eq(0)
