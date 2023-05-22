@@ -27,6 +27,15 @@ contract EmployeeShares is Ownable, IERC677Receiver {
     event VestingUpdated(address indexed token, address indexed beneficiary, uint256 lockup, uint256 vestingstart, uint256 vestingEnd);
     event VestedTokensDeposited(address indexed token, uint256 totalReceived);
 
+    /// @param sender The unauthorized msg.sender. 
+    error EmployeeShares_InvalidSender(address sender);
+    /// @param balance The existing balance. 
+    /// @param needed The needed balance. 
+    error EmployeeShares_InsufficientBalance(uint256 balance, uint256 needed);
+    /// @param currentTimestamp Current block.timestamp. 
+    /// @param lockupEnd Timestamp when the lockup ends. 
+    error EmployeeShares_BeforeLockupEnd(uint256 currentTimestamp, uint256 lockupEnd);
+
     constructor(address employee, address company_, IERC20 token_, uint256 vestingStart_, uint256 vestingPeriod, uint256 lockupPeriod) Ownable(employee){
         company = company_;
         token = token_;
@@ -36,23 +45,29 @@ contract EmployeeShares is Ownable, IERC677Receiver {
         emit VestingUpdated(address(token_), employee, lockupEnd, vestingStart_, vestingEnd);
     }
 
+    modifier onlyCompany {
+        if (msg.sender != company) {
+            revert EmployeeShares_InvalidSender(msg.sender);
+        }
+        _;
+    }
+
     /**
      * Allows the company to claw back some shares that have not vested yet.
      */
-    function clawback(address target, uint256 amount) external {
-        require(msg.sender == company);
-        require(amount <= balance() - vested());
+    function clawback(address target, uint256 amount) external onlyCompany{
+        if (amount > balance() - vested()) {
+            revert EmployeeShares_InsufficientBalance(balance() - vested(), amount);
+        }
         token.transfer(target, amount);
     }
 
-    function liftLockup() external {
-        require(msg.sender == company);
+    function liftLockup() external onlyCompany {
         lockupEnd = block.timestamp;
         emit VestingUpdated(address(token), owner, lockupEnd, vestingStart, vestingEnd);
     }
 
-    function endVesting() external {
-        require(msg.sender == company);
+    function endVesting() external onlyCompany{
         vestingEnd = block.timestamp;
         emit VestingUpdated(address(token), owner, lockupEnd, vestingStart, vestingEnd);
     }
@@ -87,9 +102,13 @@ contract EmployeeShares is Ownable, IERC677Receiver {
      */
     function withdraw(address ercAddress, address to, uint256 amount) external onlyOwner() {
         if(ercAddress == address(token)){
-            require(block.timestamp >= lockupEnd, "lockup");
+            if (lockupEnd > block.timestamp) {
+                revert EmployeeShares_BeforeLockupEnd(block.timestamp, lockupEnd);
+            }
             // ensure not more is withdrawn than allowed
-            require(vested() + balance() - received >= amount, "vesting");
+            if (amount > vested() + balance() - received) {
+                revert EmployeeShares_InsufficientBalance(vested() + balance() - received, amount);
+            }
         }
         IERC20(ercAddress).transfer(to, amount);
     }
@@ -98,7 +117,9 @@ contract EmployeeShares is Ownable, IERC677Receiver {
      * Deposit more tokens for which vesting applies.
      */
     function onTokenTransfer(address, uint256 amount, bytes calldata) external override returns (bool) {
-        require(msg.sender == address(token));
+        if (msg.sender != address(token)) {
+            revert EmployeeShares_InvalidSender(msg.sender);
+        }
         received += amount;
         emit VestedTokensDeposited(msg.sender, received);
         return true;
@@ -117,8 +138,7 @@ contract EmployeeShares is Ownable, IERC677Receiver {
      * for acquisitions. If it is set, the vesting and lockup will continue
      * to apply for the new unwrapped token.
      */
-    function unwrap(bool keepRestrictions) external {
-        require(msg.sender == company);
+    function unwrap(bool keepRestrictions) external onlyCompany {
         uint256 startBalance = balance();
         IDraggable draggable = IDraggable(address(token));
         draggable.unwrap(startBalance);
