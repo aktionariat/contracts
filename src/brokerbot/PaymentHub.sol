@@ -57,6 +57,10 @@ contract PaymentHub {
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
 
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+    //////////////////////////////////////////////////////////////*/
+    /// Failguard when an erc20 transfer returns false. 
     error PaymentHub_TransferFailed();
     /// Forwarder not trusted.
     /// @param forwarder The msg.sender of this transaction.

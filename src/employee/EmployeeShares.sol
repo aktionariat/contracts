@@ -27,6 +27,9 @@ contract EmployeeShares is Ownable, IERC677Receiver {
     event VestingUpdated(address indexed token, address indexed beneficiary, uint256 lockup, uint256 vestingstart, uint256 vestingEnd);
     event VestedTokensDeposited(address indexed token, uint256 totalReceived);
 
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+    //////////////////////////////////////////////////////////////*/
     /// @param sender The unauthorized msg.sender. 
     error EmployeeShares_InvalidSender(address sender);
     /// @param balance The existing balance. 
@@ -55,7 +58,7 @@ contract EmployeeShares is Ownable, IERC677Receiver {
     /**
      * Allows the company to claw back some shares that have not vested yet.
      */
-    function clawback(address target, uint256 amount) external onlyCompany{
+    function clawback(address target, uint256 amount) external onlyCompany {
         if (amount > balance() - vested()) {
             revert EmployeeShares_InsufficientBalance(balance() - vested(), amount);
         }
@@ -67,7 +70,7 @@ contract EmployeeShares is Ownable, IERC677Receiver {
         emit VestingUpdated(address(token), owner, lockupEnd, vestingStart, vestingEnd);
     }
 
-    function endVesting() external onlyCompany{
+    function endVesting() external onlyCompany {
         vestingEnd = block.timestamp;
         emit VestingUpdated(address(token), owner, lockupEnd, vestingStart, vestingEnd);
     }

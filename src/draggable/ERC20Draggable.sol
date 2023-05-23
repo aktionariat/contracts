@@ -114,11 +114,6 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		_;
 	}
 
-
-	function migrate() external {
-		migrate(msg.sender, 0);
-	}
-
 	function onTokenTransfer(
 		address from, 
 		uint256 amount, 
@@ -206,8 +201,6 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		uint256 pricePerShare, 
 		IERC20 currency
 	) external payable needsBinding(true) {
-		// is here pricePerShare==0 allowed?
-		// should allowed currencies be gated by oracle?
 		IOffer newOffer = factory.create{value: msg.value}(
 			salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
 
@@ -250,6 +243,10 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 			revert Draggable_TooManyVotes(totalVotingTokens(), totalSupply() + additionalVotes);
 		}		
 		migrate(successor, additionalVotes);
+	}
+
+	function migrate() external {
+		migrate(msg.sender, 0);
 	}
 
 	function migrate(address successor, uint256 additionalVotes) internal {
