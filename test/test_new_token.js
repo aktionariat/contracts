@@ -427,9 +427,10 @@ describe("New Standard", () => {
       // first set total shares > uint224
       await shares.connect(owner).setTotalShares("0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
       const largeNumber = "0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+      const balanceBefore = await shares.balanceOf(sig1.address);
       await expect(shares.connect(owner).mint(sig1.address, largeNumber))
         .to.be.revertedWithCustomError(shares, "ERC20BalanceOverflow")
-        .withArgs(sig1.address, largeNumber);
+        .withArgs(sig1.address, balanceBefore, largeNumber);
       // set total shares back 
       await shares.connect(owner).setTotalShares(config.totalShares);
 

@@ -65,8 +65,11 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     event NameChanged(string name, string symbol);
 
-    /// Overflow on minting transfer
-    error ERC20BalanceOverflow(address receiver, uint256 amount);
+    /// Overflow on minting, transfer. 
+    /// @param receiver The address were the balance overflows. 
+    /// @param balance The current balance of the receiver. 
+    /// @param amount The amount added, which result in the overflow. 
+    error ERC20BalanceOverflow(address receiver, uint256 balance, uint256 amount);
 
     constructor(uint8 _decimals) {
         decimals = _decimals;
@@ -208,7 +211,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
         uint256 oldBalance = _balances[recipient];
         uint256 newBalance = oldBalance + amount;
         if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
-            revert ERC20BalanceOverflow(recipient, amount);
+            revert ERC20BalanceOverflow(recipient, oldBalance, amount);
         }
         _balances[recipient] = newBalance;
     }
