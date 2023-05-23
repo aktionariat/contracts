@@ -300,8 +300,8 @@ describe("Multisig", () => {
     };
     const flatSig = await randomWallet.signTransaction(tx_send_ms);
     const tx1 = ethers.utils.parseTransaction(flatSig);
-    await multiSigNonce.connect(randomWallet).execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]);
-    await expect(multiSigNonce.connect(randomWallet).execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]))
+    await multiSigNonce.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]);
+    await expect(multiSigNonce.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]))
       .to.be.rejectedWith("used");
   })
 
