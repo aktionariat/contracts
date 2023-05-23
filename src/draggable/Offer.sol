@@ -104,6 +104,13 @@ contract Offer is IOffer {
         _;
     }
 
+    modifier votingOpen {
+        if (!isVotingOpen()) {
+            revert Offer_VotingEnded();
+        }
+        _;
+    }
+
     function makeCompetingOffer(IOffer betterOffer) external override onlyToken {
         if (isAccepted()) {
             revert Offer_AlreadyAccepted();
@@ -217,7 +224,7 @@ contract Offer is IOffer {
      * This functions is idempotent and sets the number of external yes and no votes. So when more votes come in, the
      * oracle should always report the total number of yes and no votes. Abstentions are not counted.
      */
-    function reportExternalVotes(uint256 yes, uint256 no) external onlyOracle {
+    function reportExternalVotes(uint256 yes, uint256 no) external onlyOracle votingOpen {
         uint256 maxVotes = token.totalVotingTokens();
         uint256 reportingVotes = yes + no + IERC20(address(token)).totalSupply();
         if (reportingVotes > maxVotes) {
@@ -239,10 +246,7 @@ contract Offer is IOffer {
         vote(Vote.NO);
     }
 
-    function vote(Vote newVote) internal {
-        if (!isVotingOpen()) {
-            revert Offer_VotingEnded();
-        }
+    function vote(Vote newVote) internal votingOpen {
         Vote previousVote = votes[msg.sender];
         votes[msg.sender] = newVote;
         if(previousVote == Vote.NONE){
