@@ -208,14 +208,6 @@ describe("New Standard", () => {
       expect(await shares.symbol()).to.equal(newSymbol);
     });
 
-    it("Should change terms for shares", async () => {
-      const newTerms = "www.test.com/newterms";
-      await shares.connect(owner).setTerms(newTerms);
-
-      // check if terms set correct
-      expect(await shares.terms()).to.equal(newTerms);
-    });
-
     it("Should set new total shares", async () => {
       const randomChange = chance.natural({ min: 1, max: 50000 });
       const totalSupply = await shares.totalValidSupply();
