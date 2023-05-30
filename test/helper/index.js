@@ -88,6 +88,7 @@ async function setup() {
   let draggableShares;
   let shares;
   let paymentHub;
+  let successor;
 
   let deployer
   let owner;
@@ -113,7 +114,8 @@ async function setup() {
     "DraggableShares",
     "AllowlistShares",
     "PaymentHub",
-    "Brokerbot"
+    "Brokerbot",
+    "DraggableSharesWithPredecessor"
   ]);
   
   paymentHub = await ethers.getContract("PaymentHub");
@@ -121,6 +123,7 @@ async function setup() {
   offerFactory = await ethers.getContract("OfferFactory");
   shares = await ethers.getContract("Shares");
   draggableShares = await ethers.getContract("DraggableShares");
+  successor = await ethers.getContract("DraggableSharesWithPredecessor");
   brokerbot = await ethers.getContract("Brokerbot");
   
   // Set Payment Hub for Brokerbot

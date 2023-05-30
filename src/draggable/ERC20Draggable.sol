@@ -221,7 +221,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		migrate(successor, additionalVotes);
 	}
 
-	function migrate() external {
+	function migrate() external override {
 		migrate(msg.sender, 0);
 	}
 
