@@ -211,7 +211,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		emit ChangeOracle(oracle);
 	}
 
-	function migrateWithExternalApproval(address successor, uint256 additionalVotes) external {
+	function migrateWithExternalApproval(address successor, uint256 additionalVotes) external override{
 		require(msg.sender == oracle, "not oracle");
 		// Additional votes cannot be higher than the votes not represented by these tokens.
 		// The assumption here is that more shareholders are bound to the shareholder agreement

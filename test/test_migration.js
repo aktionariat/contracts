@@ -43,21 +43,81 @@ describe("Migration", () => {
     it("Should revert when not enough predecessor tokens are on the successor", async () => {
       await expect(successor.initiateMigration()).to.be.revertedWith("quorum");
     })
-    it("Should migrate successfully", async () => {
-      let votingToken = await draggable.totalVotingTokens();
+    it("Should revert if there is an open offer", async () => {
+      const overrides = {
+        value: ethers.utils.parseEther("5.0")
+      }
+      pricePerShare = ethers.utils.parseUnits("2", 18);
+      salt = ethers.utils.formatBytes32String('1');
+      await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, config.baseCurrencyAddress, overrides)
+      await expect(successor.initiateMigration()).to.be.revertedWith("no offer");
+      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+      await offer.connect(sig1).cancel();
+    })
+    it("Should revert when more yes votes than total shares", async () => {
+      // move token to successor
       let balance1 = await draggable.balanceOf(sig2.address);
       let tokenToMint = balance1.mul(4);
+      await shares.connect(owner).mintAndCall(sig2.address, draggable.address, tokenToMint, "0x01");
+      await draggable.connect(sig2).approve(successor.address, config.infiniteAllowance);
+      await successor.connect(sig2).wrap(sig2.address, tokenToMint);      
+      // declare token invalid to set total shares lower
+      const invalidAmount = await draggable.totalSupply();
+      const totalShares = await shares.totalShares();
+      await shares.connect(owner).declareInvalid(draggable.address, invalidAmount, "0x01");
+      await shares.connect(owner).setTotalShares(600000);
+      // call migrate with too many votes
+      await expect(successor.initiateMigration()).to.be.revertedWith("votes");
+      await shares.connect(owner).setTotalShares(totalShares);
+    })
+    it("Should migrate successfully", async () => {
+      let votingToken = await draggable.totalVotingTokens();
+      let balance1 = await draggable.balanceOf(sig2.address); // 900'000
+      let tokenToMint = balance1.mul(4); // 3'600'000
       // mint shares and wrap them in draggable
       await shares.connect(owner).mintAndCall(sig2.address, draggable.address, tokenToMint, "0x01");
-      // move enough shares to successor
+      // move enough shares to successor (5*900'000 = 4'500'000)
       for( let i = 1; i < signers.length; i++) {
         await draggable.connect(signers[i]).approve(successor.address, config.infiniteAllowance);
         await successor.connect(signers[i]).wrap(signers[i].address, balance1);
       }
-      await successor.connect(sig2).wrap(sig2.address, tokenToMint);
+      await successor.connect(sig2).wrap(sig2.address, tokenToMint); 
+      // total wrap 4'500'000+3'600'000=8'100'000 > quorum 75%
       //migrate
       await successor.initiateMigration();
       let votingTokenSuccessor = await successor.totalVotingTokens();
+      expect(votingToken).to.be.equal(votingTokenSuccessor);
+      expect(await successor.wrapped()).to.be.equal(shares.address);
+      expect(await draggable.unwrapConversionFactor()).to.be.equal(1);
+    })
+  })
+  describe("Migration with external votes", () => {
+    it("Should revert when migrateWithExternalApproval is called not from oracle", async () => {
+      await expect(draggable.connect(sig1).migrateWithExternalApproval(successor.address, 1000))
+        .to.be.revertedWith("not oracle");
+    })
+    it("Should revert when more external votes are reported as possible", async () => {
+      await expect(draggable.connect(owner).migrateWithExternalApproval(successor.address, 10000000000))
+        .to.be.revertedWith("votes");
+    })
+    it("Should migrate with external votes succesfully", async () => {
+      const votingToken = await draggable.totalVotingTokens();
+      const balSigner = await draggable.balanceOf(sig2.address);
+      const predecessorSupply = await draggable.totalSupply();
+      await draggable.connect(owner).setOracle(successor.address);
+      console.log(balSigner.toString());
+      console.log(await draggable.balanceOf(successor.address).then(b => b.toString()));
+
+      // move current draggable shares to successor (amount: 5400000)
+      for( let i = 0; i < signers.length; i++) {
+        await draggable.connect(signers[i]).approve(successor.address, config.infiniteAllowance);
+        await successor.connect(signers[i]).wrap(signers[i].address, balSigner);
+      }
+      console.log(await draggable.totalSupply().then(b => b.toString()));
+      console.log(await draggable.balanceOf(successor.address).then(b => b.toString()));
+      const externalVotes = 3000000; // makes total 8400000 which is over the 75% quorum
+      await successor.connect(owner).initiateMigrationWithExternalApproval(externalVotes);
+      const votingTokenSuccessor = await successor.totalVotingTokens();
       expect(votingToken).to.be.equal(votingTokenSuccessor);
       expect(await successor.wrapped()).to.be.equal(shares.address);
     })

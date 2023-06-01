@@ -150,9 +150,8 @@ async function setup() {
     await shares.connect(signers[i]).approve(draggableShares.address, config.infiniteAllowance);
     await draggableShares.connect(signers[i]).wrap(accounts[i], 900000);
   }
-  // Deposit some shares to Brokerbot
-  await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
-  await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
+
+  
 }
 
 

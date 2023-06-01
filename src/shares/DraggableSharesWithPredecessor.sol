@@ -62,4 +62,16 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     _burn(address(this), predecessorBalance);
     assert(predecessorSupply == totalSupply());
   }
+
+  function initiateMigrationWithExternalApproval(uint256 additionalVotes) external {
+    require(msg.sender == oracle, "not oracle");
+    uint256 predecessorSupply = predecessor.totalSupply();
+    _mint(address(predecessor), predecessorSupply);
+    wrapped = predecessor.wrapped();
+    predecessor.migrateWithExternalApproval(address(this), additionalVotes);
+    uint256 predecessorBalance = predecessor.balanceOf(address(this));
+    predecessor.unwrap(predecessorBalance);
+    _burn(address(this), predecessorBalance);
+    assert(predecessorSupply == totalSupply());
+  }
 }

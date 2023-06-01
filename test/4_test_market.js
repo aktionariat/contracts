@@ -35,6 +35,10 @@ describe("Brokerbot", () => {
     draggableShares = await ethers.getContract("DraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
     baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+
+    // Deposit some shares/xchf to Brokerbot
+    await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
+    await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
   });
 
   describe("init", () => {
