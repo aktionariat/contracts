@@ -28,8 +28,10 @@
 pragma solidity ^0.8.0;
 
 import "./DraggableShares.sol";
-import "hardhat/console.sol";
-
+/** 
+ *  
+ * @dev only one of the migration function should be needed.  
+ */
 contract DraggableSharesWithPredecessor is DraggableShares {
   IDraggable immutable predecessor;
 
@@ -63,6 +65,10 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     assert(predecessorSupply == totalSupply());
   }
 
+  /**
+   * @notice This contract needs to hold the majority of the predecessor tokens and the this contract needs to be the oracle of the predecessor.
+   * 
+   */
   function initiateMigrationWithExternalApproval(uint256 additionalVotes) external {
     require(msg.sender == oracle, "not oracle");
     uint256 predecessorSupply = predecessor.totalSupply();
