@@ -103,23 +103,20 @@ describe("Migration", () => {
     it("Should migrate with external votes succesfully", async () => {
       const votingToken = await draggable.totalVotingTokens();
       const balSigner = await draggable.balanceOf(sig2.address);
-      const predecessorSupply = await draggable.totalSupply();
+      // change owner to succesor, so that it can mint and transfer token to draggable
       await draggable.connect(owner).setOracle(successor.address);
-      console.log(balSigner.toString());
-      console.log(await draggable.balanceOf(successor.address).then(b => b.toString()));
 
       // move current draggable shares to successor (amount: 5400000)
       for( let i = 0; i < signers.length; i++) {
         await draggable.connect(signers[i]).approve(successor.address, config.infiniteAllowance);
         await successor.connect(signers[i]).wrap(signers[i].address, balSigner);
       }
-      console.log(await draggable.totalSupply().then(b => b.toString()));
-      console.log(await draggable.balanceOf(successor.address).then(b => b.toString()));
       const externalVotes = 3000000; // makes total 8400000 which is over the 75% quorum
       await successor.connect(owner).initiateMigrationWithExternalApproval(externalVotes);
       const votingTokenSuccessor = await successor.totalVotingTokens();
       expect(votingToken).to.be.equal(votingTokenSuccessor);
       expect(await successor.wrapped()).to.be.equal(shares.address);
+      expect(await draggable.unwrapConversionFactor()).to.be.equal(1);
     })
   })
 })
