@@ -103,7 +103,7 @@ task("init-deploy", "creates files for client deployment")
     console.log("=================================================")
     console.log("============ AKTIONARIAT DEPLOYER ===============")
     console.log("=================================================")
-    if (! network || network.name == "hardhat") {
+    if (! network ) {
         hre.changeNetwork(await askNetwork());
     }
     await switchToBranch(network.name);
@@ -424,6 +424,7 @@ function writeConfig(deployConfig) {
     nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
     nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
     nconf.set('quorumBps', deployConfig.quorum*100);
+    nconf.set('quorumMigration', deployConfig.quorumMigration*100);
     nconf.set('votePeriodSeconds', deployConfig.votePeriod*24*60*60);
     nconf.set('Allowlist', deployConfig.allowlist);
     nconf.set('Draggable', deployConfig.draggable);
@@ -502,6 +503,8 @@ async function switchToBranch(networkName) {
             break;
         case "goerliOptimism":
             await git.checkout("op-deploy-template");
+            break;
+        case "hardhat": 
             break;
         default:
             await git.checkout("deployment-template")
