@@ -23,7 +23,7 @@ describe("Migration", () => {
     signers = [owner,sig1,sig2,sig3,sig4,sig5];
 
     // deploy contracts
-    await setup();
+    await setup(false);
 
     // get references
     recoveryHub = await ethers.getContract("RecoveryHub");

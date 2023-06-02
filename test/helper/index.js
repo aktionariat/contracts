@@ -80,7 +80,7 @@ async function setBalances(accounts, baseCurrency, daiContract, wbtcContract) {
     await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
 }
 
-async function setup() {
+async function setup(setupBrokerbotEnabled) {
   let baseCurrency;
   let brokerbot;
   let recoveryHub;
@@ -149,6 +149,12 @@ async function setup() {
   for (let i = 0; i < signers.length; i++) {
     await shares.connect(signers[i]).approve(draggableShares.address, config.infiniteAllowance);
     await draggableShares.connect(signers[i]).wrap(accounts[i], 900000);
+  }
+
+  if (setupBrokerbotEnabled) {
+      // Deposit some shares/xchf to Brokerbot
+      await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
+      await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
   }
 
   

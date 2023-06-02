@@ -22,7 +22,7 @@ describe("Payment Integration", () => {
 
   let owner;
   before(async () => {
-    await setup();
+    await setup(true);
 
     [deployer,owner,] = await ethers.getSigners();
     accounts = [owner.address];
