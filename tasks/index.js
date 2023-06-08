@@ -169,10 +169,13 @@ task("init-deploy", "creates files for client deployment")
     }
 
     // deploy brokerbot
-    await hre.run("deploy", {
-        tags: deployConfig.symbol+"Brokerbot",
-    });
-
+    const deployBrokerbot = await askConfirmWithMsg("Do you want to deploy the brokerbot?");
+    nconf.set("deployBrokerbot", deployBrokerbot);
+    if (deployBrokerbot) {
+        await hre.run("deploy", {
+            tags: deployConfig.symbol+"Brokerbot",
+        });
+    }
     
     // write deploy log
     nconf.save();
@@ -516,7 +519,10 @@ async function switchToBranch(networkName) {
 async function readDeployValues() {
     const shares = await ethers.getContractAt("Shares", nconf.get("Allowlist") ? nconf.get("address:allowlist:shares") : nconf.get("address:share"));
     const draggable = await ethers.getContractAt("DraggableShares", nconf.get("Allowlist") ? nconf.get("address:allowlist:draggable") : nconf.get("address:draggable"));
-    const brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));
+    const brokerbotAddress = nconf.get("address:brokerbot")
+    if (brokerbotAddress) {
+        const brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));        
+    }
     console.log("=============================================================")
     console.log("===== Deployment Finished with following on-chain data ======")
     console.log("=============================================================")
@@ -526,7 +532,9 @@ async function readDeployValues() {
     console.log("draggable quorum: %s", await draggable.quorum());
     console.log("Draggable oracle: %s", await draggable.oracle());
     console.log("Share version: %s", await shares.VERSION());
-    console.log("Brokerbot version: %s", await brokerbot.VERSION());
-    console.log("Brokerbot base: %s", await brokerbot.base());
-    console.log("Brokerbot token: %s", await brokerbot.token());
+    if (brokerbotAddress) {
+        console.log("Brokerbot version: %s", await brokerbot.VERSION());
+        console.log("Brokerbot base: %s", await brokerbot.base());
+        console.log("Brokerbot token: %s", await brokerbot.token());
+    }
 }
