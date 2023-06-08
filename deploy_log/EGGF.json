@@ -1,0 +1,31 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Farmy AG",
+  "multisigSigner": "0xbfe09bd590ccb62ee3ee49940520e597602d8cce",
+  "symbol": "EGGF",
+  "name": "Farmy AG F Shares",
+  "terms": "https://www.farmy.ch/ct/farmy-aktien",
+  "totalShares": "250000",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 5000,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x67C5770202aa3E2b0DB2e5342d97c191a0E46303",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0x2f4722F3b37A17E23a6e3Ab90Ab6Ff4aAEFE99d0",
+    "offerFactory": "0x1B8Bf880E17FE5D8B2432A102346424B3237b2A7",
+    "draggable": "0x620BF52Fa5E97fbFb3992cab478e3272285ADfD1"
+  },
+  "brokerbot": {
+    "shares": "0x620BF52Fa5E97fbFb3992cab478e3272285ADfD1"
+  },
+  "blocknumber": "17428335",
+  "version": {
+    "shares": 3
+  },
+  "deployBrokerbot": false
+}
