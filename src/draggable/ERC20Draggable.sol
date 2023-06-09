@@ -109,8 +109,12 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		_;
 	}
 
-	modifier needsBinding(bool value) {
-		_checkForBinding(value);
+	modifier checkBinding(bool expected) {
+		if (expected && !isBinding()) {
+			revert Draggable_NotBinding();
+		} else if (!expected && isBinding()) {
+			revert Draggable_IsBinding();
+		}
 		_;
 	}
 
@@ -171,7 +175,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	}
 
 	/** Decrease the number of drag-along tokens. The user gets back their shares in return */
-	function unwrap(uint256 amount) external override needsBinding(false) {
+	function unwrap(uint256 amount) external override checkBinding(false) {
 		_unwrap(msg.sender, amount, unwrapConversionFactor);
 	}
 
@@ -200,7 +204,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		bytes32 salt, 
 		uint256 pricePerShare, 
 		IERC20 currency
-	) external payable needsBinding(true) {
+	) external payable checkBinding(true) {
 		IOffer newOffer = factory.create{value: msg.value}(
 			salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
 
@@ -219,7 +223,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		offer = IOffer(address(0));
 	}
 
-	function _replaceWrapped(IERC20 newWrapped, address oldWrappedDestination) internal needsBinding(true) {
+	function _replaceWrapped(IERC20 newWrapped, address oldWrappedDestination) internal checkBinding(true) {
 		// Free all old wrapped tokens we have
 		if (!wrapped.transfer(oldWrappedDestination, wrapped.balanceOf(address(this)))) {
 			revert Draggable_TransferFailed();
@@ -298,11 +302,4 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		return address(offer) != address(0);
 	}
 
-	function _checkForBinding(bool value) internal view {
-		if (value && !isBinding()) {
-			revert Draggable_NotBinding();
-		} else if (!value && isBinding()) {
-			revert Draggable_IsBinding();
-		}
-	}
 }
