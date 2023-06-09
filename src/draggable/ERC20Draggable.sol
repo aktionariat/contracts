@@ -205,7 +205,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
 	}
 
-	function setOracle(address newOracle) external {
+	function setOracle(address newOracle) override external {
 		require(msg.sender == oracle, "not oracle");
 		oracle = newOracle;
 		emit ChangeOracle(oracle);

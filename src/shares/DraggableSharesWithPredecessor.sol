@@ -65,6 +65,11 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     assert(predecessorSupply == totalSupply());
   }
 
+  function setPredecessorOracle(address oracle) external {
+    require(msg.sender == oracle, "not oracle");
+    predecessor.setOracle(oracle);
+  }
+
   /**
    * @notice This contract needs to hold the majority of the predecessor tokens and the this contract needs to be the oracle of the predecessor.
    * 

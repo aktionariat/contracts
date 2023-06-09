@@ -15,6 +15,7 @@ interface IDraggable is IERC20 {
     function totalVotingTokens() external view returns (uint256);
     function notifyVoted(address voter) external;
     function migrate() external;
+    function setOracle(address newOracle) external;
     function migrateWithExternalApproval(address successor, uint256 additionalVotes) external;
 
 }
