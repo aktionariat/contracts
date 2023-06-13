@@ -16,6 +16,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const terms = "wwww.terms.ch";
   const quorumBps = 10;
+  const quorumMigration = 6000;
   const votePeriodSeconds = 36000;
 
   if (network.name != "hardhat") {
@@ -41,6 +42,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       shares.address,
       quorumBps,
+      quorumMigration,
       votePeriodSeconds,
       recoveryHub.address,
       offerFactory.address,
