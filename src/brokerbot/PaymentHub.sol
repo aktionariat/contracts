@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2021 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -296,5 +296,10 @@ contract PaymentHub {
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {
         // Important to receive ETH refund from Uniswap
+    }
+
+    function transferEther(address to) external payable {
+        (bool success, ) = payable(to).call{value:msg.value}("");
+        require(success, "Transfer failed");
     }
 }

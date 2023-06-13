@@ -9,7 +9,7 @@ describe("Multisig", () => {
   let multiSigCloneFactory;
   let multiSigClone;
   let multiSigClone2;
-  let forceSend;
+  let paymentHub;
 
   let owner;
   let adr1;
@@ -31,9 +31,10 @@ describe("Multisig", () => {
     [owner,adr1,adr2,adr3,adr4,adr5] = await ethers.getSigners();
     accounts = [owner.address,adr1.address,adr2.address,adr3.address,adr4.address];
 
-    await deployments.fixture(["MultiSigCloneFactory"]);
+    await deployments.fixture(["MultiSigCloneFactory", "PaymentHub"]);
     multiSigMaster = await ethers.getContract("MultiSigWalletMasterV4");
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
+    paymentHub = await ethers.getContract("PaymentHub");
 
   });
 
@@ -107,20 +108,21 @@ describe("Multisig", () => {
     const net = await ethers.provider.getNetwork();
     const chainid = net.chainId;
     const valueTx = ethers.utils.parseEther("0.5")
+    const dataTX = await paymentHub.populateTransaction.transferEther(wallet.address);
     for (let seq = 0; seq < 260; seq++) {
       const tx_send_ms = {
         nonce: seq,
         gasPrice: await multiSig.connect(wallet).contractId(),
         gasLimit: 21000,
-        to: wallet.address,
+        to: paymentHub.address,
         value: valueTx,
-        data: 0x0,
+        data: dataTX.data,
         chainId: chainid,
       };
       const flatSig = await wallet.signTransaction(tx_send_ms);
       const tx1 = ethers.utils.parseTransaction(flatSig);
       // console.log(tx1);
-      const found = await multiSig.checkSignatures(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]);
+      const found = await multiSig.checkSignatures(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]);
       expect(found[0]).to.be.equal(wallet.address);
     }
    
@@ -152,20 +154,21 @@ describe("Multisig", () => {
     const net = await ethers.provider.getNetwork();
     const chainid = net.chainId;
     const valueTx = ethers.utils.parseEther("0.5")
+    const dataTX = await paymentHub.populateTransaction.transferEther(wallet.address);
     const tx_send_ms = {
       nonce: seq,
       gasPrice: await multiSig.connect(wallet).contractId(),
       gasLimit: 21000,
-      to: wallet.address,
+      to: paymentHub.address,
       value: valueTx,
-      data: 0x0,
+      data: dataTX.data,
       chainId: chainid,
     };
     const flatSig = await wallet.signTransaction(tx_send_ms);
     const tx1 = ethers.utils.parseTransaction(flatSig);
     // console.log(tx1);
-    await expect(multiSig.execute(seq, wallet.address, valueTx, [], [tx1.v - 10], [tx1.r], [tx1.s]))
-      .to.emit(multiSig, "SentEth").withArgs(wallet.address, valueTx);
+    await expect(multiSig.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - 10], [tx1.r], [tx1.s]))
+      .to.emit(multiSig, "SentEth").withArgs(tx1.to, tx1.value);
     const msBlanceAfter = await ethers.provider.getBalance(address);
     //console.log("multisig balance after: %s", msBlanceAfter);
     expect(msBlanceBefore.sub(valueTx)).to.be.equal(msBlanceAfter);

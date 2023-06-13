@@ -3,7 +3,7 @@
  *
  * MIT License with Automated License Fee Payments
  *
- * Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+ * Copyright (c) 2022 Aktionariat AG (aktionariat.com)
  *
  * Permission is hereby granted to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software
@@ -67,7 +67,8 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	uint256 private constant QUORUM_MULTIPLIER = 10000;
 
-	uint256 public immutable quorum; // BPS (out of 10'000)
+	uint256 public immutable quorumMigration; // used for contract migartion, in BPS (out of 10'000) 
+	uint256 public immutable quorum; // used for drag-along at acquisition offers, in BPS (out of 10'000)
 	uint256 public immutable votePeriod; // In seconds
 
 	address public override oracle;
@@ -81,6 +82,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	constructor(
 		IERC20 _wrappedToken,
 		uint256 _quorum,
+		uint256 _quorumMigration,
 		uint256 _votePeriod,
 		IOfferFactory _offerFactory,
 		address _oracle
@@ -89,6 +91,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	{
 		wrapped = _wrappedToken;
 		quorum = _quorum;
+		quorumMigration = _quorumMigration;
 		votePeriod = _votePeriod;
 		factory = _offerFactory;
 		oracle = _oracle;
@@ -230,7 +233,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		uint256 totalVotes = totalVotingTokens();
 		require(yesVotes <= totalVotes, "votes");
 		require(!offerExists(), "no offer"); // if you have the quorum, you can cancel the offer first if necessary
-		require(yesVotes * QUORUM_MULTIPLIER >= totalVotes * quorum, "quorum");
+		require(yesVotes * QUORUM_MULTIPLIER >= totalVotes * quorumMigration, "quorum");
 		replaceWrapped(IERC20(successor), successor);
 		emit MigrationSucceeded(successor, yesVotes, additionalVotes, totalVotes);
 	}
