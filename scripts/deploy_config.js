@@ -16,6 +16,7 @@ module.exports = {
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
   quorumBps: 7500,
+  quorumMigration: 7500,
   votePeriodSeconds: 5184000,
   uniswapRouterAddress: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
   // Allowlist

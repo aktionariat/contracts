@@ -106,7 +106,7 @@ task("init-deploy", "creates files for client deployment")
     console.log("=================================================")
     console.log("============ AKTIONARIAT DEPLOYER ===============")
     console.log("=================================================")
-    if (! network || network.name == "hardhat") {
+    if (! network ) {
         hre.changeNetwork(await askNetwork());
     }
     await switchToBranch(network.name);
@@ -176,11 +176,10 @@ task("init-deploy", "creates files for client deployment")
         tags: deployConfig.symbol+"Brokerbot",
     });
 
-    
     // write deploy log
     nconf.save();
     await readDeployValues();
-    
+
     // verify on etherscan
     const verify = await askConfirmWithMsg("Do you want to verify on etherscan?");
     if (network.name != "hardhat" && verify) {
@@ -394,7 +393,7 @@ task("deploy-multisig-batch", "deploys multiple multisigs at once")
         nconf.use('memory');
         nconf.set("silent", true);
         const firstSigner = "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b";
-        for (let index = 0; index < 22; index++) {            
+        for (let index = 0; index < 22; index++) {
             let saltName = "fixv2"+index
             await hre.run("create-multisig-clone", {
                 salt: saltName,
@@ -431,6 +430,7 @@ function writeConfig(deployConfig) {
     nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
     nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
     nconf.set('quorumBps', deployConfig.quorum*100);
+    nconf.set('quorumMigration', deployConfig.quorumMigration*100);
     nconf.set('votePeriodSeconds', deployConfig.votePeriod*24*60*60);
     nconf.set('Allowlist', deployConfig.allowlist);
     nconf.set('Draggable', deployConfig.draggable);
@@ -509,6 +509,8 @@ async function switchToBranch(networkName) {
             break;
         case "goerliOptimism":
             await git.checkout("op-deploy-template");
+            break;
+        case "hardhat":
             break;
         default:
             await git.checkout("deployment-template")
