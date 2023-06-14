@@ -19,6 +19,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const terms = nconf.get("terms");
   const quorumBps = nconf.get("quorumBps");
+  const quorumMigration = nconf.get("quorumMigration");
   const votePeriodSeconds = nconf.get("votePeriodSeconds");
 
   if (network.name != "hardhat" && !nconf.get("silent")) {
@@ -47,6 +48,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       shares.address,
       quorumBps,
+      quorumMigration,
       votePeriodSeconds,
       recoveryHub.address,
       offerFactory.address,

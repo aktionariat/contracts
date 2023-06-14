@@ -14,6 +14,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const terms = config.terms;
   const quorumBps = config.quorumBps;
+  const quorumMigration = config.quorumMigration;
   const votePeriodSeconds = config.votePeriodSeconds;
   
   if (network.name != "hardhat") {
@@ -42,6 +43,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       shares.address,
       quorumBps,
+      quorumMigration,
       votePeriodSeconds,
       recoveryHub.address,
       offerFactory.address,

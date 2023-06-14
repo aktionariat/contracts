@@ -13,6 +13,7 @@ module.exports = {
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   quorumBps: 7500,
+  quorumMigration: 7500,
   votePeriodSeconds: 5184000,
   uniswapRouterAddress: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
   // Allowlist
