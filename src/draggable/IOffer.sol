@@ -17,18 +17,20 @@ interface IOffer {
 	error Offer_NotAccepted();
 	/// Sender of the offer needs to have needed funds in his account.
 	error Offer_NotWellFunded();
-	/// New offer needs to be with a better price than the old offer.
+	/// New offer not valid. `newPrice` needs to be higher than `oldPrice`.
 	/// @param oldPrice Price of the old offer.
 	/// @param newPrice Price of the new offer.
 	error Offer_OldOfferBetter(uint256 oldPrice, uint256 newPrice);
 	/// Voting needs to be still open.
 	error Offer_VotingEnded();
-	/// (External) Reported votes needs to not exceed total votes.
+	/// Too many (External) reported votes. `reportedVotes` needs to be less or equal to `maxVotes`.
 	/// @param maxVotes The max possible votes for the token.
 	/// @param reportedVotes The external reported votes + circulating supply of the token.
 	error Offer_TooManyVotes(uint256 maxVotes, uint256 reportedVotes);
 	/// Failguard when a erc20 transfer returns false. 
 	error Offer_TransferFailed();
+	/// Competing offer needs to be in the same currency.
+	error Offer_OfferInWrongCurrency();
 
 	function makeCompetingOffer(IOffer newOffer) external;
 

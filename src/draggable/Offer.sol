@@ -116,7 +116,10 @@ contract Offer is IOffer {
             revert Offer_AlreadyAccepted();
         }
         uint256 newPrice = betterOffer.price();
-        if (currency == betterOffer.currency() && newPrice <= price) {
+        if (currency != betterOffer.currency()) {
+            revert Offer_OfferInWrongCurrency();
+        }
+        if (newPrice <= price) {
             revert Offer_OldOfferBetter(price, newPrice);
         }
         if (!betterOffer.isWellFunded()) {

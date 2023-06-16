@@ -799,6 +799,11 @@ describe("New Standard", () => {
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
       await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
     });
+
+    it("Should revert competing offer if it isn't in same currency", async () => {
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("1"), config.wbtcAddress, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_OfferInWrongCurrency")
+    })
     
     it("Should be able to make better offer", async () => {
       // offer from sig1
@@ -833,7 +838,7 @@ describe("New Standard", () => {
         .withArgs(sig1.address);
     })
 
-    it("Should revert new offer if old offer is already accepted", async () => {
+    it("Should revert competing offer if old offer is already accepted", async () => {
       // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
       const externalTokens = ethers.BigNumber.from(3000000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
@@ -845,7 +850,7 @@ describe("New Standard", () => {
         .to.be.revertedWithCustomError(offer, "Offer_AlreadyAccepted");
     })
 
-    it("Should revert if user account isn't well funded", async () => {
+    it("Should revert competing offer if user account isn't well funded", async () => {
       await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("100"), baseCurrency.address, overrides))
         .to.be.revertedWithCustomError(offer, "Offer_NotWellFunded");
     })
