@@ -74,7 +74,7 @@ describe("New Standard", () => {
 
     // coverage has a problem with deplyoing this contract via hardhat-deploy
     allowlistDraggable = await ethers.getContractFactory("AllowlistDraggableShares")
-      .then(factory => factory.deploy(config.allowlist_terms, allowlistShares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address, owner.address))
+      .then(factory => factory.deploy(config.allowlist_terms, allowlistShares.address, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address, owner.address))
       .then(contract => contract.deployed());
 
     

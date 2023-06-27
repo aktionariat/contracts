@@ -195,7 +195,7 @@ contract PaymentHub {
     ///@dev This function needs to be called before using the PaymentHub the first time with a new ERC20 token.
     ///@param erc20In The erc20 addresse to approve.
     function approveERC20(address erc20In) external {
-        IERC20(erc20In).approve(address(uniswapRouter), 0x8000000000000000000000000000000000000000000000000000000000000000);
+        IERC20(erc20In).approve(address(uniswapRouter), type(uint256).max);
     }
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {

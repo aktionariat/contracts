@@ -154,6 +154,19 @@ module.exports = {
       }
     },
     {
+      name: 'quorumMigration',
+      type: 'inupt',
+      message: 'Enter the quorum for migration in %:',
+      default: 75,
+      validate: function( value ) {
+        if (!isNaN(value)) {
+          return true;
+        } else {
+          return 'Please enter quorum for migration.';
+        }
+      }
+    },
+    {
       name: 'votePeriod',
       type: 'inupt',
       message: 'Enter the voting period in days:',
@@ -191,6 +204,45 @@ module.exports = {
       }
     ];
     return inquirer.prompt(questions).then( answer => {return answer.confirm});
+  },
+
+  // ==============================
+  // Brokerbot question
+  // ==============================
+  askPrice: () => {
+    const questions = [
+      {
+        name: 'price',
+        type: 'input',
+        message: 'Enter the price per share (in CHF):',
+        validate: function( value ) {
+          if (!isNaN(value) && value.length) {
+            return true;
+          } else {
+            return 'Please enter the price per share.';
+          }
+        }
+      }
+    ]
+    return inquirer.prompt(questions).then((answer) => {return answer.price});
+  },
+  askIncrement: () => {
+    const questions = [
+      {
+        name: 'increment',
+        type: 'inupt',
+        message: 'Enter the increment per share bought (in CHF):',
+        default: 0,
+        validate: function( value ) {
+          if (!isNaN(value) && value.length) {
+            return true;
+          } else {
+            return 'Please enter increment.';
+          }
+        }
+      }
+    ]
+    return inquirer.prompt(questions).then((answer) => {return answer.increment});
   },
 
   // ================================

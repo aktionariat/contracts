@@ -18,7 +18,10 @@ const {
     askBlockNumber, 
     askBrokerbotAddress, 
     askDeployConfig,
-    askConfirmWithMsg
+    askConfirmWithMsg,
+    askPrice,
+    askIncrement,
+    askCompanyName
  } = require("./lib/inquirer");
 const {config} = require('./default_config.js');
 const nconf = require('nconf');
@@ -100,7 +103,7 @@ task("init-deploy", "creates files for client deployment")
     console.log("=================================================")
     console.log("============ AKTIONARIAT DEPLOYER ===============")
     console.log("=================================================")
-    if (! network || network.name == "hardhat") {
+    if (! network ) {
         hre.changeNetwork(await askNetwork());
     }
     await switchToBranch(network.name);
@@ -193,6 +196,63 @@ task("init-deploy", "creates files for client deployment")
     }
 })
 
+task("deploy-brokerbot", "Deploy a new brokerbot")
+    .addOptionalParam("owner", "Owner of the brokerbot (generally a multisig)")
+    .addOptionalParam("tokenAddress", "Share token address")
+    .addOptionalParam("baseAddress", "Base token addresse")
+    .addOptionalParam("price", "Inital Price")
+    .addOptionalParam("increment", "Price increment")
+    .setAction(async (taskArgs, hre) => {
+        console.log("=================================================")
+        console.log("============ DEPLOY BROKERBOT ===================")
+        console.log("=================================================")
+        if (! network || network.name == "hardhat") {
+            hre.changeNetwork(await askNetwork());
+        }
+        await switchToBranch(network.name);
+        // get deployment config parameter
+        let reviewCorrect;
+        let deployConfig;
+        do {
+            let companyName = await askCompanyName();
+            let owner = taskArgs.owner;
+            if(owner == undefined){
+                owner = await askMultiSigAddress();
+            }
+            let tokenAddress = taskArgs.tokenAddress;
+            if(tokenAddress == undefined){
+                tokenAddress = await askTokenAddress();
+            }
+            let price = taskArgs.price;
+            if(price == undefined){
+                price = await askPrice();
+            }
+            let increment = taskArgs.increment;
+            if(increment == undefined){
+                increment = await askIncrement();
+            }
+            deployConfig = {companyName, owner, tokenAddress, price, increment};
+            displayDeployBrokerbotConfig(deployConfig);
+            reviewCorrect = await askConfirmWithMsg("Are the values correct?");
+        } while (!reviewCorrect)
+        console.log(deployConfig);
+
+        // create deploy log
+        if(!files.directoryExists(config.deployLogDir)) {
+            files.createDirectory(config.deployLogDir)
+        }
+        fs.writeFileSync(`${config.deployLogDir}/${deployConfig.companyName}-NewBrokerbot.json`, "{}");
+        nconf.add("deploy", {type: "file", file: `${config.deployLogDir}/${deployConfig.companyName}-NewBrokerbot.json`});
+        nconf.set("network", network.name);
+        setBaseCurrency();
+        // write nconf
+        writeBrokerbotConfig(deployConfig);
+        console.log(nconf.get("multisigAddress"));
+        // deploy brokerbot
+        await hre.run("deploy", {
+            tags: deployConfig.companyName+"Brokerbot",
+        });
+    });
 
 task("companyId", "Gives back the company id")
     .addOptionalParam("name", "Name of the Company")
@@ -364,9 +424,19 @@ function writeConfig(deployConfig) {
     nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
     nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
     nconf.set('quorumBps', deployConfig.quorum*100);
+    nconf.set('quorumMigration', deployConfig.quorumMigration*100);
     nconf.set('votePeriodSeconds', deployConfig.votePeriod*24*60*60);
     nconf.set('Allowlist', deployConfig.allowlist);
     nconf.set('Draggable', deployConfig.draggable);
+    nconf.save();
+}
+
+function writeBrokerbotConfig(deployConfig) {
+    nconf.set("symbol", deployConfig.companyName);
+    nconf.set("multisigAddress", deployConfig.owner);
+    nconf.set("brokerbot:shares", deployConfig.tokenAddress);
+    nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
+    nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
     nconf.save();
 }
 
@@ -389,11 +459,41 @@ function displayDeployConfig(deployConfig) {
     console.log("=============================");
 }
 
+function displayDeployBrokerbotConfig(deployConfig) {
+    console.log("======================================");
+    console.log("==== Review DeployBrokerbot Config ===");
+    console.log("======================================");
+    console.log(`Owner: ${deployConfig.owner}`);
+    console.log(`(Draggable)Share Token: ${deployConfig.tokenAddress}`);
+    console.log(`Base Currency: ${deployConfig.baseAddress}`);
+    console.log(`Price per Shares: ${deployConfig.price}`);
+    console.log(`Increment: ${deployConfig.increment}`);
+    console.log("=============================");
+}
+
 function setBaseCurrency() {
     const networkName = nconf.get("network");
     // set basecurrecny - right now only XCHF supported
     // TODO: switches for test nets
-    nconf.set("baseCurrencyAddress", networkName == "mainnet" ? config.xchf.mainnet : config.xchf.optimism);
+    console.log(`networkname: ${networkName}`);
+    switch (networkName) {
+        case "mainnet":
+            nconf.set("baseCurrencyAddress", config.xchf.mainnet);
+            break;
+        case "optimsim":
+            nconf.set("baseCurrencyAddress", config.xchf.optimism);
+            break;
+        case "goerli":
+            nconf.set("baseCurrencyAddress", config.xchf.goerli);
+            break;
+        case "sepolia":
+            nconf.set("baseCurrencyAddress", config.xchf.sepolia);
+            break;
+        default:
+            nconf.set("baseCurrencyAddress", config.xchf.mainnet);
+            break;
+    }
+    //nconf.set("baseCurrencyAddress", networkName == "mainnet" ? config.xchf.mainnet : config.xchf.optimism);
 }
 
 async function switchToBranch(networkName) {
@@ -403,6 +503,8 @@ async function switchToBranch(networkName) {
             break;
         case "goerliOptimism":
             await git.checkout("op-deploy-template");
+            break;
+        case "hardhat": 
             break;
         default:
             await git.checkout("deployment-template")
