@@ -119,6 +119,21 @@ describe("New PaymentHub", () => {
     });
   });
 
+  describe("Recover token", () => {
+    it("Should be able to recover token sent to paymenthub", async () => {
+      const wrongSent = chance.natural({ min: 1, max: 500 });
+      const balBefore = await baseCurrency.balanceOf(sig1.address);
+      await baseCurrency.connect(sig1).transfer(paymentHub.address, wrongSent);
+      const balInbetween = await baseCurrency.balanceOf(sig1.address);
+      expect(balBefore.sub(wrongSent)).to.equal(balInbetween);
+      await expect(paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent+1))
+        .to.be.reverted;
+      await paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent);
+      const balInAfter = await baseCurrency.balanceOf(sig1.address);
+      expect(balBefore).to.equal(balInAfter);
+    });
+  });
+
   describe("Trading with ETH", () => {
     beforeEach(async () => {
       const randomAmount = chance.natural({ min: 500, max: 50000 });
@@ -197,9 +212,16 @@ describe("New PaymentHub", () => {
     it("Should be able to withdraw ETH from brokerbot as owner", async () => {
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const ownerETHBefore = await ethers.provider.getBalance(owner.address);
-      await expect(brokerbot.connect(owner)["withdrawEther(address,uint256)"](draggableShares.address, brokerbotETHBefore)).to.be.revertedWith('Transfer failed');
-      await expect(brokerbot["withdrawEther(uint256)"](brokerbotETHBefore)).to.be.revertedWith("not owner nor hub");
-      await expect(brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore.add(1))).to.be.revertedWith("Transfer failed");     
+      // draggableShares dosen't have a payable receive/fallback function and should fail
+      await expect(brokerbot.connect(owner)["withdrawEther(address,uint256)"](draggableShares.address, brokerbotETHBefore))
+        .to.be.revertedWithCustomError(brokerbot, "Brokerbot_WithdrawFailed")
+        .withArgs(draggableShares.address, brokerbotETHBefore);
+      await expect(brokerbot["withdrawEther(uint256)"](brokerbotETHBefore))
+        .to.be.revertedWithCustomError(brokerbot, "Brokerbot_NotAuthorized")
+        .withArgs(deployer.address);
+      await expect(brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore.add(1)))
+        .to.be.revertedWithCustomError(brokerbot, "Brokerbot_WithdrawFailed")
+        .withArgs(owner.address, brokerbotETHBefore.add(1));
       await expect(brokerbot.connect(owner)["withdrawEther(uint256)"](brokerbotETHBefore))
         .to.emit(brokerbot, 'Withdrawn').withArgs(owner.address, brokerbotETHBefore);
       const brokerbotETHAfter = await ethers.provider.getBalance(brokerbot.address);
@@ -207,19 +229,6 @@ describe("New PaymentHub", () => {
       expect(brokerbotETHAfter.isZero()).to.be.true;
       expect(ownerETHAfter).to.be.above(ownerETHBefore);
     });
-
-    it("Should be able to recover token sent to paymenthub", async () => {
-      const wrongSent = chance.natural({ min: 1, max: 500 });
-      const balBefore = await baseCurrency.balanceOf(sig1.address);
-      await baseCurrency.connect(sig1).transfer(paymentHub.address, wrongSent);
-      const balInbetween = await baseCurrency.balanceOf(sig1.address);
-      expect(balBefore.sub(wrongSent)).to.equal(balInbetween);
-      await expect(paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent+1)).to.be.reverted;
-      await paymentHub.connect(sig1).recover(baseCurrency.address, sig1.address, wrongSent);
-      const balInAfter = await baseCurrency.balanceOf(sig1.address);
-      expect(balBefore).to.equal(balInAfter);
-    });
-
   });
 
   describe("Trading with DAI base", () => {

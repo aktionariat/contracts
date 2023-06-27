@@ -1,6 +1,7 @@
 const { ethers} = require("hardhat");
 const { expect } = require("chai");
 const { setup } = require("./helper/index");
+const { time }  = require("@nomicfoundation/hardhat-network-helpers");
 
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
@@ -96,7 +97,40 @@ describe("Permit", () => {
     it("domain separator returns properly", async () => {
       expect(await shares.DOMAIN_SEPARATOR())
         .to.equal(ethers.utils._TypedDataEncoder.hashDomain(domain));
-    })    
+    }) 
+
+    it("Should revert when deadline is over", async() => {
+      // get block timestamp
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNum);
+      const blockTimestamp = block.timestamp;
+      // sign permit with sig2
+      const nonce = await shares.connect(sig2).nonces(sig2.address);
+      const deadline = ethers.BigNumber.from(blockTimestamp);
+      const value = 123;
+      const spender = sig1.address;
+      const permitOwner = sig2.address;
+      const permitValue =  {
+        owner: permitOwner,
+        spender,
+        value,
+        nonce,
+        deadline,
+      }
+      const { v, r, s } = ethers.utils.splitSignature(await sig2._signTypedData(domain, permitType, permitValue));
+
+      // advance time by 1 and mine new block
+      //await time.increase(1);
+      //console.log(deadline.toString());
+
+      // execute permit with sig1
+      expect(await shares.allowance(permitOwner, spender)).to.be.eq(0)
+      await expect(shares.connect(sig1).permit(permitOwner, spender, value, deadline, v, r, s))
+        .to.be.revertedWithCustomError(shares, "Permit_DeadlineExpired")
+        .withArgs(deadline, deadline.add(1)); // hardhat automatically increses block.timestamp + 1 at each tx
+      // check allowance of sig2
+      expect(await shares.allowance(permitOwner, spender)).to.be.eq(0)
+    });  
   
     it("Should set allowance of shares via permit", async() => {
       // sign permit with sig2
@@ -202,7 +236,7 @@ describe("Permit", () => {
        v,
        r,
        s
-       )).to.be.revertedWith("INVALID_SIGNER");
+       )).to.be.revertedWithCustomError(draggable, "Permit_InvalidSigner");
    });
 
    it("Should revert sell shares with permit for crypto if not from trusted relayer", async () => {
@@ -224,7 +258,8 @@ describe("Permit", () => {
     const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
     // relayer calls sell via paymenthub
     await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, fee, deadline, "0x01", v, r, s))
-      .to.be.revertedWith("not trusted");
+      .to.be.revertedWithCustomError(paymentHub, "PaymentHub_NonTrustedForwader")
+      .withArgs(relayer.address);
   });
 
     it("Should sell shares with permit for crypto", async () => {

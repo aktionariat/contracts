@@ -58,7 +58,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     // ETH in/out events
     event Received(address indexed from, uint amountETH, uint amountBase);
     event Withdrawn(address indexed target, uint amountETH);
-
+    
     constructor(
         IERC20Permit _token,
         uint256 _price,
@@ -125,7 +125,9 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(BUYING_ENABLED), "buying disabled");
+        if (!hasSetting(BUYING_ENABLED)) {
+            revert Brokerbot_BuyingDisabled();
+        }
         uint shares = getShares(paid);
         uint costs = getBuyPrice(shares);
         notifyTraded(from, shares, costs, ref);
@@ -176,7 +178,9 @@ contract Brokerbot is IBrokerbot, Ownable {
      * @return The amount of shares bought / The amount paid to buy shares. 
      */
     function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
-        require(msg.sender == address(incomingAsset) || msg.sender == paymenthub, "invalid caller");
+        if (msg.sender != address(incomingAsset) && msg.sender != paymenthub) {
+            revert Brokerbot_InvalidSender(msg.sender);
+        }
         if(msg.value > 0) {
             emit Received(from, msg.value, amount);
         }
@@ -219,7 +223,9 @@ contract Brokerbot is IBrokerbot, Ownable {
 
 
     function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
-        require(hasSetting(SELLING_ENABLED), "selling disabled");
+        if (!hasSetting(SELLING_ENABLED)) {
+            revert Brokerbot_SellingDisabled();
+        }
         uint256 totPrice = getSellPrice(amount);
         IERC20 baseToken = IERC20(base);
         price -= amount * increment;
@@ -265,7 +271,9 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     function withdrawEther(address target, uint256 amount) public ownerOrHub() {
         (bool success, ) = payable(target).call{value:amount}("");
-        require(success, "Transfer failed");
+        if (!success) {
+            revert Brokerbot_WithdrawFailed(target, amount);
+        }
         emit Withdrawn(target, amount);
     }
 
@@ -303,7 +311,9 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
     
     modifier ownerOrHub() {
-        require(owner == msg.sender || paymenthub == msg.sender, "not owner nor hub");
+        if (owner != msg.sender && paymenthub != msg.sender) {
+            revert Brokerbot_NotAuthorized(msg.sender);
+        }
         _;
     }
 }
