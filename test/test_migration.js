@@ -112,11 +112,57 @@ describe("Migration", () => {
         await successor.connect(signers[i]).wrap(signers[i].address, balSigner);
       }
       const externalVotes = 3000000; // makes total 8400000 which is over the 75% quorum
+      // check only oracle can call migration
+      await expect(successor.initiateMigrationWithExternalApproval(externalVotes))
+        .to.be.revertedWith("not oracle");
+      // migrate
       await successor.connect(owner).initiateMigrationWithExternalApproval(externalVotes);
       const votingTokenSuccessor = await successor.totalVotingTokens();
       expect(votingToken).to.be.equal(votingTokenSuccessor);
       expect(await successor.wrapped()).to.be.equal(shares.address);
       expect(await draggable.unwrapConversionFactor()).to.be.equal(1);
+      // check if oracle can be set on predecessor
+      expect(await draggable.oracle()).to.be.equal(successor.address);
+      await expect(successor.setPredecessorOracle(owner.address))
+        .to.revertedWith("not oracle");
+      await successor.connect(owner).setPredecessorOracle(owner.address);
+      expect(await draggable.oracle()).to.be.equal(owner.address);
+    })
+  })
+
+  describe("Migration from non-tokenized draggable", () => {
+    let migrationShare;
+    beforeEach(async () => {
+      //redeploy shares,draggable contracts
+      await deployments.fixture([
+        "Shares",
+        "DraggableShares",
+        "DraggableSharesWithPredecessor",
+        "SharesMigration"
+      ]);
+      shares = await ethers.getContract("Shares");
+      draggable = await ethers.getContract("DraggableShares");
+      successor = await ethers.getContract("DraggableSharesWithPredecessor");
+      migrationShare = await ethers.getContract("SharesMigration");
+    })
+    it("Should migrate with to non draggable with predecossor with only external votes successfully", async () => {
+      const totalshares = await shares.totalShares();
+      await expect(draggable.connect(owner).migrateWithExternalApproval(migrationShare.address, totalshares))
+        .to.emit(draggable, "NameChanged")
+        .withArgs("Migration Shares SHA", "MSS");
+      expect(await draggable.wrapped()).to.be.equal(migrationShare.address);
+      expect(await draggable.name()).to.be.equal("Migration Shares SHA");
+      expect(await draggable.symbol()).to.be.equal("MSS");
+    })
+    it("Should migrate with to draggable with predecossor with only external votes successfully", async () => {
+      const totalshares = await shares.totalShares();
+      await draggable.connect(owner).setOracle(successor.address);
+      expect(await successor.wrapped()).to.be.equal(draggable.address);
+      await successor.connect(owner).initiateMigrationWithExternalApproval(totalshares);
+      expect(await draggable.name()).to.be.equal("Test Shares SHA SHA");
+      expect(await draggable.symbol()).to.be.equal("SHRSS");
+      expect(await draggable.wrapped()).to.be.equal(successor.address);
+      expect(await successor.wrapped()).to.be.equal(shares.address);
     })
   })
 })
