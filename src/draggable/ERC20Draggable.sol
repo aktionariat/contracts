@@ -144,7 +144,6 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	function deactivate(uint256 factor) internal {
 		require(factor >= 1, "factor");
 		unwrapConversionFactor = factor;
-		emit NameChanged(name(), symbol());
 	}
 
 	/** Decrease the number of drag-along tokens. The user gets back their shares in return */
@@ -202,7 +201,9 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		require(wrapped.transfer(oldWrappedDestination, wrapped.balanceOf(address(this))), "transfer");
 		// Count the new wrapped tokens
 		wrapped = newWrapped;
-		deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
+		if (totalSupply() > 0) // if there are no tokens, no need to deactivate
+			deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
+		emit NameChanged(name(), symbol());
 	}
 
 	function setOracle(address newOracle) override external {

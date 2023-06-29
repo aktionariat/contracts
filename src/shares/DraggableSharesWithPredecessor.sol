@@ -50,7 +50,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
   {
     predecessor = _predecessor;
   }
-
+  
   /**
    * @notice This contract needs to hold the majority of the predecessor tokens.
    */
@@ -81,8 +81,10 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     wrapped = predecessor.wrapped();
     predecessor.migrateWithExternalApproval(address(this), additionalVotes);
     uint256 predecessorBalance = predecessor.balanceOf(address(this));
-    predecessor.unwrap(predecessorBalance);
-    _burn(address(this), predecessorBalance);
+    if (predecessorBalance > 0) {
+      predecessor.unwrap(predecessorBalance);
+      _burn(address(this), predecessorBalance);
+    }
     assert(predecessorSupply == totalSupply());
   }
 }
