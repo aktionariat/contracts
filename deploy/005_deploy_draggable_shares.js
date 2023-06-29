@@ -13,6 +13,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const terms = "test.ch/terms";
   const quorumBps = 7500;
+  const quorumMigration = 7500;
   const votePeriodSeconds = 5184000;
   
   if (network.name != "hardhat") {
@@ -41,6 +42,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       shares.address,
       quorumBps,
+      quorumMigration,
       votePeriodSeconds,
       recoveryHub.address,
       offerFactory.address,

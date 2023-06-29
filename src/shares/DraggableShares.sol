@@ -46,12 +46,13 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         string memory _terms,
         IERC20 _wrappedToken,
         uint256 _quorumBps,
+        uint256 _quorumMigration,
         uint256 _votePeriodSeconds,
         IRecoveryHub _recoveryHub,
         IOfferFactory _offerFactory,
         address _oracle
     )
-        ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle)
+        ERC20Draggable(_wrappedToken, _quorumBps, _quorumMigration, _votePeriodSeconds, _offerFactory, _oracle)
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight() 
     {

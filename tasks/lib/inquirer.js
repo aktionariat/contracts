@@ -154,6 +154,19 @@ module.exports = {
       }
     },
     {
+      name: 'quorumMigration',
+      type: 'inupt',
+      message: 'Enter the quorum for migration in %:',
+      default: 75,
+      validate: function( value ) {
+        if (!isNaN(value)) {
+          return true;
+        } else {
+          return 'Please enter quorum for migration.';
+        }
+      }
+    },
+    {
       name: 'votePeriod',
       type: 'inupt',
       message: 'Enter the voting period in days:',

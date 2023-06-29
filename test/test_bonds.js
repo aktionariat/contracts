@@ -230,7 +230,8 @@ describe("Bond Contract", () => {
       const collateralRate = 10;
       // test that only owenr can set
       await expect(bond.connect(adr1).setCustomClaimCollateral(collateralAddress, collateralRate))
-        .to.be.revertedWith("not owner");
+        .to.be.revertedWithCustomError(bond, "Ownable_NotOwner")
+        .withArgs(adr1.address);
       // test with owner
       await bond.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
       expect(await bond.customCollateralAddress()).to.equal(collateralAddress);

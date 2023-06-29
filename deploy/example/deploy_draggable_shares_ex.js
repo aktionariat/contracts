@@ -42,6 +42,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       shares.address,
       quorumBps,
+      quorumBps,
       votePeriodSeconds,
       recoveryHub.address,
       offerFactory.address,
