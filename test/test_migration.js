@@ -41,7 +41,8 @@ describe("Migration", () => {
 
   describe("Migration", () => {
     it("Should revert when not enough predecessor tokens are on the successor", async () => {
-      await expect(successor.initiateMigration()).to.be.revertedWith("quorum");
+      await expect(successor.initiateMigration()).to.be.revertedWithCustomError(draggable, "Draggable_QuorumNotReached")
+        .withArgs(75000000000, await successor.totalSupply());
     })
     it("Should revert if there is an open offer", async () => {
       const overrides = {
@@ -50,7 +51,7 @@ describe("Migration", () => {
       pricePerShare = ethers.utils.parseUnits("2", 18);
       salt = ethers.utils.formatBytes32String('1');
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, config.baseCurrencyAddress, overrides)
-      await expect(successor.initiateMigration()).to.be.revertedWith("no offer");
+      await expect(successor.initiateMigration()).to.be.revertedWithCustomError(draggable, "Draggable_OpenOffer");
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.connect(sig1).cancel();
     })
@@ -67,7 +68,8 @@ describe("Migration", () => {
       await shares.connect(owner).declareInvalid(draggable.address, invalidAmount, "0x01");
       await shares.connect(owner).setTotalShares(600000);
       // call migrate with too many votes
-      await expect(successor.initiateMigration()).to.be.revertedWith("votes");
+      await expect(successor.initiateMigration()).to.be.revertedWithCustomError(draggable, "Draggable_TooManyVotes")
+        .withArgs(await shares.totalShares(), await draggable.balanceOf(successor.address));
       await shares.connect(owner).setTotalShares(totalShares);
     })
     it("Should migrate successfully", async () => {
@@ -94,11 +96,13 @@ describe("Migration", () => {
   describe("Migration with external votes", () => {
     it("Should revert when migrateWithExternalApproval is called not from oracle", async () => {
       await expect(draggable.connect(sig1).migrateWithExternalApproval(successor.address, 1000))
-        .to.be.revertedWith("not oracle");
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
     })
     it("Should revert when more external votes are reported as possible", async () => {
       await expect(draggable.connect(owner).migrateWithExternalApproval(successor.address, 10000000000))
-        .to.be.revertedWith("votes");
+        .to.be.revertedWithCustomError(draggable, "Draggable_TooManyVotes")
+        .withArgs(await draggable.totalVotingTokens(), 10005400000);
     })
     it("Should migrate with external votes succesfully", async () => {
       const votingToken = await draggable.totalVotingTokens();
@@ -114,7 +118,8 @@ describe("Migration", () => {
       const externalVotes = 3000000; // makes total 8400000 which is over the 75% quorum
       // check only oracle can call migration
       await expect(successor.initiateMigrationWithExternalApproval(externalVotes))
-        .to.be.revertedWith("not oracle");
+        .to.be.revertedWithCustomError(successor, "ERC20InvalidSender")
+        .withArgs(deployer.address);
       // migrate
       await successor.connect(owner).initiateMigrationWithExternalApproval(externalVotes);
       const votingTokenSuccessor = await successor.totalVotingTokens();
@@ -124,7 +129,8 @@ describe("Migration", () => {
       // check if oracle can be set on predecessor
       expect(await draggable.oracle()).to.be.equal(successor.address);
       await expect(successor.setPredecessorOracle(owner.address))
-        .to.revertedWith("not oracle");
+        .to.be.revertedWithCustomError(successor, "ERC20InvalidSender")
+        .withArgs(deployer.address);
       await successor.connect(owner).setPredecessorOracle(owner.address);
       expect(await draggable.oracle()).to.be.equal(owner.address);
     })

@@ -41,12 +41,13 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     string memory _terms,
     IERC20 _wrappedToken,
     uint256 _quorumBps,
+    uint256 _quorumMigration,
     uint256 _votePeriodSeconds,
     IRecoveryHub _recoveryHub,
     IOfferFactory _offerFactory,
     address _oracle
   )
-    DraggableShares(_terms, _wrappedToken, _quorumBps, _votePeriodSeconds, _recoveryHub, _offerFactory, _oracle)
+    DraggableShares(_terms, _wrappedToken, _quorumBps, _quorumMigration, _votePeriodSeconds, _recoveryHub, _offerFactory, _oracle)
   {
     predecessor = _predecessor;
   }
@@ -65,8 +66,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
     assert(predecessorSupply == totalSupply());
   }
 
-  function setPredecessorOracle(address oracle) external {
-    require(msg.sender == oracle, "not oracle");
+  function setPredecessorOracle(address oracle) external onlyOracle {
     predecessor.setOracle(oracle);
   }
 
@@ -74,8 +74,7 @@ contract DraggableSharesWithPredecessor is DraggableShares {
    * @notice This contract needs to hold the majority of the predecessor tokens and the this contract needs to be the oracle of the predecessor.
    * 
    */
-  function initiateMigrationWithExternalApproval(uint256 additionalVotes) external {
-    require(msg.sender == oracle, "not oracle");
+  function initiateMigrationWithExternalApproval(uint256 additionalVotes) external onlyOracle {
     uint256 predecessorSupply = predecessor.totalSupply();
     _mint(address(predecessor), predecessorSupply);
     wrapped = predecessor.wrapped();
