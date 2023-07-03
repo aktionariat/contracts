@@ -5,16 +5,16 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, owner } = await getNamedAccounts();
 
-  //const recoveryHub = await deployments.get("RecoveryHub");
-  const recoveryHub = "0xc6AfD3b605957b9BA94143F59d451c657F507516";
+  const recoveryHub = await deployments.get("RecoveryHub");
+  //const recoveryHub = "0xc6AfD3b605957b9BA94143F59d451c657F507516";
 
 
-  const symbol = "OLD";
-  const name = "Invalid Alan Frei";
-  const terms = "Invalid terms";
-  const totalShares = 0;
-  
-  if (network.name != "heardhat") {
+  const symbol = "MS";
+  const name = "Migration Shares";
+  const terms = "migration.ch/terms";
+  const totalShares = 10000000;
+
+  if (network.name != "hardhat") {
     console.log("-----------------------")
     console.log("Deploy SharesMigration")
     console.log("-----------------------")
@@ -40,7 +40,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       totalShares,
       deployer,
-      recoveryHub],
+      recoveryHub.address],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -48,3 +48,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["SharesMigration"];
+module.exports.dependencies = ["RecoveryHub"];
