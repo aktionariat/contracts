@@ -67,7 +67,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	uint256 private constant QUORUM_MULTIPLIER = 10000;
 
-	uint256 public immutable quorumMigration; // used for contract migartion, in BPS (out of 10'000) 
+	uint256 public immutable quorumMigration; // used for contract migartion, in BPS (out of 10'000)
 	uint256 public immutable quorum; // used for drag-along at acquisition offers, in BPS (out of 10'000)
 	uint256 public immutable votePeriod; // In seconds
 
@@ -170,11 +170,10 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	 * Deactivates the drag-along mechanism and enables the unwrap function.
 	 */
 	function _deactivate(uint256 factor) internal {
-		if (factor == 0) { 
+		if (factor == 0) {
 			revert Draggable_FactorZero();
 		}
 		unwrapConversionFactor = factor;
-		emit NameChanged(name(), symbol());
 	}
 
 	/** Decrease the number of drag-along tokens. The user gets back their shares in return */
@@ -233,26 +232,28 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		}
 		// Count the new wrapped tokens
 		wrapped = newWrapped;
-		_deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
+		if (totalSupply() > 0) // if there are no tokens, no need to deactivate
+			_deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
+		emit NameChanged(name(), symbol());
 	}
 
-	function setOracle(address newOracle) external onlyOracle {
+	function setOracle(address newOracle) external override onlyOracle {
 		oracle = newOracle;
 		emit ChangeOracle(oracle);
 	}
 
-	function migrateWithExternalApproval(address successor, uint256 additionalVotes) external onlyOracle {
+	function migrateWithExternalApproval(address successor, uint256 additionalVotes) external override onlyOracle {
 		// Additional votes cannot be higher than the votes not represented by these tokens.
 		// The assumption here is that more shareholders are bound to the shareholder agreement
 		// that this contract helps enforce and a vote among all parties is necessary to change
 		// it, with an oracle counting and reporting the votes of the others.
 		if (totalSupply() + additionalVotes > totalVotingTokens()) {
 			revert Draggable_TooManyVotes(totalVotingTokens(), totalSupply() + additionalVotes);
-		}		
+		}
 		migrate(successor, additionalVotes);
 	}
 
-	function migrate() external {
+	function migrate() external override {
 		migrate(msg.sender, 0);
 	}
 
@@ -304,5 +305,4 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	function offerExists() internal view returns (bool) {
 		return address(offer) != address(0);
 	}
-
 }

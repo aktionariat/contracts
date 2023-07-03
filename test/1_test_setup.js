@@ -7,7 +7,7 @@ const { ethers } = require("hardhat");
 const { setup } = require("./helper/index");
 const { expect } = require("chai");
 
-describe("Migration", () => {
+describe("Set up", () => {
   let baseCurrency;
   let brokerbot;
   let recoveryHub;
@@ -33,7 +33,7 @@ describe("Migration", () => {
     signers = [owner,sig1,sig2,sig3,sig4,sig5];
     accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
     // deploy contracts
-    await setup();
+    await setup(true);
 
     // get references
     baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);

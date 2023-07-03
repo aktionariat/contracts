@@ -60,7 +60,7 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         _recoveryHub.setRecoverable(false);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(IERC20, ERC20Flaggable, ERC20Recoverable) public returns (bool) {
         return super.transfer(to, value);
     }
 

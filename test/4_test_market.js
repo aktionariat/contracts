@@ -28,7 +28,7 @@ describe("Brokerbot", () => {
     [deployer,owner,sig1] = await ethers.getSigners();
     accounts = [owner.address,sig1.address];
     // deploy contracts
-    await setup();
+    await setup(true);
 
     //get references
     paymentHub = await ethers.getContract("PaymentHub");
