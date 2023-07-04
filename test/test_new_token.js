@@ -393,6 +393,15 @@ describe("New Standard", () => {
       await expect(shares.connect(owner).mint(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
       await expect(draggable.connect(owner).transfer(ethers.constants.AddressZero, 1)).to.be.revertedWith("0x0");
     })
+
+    it("Should set new terms for draggable", async () => {
+      const oldTerms = "test.ch/terms";
+      const newTerms = "investor.test.ch";
+      expect(await draggable.terms()).to.equal(oldTerms)
+      await expect(draggable.connect(sig1).setTerms("test")).to.be.revertedWith("not oracle");
+      await expect(draggable.connect(owner).setTerms(newTerms)).to.emit(draggable, 'ChangeTerms').withArgs(newTerms);
+      expect(await draggable.terms()).to.equal(newTerms);
+    })
   });
 
   describe("Recovery", () => {
