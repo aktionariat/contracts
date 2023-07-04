@@ -1,0 +1,36 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "parknsleep AG",
+  "multisigSigner": "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be",
+  "symbol": "PN",
+  "name": "parknsleep AG Shares",
+  "terms": "https://investors.parknsleep.eu/",
+  "totalShares": "1513000",
+  "sharePrice": "100000000000000000",
+  "increment": "0",
+  "quorumBps": 6667,
+  "quorumMigration": 6667,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x856b547372672f546F6f468ff0e4b42e90b81EAC",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0xd1635Be2eAa34a5eE588113fe1Ea5D7A20D40d67",
+    "offerFactory": "0x1B8Bf880E17FE5D8B2432A102346424B3237b2A7",
+    "draggable": "0xA2D6b59758d307DF27d5809426252d91a060Cb24",
+    "paymentHub": "0x931dD6e2b3a1893645D920C2b5A6E837a9b7879e",
+    "brokerbot": "0x33afd73185B7426B7bf50486910f495A344cf047",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0xA2D6b59758d307DF27d5809426252d91a060Cb24"
+  },
+  "blocknumber": "17619307",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}
