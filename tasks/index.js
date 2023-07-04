@@ -172,14 +172,18 @@ task("init-deploy", "creates files for client deployment")
     }
 
     // deploy brokerbot
-    await hre.run("deploy", {
-        tags: deployConfig.symbol+"Brokerbot",
-    });
-
+    const deployBrokerbot = await askConfirmWithMsg("Do you want to deploy the brokerbot?");
+    nconf.set("deployBrokerbot", deployBrokerbot);
+    if (deployBrokerbot) {
+        await hre.run("deploy", {
+            tags: deployConfig.symbol+"Brokerbot",
+        });
+    }
+    
     // write deploy log
     nconf.save();
     await readDeployValues();
-
+    
     // verify on etherscan
     const verify = await askConfirmWithMsg("Do you want to verify on etherscan?");
     if (network.name != "hardhat" && verify) {
@@ -393,7 +397,7 @@ task("deploy-multisig-batch", "deploys multiple multisigs at once")
         nconf.use('memory');
         nconf.set("silent", true);
         const firstSigner = "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b";
-        for (let index = 0; index < 22; index++) {
+        for (let index = 0; index < 22; index++) {            
             let saltName = "fixv2"+index
             await hre.run("create-multisig-clone", {
                 salt: saltName,
@@ -459,6 +463,7 @@ function displayDeployConfig(deployConfig) {
     console.log(`Price per Shares: ${deployConfig.price}`);
     console.log(`Increment: ${deployConfig.increment}`);
     console.log(`Quorum (%): ${deployConfig.quorum}`);
+    console.log(`Quorum Migration (%): ${deployConfig.quorumMigration}`);
     console.log(`Voting Period (days): ${deployConfig.votePeriod}`);
     console.log(`Allowlist: ${deployConfig.allowlist}`);
     console.log(`Draggable: ${deployConfig.draggable}`);
@@ -510,7 +515,7 @@ async function switchToBranch(networkName) {
         case "goerliOptimism":
             await git.checkout("op-deploy-template");
             break;
-        case "hardhat":
+        case "hardhat": 
             break;
         default:
             await git.checkout("deployment-template")
@@ -521,7 +526,11 @@ async function switchToBranch(networkName) {
 async function readDeployValues() {
     const shares = await ethers.getContractAt("Shares", nconf.get("Allowlist") ? nconf.get("address:allowlist:shares") : nconf.get("address:share"));
     const draggable = await ethers.getContractAt("DraggableShares", nconf.get("Allowlist") ? nconf.get("address:allowlist:draggable") : nconf.get("address:draggable"));
-    const brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));
+    const brokerbotAddress = nconf.get("address:brokerbot")
+    let brokerbot;
+    if (brokerbotAddress) {
+        brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));        
+    }
     console.log("=============================================================")
     console.log("===== Deployment Finished with following on-chain data ======")
     console.log("=============================================================")
@@ -531,7 +540,9 @@ async function readDeployValues() {
     console.log("draggable quorum: %s", await draggable.quorum());
     console.log("Draggable oracle: %s", await draggable.oracle());
     console.log("Share version: %s", await shares.VERSION());
-    console.log("Brokerbot version: %s", await brokerbot.VERSION());
-    console.log("Brokerbot base: %s", await brokerbot.base());
-    console.log("Brokerbot token: %s", await brokerbot.token());
+    if (brokerbotAddress) {
+        console.log("Brokerbot version: %s", await brokerbot.VERSION());
+        console.log("Brokerbot base: %s", await brokerbot.base());
+        console.log("Brokerbot token: %s", await brokerbot.token());
+    }
 }
