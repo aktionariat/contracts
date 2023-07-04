@@ -103,7 +103,7 @@ task("init-deploy", "creates files for client deployment")
     console.log("=================================================")
     console.log("============ AKTIONARIAT DEPLOYER ===============")
     console.log("=================================================")
-    if (! network ) {
+    if (! network || network.name == "hardhat" ) { // comment out hardhat condition if you want to test script locally
         hre.changeNetwork(await askNetwork());
     }
     await switchToBranch(network.name);
@@ -460,6 +460,7 @@ function displayDeployConfig(deployConfig) {
     console.log(`Price per Shares: ${deployConfig.price}`);
     console.log(`Increment: ${deployConfig.increment}`);
     console.log(`Quorum (%): ${deployConfig.quorum}`);
+    console.log(`Quorum Migration (%): ${deployConfig.quorumMigration}`);
     console.log(`Voting Period (days): ${deployConfig.votePeriod}`);
     console.log(`Allowlist: ${deployConfig.allowlist}`);
     console.log(`Draggable: ${deployConfig.draggable}`);
@@ -523,8 +524,9 @@ async function readDeployValues() {
     const shares = await ethers.getContractAt("Shares", nconf.get("Allowlist") ? nconf.get("address:allowlist:shares") : nconf.get("address:share"));
     const draggable = await ethers.getContractAt("DraggableShares", nconf.get("Allowlist") ? nconf.get("address:allowlist:draggable") : nconf.get("address:draggable"));
     const brokerbotAddress = nconf.get("address:brokerbot")
+    let brokerbot;
     if (brokerbotAddress) {
-        const brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));        
+        brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));        
     }
     console.log("=============================================================")
     console.log("===== Deployment Finished with following on-chain data ======")
