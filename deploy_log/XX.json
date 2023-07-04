@@ -1,0 +1,36 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "elleXX universe AG",
+  "multisigSigner": "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be",
+  "symbol": "XX",
+  "name": "ellexx Shares",
+  "terms": "http://investor.ellexx.com/",
+  "totalShares": "117640",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 6500,
+  "quorumMigration": 6500,
+  "votePeriodSeconds": 2592000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x6238CbB8E4190f3A744e5b9bAa95F2dFcEb7576f",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0x765147bd2b25f6bB1E2BDCC1C06Dd10CE7f3BE4a",
+    "offerFactory": "0x1B8Bf880E17FE5D8B2432A102346424B3237b2A7",
+    "draggable": "0x4c9cc826E704dFa3e2966347bF070097cB4EfDA9",
+    "paymentHub": "0x931dD6e2b3a1893645D920C2b5A6E837a9b7879e",
+    "brokerbot": "0xB22423a02233C32302e26eaD3E419AABFd44270f",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x4c9cc826E704dFa3e2966347bF070097cB4EfDA9"
+  },
+  "blocknumber": "17541425",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}
