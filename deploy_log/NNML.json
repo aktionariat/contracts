@@ -1,0 +1,36 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Nanimale AG",
+  "multisigSigner": "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be",
+  "symbol": "NNML",
+  "name": "Nanimale AG Shares",
+  "terms": "https://shareholders.nanimale.com",
+  "totalShares": "824140",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 5000,
+  "quorumMigration": 5000,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0xB859a0b9B78a202d241895096F3455e9549896d8",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0x2ffa1C52D0943A01d6f0a440BD77d26d44AD0E61",
+    "offerFactory": "0x1B8Bf880E17FE5D8B2432A102346424B3237b2A7",
+    "draggable": "0x972bFf8e5f0F97C880CCb92616C07dc78d4d89f8",
+    "paymentHub": "0x931dD6e2b3a1893645D920C2b5A6E837a9b7879e",
+    "brokerbot": "0x65FcD8629B691fA5108168535C332068f5089Ede",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x972bFf8e5f0F97C880CCb92616C07dc78d4d89f8"
+  },
+  "blocknumber": "17619409",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}
