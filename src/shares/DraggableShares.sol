@@ -42,6 +42,8 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
 
     string public terms;
 
+    event ChangeTerms(string terms); 
+
     constructor(
         string memory _terms,
         IERC20 _wrappedToken,
@@ -56,7 +58,7 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight() 
     {
-        terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
+        terms = _terms; // oracle can change the terms
         _recoveryHub.setRecoverable(false);
     }
 
@@ -89,6 +91,12 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
                 return IRecoverable(address(wrapped)).getCollateralRate(collateralType) * factor;
             }
         }
+    }
+
+    function setTerms(string calldata _terms) external override {
+        require(msg.sender == oracle, "not oracle");
+        terms = _terms;
+        emit ChangeTerms(terms);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Draggable) internal {

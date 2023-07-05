@@ -398,7 +398,7 @@ describe("New PaymentHub", () => {
       randomShareAmount = chance.natural({ min: 500, max: 50000 });
       daiAmount = await brokerbotDAI.getBuyPrice(randomShareAmount);
       // get best route via auto router
-      const daiCurrencyAmount = CurrencyAmount.fromRawAmount(DAI, daiAmount);
+      /*const daiCurrencyAmount = CurrencyAmount.fromRawAmount(DAI, daiAmount);
       const route = await router.route(
         daiCurrencyAmount,
         XCHF,
@@ -411,6 +411,10 @@ describe("New PaymentHub", () => {
       );
 
       path = encodeRouteToPath(route.route[0].route, true);
+      */
+      const types = ["address","uint24","address","uint24","address"];
+      const values = [config.daiAddress, 3000, config.wethAddress, 3000, config.baseCurrencyAddress];
+      path = ethers.utils.solidityPack(types,values);
     });
     it("Should get price in XCHF to DAI auto route", async () => {
       const price = await paymentHub.callStatic["getPriceInERC20(uint256,bytes)"](daiAmount, path);

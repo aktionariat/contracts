@@ -14,5 +14,6 @@ interface IDraggable {
     function votingPower(address voter) external returns (uint256);
     function totalVotingTokens() external view returns (uint256);
     function notifyVoted(address voter) external;
+    function setTerms(string calldata _terms) external;
 
 }
