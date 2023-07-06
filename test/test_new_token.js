@@ -407,13 +407,11 @@ describe("New Standard", () => {
         .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
         .withArgs(sig2.address);
     })
-    it("Should revert if dnotifyVoted isn't called from offer contract", async () => {
+    it("Should revert if notifyVoted isn't called from offer contract", async () => {
       await expect(draggable.connect(sig2).notifyVoted(sig2.address))
         .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
         .withArgs(sig2.address);
     })
-
-    
 
     it("Should revert on overflow", async () => {
       // first set total shares > uint224
@@ -425,7 +423,6 @@ describe("New Standard", () => {
         .withArgs(sig1.address, balanceBefore, largeNumber);
       // set total shares back 
       await shares.connect(owner).setTotalShares(config.totalShares);
-
     })
 
     it("Should revert on underflow", async () => {
@@ -449,6 +446,15 @@ describe("New Standard", () => {
       await expect(draggable.connect(owner).transfer(ethers.constants.AddressZero, 1))
         .to.be.revertedWithCustomError(draggable, "ERC20InvalidReceiver")
         .withArgs(ethers.constants.AddressZero);
+    })
+
+    it("Should set new terms for draggable", async () => {
+      const oldTerms = "test.ch/terms";
+      const newTerms = "investor.test.ch";
+      expect(await draggable.terms()).to.equal(oldTerms)
+      await expect(draggable.connect(sig1).setTerms("test")).to.be.revertedWithCustomError(draggable, "ERC20InvalidSender");
+      await expect(draggable.connect(owner).setTerms(newTerms)).to.emit(draggable, 'ChangeTerms').withArgs(newTerms);
+      expect(await draggable.terms()).to.equal(newTerms);
     })
   });
 
@@ -489,7 +495,6 @@ describe("New Standard", () => {
       await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
         .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // underflow on transfeFrom because balance 0
     })
-
 
     it("Should set custom claim collateral for shares", async () => {
       // check for custom collateral address("0x0000000000000000000000000000000000000000")

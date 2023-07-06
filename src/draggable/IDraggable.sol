@@ -39,5 +39,7 @@ interface IDraggable is IERC20 {
     function migrate() external;
     function setOracle(address newOracle) external;
     function migrateWithExternalApproval(address successor, uint256 additionalVotes) external;
+    function setTerms(string calldata _terms) external;
+
 
 }
