@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -36,13 +36,14 @@ contract AllowlistDraggableShares is ERC20Allowlistable, DraggableShares {
     string memory _terms,
     IERC20 _wrappedToken,
     uint256 _quorum,
+    uint256 _quorumMigration,
     uint256 _votePeriod,
     IRecoveryHub _recoveryHub,
     IOfferFactory _offerFactory,
     address _oracle,
     address _owner
   )
-    DraggableShares(_terms, _wrappedToken, _quorum, _votePeriod, _recoveryHub, _offerFactory, _oracle)
+    DraggableShares(_terms, _wrappedToken, _quorum, _quorumMigration, _votePeriod, _recoveryHub, _offerFactory, _oracle)
     Ownable(_owner)
   {
     // initialization is done in ERC20Allowlistbale and DraggableShares

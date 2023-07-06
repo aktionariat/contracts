@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -63,6 +63,11 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
         recovery = recoveryHub;
     }
 
+    modifier onlyRecovery {
+        _checkSender(address(recovery));
+        _;
+    }
+
     /**
      * Returns the collateral rate for the given collateral type and 0 if that type
      * of collateral is not accepted. By default, only the token itself is accepted at
@@ -97,7 +102,9 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
         if (address(customCollateralAddress) == address(0)) {
             customCollateralRate = 0; // disabled
         } else {
-            require(rate > 0, "zero");
+            if (rate == 0) {
+                revert Recoverable_RateZero();
+            }
             customCollateralRate = rate;
         }
     }
@@ -105,30 +112,29 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     function getClaimDeleter() virtual public view returns (address);
 
     function transfer(address recipient, uint256 amount) override(ERC20Flaggable, IERC20) virtual public returns (bool) {
-        require(super.transfer(recipient, amount), "transfer");
+        if (!super.transfer(recipient, amount)) {
+            revert Recoverable_TransferFailed();
+        }
         if (hasFlagInternal(msg.sender, FLAG_CLAIM_PRESENT)){
             recovery.clearClaimFromToken(msg.sender);
         }
         return true;
     }
 
-    function notifyClaimMade(address target) external override {
-        require(msg.sender == address(recovery), "not recovery");
+    function notifyClaimMade(address target) external override onlyRecovery {
         setFlag(target, FLAG_CLAIM_PRESENT, true);
     }
 
-    function notifyClaimDeleted(address target) external override {
-        require(msg.sender == address(recovery), "not recovery");
+    function notifyClaimDeleted(address target) external override onlyRecovery {
         setFlag(target, FLAG_CLAIM_PRESENT, false);
     }
 
     function deleteClaim(address lostAddress) external {
-        require(msg.sender == getClaimDeleter(), "not claim deleter");
+        _checkSender(getClaimDeleter());
         recovery.deleteClaim(lostAddress);
     }
 
-    function recover(address oldAddress, address newAddress) external override {
-        require(msg.sender == address(recovery), "not recovery");
+    function recover(address oldAddress, address newAddress) external override onlyRecovery {
         _transfer(oldAddress, newAddress, balanceOf(oldAddress));
     }
 

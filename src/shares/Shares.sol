@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -95,7 +95,11 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
      * tokens have become invalid.
      */
     function setTotalShares(uint256 _newTotalShares) external onlyOwner() {
-        require(_newTotalShares >= totalValidSupply(), "below supply");
+        uint256 _totalValidSupply = totalValidSupply();
+        if (_newTotalShares < _totalValidSupply) {
+            revert Shares_InvalidTotalShares(_totalValidSupply, _newTotalShares);
+            
+        }
         totalShares = _newTotalShares;
         emit ChangeTotalShares(_newTotalShares);
     }
@@ -128,7 +132,9 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
      */
     function declareInvalid(address holder, uint256 amount, string calldata message) external onlyOwner() {
         uint256 holderBalance = balanceOf(holder);
-        require(amount <= holderBalance, "amount too high");
+        if (amount > holderBalance) {
+            revert ERC20InsufficientBalance(holder, holderBalance, amount);
+        }
         invalidTokens += amount;
         emit TokensDeclaredInvalid(holder, amount, message);
     }
@@ -147,19 +153,25 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
      */
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
-        require(IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data));
+        if (!IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data)) {
+            revert IERC677Receiver.IERC677_OnTokenTransferFailed();
+        }
     }
 
     function mintManyAndCall(address[] calldata target, address callee, uint256[] calldata amount, bytes calldata data) external {
         uint256 len = target.length;
-        require(len == amount.length);
+        if (len != amount.length) {
+            revert Shares_UnequalLength(len, amount.length);
+        }
         uint256 total = 0;
         for (uint256 i = 0; i<len; i++){
             total += amount[i];
         }
         mint(callee, total);
         for (uint256 i = 0; i<len; i++){
-            require(IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data));
+            if(!IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data)){
+                revert IERC677Receiver.IERC677_OnTokenTransferFailed();
+            }
         }
     }
 
@@ -169,14 +181,19 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
 
     function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
         uint256 len = target.length;
-        require(len == amount.length);
+        if (len != amount.length) {
+            revert Shares_UnequalLength(len, amount.length);
+        }
         for (uint256 i = 0; i<len; i++){
             _mint(target[i], amount[i]);
         }
     }
 
     function _mint(address account, uint256 amount) internal virtual override {
-        require(totalValidSupply() + amount <= totalShares, "total");
+        uint256 newValidSupply = totalValidSupply() + amount;
+        if (newValidSupply > totalShares) {
+            revert Shares_InsufficientTotalShares(totalShares, newValidSupply);
+        }
         super._mint(account, amount);
     }
 

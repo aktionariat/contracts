@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2021 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -56,6 +56,20 @@ contract PaymentHub {
     ISwapRouter private immutable uniswapRouter;
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
+
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+    //////////////////////////////////////////////////////////////*/
+    /// Failguard when an erc20 transfer returns false. 
+    error PaymentHub_TransferFailed();
+    /// Forwarder not trusted.
+    /// @param forwarder The msg.sender of this transaction.
+    error PaymentHub_NonTrustedForwader(address forwarder);
+    /// swap with less base token as required.
+    /// @param amountBase Required amount.
+    /// @param swappedAmount Swapped amount.
+    error PaymentHub_SwapError(uint256 amountBase, uint256 swappedAmount);
+
 
     constructor(address _trustedForwarder, IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
         trustedForwarder = _trustedForwarder;
@@ -138,7 +152,9 @@ contract PaymentHub {
         if (amountIn < msg.value) {
             swapRouter.refundETH();
             (bool success, ) = msg.sender.call{value:msg.value - amountIn}(""); // return change
-            require(success, "Transfer failed.");
+            if (!success) {
+                revert PaymentHub_TransferFailed();
+            }
         }
     }
 
@@ -179,12 +195,14 @@ contract PaymentHub {
     ///@dev This function needs to be called before using the PaymentHub the first time with a new ERC20 token.
     ///@param erc20In The erc20 addresse to approve.
     function approveERC20(address erc20In) external {
-        IERC20(erc20In).approve(address(uniswapRouter), 0x8000000000000000000000000000000000000000000000000000000000000000);
+        IERC20(erc20In).approve(address(uniswapRouter), type(uint256).max);
     }
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
-            require(IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i]));
+            if (!IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i])) {
+                revert PaymentHub_TransferFailed();
+            }
         }
     }
 
@@ -204,7 +222,10 @@ contract PaymentHub {
     }
 
     function payAndNotify(IERC20 token, address recipient, uint256 amount, bytes calldata ref) public {
-        require(IERC20(token).transferFrom(msg.sender, recipient, amount));
+         // failsafe that processIncomming isn't executed if transfer failed
+        if (!IERC20(token).transferFrom(msg.sender, recipient, amount)) {
+            revert PaymentHub_TransferFailed();
+        }
         IBrokerbot(recipient).processIncoming(token, msg.sender, amount, ref);
     }
 
@@ -218,7 +239,9 @@ contract PaymentHub {
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
                 (bool success, ) = msg.sender.call{value:msg.value - priceInEther}(""); // return change
-                require(success, "Transfer failed.");
+                if (!success) {
+                    revert PaymentHub_TransferFailed();
+                }
             }
 
         } else {
@@ -236,7 +259,9 @@ contract PaymentHub {
         uint256 balanceBefore = IERC20(base).balanceOf(recipient);
         payFromERC20(amountBase, amountInMaximum, erc20, path, recipient);
         uint256 balanceAfter = IERC20(base).balanceOf(recipient);
-        require(amountBase == (balanceAfter - balanceBefore), "swap error");
+        if (amountBase != (balanceAfter - balanceBefore)) {
+            revert PaymentHub_SwapError(amountBase, balanceAfter - balanceBefore);
+        }        
         IBrokerbot(recipient).processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
     }
 
@@ -253,7 +278,9 @@ contract PaymentHub {
      * @param s Part of the permit signature.
      */
     function sellSharesWithPermit(address recipient, address seller, uint256 amountToSell, uint256 exFee, uint256 deadline, bytes calldata ref, uint8 v, bytes32 r, bytes32 s) external {
-        require(msg.sender == trustedForwarder || msg.sender == seller, "not trusted");
+        if (msg.sender != trustedForwarder && msg.sender != seller) {
+            revert PaymentHub_NonTrustedForwader(msg.sender);
+        }
         IERC20Permit token = IBrokerbot(recipient).token();
         // Call permit 
         token.permit(seller, address(this), amountToSell, deadline, v, r,s);
@@ -281,12 +308,19 @@ contract PaymentHub {
      * In case tokens have been accidentally sent directly to this contract.
      * Make sure to be fast as anyone can call this!
      */
-    function recover(IERC20 ercAddress, address to, uint256 amount) external {
-        require(ercAddress.transfer(to, amount));
+    function recover(IERC20 ercAddress, address to, uint256 amount) external returns (bool) {
+        return ercAddress.transfer(to, amount);
     }
 
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {
         // Important to receive ETH refund from Uniswap
+    }
+
+    function transferEther(address to) external payable {
+        (bool success, ) = payable(to).call{value:msg.value}("");
+        if (!success) {
+            revert PaymentHub_TransferFailed();
+        }
     }
 }

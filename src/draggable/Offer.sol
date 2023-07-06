@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -89,11 +89,42 @@ contract Offer is IOffer {
         payable(LICENSE_FEE_ADDRESS).transfer(3 ether);
     }
 
-    function makeCompetingOffer(IOffer betterOffer) external override {
-        require(msg.sender == address(token), "invalid caller");
-        require(!isAccepted(), "old already accepted");
-        require(currency == betterOffer.currency() && betterOffer.price() > price, "old offer better");
-        require(betterOffer.isWellFunded(), "not funded");
+    modifier onlyBuyer {
+        _checkSender(buyer);
+        _;
+    }
+
+    modifier onlyToken {
+        _checkSender(address(token));
+        _;
+    }
+
+    modifier onlyOracle {
+        _checkSender(token.oracle());
+        _;
+    }
+
+    modifier votingOpen {
+        if (!isVotingOpen()) {
+            revert Offer_VotingEnded();
+        }
+        _;
+    }
+
+    function makeCompetingOffer(IOffer betterOffer) external override onlyToken {
+        if (isAccepted()) {
+            revert Offer_AlreadyAccepted();
+        }
+        uint256 newPrice = betterOffer.price();
+        if (currency != betterOffer.currency()) {
+            revert Offer_OfferInWrongCurrency();
+        }
+        if (newPrice <= price) {
+            revert Offer_OldOfferBetter(price, newPrice);
+        }
+        if (!betterOffer.isWellFunded()) {
+            revert Offer_NotWellFunded();
+        }
         kill(false, "replaced");
     }
 
@@ -113,16 +144,18 @@ contract Offer is IOffer {
         }
     }
 
-    function cancel() external {
-        require(msg.sender == buyer, "invalid caller");
+    function cancel() external onlyBuyer {
         kill(false, "cancelled");
     }
 
-    function execute() external {
-        require(msg.sender == buyer, "not buyer");
-        require(isAccepted(), "not accepted");
+    function execute() external onlyBuyer {
+        if (!isAccepted()) {
+            revert Offer_NotAccepted();
+        }
         uint256 totalPrice = getTotalPrice();
-        require(currency.transferFrom(buyer, address(token), totalPrice), "transfer failed");
+        if (!currency.transferFrom(buyer, address(token), totalPrice)) {
+            revert Offer_TransferFailed();
+        }
         token.drag(buyer, currency);
         kill(true, "success");
     }
@@ -159,8 +192,7 @@ contract Offer is IOffer {
         }
     }
 
-    function notifyMoved(address from, address to, uint256 value) external override {
-        require(msg.sender == address(token), "invalid caller");
+    function notifyMoved(address from, address to, uint256 value) external override onlyToken {
         if (isVotingOpen()) {
             Vote fromVoting = votes[from];
             Vote toVoting = votes[to];
@@ -190,19 +222,17 @@ contract Offer is IOffer {
         return block.timestamp <= voteEnd;
     }
 
-    modifier votingOpen() {
-        require(isVotingOpen(), "vote ended");
-        _;
-    }
-
     /**
      * Function to allow the oracle to report the votes of external votes (e.g. shares tokenized on other blockchains).
      * This functions is idempotent and sets the number of external yes and no votes. So when more votes come in, the
      * oracle should always report the total number of yes and no votes. Abstentions are not counted.
      */
-    function reportExternalVotes(uint256 yes, uint256 no) external {
-        require(msg.sender == token.oracle(), "not oracle");
-        require(yes + no + IERC20(address(token)).totalSupply() <= token.totalVotingTokens(), "too many votes");
+    function reportExternalVotes(uint256 yes, uint256 no) external onlyOracle votingOpen {
+        uint256 maxVotes = token.totalVotingTokens();
+        uint256 reportingVotes = yes + no + IERC20(address(token)).totalSupply();
+        if (reportingVotes > maxVotes) {
+            revert Offer_TooManyVotes(maxVotes, reportingVotes);
+        }
         // adjust total votes taking into account that the oralce might have reported different counts before
         yesVotes = yesVotes - yesExternal + yes;
         noVotes = noVotes - noExternal + no;
@@ -219,7 +249,7 @@ contract Offer is IOffer {
         vote(Vote.NO);
     }
 
-    function vote(Vote newVote) internal votingOpen() {
+    function vote(Vote newVote) internal votingOpen {
         Vote previousVote = votes[msg.sender];
         votes[msg.sender] = newVote;
         if(previousVote == Vote.NONE){
@@ -240,6 +270,16 @@ contract Offer is IOffer {
         emit OfferEnded(buyer, success, message);
         token.notifyOfferEnded();
         selfdestruct(payable(buyer));
+    }
+
+    /**
+     * Checks if msg.sender is an authorized address.
+     * @param validSender The authorized address.
+     */
+    function _checkSender(address validSender) internal view {
+        if (msg.sender != validSender) {
+            revert Offer_InvalidSender(msg.sender);
+        }
     }
 
 }

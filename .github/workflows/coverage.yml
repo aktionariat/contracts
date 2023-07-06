@@ -38,9 +38,6 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      - name: Install dependencies
-        run: yarn add -D hardhat-deploy-ethers
-
       - name: Run tests
         run: yarn coverage
         

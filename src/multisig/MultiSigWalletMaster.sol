@@ -39,6 +39,29 @@ contract MultiSigWalletMaster is Nonce, Initializable {
   event Received(address indexed sender, uint amount);
   event SentEth(address indexed target, uint amount);
 
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+	//////////////////////////////////////////////////////////////*/
+  /// Call needs to provide signature data. 
+  error Multisig_SignatureMissing();
+  /// Sinature data isn't valid for the transaction or insufficient signer have signed the transaction. 
+  /// @param signer The ecrecover'd signer.
+  error Multisig_InvalidSignDataOrInsufficientCosigner(address signer);
+  /// Each signature data entry has to each from a unique address. 
+  /// @param from The address which has produced more than one signature. 
+  error Multisig_DuplicateSignature(address from);
+  /// Signer is a contract or the 0x0 address. 
+  /// @param signer The address of the invalid signer. 
+  error Multisig_InvalidSigner(address signer);
+  /// The multisig needs to have > 0 signers. 
+  error Multisig_InsufficientSigners();
+  /// Sender has to be singel signer or the multisig itself. 
+  /// @param sender The msg.sender of the transaction. 
+  error Multisig_UnauthorizedSender(address sender);
+  /// Migration can't override current signer. 
+  /// param destination The address to which the signer rights should be migrated. 
+  error Multisig_InvalidDestination(address destination);
+
   function initialize(address owner) external initializer {
     // We use the gas price field to get a unique id into our transactions.
     // Note that 32 bits do not guarantee that no one can generate a contract with the
@@ -92,22 +115,22 @@ contract MultiSigWalletMaster is Nonce, Initializable {
     }
   }
 
-function toBytes (uint256 x) public pure returns (bytes memory result) {
-  uint l = 0;
-  uint xx = x;
-  if (x >= 0x100000000000000000000000000000000) { x >>= 128; l += 16; }
-  if (x >= 0x10000000000000000) { x >>= 64; l += 8; }
-  if (x >= 0x100000000) { x >>= 32; l += 4; }
-  if (x >= 0x10000) { x >>= 16; l += 2; }
-  if (x >= 0x100) { x >>= 8; l += 1; }
-  if (x > 0x0) { l += 1; }
-  assembly {
-    result := mload (0x40)
-    mstore (0x40, add (result, add (l, 0x20)))
-    mstore (add (result, l), xx)
-    mstore (result, l)
+  function toBytes (uint256 x) public pure returns (bytes memory result) {
+    uint l = 0;
+    uint xx = x;
+    if (x >= 0x100000000000000000000000000000000) { x >>= 128; l += 16; }
+    if (x >= 0x10000000000000000) { x >>= 64; l += 8; }
+    if (x >= 0x100000000) { x >>= 32; l += 4; }
+    if (x >= 0x10000) { x >>= 16; l += 2; }
+    if (x >= 0x100) { x >>= 8; l += 1; }
+    if (x > 0x0) { l += 1; }
+    assembly {
+      result := mload (0x40)
+      mstore (0x40, add (result, add (l, 0x20)))
+      mstore (add (result, l), xx)
+      mstore (result, l)
+    }
   }
-}
 
   // Note: does not work with contract creation
   function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
@@ -133,11 +156,15 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
   function verifySignatures(bytes32 transactionHash, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s)
     public view returns (address[] memory) {
     address[] memory found = new address[](r.length);
-    require(r.length > 0, "sig missing");
+    if (r.length == 0 ) {
+      revert Multisig_SignatureMissing();
+    }
     for (uint i = 0; i < r.length; i++) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
       uint8 signaturesNeeded = signers[signer];
-      require(signaturesNeeded > 0 && signaturesNeeded <= r.length, "cosigner error");
+      if (signaturesNeeded == 0 || signaturesNeeded > r.length) {
+        revert Multisig_InvalidSignDataOrInsufficientCosigner(signer);
+      }
       found[i] = signer;
     }
     requireNoDuplicates(found);
@@ -147,7 +174,9 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
   function requireNoDuplicates(address[] memory found) private pure {
     for (uint i = 0; i < found.length; i++) {
       for (uint j = i+1; j < found.length; j++) {
-        require(found[i] != found[j], "duplicate signature");
+        if (found[i] == found[j]) {
+          revert Multisig_DuplicateSignature(found[i]);
+        }
       }
     }
   }
@@ -157,7 +186,9 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
    */
   function setSigner(address signer, uint8 signaturesNeeded) external authorized {
     _setSigner(signer, signaturesNeeded);
-    require(signerCount > 0, "signer count 0");
+    if (signerCount == 0) {
+      revert Multisig_InsufficientSigners();
+    }
   }
 
   function migrate(address destination) external {
@@ -169,14 +200,18 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
   }
 
   function _migrate(address source, address destination) private {
-    require(signers[destination] == 0, "destination not new"); // do not overwrite existing signer!
+    // do not overwrite existing signer!
+    if (signers[destination] > 0 ) {
+      revert Multisig_InvalidDestination(destination);
+    }
     _setSigner(destination, signers[source]);
     _setSigner(source, 0);
   }
 
   function _setSigner(address signer, uint8 signaturesNeeded) private {
-    require(!Address.isContract(signer), "signer cannot be a contract");
-    require(signer != address(0x0), "0x0 signer");
+    if (Address.isContract(signer) || signer == address(0x0)) {
+      revert Multisig_InvalidSigner(signer);
+    }
     uint8 prevValue = signers[signer];
     signers[signer] = signaturesNeeded;
     if (prevValue > 0 && signaturesNeeded == 0){
@@ -188,7 +223,9 @@ function toBytes (uint256 x) public pure returns (bytes memory result) {
   }
 
   modifier authorized() {
-    require(address(this) == msg.sender || signers[msg.sender] == 1, "not authorized");
+    if (address(this) != msg.sender && signers[msg.sender] != 1) {
+      revert Multisig_UnauthorizedSender(msg.sender);
+    }
     _;
   }
 

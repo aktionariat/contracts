@@ -14,6 +14,7 @@ module.exports = {
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
   quorumBps: 7500,
+  quorumMigration: 7500,
   votePeriodSeconds: 5184000,
   uniswapRouterAddress: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
   // Allowlist
@@ -32,6 +33,8 @@ module.exports = {
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
   wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  // USDT
+  usdtAddress: "0xdac17f958d2ee523a2206206994597c13d831ec7",
   // brokerbot
   BUYING_ENABLED: 0x1,
   SELLING_ENABLED: 0x2,

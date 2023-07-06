@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2020 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -46,12 +46,13 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         string memory _terms,
         IERC20 _wrappedToken,
         uint256 _quorumBps,
+        uint256 _quorumMigration,
         uint256 _votePeriodSeconds,
         IRecoveryHub _recoveryHub,
         IOfferFactory _offerFactory,
         address _oracle
     )
-        ERC20Draggable(_wrappedToken, _quorumBps, _votePeriodSeconds, _offerFactory, _oracle)
+        ERC20Draggable(_wrappedToken, _quorumBps, _quorumMigration, _votePeriodSeconds, _offerFactory, _oracle)
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight() 
     {
@@ -59,7 +60,7 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         _recoveryHub.setRecoverable(false);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(IERC20, ERC20Flaggable, ERC20Recoverable) public returns (bool) {
         return super.transfer(to, value);
     }
 
