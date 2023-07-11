@@ -2,6 +2,8 @@
 // https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/IQuoter.sol
 pragma solidity ^0.8.0;
 
+import "../ERC20/IERC20.sol";
+
 interface IQuoter {
     function quoteExactOutputSingle(
         address tokenIn,
@@ -16,6 +18,12 @@ interface IQuoter {
     /// @param amountOut The amount of the last token to receive
     /// @return amountIn The amount of first token required to be paid
     function quoteExactOutput(bytes memory path, uint256 amountOut) external returns (uint256 amountIn);
+
+    /// @notice Returns the amount out received for a given exact input swap without executing the swap
+    /// @param path The path of the swap, i.e. each token pair and the pool fee
+    /// @param amountIn The amount of the first token to swap
+    /// @return amountOut The amount of the last token that would be received
+    function quoteExactInput(bytes memory path, uint256 amountIn) external returns (uint256 amountOut);
     
     // solhint-disable-next-line func-name-mixedcase
     function WETH9() external view returns (address);
@@ -47,6 +55,28 @@ interface ISwapRouter {
     /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
     /// @return amountIn The amount of the input token
     function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
+
+    struct ExactInputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
     
     function refundETH() external payable;
+}
+
+/// @title Interface for WETH9
+interface IWETH9 is IERC20 {
+    /// @notice Deposit ether to get wrapped ether
+    function deposit() external payable;
+
+    /// @notice Withdraw wrapped ether to get ether
+    function withdraw(uint256) external;
 }

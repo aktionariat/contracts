@@ -57,7 +57,7 @@ module.exports = {
       forking: {
         //enabled: process.env.FORKING === "true",
         url: getForkUrl(),
-        blockNumber: 17592060,
+        blockNumber: 17663503,
       },
       live: false,
       saveDeployments: true,
@@ -222,7 +222,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.7",
+        version: "0.8.20",
         settings: {
           optimizer: {
             enabled: true,

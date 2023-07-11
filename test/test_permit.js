@@ -44,7 +44,7 @@ describe("Permit", () => {
   let chainId = 1 ;
   let contractAddress;
 
-  const fee = "100000000000000000";
+  const exFee = "100000000000000000";
 
   before(async() => {
     // deploy contracts and set up signers
@@ -257,12 +257,13 @@ describe("Permit", () => {
     }
     const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
     // relayer calls sell via paymenthub
-    await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, fee, deadline, "0x01", v, r, s))
+    const permitInfo = {exFee, deadline, v, r, s}
+    await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo))
       .to.be.revertedWithCustomError(paymentHub, "PaymentHub_NonTrustedForwader")
       .withArgs(relayer.address);
   });
 
-    it("Should sell shares with permit for crypto", async () => {
+    it("Should sell shares with permit for crypto via relayer", async () => {
       const relayer = deployer;
       // sign permit with sig3
       const seller = sig3;
@@ -283,10 +284,39 @@ describe("Permit", () => {
       const sellPrice = await brokerbot.getSellPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, fee, deadline, "0x01", v, r, s);
+      const permitInfo = {exFee, deadline, v, r, s}
+      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
-      expect(baseCurrencyBefore.add(sellPrice).sub(fee)).to.be.equal(baseCurrencyAfter);
+      expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(sellPrice.sub(exFee));
+      expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
+    });
+    it("Should sell shares with permit for crypto via seller", async () => {
+      const relayer = deployer;
+      // sign permit with sig3
+      const seller = sig3;
+      const nonce = await draggable.connect(seller).nonces(seller.address);
+      const deadline = ethers.constants.MaxUint256;
+      const value = 200;
+      const spender = paymentHub.address;
+      const permitOwner = seller.address;
+      const permitValue =  {
+        owner: permitOwner,
+        spender,
+        value,
+        nonce,
+        deadline,
+      }
+      const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
+      // relayer calls sell via paymenthub
+      const sellPrice = await brokerbot.getSellPrice(value);
+      const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
+      const sharesBefore = await draggable.balanceOf(seller.address);
+      const permitInfo = {exFee: 0, deadline, v, r, s}
+      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo);
+      const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
+      const sharesAfter = await draggable.balanceOf(seller.address);
+      expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(sellPrice);
       expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
     });
 
@@ -312,12 +342,44 @@ describe("Permit", () => {
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
       // fee should be 0 on sell for fiat
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, seller.address, value, 0, deadline, "0x02", v, r, s);
+      const permitInfo = {exFee: 0, deadline, v, r, s}
+      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x02", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
       expect(baseCurrencyBefore).to.be.equal(baseCurrencyAfter);
       expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
     });
+    it("Should sell sahres with permit for crypto and send it to off-ramp", async () => {
+      const relayer = deployer;
+      const offRamp = sig4.address;
+      // sign permit with sig3
+      const seller = sig3;
+      const nonce = await draggable.connect(seller).nonces(seller.address);
+      const deadline = ethers.constants.MaxUint256;
+      const value = 200;
+      const spender = paymentHub.address;
+      const permitOwner = seller.address;
+      const permitValue =  {
+        owner: permitOwner,
+        spender,
+        value,
+        nonce,
+        deadline,
+      }
+      const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
+      // relayer calls sell via paymenthub
+      const sellPrice = await brokerbot.getSellPrice(value);
+      const baseCurrencyBefore = await baseCurrency.balanceOf(offRamp);
+      //console.log(`baseCurrencyBefore: ${baseCurrencyBefore}`);
+      const sharesBefore = await draggable.balanceOf(seller.address);
+      const permitInfo = {exFee, deadline, v, r, s}
+      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, offRamp, value, "0x01", permitInfo);
+      const baseCurrencyAfter = await baseCurrency.balanceOf(offRamp);
+      //console.log(`baseCurrencyAfter: ${baseCurrencyAfter}`);
+      const sharesAfter = await draggable.balanceOf(seller.address);
+      expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(sellPrice.sub(exFee));
+      expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
+    })
 
     /* xchf dosen't have permit
     it("Should buy shares with permit", async () => {

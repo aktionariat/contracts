@@ -197,7 +197,7 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
         super._mint(account, amount);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable, IERC20) public returns (bool) {
         return super.transfer(to, value);
     }
 
