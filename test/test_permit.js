@@ -1,6 +1,7 @@
 const { ethers} = require("hardhat");
 const { expect } = require("chai");
 const { setup } = require("./helper/index");
+const Chance = require("chance");
 const { time }  = require("@nomicfoundation/hardhat-network-helpers");
 
 // Shared  Config
@@ -26,6 +27,9 @@ describe("Permit", () => {
   let sig5;
   let oracle;
 
+  let chance
+  const exFee = "100000000000000000";
+
   /*//////////////////////////////////////////////////////////////
                       EIP-712 Signature 
   //////////////////////////////////////////////////////////////*/
@@ -39,17 +43,15 @@ describe("Permit", () => {
       { name: 'deadline', type: 'uint256',},
     ],
   }
-  let domainName;
-  let domainVersion = "1"; 
   let chainId = 1 ;
   let contractAddress;
-
-  const exFee = "100000000000000000";
 
   before(async() => {
     // deploy contracts and set up signers
     [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
     oracle = owner;
+    chance = new Chance();
+
 
     // deploy contracts
     /*await deployments.fixture([
@@ -87,7 +89,6 @@ describe("Permit", () => {
   //////////////////////////////////////////////////////////////*/
   describe("Permit Shares", () => {
     before(async() => {
-      domainName = await shares.name();
       contractAddress = shares.address;
       domain = {
         chainId: chainId,
@@ -168,8 +169,7 @@ describe("Permit", () => {
                 Test Permit Draggable Shares
   //////////////////////////////////////////////////////////////*/
   describe("Permit Draggable Shares", () => {
-    before(async() => {
-      domainName = await draggable.name();
+    beforeEach(async() => {
       contractAddress = draggable.address;
       domain = {
         chainId: chainId,
@@ -238,38 +238,54 @@ describe("Permit", () => {
        s
        )).to.be.revertedWithCustomError(draggable, "Permit_InvalidSigner");
    });
-
-   it("Should revert sell shares with permit for crypto if not from trusted relayer", async () => {
-    const relayer = sig1;
-    // sign permit with sig3
-    const seller = sig3;
-    const nonce = await draggable.connect(seller).nonces(seller.address);
-    const deadline = ethers.constants.MaxUint256;
-    const value = 200;
-    const spender = paymentHub.address;
-    const permitOwner = seller.address;
-    const permitValue =  {
-      owner: permitOwner,
-      spender,
-      value,
-      nonce,
-      deadline,
-    }
-    const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
-    // relayer calls sell via paymenthub
-    const permitInfo = {exFee, deadline, v, r, s}
-    await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo))
-      .to.be.revertedWithCustomError(paymentHub, "PaymentHub_NonTrustedForwader")
-      .withArgs(relayer.address);
   });
 
-    it("Should sell shares with permit for crypto via relayer", async () => {
-      const relayer = deployer;
-      // sign permit with sig3
-      const seller = sig3;
+  /*//////////////////////////////////////////////////////////////
+                Test Sell Draggable Shares via Permit
+  //////////////////////////////////////////////////////////////*/
+  describe("Sell shares with permit", () => {
+    let relayer;
+    let seller;
+    let randomShareAmount;
+    let baseAmount;
+    beforeEach(async() => {
+      contractAddress = draggable.address;
+      domain = {
+        chainId: chainId,
+        verifyingContract: contractAddress,
+      }
+      relayer = deployer
+      seller = sig3;
+      randomShareAmount = chance.natural({ min: 50, max: 500 });
+      baseAmount = await brokerbot.getBuyPrice(randomShareAmount);
+    })
+
+    it("Should revert sell shares with permit for crypto if not from trusted relayer", async () => {
+      relayer = sig1;
       const nonce = await draggable.connect(seller).nonces(seller.address);
       const deadline = ethers.constants.MaxUint256;
-      const value = 200;
+      const value = randomShareAmount;
+      const spender = paymentHub.address;
+      const permitOwner = seller.address;
+      const permitValue =  {
+        owner: permitOwner,
+        spender,
+        value,
+        nonce,
+        deadline,
+      }
+      const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
+      // relayer calls sell via paymenthub
+      const permitInfo = {exFee, deadline, v, r, s}
+      await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo))
+        .to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender")
+        .withArgs(relayer.address);
+    });
+
+    it("Should sell shares with permit for crypto via relayer", async () => {
+      const nonce = await draggable.connect(seller).nonces(seller.address);
+      const deadline = ethers.constants.MaxUint256;
+      const value = randomShareAmount;
       const spender = paymentHub.address;
       const permitOwner = seller.address;
       const permitValue =  {
@@ -292,12 +308,9 @@ describe("Permit", () => {
       expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
     });
     it("Should sell shares with permit for crypto via seller", async () => {
-      const relayer = deployer;
-      // sign permit with sig3
-      const seller = sig3;
       const nonce = await draggable.connect(seller).nonces(seller.address);
       const deadline = ethers.constants.MaxUint256;
-      const value = 200;
+      const value = randomShareAmount;
       const spender = paymentHub.address;
       const permitOwner = seller.address;
       const permitValue =  {
@@ -309,24 +322,20 @@ describe("Permit", () => {
       }
       const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
       // relayer calls sell via paymenthub
-      const sellPrice = await brokerbot.getSellPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
       const permitInfo = {exFee: 0, deadline, v, r, s}
       await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
-      expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(sellPrice);
+      expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(baseAmount);
       expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
     });
 
     it("Should sell shares with permit for fiat", async () => {
-      const relayer = deployer;
-      // sign permit with sig3
-      const seller = sig3;
       const nonce = await draggable.connect(seller).nonces(seller.address);
       const deadline = ethers.constants.MaxUint256;
-      const value = 200;
+      const value = randomShareAmount;
       const spender = paymentHub.address;
       const permitOwner = seller.address;
       const permitValue =  {
@@ -338,7 +347,6 @@ describe("Permit", () => {
       }
       const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
       // relayer calls sell via paymenthub
-      const sellPrice = await brokerbot.getSellPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
       // fee should be 0 on sell for fiat
@@ -349,14 +357,11 @@ describe("Permit", () => {
       expect(baseCurrencyBefore).to.be.equal(baseCurrencyAfter);
       expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
     });
-    it("Should sell sahres with permit for crypto and send it to off-ramp", async () => {
-      const relayer = deployer;
+    it("Should sell shares with permit for crypto and send it to off-ramp", async () => {
       const offRamp = sig4.address;
-      // sign permit with sig3
-      const seller = sig3;
       const nonce = await draggable.connect(seller).nonces(seller.address);
       const deadline = ethers.constants.MaxUint256;
-      const value = 200;
+      const value = randomShareAmount;
       const spender = paymentHub.address;
       const permitOwner = seller.address;
       const permitValue =  {
@@ -368,7 +373,6 @@ describe("Permit", () => {
       }
       const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
       // relayer calls sell via paymenthub
-      const sellPrice = await brokerbot.getSellPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(offRamp);
       //console.log(`baseCurrencyBefore: ${baseCurrencyBefore}`);
       const sharesBefore = await draggable.balanceOf(seller.address);
@@ -377,8 +381,41 @@ describe("Permit", () => {
       const baseCurrencyAfter = await baseCurrency.balanceOf(offRamp);
       //console.log(`baseCurrencyAfter: ${baseCurrencyAfter}`);
       const sharesAfter = await draggable.balanceOf(seller.address);
-      expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(sellPrice.sub(exFee));
+      expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(baseAmount.sub(exFee));
       expect(sharesBefore.sub(value)).to.be.equal(sharesAfter);
+    })
+
+    it("Should sell against ETH with Permit from Seller", async () => {
+      // appove base currency in payment hub
+      await paymentHub.approveERC20(config.baseCurrencyAddress);
+      const wethContract = await ethers.getContractAt("ERC20Named", config.wethAddress);
+      // path: XCHF -> WETH
+      const types = ["address","uint24","address"];
+      const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
+      path = ethers.utils.solidityPack(types,values);
+      const nonce = await draggable.connect(seller).nonces(seller.address);
+      const deadline = ethers.constants.MaxUint256;
+      const value = randomShareAmount;
+      const spender = paymentHub.address;
+      const permitOwner = seller.address;
+      const permitValue =  {
+        owner: permitOwner,
+        spender,
+        value,
+        nonce,
+        deadline,
+      }
+      const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
+      const ethBalanceSellerBefore = await ethers.provider.getBalance(seller.address);
+      // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
+      ethAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, path, false);
+      const swapOutInfo = {recipient: seller.address, amountOutMinimum: ethAmount, path, unwrapWeth: true};
+      const permitInfo = {exFee: 0, deadline, v, r, s}
+      await paymentHub.connect(relayer).sellSharesWithPermitAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", permitInfo, swapOutInfo);
+      const ethBalanceSellerAfter = await ethers.provider.getBalance(seller.address);
+      expect(ethBalanceSellerAfter.sub(ethBalanceSellerBefore)).to.equal(ethAmount);
+      expect(await wethContract.balanceOf(paymentHub.address)).to.equal(0);
+      expect(await ethers.provider.getBalance(paymentHub.address)).to.equal(0);
     })
 
     /* xchf dosen't have permit
@@ -418,7 +455,6 @@ describe("Permit", () => {
   //////////////////////////////////////////////////////////////*/
   describe("Permit Allowlist Shares", () => {
     before(async() => {
-      domainName = await allowlistShares.name();
       contractAddress = allowlistShares.address;
       domain = {
         chainId: chainId,
@@ -466,7 +502,6 @@ describe("Permit", () => {
   //////////////////////////////////////////////////////////////*/
   describe("Permit Allowlist Draggable Shares", () => {
     before(async() => {
-      domainName = await allowlistDraggable.name();
       contractAddress = allowlistDraggable.address;
       domain = {
         chainId: chainId,
