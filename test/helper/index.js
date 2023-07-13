@@ -155,12 +155,26 @@ async function setup(setupBrokerbotEnabled) {
       // Deposit some shares/xchf to Brokerbot
       await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
       await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
-  }
+  }  
+}
 
-  
+async function getTX(to, dataTX, multisigclone, wallet, chainid) {
+  const contractId = await multisigclone.connect(wallet).contractId();
+  const seq = await multisigclone.nextNonce();
+  const tx_send_ms = {
+    nonce: seq,
+    gasPrice: contractId,
+    gasLimit: 21000,
+    to: to,
+    data: dataTX.data,
+    chainId: chainid,
+  };
+  const flatSig = await wallet.signTransaction(tx_send_ms);
+  const tx1 = ethers.utils.parseTransaction(flatSig);
+  return tx1;
 }
 
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount};
+module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount, getTX};

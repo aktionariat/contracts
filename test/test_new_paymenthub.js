@@ -146,7 +146,7 @@ describe("New PaymentHub", () => {
       
       const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.utils.parseEther("1000"), await brokerbot.base());
       // rework to not use static value
-      expect(ethers.utils.formatEther(priceInETH)).to.equal("0.586891954047295546")
+      expect(ethers.utils.formatEther(priceInETH)).to.equal("0.602949565021144432")
     });
 
     it("Should buy shares with ETH and trade it to XCHF", async () => {

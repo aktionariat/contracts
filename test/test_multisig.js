@@ -1,6 +1,6 @@
 const {network, ethers, deployments } = require("hardhat");
 const config = require("../scripts/deploy_config.js");
-const { sendEther } = require("./helper/index");
+const { getTX } = require("./helper/index");
 const { expect } = require("chai");
 
 
@@ -196,7 +196,7 @@ describe("Multisig", () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(adr2.address, 2);
     const mnemonic = process.env.MNEMONIC;
     // here using adr1.address as EOA
-    const tx1 = await getTX(adr1.address, dataTX, multiSigClone, ownerWallet);
+    const tx1 = await getTX(adr1.address, dataTX, multiSigClone, ownerWallet, chainid);
     await expect(multiSigClone.checkExecution(tx1.to, tx1.value, tx1.data))
       .to.be.revertedWithCustomError(multiSigClone, "Address_NotTransferNorContract")
       .withArgs(adr1.address);
@@ -207,7 +207,7 @@ describe("Multisig", () => {
 
   it("Should revert when signature data is missing, wrong or has duplicates", async () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(adr2.address, 2);
-    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet);
+    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet, chainid);
     await expect(multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [], [], []))
       .to.be.revertedWithCustomError(multiSigClone, "Multisig_SignatureMissing");
     await expect(multiSigClone.execute(tx1.nonce, adr1.address, tx1.value, tx1.data, [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]))
@@ -218,7 +218,7 @@ describe("Multisig", () => {
 
   it("Should revert when new signer is contract", async () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(multiSigClone.address, 2);
-    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet);
+    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet, chainid);
     await expect(multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]))
       .to.be.revertedWithCustomError(multiSigClone, "Multisig_InvalidSigner")
       .withArgs(multiSigClone.address);
@@ -226,7 +226,7 @@ describe("Multisig", () => {
 
   it("Should revert when new signer is 0x0", async () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(ethers.constants.AddressZero, 2);
-    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet);
+    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet, chainid);
     await expect(multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]))
       .to.be.revertedWithCustomError(multiSigClone, "Multisig_InvalidSigner")
       .withArgs(ethers.constants.AddressZero);
@@ -234,17 +234,17 @@ describe("Multisig", () => {
 
   it("Should revert when new signer count is 0", async () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(adr1.address, 0);
-    const tx = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet);
+    const tx = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet, chainid);
     multiSigClone.execute(tx.nonce, tx.to, tx.value, tx.data, [tx.v - (8+chainid*2)], [tx.r], [tx.s]);
     const dataTX1 = await multiSigClone.populateTransaction.setSigner(owner.address, 0);
-    const tx1 = await getTX(multiSigClone.address, dataTX1, multiSigClone, ownerWallet);
+    const tx1 = await getTX(multiSigClone.address, dataTX1, multiSigClone, ownerWallet, chainid);
     await expect(multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]))
       .to.be.revertedWithCustomError(multiSigClone, "Multisig_InsufficientSigners");
   })
 
   it("Should execute setSigner called from multisig", async () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(adr2.address, 2);
-    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet);
+    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet, chainid);
     await multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]);
     expect(await multiSigClone.signers(adr2.address)).to.be.equal(2);
   });
@@ -274,7 +274,7 @@ describe("Multisig", () => {
     expect(await multiSigClone.signers(adr3.address)).to.be.equal(0);
     // migrate via proposal
     const dataTX = await multiSigClone.populateTransaction["migrate(address,address)"](adr4.address, adr3.address);
-    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet);
+    const tx1 = await getTX(multiSigClone.address, dataTX, multiSigClone, ownerWallet, chainid);
     await expect(multiSigClone.execute(tx1.nonce, tx1.to, tx1.value, tx1.data, [tx1.v - (8+chainid*2)], [tx1.r], [tx1.s]))
       .to.emit(multiSigClone, "SignerChange")
       .withArgs(adr3.address, 2);
@@ -323,19 +323,4 @@ describe("Multisig", () => {
     });
   });
 
-  async function getTX(to, dataTX, multisigclone, wallet) {
-    const contractId = await multisigclone.connect(owner).contractId();
-    const seq = await multisigclone.nextNonce();
-    const tx_send_ms = {
-      nonce: seq,
-      gasPrice: contractId,
-      gasLimit: 21000,
-      to: to,
-      data: dataTX.data,
-      chainId: chainid,
-    };
-    const flatSig = await wallet.signTransaction(tx_send_ms);
-    const tx1 = ethers.utils.parseTransaction(flatSig);
-    return tx1;
-  }
 })
