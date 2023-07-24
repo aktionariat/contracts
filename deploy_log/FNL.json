@@ -1,0 +1,36 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "Finelli Studios AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "FNL",
+  "name": "Finelli Studios AG Shares",
+  "terms": "http://investors.finelliclothing.com",
+  "totalShares": "100000",
+  "sharePrice": "50000000000000000000",
+  "increment": "0",
+  "quorumBps": 5100,
+  "quorumMigration": 5100,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x198D5f95327965532D3320cD65AB78Fb8C644070",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "share": "0x412eA8e33e6eBe26E4433e18A7dfd5F70bB3eC42",
+    "offerFactory": "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531",
+    "draggable": "0x065399a1e5522Af1c9044c18CE60EC70D64d74a1",
+    "paymentHub": "0x06512E6bAB2712fCa9F4D123C80FCE34de2bC2D7",
+    "brokerbot": "0xD4C631E4582059CC36C4FB06f54BDabE953379E0",
+    "brokerbotRegistry": "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093"
+  },
+  "brokerbot": {
+    "shares": "0x065399a1e5522Af1c9044c18CE60EC70D64d74a1"
+  },
+  "blocknumber": "106828160",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}
