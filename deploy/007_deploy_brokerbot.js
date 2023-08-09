@@ -5,6 +5,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const { deploy } = deployments;
 
   const { deployer, owner } = await getNamedAccounts();
+  const deployerSigner = await ethers.getSigner(deployer);
 
   const shares = await deployments.get('DraggableShares');
   const paymentHub = await deployments.get('PaymentHub');
@@ -47,7 +48,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
-};
+  brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", config.brokerbotRegistry); // is fixed address (change will mess up subgraph)
+  await brokerbotRegistry.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, shares.address, { gasLimit: 50000});
+};  
 
 module.exports.tags = ["Brokerbot"];
 module.exports.dependencies = ["DraggableShares", "PaymentHub"];
