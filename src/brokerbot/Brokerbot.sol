@@ -20,7 +20,7 @@ import "./IBrokerbot.sol";
 
 contract Brokerbot is IBrokerbot, Ownable {
 
-    address public paymenthub;
+    address public override paymenthub;
 
     IERC20 public override immutable base;  // ERC-20 currency
     IERC20Permit public override immutable token; // ERC-20 share token
@@ -240,7 +240,7 @@ contract Brokerbot is IBrokerbot, Ownable {
         return getPrice(getPrice() - (shares * increment), shares);
     }
 
-    function getBuyPrice(uint256 shares) public view returns (uint256) {
+    function getBuyPrice(uint256 shares) public view override returns (uint256) {
         return getPrice(getPrice(), shares);
     }
 
