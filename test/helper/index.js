@@ -173,8 +173,25 @@ async function getTX(to, dataTX, multisigclone, wallet, chainid) {
   const tx1 = ethers.utils.parseTransaction(flatSig);
   return tx1;
 }
+ async function getBlockTimeStamp(ethers) {
+  // get block timestamp
+  const blockNum = await ethers.provider.getBlockNumber();
+  const block = await ethers.provider.getBlock(blockNum);
+  return block.timestamp;
+ }
 
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount, getTX};
+module.exports = {
+  mintERC20, 
+  setBalance, 
+  sendEther, 
+  buyingEnabled, 
+  sellingEnabled, 
+  setBalances, 
+  setup, 
+  setBalanceWithAmount, 
+  getTX,
+  getBlockTimeStamp
+};

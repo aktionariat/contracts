@@ -1,5 +1,5 @@
 const {network, ethers, deployments, } = require("hardhat");
-const { setBalances } = require("./helper/index");
+const { setBalances, getBlockTimeStamp } = require("./helper/index");
 const Chance = require("chance");
 const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
@@ -27,6 +27,7 @@ describe("Brokerbot Router", () => {
   let chance;
   let randomShareAmount;
   let xchfamount;
+  let blockTimestamp;
   before(async () => {
     // get signers and accounts of them
     [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
@@ -87,7 +88,7 @@ describe("Brokerbot Router", () => {
         tokenOut: draggable.address,
         fee: 0,
         recipient: buyer.address,
-        deadline: 0,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
         amountOut: randomShareAmount,
         amountInMaximum: xchfamount,
         sqrtPriceLimitX96: 0
@@ -98,7 +99,50 @@ describe("Brokerbot Router", () => {
       expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
       expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
     });
+    it("Should revert buy shares via router if deadline reached", async () => {
+      const buyer = sig1;
+      const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
+      await baseCurrency.connect(buyer).approve(brokerbotRouter.address, xchfamount);
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const params = {
+        tokenIn: baseCurrency.address,
+        tokenOut: draggable.address,
+        fee: 0,
+        recipient: buyer.address,
+        deadline: 0,
+        amountOut: randomShareAmount,
+        amountInMaximum: xchfamount,
+        sqrtPriceLimitX96: 0
+      }
+      await expect(brokerbotRouter.connect(buyer).exactOutputSingle(params))
+        .to.be.revertedWithCustomError(brokerbotRouter, "Brokerbot_Deadline_Reached");
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+      const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
+      expect(brokerbotBalanceBefore).to.equal(brokerbotBalanceAfter);
+      expect(buyerBalanceBefore).to.equal(buyerBalanceAfter);
+    });
     it("Should sell shares via router", async () => {
+      const seller = sig2;
+      const sellerBalanceBefore = await draggable.balanceOf(seller.address);
+      await draggable.connect(seller).approve(brokerbotRouter.address, randomShareAmount);
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const params = {
+        tokenIn: draggable.address,
+        tokenOut: baseCurrency.address,
+        fee: 0,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: randomShareAmount,
+        amountOutMinimum: xchfamount,
+        sqrtPriceLimitX96: 0
+      }
+      await brokerbotRouter.connect(seller).exactInputSingle(params);
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+      const sellerBalanceAfter = await draggable.balanceOf(seller.address);
+      expect(brokerbotBalanceBefore.sub(xchfamount)).to.equal(brokerbotBalanceAfter);
+      expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
+    })
+    it("Should revert sell shares via router if deadline is reached", async () => {
       const seller = sig2;
       const sellerBalanceBefore = await draggable.balanceOf(seller.address);
       await draggable.connect(seller).approve(brokerbotRouter.address, randomShareAmount);
@@ -113,11 +157,12 @@ describe("Brokerbot Router", () => {
         amountOutMinimum: xchfamount,
         sqrtPriceLimitX96: 0
       }
-      await brokerbotRouter.connect(seller).exactInputSingle(params);
+      await expect(brokerbotRouter.connect(seller).exactInputSingle(params))
+        .to.be.revertedWithCustomError(brokerbotRouter, "Brokerbot_Deadline_Reached");
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
       const sellerBalanceAfter = await draggable.balanceOf(seller.address);
-      expect(brokerbotBalanceBefore.sub(xchfamount)).to.equal(brokerbotBalanceAfter);
-      expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
+      expect(brokerbotBalanceBefore).to.equal(brokerbotBalanceAfter);
+      expect(sellerBalanceBefore).to.equal(sellerBalanceAfter);
     })
   })
 });
