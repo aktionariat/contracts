@@ -13,6 +13,7 @@ module.exports = {
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
+  brokerbotRegistry: "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98",
   quorumBps: 7500,
   quorumMigration: 7500,
   votePeriodSeconds: 5184000,
