@@ -26,7 +26,7 @@ describe("Brokerbot Router", () => {
 
   let chance;
   let randomShareAmount;
-  let xchfAmount;
+  let xchfamount;
   before(async () => {
     // get signers and accounts of them
     [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
@@ -34,20 +34,20 @@ describe("Brokerbot Router", () => {
     accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
     chance = new Chance();
 
-    // deploy contracts
+    // get common contracts
     baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
     daiContract = await ethers.getContractAt("ERC20Named", config.daiAddress);
     wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress)
-
+  });
+  beforeEach(async () => {
+    // deploy contracts
     await deployments.fixture(["Shares", "DraggableShares", "PaymentHub", "Brokerbot", "BrokerbotRouter"]);
     paymentHub = await ethers.getContract("PaymentHub");
     shares = await ethers.getContract("Shares");
     draggable = await ethers.getContract("DraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
     brokerbotRouter = await ethers.getContract("BrokerbotRouter");
-
-
-  });
+  })
   describe("Deployment", () => {
     it("Should be deploy successfully", async () => {
       expect(brokerbotRouter.address).to.exist;
@@ -79,12 +79,45 @@ describe("Brokerbot Router", () => {
     })
     it("Should buy shares via router", async () => {
       const buyer = sig1;
+      const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
       await baseCurrency.connect(buyer).approve(brokerbotRouter.address, xchfamount);
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-      const params = 
-      await brokerbotRouter.exactOutputSingle(params);
+      const params = {
+        tokenIn: baseCurrency.address,
+        tokenOut: draggable.address,
+        fee: 0,
+        recipient: buyer.address,
+        deadline: 0,
+        amountOut: randomShareAmount,
+        amountInMaximum: xchfamount,
+        sqrtPriceLimitX96: 0
+      }
+      await brokerbotRouter.connect(buyer).exactOutputSingle(params);
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+      const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
       expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+      expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
     });
+    it("Should sell shares via router", async () => {
+      const seller = sig2;
+      const sellerBalanceBefore = await draggable.balanceOf(seller.address);
+      await draggable.connect(seller).approve(brokerbotRouter.address, randomShareAmount);
+      const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const params = {
+        tokenIn: draggable.address,
+        tokenOut: baseCurrency.address,
+        fee: 0,
+        recipient: seller.address,
+        deadline: 0,
+        amountIn: randomShareAmount,
+        amountOutMinimum: xchfamount,
+        sqrtPriceLimitX96: 0
+      }
+      await brokerbotRouter.connect(seller).exactInputSingle(params);
+      const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+      const sellerBalanceAfter = await draggable.balanceOf(seller.address);
+      expect(brokerbotBalanceBefore.sub(xchfamount)).to.equal(brokerbotBalanceAfter);
+      expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
+    })
   })
 });

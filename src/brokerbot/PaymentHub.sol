@@ -275,7 +275,7 @@ contract PaymentHub {
 
     function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public {
          // failsafe that processIncomming isn't executed if transfer failed
-        if (!IERC20(token).transferFrom(msg.sender, address(brokerbot), amount)) {
+        if (!token.transferFrom(msg.sender, address(brokerbot), amount)) {
             revert PaymentHub_TransferFailed();
         }
         brokerbot.processIncoming(token, msg.sender, amount, ref);

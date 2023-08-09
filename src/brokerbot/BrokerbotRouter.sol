@@ -16,6 +16,7 @@ import "./IUniswapV3.sol";
 import "./Brokerbot.sol";
 import "./PaymentHub.sol";
 import "./BrokerbotRegistry.sol";
+import "../ERC20/ERC20Flaggable.sol";
 
 contract BrokerbotRouter is ISwapRouter {
   BrokerbotRegistry public immutable brokerbotRegistry;
@@ -36,10 +37,11 @@ contract BrokerbotRouter is ISwapRouter {
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = getBrokerbotAndPaymentHub(IERC20(params.tokenIn), IERC20(params.tokenOut));
 		// @TODO: check possiblity to not call buyprice here, as it get called again in brokerbot
 		amountIn = brokerbot.getBuyPrice(params.amountOut); // get current price, so nothing needs to be refunded
+		IERC20(params.tokenIn).transferFrom(msg.sender, address(this), amountIn);
     IERC20(params.tokenIn).approve(address(paymentHub), amountIn);
-		paymentHub.payAndNotify(IERC20(params.tokenIn), address(brokerbot), amountIn,  bytes("\x01"));
+		paymentHub.payAndNotify( brokerbot, amountIn,  bytes("\x01"));
     IERC20(params.tokenIn).approve(address(paymentHub), 0);
-		// transfer 
+		// transfer to recipient
 		if (!IERC20(params.tokenOut).transfer(params.recipient, params.amountOut)) {
 			revert BrokerbotSwap_Failed();
 		}
@@ -49,7 +51,17 @@ contract BrokerbotRouter is ISwapRouter {
 
 	function exactInputSingle(
 		ExactInputSingleParams calldata params
-	) external payable override returns (uint256 amountOut) {}
+	) external payable override returns (uint256 amountOut) {
+		(IBrokerbot brokerbot, PaymentHub paymentHub) = getBrokerbotAndPaymentHub(IERC20(params.tokenOut), IERC20(params.tokenIn));
+		IERC20(params.tokenIn).transferFrom(msg.sender, address(this), params.amountIn);
+		IERC20(params.tokenIn).approve(address(paymentHub), type(uint256).max);
+		ERC20Flaggable(params.tokenIn).transferAndCall(address(brokerbot), params.amountIn, bytes("\x01"));
+		// transfer to recipient
+		amountOut = IERC20(params.tokenOut).balanceOf(address(this));
+		if (!IERC20(params.tokenOut).transfer(params.recipient, amountOut)) {
+			revert BrokerbotSwap_Failed();
+		}
+	}
 
 	function exactInput(ExactInputParams calldata params) external payable override returns (uint256 amountOut) {}
 
