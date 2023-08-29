@@ -61,10 +61,24 @@ library Path {
         return path.slice(0, POP_OFFSET);
     }
 
+    /// @notice Gets the segment corresponding to the last pool in the path
+    /// @param path The bytes encoded swap path
+    /// @return The segment containing all data necessary to target the last pool in the path
+    function getLastPool(bytes memory path) internal pure returns (bytes memory) {
+        return path.slice(path.length - POP_OFFSET, path.length);
+    }
+
     /// @notice Skips a token + fee element from the buffer and returns the remainder
     /// @param path The swap path
     /// @return The remaining token + fee elements in the path
     function skipToken(bytes memory path) internal pure returns (bytes memory) {
         return path.slice(NEXT_OFFSET, path.length - NEXT_OFFSET);
+    }
+
+    /// @notice Skips a token + fee element from the buffer and returns the remainder
+    /// @param path The swap path
+    /// @return The remaining token + fee elements in the path
+    function skipLastToken(bytes memory path) internal pure returns (bytes memory) {
+        return path.slice(0, path.length - NEXT_OFFSET - NEXT_OFFSET);
     }
 }
