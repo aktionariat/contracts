@@ -30,9 +30,9 @@ pragma solidity ^0.8.0;
 import "./DraggableShares.sol";
 /** 
  *  
- * @dev Use this contract if you need to migrate the predecessor tokens with the majority of shares onchain.
+ * @dev Use this contract if you need to migrate the predecessor tokens with additional external votes.
  */
-contract DraggableSharesWithPredecessor is DraggableShares {
+contract DraggableSharesWithPredecessorExternal is DraggableShares {
   IDraggable immutable predecessor;
 
 
@@ -51,18 +51,29 @@ contract DraggableSharesWithPredecessor is DraggableShares {
   {
     predecessor = _predecessor;
   }
-  
+
   /**
-   * @notice This contract needs to hold the majority of the predecessor tokens.
+   * @notice This contract needs to hold the majority of the predecessor tokens and the this contract needs to be the oracle of the predecessor.
+   * 
    */
-  function initiateMigration() external {
+  function initiateMigrationWithExternalApproval(uint256 additionalVotes) external onlyOracle {
     uint256 predecessorSupply = predecessor.totalSupply();
     _mint(address(predecessor), predecessorSupply);
     wrapped = predecessor.wrapped();
-    predecessor.migrate();
+    predecessor.migrateWithExternalApproval(address(this), additionalVotes);
     uint256 predecessorBalance = predecessor.balanceOf(address(this));
-    predecessor.unwrap(predecessorBalance);
-    _burn(address(this), predecessorBalance);
+    if (predecessorBalance > 0) {
+      predecessor.unwrap(predecessorBalance);
+      _burn(address(this), predecessorBalance);
+    }
     assert(predecessorSupply == totalSupply());
+  }
+
+  /**
+   * @notice As the oracle on the predecessor has to be set to this contract for migration. This contract needs to be able to set the oracle on the predecessor.
+   * @param oracle The new oracle on the predecessor.
+   */
+  function setPredecessorOracle(address oracle) external onlyOracle {
+    predecessor.setOracle(oracle);
   }
 }
