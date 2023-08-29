@@ -21,7 +21,7 @@ interface IRecoveryHub {
     /// @param token The token address which is checked for recovery.
     /// @param lostAddress The lost address.
     error RecoveryHub_NothingToRecover(IERC20 token, address lostAddress);
-    /// The was arleady a claim for this token and address.
+    /// The was already a claim for this token and address.
     /// @param token The token address.
     /// @param lostAddress The lost address.
     error RecoveryHub_AlreadyClaimed(IERC20 token, address lostAddress);

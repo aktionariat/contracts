@@ -213,7 +213,7 @@ describe("New PaymentHub", () => {
     it("Should be able to withdraw ETH from brokerbot as owner", async () => {
       const brokerbotETHBefore = await ethers.provider.getBalance(brokerbot.address);
       const ownerETHBefore = await ethers.provider.getBalance(owner.address);
-      // draggableShares dosen't have a payable receive/fallback function and should fail
+      // draggableShares don't have a payable receive/fallback function and should fail
       await expect(brokerbot.connect(owner)["withdrawEther(address,uint256)"](draggableShares.address, brokerbotETHBefore))
         .to.be.revertedWithCustomError(brokerbot, "Brokerbot_WithdrawFailed")
         .withArgs(draggableShares.address, brokerbotETHBefore);
