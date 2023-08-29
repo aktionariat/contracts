@@ -9,7 +9,7 @@ interface IRecoverable is IERC20{
 	/*//////////////////////////////////////////////////////////////
                             Custom errors
     //////////////////////////////////////////////////////////////*/
-    /// The new customm claim collateral rate has to be always > 0. 
+    /// The new custom claim collateral rate has to be always > 0. 
     error Recoverable_RateZero();
     /// Failguard when an erc20 transfer returns false. 
     error Recoverable_TransferFailed();
