@@ -14,7 +14,7 @@ interface IBrokerbot {
   /// Sender(msg.sender) has to be incoming token or paymenthub.
   /// @param sender The msg.sender.
   error Brokerbot_InvalidSender(address sender);
-  /// target.call() wasn't succesfull.
+  /// target.call() wasn't successful.
   /// @param target The receiver of the Eth.
   /// @param amount The withdraw amount.
   error Brokerbot_WithdrawFailed(address target, uint256 amount);
