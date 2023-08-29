@@ -108,7 +108,7 @@ async function setup(setupBrokerbotEnabled) {
   baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   
   await deployments.fixture([
-    "ReoveryHub",
+    "RecoveryHub",
     "OfferFactory",
     "Shares",
     "DraggableShares",
