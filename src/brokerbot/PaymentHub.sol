@@ -34,6 +34,7 @@ import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "../utils/SafeERC20.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -44,12 +45,15 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
  */
 contract PaymentHub {
 
+    using SafeERC20 for IERC20;
+
     // Version history
     // Version 4: added path to pay with any ecr20 via uniswap
     // Version 5: added sell via permit
     // Version 6: added transferEther function
     // Version 7: added sell against eth and erc20, version, add permitinfo/swapinfo struct
-    uint8 public constant VERSION = 0x7;
+    // Version 8: use SafeERC20 for transfers
+    uint8 public constant VERSION = 0x8;
 
     address immutable trustedForwarder;
 
@@ -221,7 +225,7 @@ contract PaymentHub {
     function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, bytes memory path, address recipient) public returns (uint256 amountIn) {
         ISwapRouter swapRouter = uniswapRouter;
         // Transfer the specified `amountInMaximum` to this contract.
-        IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
+        IERC20(erc20In).safeTransferFrom(msg.sender, address(this), amountInMaximum);
 
         // The parameter path is encoded as (tokenOut, fee, tokenIn/tokenOut, fee, tokenIn)
         ISwapRouter.ExactOutputParams memory params =
@@ -239,7 +243,7 @@ contract PaymentHub {
 
         // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
         if (amountIn < amountInMaximum) {
-            IERC20(erc20In).transfer(msg.sender, amountInMaximum - amountIn);
+            IERC20(erc20In).safeTransfer(msg.sender, amountInMaximum - amountIn);
         }
     }
 
@@ -252,9 +256,7 @@ contract PaymentHub {
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
-            if (!IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i])) {
-                revert PaymentHub_TransferFailed();
-            }
+            IERC20(token).safeTransferFrom(msg.sender, recipients[i], amounts[i]);
         }
     }
 
@@ -275,9 +277,7 @@ contract PaymentHub {
 
     function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public {
          // failsafe that processIncomming isn't executed if transfer failed
-        if (!IERC20(token).transferFrom(msg.sender, address(brokerbot), amount)) {
-            revert PaymentHub_TransferFailed();
-        }
+        IERC20(token).safeTransferFrom(msg.sender, address(brokerbot), amount);
         brokerbot.processIncoming(token, msg.sender, amount, ref);
     }
 
@@ -334,8 +334,8 @@ contract PaymentHub {
         if (permitInfo.exFee > 0){
             uint256 proceeds = _sellShares(brokerbot, shares, seller, address(this), amountToSell, ref);
             IERC20 currency = brokerbot.base();
-            currency.transfer(msg.sender, permitInfo.exFee);
-            currency.transfer(recipient, proceeds - permitInfo.exFee);
+            currency.safeTransfer(msg.sender, permitInfo.exFee);
+            currency.safeTransfer(recipient, proceeds - permitInfo.exFee);
             return proceeds - permitInfo.exFee;
         } else {
             return _sellShares(brokerbot, shares, seller, recipient, amountToSell, ref);
@@ -385,7 +385,7 @@ contract PaymentHub {
      */ 
     function _sellShares(IBrokerbot brokerbot, IERC20 shares, address seller, address recipient, uint256 amountToSell, bytes calldata ref ) internal returns (uint256) {
         // send shares token to brokerbot
-        shares.transferFrom(seller, address(brokerbot), amountToSell);
+        shares.safeTransferFrom(seller, address(brokerbot), amountToSell);
         // process sell on brokerbot
         return brokerbot.processIncoming(shares, recipient, amountToSell, ref);
     }
@@ -441,8 +441,8 @@ contract PaymentHub {
      * In case tokens have been accidentally sent directly to this contract.
      * Make sure to be fast as anyone can call this!
      */
-    function recover(IERC20 ercAddress, address to, uint256 amount) external returns (bool) {
-        return ercAddress.transfer(to, amount);
+    function recover(IERC20 ercAddress, address to, uint256 amount) external {
+        ercAddress.safeTransfer(to, amount);
     }
 
     // solhint-disable-next-line no-empty-blocks

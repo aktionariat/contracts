@@ -9,8 +9,6 @@ interface IRecoveryHub {
 	/*//////////////////////////////////////////////////////////////
                             Custom errors
     //////////////////////////////////////////////////////////////*/
-    /// Failguard when an erc20 transfer returns false. 
-    error RecoveryHub_TransferFailed();
     /// Recovery can be disabled per address.
     /// @param lostAddress The address for which the recovery is disabled.
     error RecoveryHub_RecoveryDisabled(address lostAddress);

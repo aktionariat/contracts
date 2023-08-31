@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IShares {
+import "../ERC20/IERC20.sol";
+
+interface IShares is IERC20 {
 
 	/*//////////////////////////////////////////////////////////////
                             Custom errors
