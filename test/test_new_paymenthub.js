@@ -111,6 +111,9 @@ describe("New PaymentHub", () => {
       it("Should deploy contract", async () => {
         expect(paymentHub.address).to.exist;
       });
+      it("Should give back newest version", async () => {
+        expect(await paymentHub.VERSION()).to.equal(8);
+      })
     });
 
     describe("BrokerBot", () => {

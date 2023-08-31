@@ -112,9 +112,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     function getClaimDeleter() virtual public view returns (address);
 
     function transfer(address recipient, uint256 amount) override(ERC20Flaggable, IERC20) virtual public returns (bool) {
-        if (!super.transfer(recipient, amount)) {
-            revert Recoverable_TransferFailed();
-        }
+        super.transfer(recipient, amount); // no need for safe transfer, as it's our own token
         if (hasFlagInternal(msg.sender, FLAG_CLAIM_PRESENT)){
             recovery.clearClaimFromToken(msg.sender);
         }

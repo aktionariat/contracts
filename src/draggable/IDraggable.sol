@@ -14,8 +14,6 @@ interface IDraggable is IERC20 {
     error Draggable_IsBinding();
     /// conversion factor can't be 0 if binding gets deactivated.
     error Draggable_FactorZero();
-    /// erc20 transfer didn't succeded.
-    error Draggable_TransferFailed();
     /// the reported votes can't be > max voting tokens.
     /// @param maxVotes The max voting tokens.
     /// @param reportedVotes The actual reported votes.

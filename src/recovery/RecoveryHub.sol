@@ -30,8 +30,11 @@ pragma solidity ^0.8.0;
 import "./IRecoveryHub.sol";
 import "./IRecoverable.sol";
 import "../ERC20/IERC20.sol";
+import "../utils/SafeERC20.sol";
 
 contract RecoveryHub is IRecoveryHub {
+
+    using SafeERC20 for IERC20;
 
     // A struct that represents a claim made
     struct Claim {
@@ -106,9 +109,7 @@ contract RecoveryHub is IRecoveryHub {
         });
         emit ClaimMade(token, lostAddress, msg.sender, balance);
         // errors like no allowance/no balance revert generally in the transferFrom
-        if (!currency.transferFrom(msg.sender, address(this), collateral)) {
-            revert RecoveryHub_TransferFailed();
-        }
+        currency.safeTransferFrom(msg.sender, address(this), collateral);
         IRecoverable(token).notifyClaimMade(lostAddress);
     }
 
@@ -145,9 +146,7 @@ contract RecoveryHub is IRecoveryHub {
         if (claim.collateral > 0){
             IERC20 currency = IERC20(claim.currencyUsed);
             delete claims[token][holder];
-            if (!currency.transfer(holder, claim.collateral)) {
-                revert RecoveryHub_TransferFailed();
-            }
+            currency.safeTransfer(holder, claim.collateral);
             emit ClaimCleared(token, holder, claim.collateral);
         }
         IRecoverable(token).notifyClaimDeleted(holder);
@@ -177,9 +176,7 @@ contract RecoveryHub is IRecoveryHub {
         emit ClaimResolved(token, lostAddress, claimant, collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
         IERC20 currency = IERC20(claim.currencyUsed);
-        if (!currency.transfer(claimant, collateral)) {
-            revert RecoveryHub_TransferFailed();
-        }
+        currency.safeTransfer(claimant, collateral);
         IRecoverable(token).recover(lostAddress, claimant);
     }
 
@@ -197,9 +194,7 @@ contract RecoveryHub is IRecoveryHub {
         delete claims[token][lostAddress];
         emit ClaimDeleted(token, lostAddress, claim.claimant, claim.collateral);
         IRecoverable(token).notifyClaimDeleted(lostAddress);
-        if (!currency.transfer(claim.claimant, claim.collateral)) {
-            revert RecoveryHub_TransferFailed();
-        }
+        currency.safeTransfer(claim.claimant, claim.collateral);
     }
 
 }

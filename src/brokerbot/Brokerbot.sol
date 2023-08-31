@@ -17,8 +17,11 @@ import "../ERC20/IERC20.sol";
 import "../ERC20/IERC20Permit.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "./IBrokerbot.sol";
+import "../utils/SafeERC20.sol";
 
 contract Brokerbot is IBrokerbot, Ownable {
+
+    using SafeERC20 for IERC20;
 
     address public paymenthub;
 
@@ -45,7 +48,8 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version 5: added target address for withdrawEther
     // Version 6: added costs field to notifyTrade
     // Version 7: added withdraw eth event
-    uint8 public constant VERSION = 0x7;
+    // Version 8: use SafeERC20
+    uint8 public constant VERSION = 0x8;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
@@ -132,9 +136,9 @@ contract Brokerbot is IBrokerbot, Ownable {
         uint costs = getBuyPrice(shares);
         notifyTraded(from, shares, costs, ref);
         if (costs < paid){
-            IERC20(base).transfer(from, paid - costs);
+            base.safeTransfer(from, paid - costs);
         }
-        IERC20(token).transfer(from, shares);
+        IERC20(token).safeTransfer(from, shares);
         return shares;
     }
 
@@ -153,7 +157,7 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     function notifyTradeAndTransfer(address buyer, uint256 shares, uint256 costs, bytes calldata ref) public onlyOwner {
         notifyTraded(buyer, shares, costs, ref);
-        IERC20(token).transfer(buyer, shares);
+        IERC20(token).safeTransfer(buyer, shares);
     }
 
     function notifyTrades(address[] calldata buyers, uint256[] calldata shares, uint256[] calldata costs, bytes[] calldata ref) external onlyOwner {
@@ -227,10 +231,9 @@ contract Brokerbot is IBrokerbot, Ownable {
             revert Brokerbot_SellingDisabled();
         }
         uint256 totPrice = getSellPrice(amount);
-        IERC20 baseToken = IERC20(base);
         price -= amount * increment;
         if (isDirectSale(ref)){
-            baseToken.transfer(recipient, totPrice);
+            base.safeTransfer(recipient, totPrice);
         }
         emit Trade(token, recipient, ref, -int256(amount), base, totPrice, 0, getPrice());
         return totPrice;
@@ -285,8 +288,8 @@ contract Brokerbot is IBrokerbot, Ownable {
         IERC20(erc20).approve(who, amount);
     }
 
-    function withdraw(address ercAddress, address to, uint256 amount) external ownerOrHub() {
-        IERC20(ercAddress).transfer(to, amount);
+    function withdraw(IERC20 ercAddress, address to, uint256 amount) external ownerOrHub() {
+        ercAddress.safeTransfer(to, amount);
     }
 
     function setPaymentHub(address hub) external onlyOwner() {
