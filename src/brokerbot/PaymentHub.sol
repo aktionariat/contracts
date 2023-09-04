@@ -118,6 +118,13 @@ contract PaymentHub {
         _;
     }
 
+    modifier onlyForwarder() {
+        if (msg.sender != trustedForwarder) {
+            revert PaymentHub_InvalidSender(msg.sender);
+        }
+        _;
+    }
+
     /**  
      * Get price in ERC20
      * This is the method that the Brokerbot widget should use to quote the price to the user.
@@ -438,11 +445,24 @@ contract PaymentHub {
     }
 
     /**
-     * In case tokens have been accidentally sent directly to this contract.
-     * Make sure to be fast as anyone can call this!
+     * @notice In case tokens have been accidentally sent directly to this contract. Only Forwarder can withdraw, else a MEV bot will intercept it.
+     * @param ercAddress The erc20 address.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to transfer.
      */
-    function recover(IERC20 ercAddress, address to, uint256 amount) external {
+    function recover(IERC20 ercAddress, address to, uint256 amount) external onlyForwarder {
         ercAddress.safeTransfer(to, amount);
+    }
+
+    /**
+     * @notice Transfer ether to a given address. Only Forwarder can withdraw, else a MEV bot will intercept it.
+     * @param to The address to transfer ether to.
+     */
+    function withdrawEther(address to, uint256 amount) external onlyForwarder {
+        (bool success, ) = payable(to).call{value:amount}("");
+        if (!success) {
+            revert PaymentHub_TransferFailed();
+        }
     }
 
     // solhint-disable-next-line no-empty-blocks
