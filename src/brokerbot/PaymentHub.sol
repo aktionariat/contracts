@@ -130,6 +130,7 @@ contract PaymentHub {
 
     /**
      * @notice Change the trusted forwarder.
+     * @param newForwarder The new trusted forwarder.
      */
     function setForwarder(address newForwarder) public onlyForwarder {
         trustedForwarder = newForwarder;
