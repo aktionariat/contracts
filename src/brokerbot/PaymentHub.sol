@@ -55,7 +55,7 @@ contract PaymentHub {
     // Version 8: use SafeERC20 for transfers
     uint8 public constant VERSION = 0x8;
 
-    address immutable trustedForwarder;
+    address public trustedForwarder;
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
@@ -82,6 +82,9 @@ contract PaymentHub {
         bytes path;
         bool unwrapWeth;
     }
+
+    // event to when new forwarder is set
+    event NewForwarderSet(address indexed newForwarder);
 
 	/*//////////////////////////////////////////////////////////////
                             Custom errors
@@ -123,6 +126,14 @@ contract PaymentHub {
             revert PaymentHub_InvalidSender(msg.sender);
         }
         _;
+    }
+
+    /**
+     * @notice Change the trusted forwarder.
+     */
+    function setForwarder(address newForwarder) public onlyForwarder {
+        trustedForwarder = newForwarder;
+        emit NewForwarderSet(newForwarder);
     }
 
     /**  
@@ -465,11 +476,6 @@ contract PaymentHub {
         }
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    receive() external payable {
-        // Important to receive ETH refund from Uniswap
-    }
-
     /**
      * @notice Transfer ether to a given address.
      * @dev Used with the mutlisigwallet.
@@ -480,5 +486,10 @@ contract PaymentHub {
         if (!success) {
             revert PaymentHub_TransferFailed();
         }
+    }
+
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {
+        // Important to receive ETH refund from Uniswap
     }
 }

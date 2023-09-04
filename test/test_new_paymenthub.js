@@ -1,5 +1,5 @@
 const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
-const { setBalances } = require("./helper/index");
+const { setBalances, getImpersonatedSigner } = require("./helper/index");
 const Chance = require("chance");
 const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
@@ -115,6 +115,21 @@ describe("New PaymentHub", () => {
       });
       it("Should give back newest version", async () => {
         expect(await paymentHub.VERSION()).to.equal(8);
+      });
+      it("Should deploy with correct forwarder", async () => {
+        const { trustedForwarder } = await getNamedAccounts();
+        expect(await paymentHub.trustedForwarder()).to.equal(trustedForwarder);
+      });
+      it("Should set new forwarder", async () => {
+        const { trustedForwarder } = await getNamedAccounts();
+        const forwarderSigner = await getImpersonatedSigner(trustedForwarder);
+        await expect(paymentHub.connect(sig1).setForwarder(trustedForwarder))
+          .to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender")
+          .withArgs(sig1.address);
+        await paymentHub.connect(forwarderSigner).setForwarder(sig1.address);
+        expect(await paymentHub.trustedForwarder()).to.equal(sig1.address);
+        // reset forwarder to orignal
+        await paymentHub.connect(sig1).setForwarder(trustedForwarder);
       })
     });
 
