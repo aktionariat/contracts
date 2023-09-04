@@ -55,7 +55,7 @@ contract PaymentHub {
     // Version 8: use SafeERC20 for transfers
     uint8 public constant VERSION = 0x8;
 
-    address immutable trustedForwarder;
+    address public trustedForwarder;
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
@@ -82,6 +82,9 @@ contract PaymentHub {
         bytes path;
         bool unwrapWeth;
     }
+
+    // event to when new forwarder is set
+    event NewForwarderSet(address indexed newForwarder);
 
 	/*//////////////////////////////////////////////////////////////
                             Custom errors
@@ -116,6 +119,22 @@ contract PaymentHub {
             revert PaymentHub_InvalidSender(msg.sender);
         }
         _;
+    }
+
+    modifier onlyForwarder() {
+        if (msg.sender != trustedForwarder) {
+            revert PaymentHub_InvalidSender(msg.sender);
+        }
+        _;
+    }
+
+    /**
+     * @notice Change the trusted forwarder.
+     * @param newForwarder The new trusted forwarder.
+     */
+    function setForwarder(address newForwarder) public onlyForwarder {
+        trustedForwarder = newForwarder;
+        emit NewForwarderSet(newForwarder);
     }
 
     /**  
@@ -438,16 +457,24 @@ contract PaymentHub {
     }
 
     /**
-     * In case tokens have been accidentally sent directly to this contract.
-     * Make sure to be fast as anyone can call this!
+     * @notice In case tokens have been accidentally sent directly to this contract. Only Forwarder can withdraw, else a MEV bot will intercept it.
+     * @param ercAddress The erc20 address.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to transfer.
      */
-    function recover(IERC20 ercAddress, address to, uint256 amount) external {
+    function recover(IERC20 ercAddress, address to, uint256 amount) external onlyForwarder {
         ercAddress.safeTransfer(to, amount);
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    receive() external payable {
-        // Important to receive ETH refund from Uniswap
+    /**
+     * @notice Transfer ether to a given address. Only Forwarder can withdraw, else a MEV bot will intercept it.
+     * @param to The address to transfer ether to.
+     */
+    function withdrawEther(address to, uint256 amount) external onlyForwarder {
+        (bool success, ) = payable(to).call{value:amount}("");
+        if (!success) {
+            revert PaymentHub_TransferFailed();
+        }
     }
 
     /**
@@ -460,5 +487,10 @@ contract PaymentHub {
         if (!success) {
             revert PaymentHub_TransferFailed();
         }
+    }
+
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {
+        // Important to receive ETH refund from Uniswap
     }
 }

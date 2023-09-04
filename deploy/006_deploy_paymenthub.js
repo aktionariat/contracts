@@ -5,7 +5,7 @@ const nconf = require('nconf');
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer } = await getNamedAccounts();
+  const { deployer, trustedForwarder } = await getNamedAccounts();
 
   
   const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
@@ -37,7 +37,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     contract: "PaymentHub",
     from: deployer,
     args: [
-      deployer,
+      trustedForwarder,
       uniswapQuoter,
       uniswapRouter,
       priceFeedCHFUSD,

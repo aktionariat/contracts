@@ -1,4 +1,4 @@
-const {network, ethers, deployments, } = require("hardhat");
+const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
 const config = require("../../scripts/deploy_config.js")
 
 const toBytes32 = (bn) => {
@@ -11,7 +11,6 @@ const setStorageAt = async (address, index, value) => {
 };
 
 async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
-
   await network.provider.request({
     method: "hardhat_impersonateAccount",
     params: [minterAddress],
@@ -177,7 +176,17 @@ async function getTX(to, dataTX, multisigclone, wallet, chainid) {
   return tx1;
 }
 
+//get signer from address through impersonating account with hardhat
+async function getImpersonatedSigner(impersonateAddress) {
+  await network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [impersonateAddress],
+  });
+  const signer = ethers.provider.getSigner(impersonateAddress);
+  return signer;
+}
+
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount, getTX};
+module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount, getTX, getImpersonatedSigner };
