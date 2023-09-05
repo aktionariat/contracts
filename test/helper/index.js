@@ -1,4 +1,4 @@
-const {network, ethers, deployments, } = require("hardhat");
+const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
 const config = require("../../scripts/deploy_config.js")
 
 const toBytes32 = (bn) => {
@@ -11,7 +11,6 @@ const setStorageAt = async (address, index, value) => {
 };
 
 async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
-
   await network.provider.request({
     method: "hardhat_impersonateAccount",
     params: [minterAddress],
@@ -89,6 +88,7 @@ async function setup(setupBrokerbotEnabled) {
   let shares;
   let paymentHub;
   let successor;
+  let successorExternal;
 
   let deployer
   let owner;
@@ -108,14 +108,15 @@ async function setup(setupBrokerbotEnabled) {
   baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   
   await deployments.fixture([
-    "ReoveryHub",
+    "RecoveryHub",
     "OfferFactory",
     "Shares",
     "DraggableShares",
     "AllowlistShares",
     "PaymentHub",
     "Brokerbot",
-    "DraggableSharesWithPredecessor"
+    "DraggableSharesWithPredecessor",
+    "DraggableSharesWithPredecessorExternal"
   ]);
   
   paymentHub = await ethers.getContract("PaymentHub");
@@ -124,6 +125,7 @@ async function setup(setupBrokerbotEnabled) {
   shares = await ethers.getContract("Shares");
   draggableShares = await ethers.getContract("DraggableShares");
   successor = await ethers.getContract("DraggableSharesWithPredecessor");
+  successorExternal = await ethers.getContract("DraggableSharesWithPredecessorExternal");
   brokerbot = await ethers.getContract("Brokerbot");
   
   // Set Payment Hub for Brokerbot
@@ -180,18 +182,29 @@ async function getTX(to, dataTX, multisigclone, wallet, chainid) {
   return block.timestamp;
  }
 
+//get signer from address through impersonating account with hardhat
+async function getImpersonatedSigner(impersonateAddress) {
+  await network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [impersonateAddress],
+  });
+  const signer = ethers.provider.getSigner(impersonateAddress);
+  return signer;
+}
+
 
 //export * from "./time"
 
 module.exports = {
-  mintERC20, 
-  setBalance, 
-  sendEther, 
-  buyingEnabled, 
-  sellingEnabled, 
-  setBalances, 
-  setup, 
-  setBalanceWithAmount, 
+  mintERC20,
+  setBalance,
+  sendEther,
+  buyingEnabled,
+  sellingEnabled,
+  setBalances,
+  setup,
+  setBalanceWithAmount,
   getTX,
-  getBlockTimeStamp
+  getBlockTimeStamp,
+  getImpersonatedSigner
 };

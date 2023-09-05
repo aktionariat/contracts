@@ -254,11 +254,23 @@ describe("Permit", () => {
         chainId: chainId,
         verifyingContract: contractAddress,
       }
-      relayer = deployer
+      const { trustedForwarder } = await getNamedAccounts();
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [trustedForwarder],
+      });
+      relayer = await ethers.getSigner(trustedForwarder);
       seller = sig3;
       randomShareAmount = chance.natural({ min: 50, max: 500 });
       baseAmount = await brokerbot.getBuyPrice(randomShareAmount);
     })
+    afterEach(async() => {
+      const { trustedForwarder } = await getNamedAccounts();
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [trustedForwarder],
+      });
+    });
 
     it("Should revert sell shares with permit for crypto if not from trusted relayer", async () => {
       relayer = sig1;

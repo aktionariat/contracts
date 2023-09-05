@@ -47,7 +47,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
   /// Sinature data isn't valid for the transaction or insufficient signer have signed the transaction. 
   /// @param signer The ecrecover'd signer.
   error Multisig_InvalidSignDataOrInsufficientCosigner(address signer);
-  /// Each signature data entry has to each from a unique address. 
+  /// Each signature data entry has to be from a unique address. 
   /// @param from The address which has produced more than one signature. 
   error Multisig_DuplicateSignature(address from);
   /// Signer is a contract or the 0x0 address. 
@@ -55,7 +55,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
   error Multisig_InvalidSigner(address signer);
   /// The multisig needs to have > 0 signers. 
   error Multisig_InsufficientSigners();
-  /// Sender has to be singel signer or the multisig itself. 
+  /// Sender has to be single signer or the multisig itself. 
   /// @param sender The msg.sender of the transaction. 
   error Multisig_UnauthorizedSender(address sender);
   /// Migration can't override current signer. 

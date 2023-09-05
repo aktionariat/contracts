@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IShares {
+import "../ERC20/IERC20.sol";
+
+interface IShares is IERC20 {
 
 	/*//////////////////////////////////////////////////////////////
                             Custom errors
@@ -16,7 +18,7 @@ interface IShares {
 	error Shares_UnequalLength(uint256 targets, uint256 amount);
 	/// It isn't possible to mint more share token than max shares in existens. 
 	/// @param totalShares The max amount of shares. 
-	/// @param needed The max amount of shares needed (current valid supply + new mint amoun). 
+	/// @param needed The max amount of shares needed (current valid supply + new mint amount). 
 	error Shares_InsufficientTotalShares(uint256 totalShares, uint256 needed);
 
 	function burn(uint256) external;

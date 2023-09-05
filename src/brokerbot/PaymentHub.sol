@@ -34,6 +34,7 @@ import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "../utils/SafeERC20.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -44,14 +45,17 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
  */
 contract PaymentHub {
 
+    using SafeERC20 for IERC20;
+
     // Version history
     // Version 4: added path to pay with any ecr20 via uniswap
     // Version 5: added sell via permit
     // Version 6: added transferEther function
     // Version 7: added sell against eth and erc20, version, add permitinfo/swapinfo struct
-    uint8 public constant VERSION = 0x7;
+    // Version 8: use SafeERC20 for transfers
+    uint8 public constant VERSION = 0x8;
 
-    address immutable trustedForwarder;
+    address public trustedForwarder;
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
@@ -78,6 +82,9 @@ contract PaymentHub {
         bytes path;
         bool unwrapWeth;
     }
+
+    // event to when new forwarder is set
+    event ForwarderChanged(address indexed _oldForwarder, address indexed _newForwarder);
 
 	/*//////////////////////////////////////////////////////////////
                             Custom errors
@@ -112,6 +119,22 @@ contract PaymentHub {
             revert PaymentHub_InvalidSender(msg.sender);
         }
         _;
+    }
+
+    modifier onlyForwarder() {
+        if (msg.sender != trustedForwarder) {
+            revert PaymentHub_InvalidSender(msg.sender);
+        }
+        _;
+    }
+
+    /**
+     * @notice Change the trusted forwarder.
+     * @param newForwarder The new trusted forwarder.
+     */
+     function changeForwarder(address newForwarder) external onlyForwarder {
+        trustedForwarder = newForwarder;
+        emit ForwarderChanged(msg.sender, newForwarder);
     }
 
     /**  
@@ -221,7 +244,7 @@ contract PaymentHub {
     function payFromERC20(uint256 amountOut, uint256 amountInMaximum, address erc20In, bytes memory path, address recipient) public returns (uint256 amountIn) {
         ISwapRouter swapRouter = uniswapRouter;
         // Transfer the specified `amountInMaximum` to this contract.
-        IERC20(erc20In).transferFrom(msg.sender, address(this), amountInMaximum);
+        IERC20(erc20In).safeTransferFrom(msg.sender, address(this), amountInMaximum);
 
         // The parameter path is encoded as (tokenOut, fee, tokenIn/tokenOut, fee, tokenIn)
         ISwapRouter.ExactOutputParams memory params =
@@ -239,7 +262,7 @@ contract PaymentHub {
 
         // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender and approve the router to spend 0.
         if (amountIn < amountInMaximum) {
-            IERC20(erc20In).transfer(msg.sender, amountInMaximum - amountIn);
+            IERC20(erc20In).safeTransfer(msg.sender, amountInMaximum - amountIn);
         }
     }
 
@@ -252,9 +275,7 @@ contract PaymentHub {
 
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
-            if (!IERC20(token).transferFrom(msg.sender, recipients[i], amounts[i])) {
-                revert PaymentHub_TransferFailed();
-            }
+            IERC20(token).safeTransferFrom(msg.sender, recipients[i], amounts[i]);
         }
     }
 
@@ -267,26 +288,36 @@ contract PaymentHub {
         }
     }
 
-    // Allows to make a payment from the sender to an address given an allowance to this contract
-    // Equivalent to xchf.transferAndCall(brokerbot, amountInBase)
-    function payAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external {
-        payAndNotify(brokerbot.base(), brokerbot, amountInBase, ref);
+    /**
+     * @notice Allows to make a base currency payment from the sender to the brokerbot, given an allowance to this contract.
+     * @dev Equivalent to xchf.transferAndCall(brokerbot, amountInBase)
+     * @param brokerbot The brokerbot to pay and receive the shares from.
+     * @param amountInBase The amount of base currency used to buy shares.
+     * @param ref The reference data blob.
+     * @return The amount of shares bought
+     */
+    function payAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external returns (uint256) {
+        return payAndNotify(brokerbot.base(), brokerbot, amountInBase, ref);
     }
 
-    function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public {
-         // failsafe that processIncomming isn't executed if transfer failed
-        if (!token.transferFrom(msg.sender, address(brokerbot), amount)) {
-            revert PaymentHub_TransferFailed();
-        }
-        brokerbot.processIncoming(token, msg.sender, amount, ref);
+    function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public returns (uint256) {
+        token.safeTransferFrom(msg.sender, address(brokerbot), amount);
+        return brokerbot.processIncoming(token, msg.sender, amount, ref);
     }
 
-    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable {
+    /**
+     * @notice Pay with Ether to buy shares.
+     * @param brokerbot The brokerbot to pay and receive the shares from.
+     * @param amountInBase The amount of base currency used to buy shares.
+     * @param ref The reference data blob.
+     * @return sharesOut The amount of shares bought
+     */
+    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 sharesOut) {
         IERC20 base = brokerbot.base();
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(brokerbot)) {
             uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, base);
-            brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
+            sharesOut = brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
@@ -298,15 +329,22 @@ contract PaymentHub {
 
         } else {
             payFromEther(address(brokerbot), amountInBase, base);
-            brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
+            sharesOut = brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
 
     /***
-     * Pay from any ERC20 token (which has Uniswapv3 ERC20-ETH pool) and send swapped base currency to brokerbot.
-     * The needed amount needs to be approved at the ERC20 contract beforehand
+     * @notice Pay from any ERC20 token (which has Uniswapv3 ERC20-ETH pool) and send swapped base currency to brokerbot.
+     * @notice The needed amount needs to be approved at the ERC20 contract beforehand
+     * @param brokerbot The brokerbot to pay and receive the shares from.
+     * @param amountBase The amount of base currency used to buy shares.
+     * @param erc20 The address of the ERC20 token to pay.
+     * @param amountInMaximum The maximum amount of the ERC20 to pay (should include some slippage).
+     * @param path The encoded path of the swap from erc20 to base currency.
+     * @param ref Reference data blob.
+     * @return The amount of shares received by the brokerbot.
      */
-    function payFromERC20AndNotify(IBrokerbot brokerbot, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external {
+    function payFromERC20AndNotify(IBrokerbot brokerbot, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external returns (uint256) {
         IERC20 base = brokerbot.base();
         uint256 balanceBefore = IERC20(base).balanceOf(address(brokerbot));
         payFromERC20(amountBase, amountInMaximum, erc20, path, address(brokerbot));
@@ -314,28 +352,28 @@ contract PaymentHub {
         if (amountBase != (balanceAfter - balanceBefore)) {
             revert PaymentHub_SwapError(amountBase, balanceAfter - balanceBefore);
         }        
-        brokerbot.processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
+        return brokerbot.processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
     }
 
     /**
      * @notice Sell shares with permit
-     * 
      * @param brokerbot The brokerbot to recive the shares.
      * @param seller The address of the seller.
      * @param recipient The address of the recipient of the sell preceeds.
      * @param amountToSell The amount the seller wants to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
      * @param permitInfo Information about the permit.
+     * @return The base currency amount for the selling of the shares.
      */
-    function sellSharesWithPermit(IBrokerbot brokerbot, IERC20Permit shares, address seller, address recipient, uint256 amountToSell, bytes calldata ref, PermitInfo calldata permitInfo) public onlySellerAndForwarder(seller) returns (uint256){
+    function sellSharesWithPermit(IBrokerbot brokerbot, IERC20Permit shares, address seller, address recipient, uint256 amountToSell, bytes calldata ref, PermitInfo calldata permitInfo) public onlySellerAndForwarder(seller) returns (uint256) {
         // Call permit to set allowance
         shares.permit(seller, address(this), amountToSell, permitInfo.deadline, permitInfo.v, permitInfo.r,permitInfo.s);
         // process sell
         if (permitInfo.exFee > 0){
             uint256 proceeds = _sellShares(brokerbot, shares, seller, address(this), amountToSell, ref);
             IERC20 currency = brokerbot.base();
-            currency.transfer(msg.sender, permitInfo.exFee);
-            currency.transfer(recipient, proceeds - permitInfo.exFee);
+            currency.safeTransfer(msg.sender, permitInfo.exFee);
+            currency.safeTransfer(recipient, proceeds - permitInfo.exFee);
             return proceeds - permitInfo.exFee;
         } else {
             return _sellShares(brokerbot, shares, seller, recipient, amountToSell, ref);
@@ -366,7 +404,7 @@ contract PaymentHub {
      * @param amountToSell The amount of shares to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
      * @param swapOutInfo Information about the swap.
-     * @param amountOut The output amount of the swap to the desired token.
+     * @return amountOut The output amount of the swap to the desired token.
      */
     function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, address seller, uint256 amountToSell,  bytes calldata ref, SwapOutInfo calldata swapOutInfo) external onlySeller(seller) returns (uint256 amountOut) {
         uint256 proceeds = _sellShares(brokerbot, shares, seller, address(this), amountToSell, ref);
@@ -385,7 +423,7 @@ contract PaymentHub {
      */ 
     function _sellShares(IBrokerbot brokerbot, IERC20 shares, address seller, address recipient, uint256 amountToSell, bytes calldata ref ) internal returns (uint256) {
         // send shares token to brokerbot
-        shares.transferFrom(seller, address(brokerbot), amountToSell);
+        shares.safeTransferFrom(seller, address(brokerbot), amountToSell);
         // process sell on brokerbot
         return brokerbot.processIncoming(shares, recipient, amountToSell, ref);
     }
@@ -394,7 +432,7 @@ contract PaymentHub {
      * @notice Swap (base currency) token according to given path and unwrap weth if needed.
      * @param amountIn The amount of (base currency) token to swap.
      * @param swapOutInfo Information about the swap (includes path).
-     * @param amountOut The output amount of the swap to the desired token.
+     * @return amountOut The output amount of the swap to the desired token.
      */
     function _swap(uint256 amountIn, SwapOutInfo calldata swapOutInfo) internal returns(uint256 amountOut) {
         // if weth should be unwrapped, swap recipient is this contract and eth is send to seller
@@ -413,7 +451,7 @@ contract PaymentHub {
      * @param recipient The recipient address of the output tokens
      * @param amountIn The amount of (base currency) token to swap.
      * @param swapOutInfo Information about the swap (includes path).
-     * @param amountOut The output amount of the swap to the desired token.
+     * @return amountOut The output amount of the swap to the desired token.
      */
     function _swapToERC20(address recipient, uint256 amountIn, SwapOutInfo calldata swapOutInfo) internal returns(uint256 amountOut) {
         ISwapRouter.ExactInputParams memory params =
@@ -438,16 +476,24 @@ contract PaymentHub {
     }
 
     /**
-     * In case tokens have been accidentally sent directly to this contract.
-     * Make sure to be fast as anyone can call this!
+     * @notice In case tokens have been accidentally sent directly to this contract. Only Forwarder can withdraw, else a MEV bot will intercept it.
+     * @param ercAddress The erc20 address.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to transfer.
      */
-    function recover(IERC20 ercAddress, address to, uint256 amount) external returns (bool) {
-        return ercAddress.transfer(to, amount);
+    function recover(IERC20 ercAddress, address to, uint256 amount) external onlyForwarder {
+        ercAddress.safeTransfer(to, amount);
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    receive() external payable {
-        // Important to receive ETH refund from Uniswap
+    /**
+     * @notice Transfer ether to a given address. Only Forwarder can withdraw, else a MEV bot will intercept it.
+     * @param to The address to transfer ether to.
+     */
+    function withdrawEther(address to, uint256 amount) external onlyForwarder {
+        (bool success, ) = payable(to).call{value:amount}("");
+        if (!success) {
+            revert PaymentHub_TransferFailed();
+        }
     }
 
     /**
@@ -460,5 +506,10 @@ contract PaymentHub {
         if (!success) {
             revert PaymentHub_TransferFailed();
         }
+    }
+
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {
+        // Important to receive ETH refund from Uniswap
     }
 }

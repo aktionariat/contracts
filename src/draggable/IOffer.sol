@@ -27,8 +27,6 @@ interface IOffer {
 	/// @param maxVotes The max possible votes for the token.
 	/// @param reportedVotes The external reported votes + circulating supply of the token.
 	error Offer_TooManyVotes(uint256 maxVotes, uint256 reportedVotes);
-	/// Failguard when a erc20 transfer returns false. 
-	error Offer_TransferFailed();
 	/// Competing offer needs to be in the same currency.
 	error Offer_OfferInWrongCurrency();
 

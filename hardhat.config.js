@@ -193,6 +193,11 @@ module.exports = {
       11155111: process.env.MULTISIG_DEFAULT,
       69: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
+    },
+    trustedForwarder: {
+      default: process.env.TRUSTED_FORWARDER,
+      1: process.env.TRUSTED_FORWARDER, // mainnet 
+      10: process.env.TRUSTED_FORWARDER, // op mainnet
     }
   },
   gasReporter: {

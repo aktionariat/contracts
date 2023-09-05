@@ -43,7 +43,7 @@ describe("Brokerbot", () => {
     });
 
     it("should have updated version number", async () => {
-      expect(await brokerbot.VERSION()).to.be.equal(7);
+      expect(await brokerbot.VERSION()).to.be.equal(8);
     });
     
     it("should get constructor params correctly", async () => {

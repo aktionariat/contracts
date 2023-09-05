@@ -30,12 +30,15 @@ pragma solidity ^0.8.0;
 import "../ERC20/IERC20.sol";
 import "./IDraggable.sol";
 import "./IOffer.sol";
+import "../utils/SafeERC20.sol";
 /**
  * @title A public offer to acquire all tokens
  * @author Luzius Meisser, luzius@aktionariat.com
  */
 
 contract Offer is IOffer {
+
+    using SafeERC20 for IERC20;
 
     address private constant LICENSE_FEE_ADDRESS = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
 
@@ -116,11 +119,11 @@ contract Offer is IOffer {
             revert Offer_AlreadyAccepted();
         }
         uint256 newPrice = betterOffer.price();
-        if (currency != betterOffer.currency()) {
-            revert Offer_OfferInWrongCurrency();
-        }
         if (newPrice <= price) {
             revert Offer_OldOfferBetter(price, newPrice);
+        }
+        if (currency != betterOffer.currency()) {
+            revert Offer_OfferInWrongCurrency();
         }
         if (!betterOffer.isWellFunded()) {
             revert Offer_NotWellFunded();
@@ -153,9 +156,7 @@ contract Offer is IOffer {
             revert Offer_NotAccepted();
         }
         uint256 totalPrice = getTotalPrice();
-        if (!currency.transferFrom(buyer, address(token), totalPrice)) {
-            revert Offer_TransferFailed();
-        }
+        currency.safeTransferFrom(buyer, address(token), totalPrice);
         token.drag(buyer, currency);
         kill(true, "success");
     }

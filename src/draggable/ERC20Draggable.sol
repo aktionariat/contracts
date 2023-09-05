@@ -48,8 +48,11 @@ import "../ERC20/IERC677Receiver.sol";
 import "./IOffer.sol";
 import "./IOfferFactory.sol";
 import "../shares/IShares.sol";
+import "../utils/SafeERC20.sol";
 
 abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable {
+
+	using SafeERC20 for IERC20;
     
 	// If flag is not present, one can be sure that the address did not vote. If the 
 	// flag is present, the address might have voted and one needs to check with the
@@ -132,9 +135,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	/** Wraps additional tokens, thereby creating more ERC20Draggable tokens. */
 	function wrap(address shareholder, uint256 amount) external {
-		if (!wrapped.transferFrom(msg.sender, address(this), amount)) {
-			revert Draggable_TransferFailed();
-		}
+		wrapped.safeTransferFrom(msg.sender, address(this), amount);
 		_mint(shareholder, amount);
 	}
 
@@ -183,9 +184,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	function _unwrap(address owner, uint256 amount, uint256 factor) internal {
 		_burn(owner, amount);
-		if (!wrapped.transfer(owner, amount * factor)) {
-			revert Draggable_TransferFailed();
-		}
+		wrapped.safeTransfer(owner, amount * factor);
 	}
 
 	/**
@@ -199,7 +198,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	 */
 	function burn(uint256 amount) external {
 		_burn(msg.sender, amount);
-		IShares(address(wrapped)).burn (isBinding() ? amount : amount * unwrapConversionFactor);
+		IShares(address(wrapped)).burn(isBinding() ? amount : amount * unwrapConversionFactor);
 	}
 
 	function makeAcquisitionOffer(
@@ -227,9 +226,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	function _replaceWrapped(IERC20 newWrapped, address oldWrappedDestination) internal checkBinding(true) {
 		// Free all old wrapped tokens we have
-		if (!wrapped.transfer(oldWrappedDestination, wrapped.balanceOf(address(this)))) {
-			revert Draggable_TransferFailed();
-		}
+		wrapped.safeTransfer(oldWrappedDestination, wrapped.balanceOf(address(this)));
 		// Count the new wrapped tokens
 		wrapped = newWrapped;
 		if (totalSupply() > 0) // if there are no tokens, no need to deactivate

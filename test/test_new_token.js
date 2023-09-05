@@ -798,7 +798,7 @@ describe("New Standard", () => {
     });
 
     it("Should revert competing offer if it isn't in same currency", async () => {
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("1"), config.wbtcAddress, overrides))
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("3"), config.wbtcAddress, overrides))
         .to.be.revertedWithCustomError(offer, "Offer_OfferInWrongCurrency")
     })
     
