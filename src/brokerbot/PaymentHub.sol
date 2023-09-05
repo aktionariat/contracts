@@ -288,8 +288,14 @@ contract PaymentHub {
         }
     }
 
-    // Allows to make a payment from the sender to an address given an allowance to this contract
-    // Equivalent to xchf.transferAndCall(brokerbot, amountInBase)
+    /**
+     * @notice Allows to make a base currency payment from the sender to the brokerbot, given an allowance to this contract.
+     * @dev Equivalent to xchf.transferAndCall(brokerbot, amountInBase)
+     * @param brokerbot The brokerbot to pay and receive the shares from.
+     * @param amountInBase The amount of base currency used to buy shares.
+     * @param ref The reference data blob.
+     * @return The amount of shares bought
+     */
     function payAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external returns (uint256) {
         return payAndNotify(brokerbot.base(), brokerbot, amountInBase, ref);
     }
@@ -299,6 +305,13 @@ contract PaymentHub {
         return brokerbot.processIncoming(token, msg.sender, amount, ref);
     }
 
+    /**
+     * @notice Pay with Ether to buy shares.
+     * @param brokerbot The brokerbot to pay and receive the shares from.
+     * @param amountInBase The amount of base currency used to buy shares.
+     * @param ref The reference data blob.
+     * @return sharesOut The amount of shares bought
+     */
     function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 sharesOut) {
         IERC20 base = brokerbot.base();
         // Check if the brokerbot has setting to keep ETH
@@ -321,8 +334,15 @@ contract PaymentHub {
     }
 
     /***
-     * Pay from any ERC20 token (which has Uniswapv3 ERC20-ETH pool) and send swapped base currency to brokerbot.
-     * The needed amount needs to be approved at the ERC20 contract beforehand
+     * @notice Pay from any ERC20 token (which has Uniswapv3 ERC20-ETH pool) and send swapped base currency to brokerbot.
+     * @notice The needed amount needs to be approved at the ERC20 contract beforehand
+     * @param brokerbot The brokerbot to pay and receive the shares from.
+     * @param amountBase The amount of base currency used to buy shares.
+     * @param erc20 The address of the ERC20 token to pay.
+     * @param amountInMaximum The maximum amount of the ERC20 to pay (should include some slippage).
+     * @param path The encoded path of the swap from erc20 to base currency.
+     * @param ref Reference data blob.
+     * @return The amount of shares received by the brokerbot.
      */
     function payFromERC20AndNotify(IBrokerbot brokerbot, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external returns (uint256) {
         IERC20 base = brokerbot.base();
@@ -337,13 +357,13 @@ contract PaymentHub {
 
     /**
      * @notice Sell shares with permit
-     * 
      * @param brokerbot The brokerbot to recive the shares.
      * @param seller The address of the seller.
      * @param recipient The address of the recipient of the sell preceeds.
      * @param amountToSell The amount the seller wants to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
      * @param permitInfo Information about the permit.
+     * @return The base currency amount for the selling of the shares.
      */
     function sellSharesWithPermit(IBrokerbot brokerbot, IERC20Permit shares, address seller, address recipient, uint256 amountToSell, bytes calldata ref, PermitInfo calldata permitInfo) public onlySellerAndForwarder(seller) returns (uint256) {
         // Call permit to set allowance
@@ -384,7 +404,7 @@ contract PaymentHub {
      * @param amountToSell The amount of shares to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
      * @param swapOutInfo Information about the swap.
-     * @param amountOut The output amount of the swap to the desired token.
+     * @return amountOut The output amount of the swap to the desired token.
      */
     function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, address seller, uint256 amountToSell,  bytes calldata ref, SwapOutInfo calldata swapOutInfo) external onlySeller(seller) returns (uint256 amountOut) {
         uint256 proceeds = _sellShares(brokerbot, shares, seller, address(this), amountToSell, ref);
@@ -412,7 +432,7 @@ contract PaymentHub {
      * @notice Swap (base currency) token according to given path and unwrap weth if needed.
      * @param amountIn The amount of (base currency) token to swap.
      * @param swapOutInfo Information about the swap (includes path).
-     * @param amountOut The output amount of the swap to the desired token.
+     * @return amountOut The output amount of the swap to the desired token.
      */
     function _swap(uint256 amountIn, SwapOutInfo calldata swapOutInfo) internal returns(uint256 amountOut) {
         // if weth should be unwrapped, swap recipient is this contract and eth is send to seller
@@ -431,7 +451,7 @@ contract PaymentHub {
      * @param recipient The recipient address of the output tokens
      * @param amountIn The amount of (base currency) token to swap.
      * @param swapOutInfo Information about the swap (includes path).
-     * @param amountOut The output amount of the swap to the desired token.
+     * @return amountOut The output amount of the swap to the desired token.
      */
     function _swapToERC20(address recipient, uint256 amountIn, SwapOutInfo calldata swapOutInfo) internal returns(uint256 amountOut) {
         ISwapRouter.ExactInputParams memory params =
