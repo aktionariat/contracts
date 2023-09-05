@@ -123,13 +123,13 @@ describe("New PaymentHub", () => {
       it("Should set new forwarder", async () => {
         const { trustedForwarder } = await getNamedAccounts();
         const forwarderSigner = await getImpersonatedSigner(trustedForwarder);
-        await expect(paymentHub.connect(sig1).setForwarder(trustedForwarder))
+        await expect(paymentHub.connect(sig1).changeForwarder(trustedForwarder))
           .to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender")
           .withArgs(sig1.address);
-        await paymentHub.connect(forwarderSigner).setForwarder(sig1.address);
+        await paymentHub.connect(forwarderSigner).changeForwarder(sig1.address);
         expect(await paymentHub.trustedForwarder()).to.equal(sig1.address);
         // reset forwarder to orignal
-        await paymentHub.connect(sig1).setForwarder(trustedForwarder);
+        await paymentHub.connect(sig1).changeForwarder(trustedForwarder);
       })
     });
 
@@ -207,8 +207,8 @@ describe("New PaymentHub", () => {
 
   describe("Trading with ETH", () => {
     beforeEach(async () => {
-      const randomAmount = chance.natural({ min: 500, max: 50000 });
-      xchfamount = await brokerbot.getBuyPrice(randomAmount);
+      randomShareAmount = chance.natural({ min: 500, max: 50000 });
+      xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
     });
     it("Should get price in ETH", async () => {
       const priceeth = await paymentHub.getLatestPriceETHUSD();
@@ -226,11 +226,13 @@ describe("New PaymentHub", () => {
       const priceInETHWithSlippage = priceInETH.mul(101).div(100);
 
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+      const amountSharesOut = await paymentHub.connect(sig1).callStatic.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETHWithSlippage});
       await paymentHub.connect(sig1).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETHWithSlippage});
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
 
       // brokerbot should have after the payment with eth the xchf in the balance
       expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
+      expect(amountSharesOut).to.equal(randomShareAmount);
     });
 
     it("Should set setting for keeping ETH", async () => {
@@ -304,16 +306,16 @@ describe("New PaymentHub", () => {
 
   describe("Trading with DAI base", () => {
     beforeEach(async () => {
-      const randomAmount = chance.natural({ min: 500, max: 5000 });
-      daiAmount = await brokerbotDAI.getBuyPrice(randomAmount);
+      randomShareAmount = chance.natural({ min: 500, max: 5000 });
+      daiAmount = await brokerbotDAI.getBuyPrice(randomShareAmount);
     });
     it("Should get right ETH price ", async () => {
       const priceeth = await paymentHub.getLatestPriceETHUSD();
       // console.log(await priceeth.toString());
       // console.log(await daiAmount.toString());
       const priceInETH = await paymentHub.getPriceInEtherFromOracle(daiAmount, brokerbotDAI.address);
-      await expect(ethers.utils.formatEther(priceInETH)).to.equal(
-        ethers.utils.formatEther(daiAmount.mul(await ethers.BigNumber.from(10).pow(8)).div(priceeth)));
+      expect(ethers.utils.formatEther(priceInETH)).to.equal(
+        ethers.utils.formatEther(daiAmount.mul(ethers.BigNumber.from(10).pow(8)).div(priceeth)));
     });
 
     it("Should buy shares with ETH and trade it to DAI", async () => {
@@ -379,6 +381,7 @@ describe("New PaymentHub", () => {
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
       const sharesBefore = await draggableShares.balanceOf(sig1.address);
       //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
+      const amountSharesBought = await paymentHub.connect(buyer).callStatic.payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, path, "0x01");
       await paymentHub.connect(buyer).payFromERC20AndNotify(brokerbot.address, xchfamount, wbtcContract.address, priceInWBTCWithSlippage, path, "0x01");
       const sharesAfter = await draggableShares.balanceOf(buyer.address);
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
@@ -389,6 +392,7 @@ describe("New PaymentHub", () => {
 
       // user should get the amount of shares
       expect(sharesBefore.add(randomShareAmount)).to.equal(sharesAfter);
+      expect(amountSharesBought).to.equal(randomShareAmount);
 
       // allowance for payment - uniswaprouter is infinit and always above 0
       expect(await wbtcContract.allowance(paymentHub.address, "0xE592427A0AEce92De3Edee1F18E0157C05861564")).to.be.above(0);
@@ -507,6 +511,7 @@ describe("New PaymentHub", () => {
       const brokerbotBalanceBefore = await daiContract.balanceOf(brokerbotDAI.address);
       const sharesBefore = await shares.balanceOf(buyer.address);
       //console.log("before: %s", await ethers.utils.formatEther(brokerbotBalanceBefore));
+      const amountSharesOut = await paymentHub.connect(sig1).callStatic.payFromERC20AndNotify(brokerbotDAI.address, daiAmount, baseCurrency.address, priceInXCHFWithSlippage, path, "0x01");
       await paymentHub.connect(sig1).payFromERC20AndNotify(brokerbotDAI.address, daiAmount, baseCurrency.address, priceInXCHFWithSlippage, path, "0x01");
       const sharesAfter = await shares.balanceOf(buyer.address);
       const brokerbotBalanceAfter = await daiContract.balanceOf(brokerbotDAI.address);
@@ -517,6 +522,7 @@ describe("New PaymentHub", () => {
 
       // user should get the amount of shares
       expect(sharesBefore.add(randomShareAmount)).to.equal(sharesAfter);
+      expect(amountSharesOut).to.equal(randomShareAmount);
 
       // allowance for payment - uniswaprouter is infinit and always above 0
       expect(await baseCurrency.allowance(paymentHub.address, "0xE592427A0AEce92De3Edee1F18E0157C05861564")).to.be.above(0);
