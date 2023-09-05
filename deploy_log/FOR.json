@@ -1,0 +1,36 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "For One Red AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "FOR",
+  "name": "For One Red AG Shares",
+  "terms": "https://foronered.com/investors",
+  "totalShares": "5000000",
+  "sharePrice": "20000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x5e7328d53247E1D2572De884D819AA731A3733A9",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0xfcBE8cD587551046f052C6aA7fc9eC962e2CAF5e",
+    "offerFactory": "0x7F34B9d2C3682B70ff6e8bc8fa2Ed69Def2F81Cd",
+    "draggable": "0x2Ca626a7E6D056E1CC963795cB873E651045032C",
+    "paymentHub": "0x931dD6e2b3a1893645D920C2b5A6E837a9b7879e",
+    "brokerbot": "0x0b3aC3ab056DcC9Baee89A821CbBf87DCe2B34B7",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x2Ca626a7E6D056E1CC963795cB873E651045032C"
+  },
+  "blocknumber": "17891968",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}
