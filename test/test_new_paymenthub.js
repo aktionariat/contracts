@@ -126,7 +126,9 @@ describe("New PaymentHub", () => {
         await expect(paymentHub.connect(sig1).changeForwarder(trustedForwarder))
           .to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender")
           .withArgs(sig1.address);
-        await paymentHub.connect(forwarderSigner).changeForwarder(sig1.address);
+        await expect(paymentHub.connect(forwarderSigner).changeForwarder(sig1.address))
+          .to.emit(paymentHub, "ForwarderChanged")
+          .withArgs(trustedForwarder, sig1.address);
         expect(await paymentHub.trustedForwarder()).to.equal(sig1.address);
         // reset forwarder to orignal
         await paymentHub.connect(sig1).changeForwarder(trustedForwarder);
