@@ -53,7 +53,7 @@ module.exports = {
     },
     hardhat: {
       initialBaseFeePerGas: 0,
-      accounts: accounts("mainnet"),
+      accounts: accounts(),
       forking: {
         //enabled: process.env.FORKING === "true",
         url: getForkUrl(),
