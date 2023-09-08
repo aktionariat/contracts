@@ -54,7 +54,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   if (network.name != "hardhat") {
     brokerbotRegistryAddress = config.brokerbotRegistry;
   } else {
-    brokerbotRegistryAddress = await deployments.get('BrokerbotRegistry');
+    brokerbotRegistry = await deployments.get('BrokerbotRegistry');
+    brokerbotRegistryAddress = brokerbotRegistry.address;
   }
   const brokerbotRegistryContract = await ethers.getContractAt("BrokerbotRegistry", brokerbotRegistryAddress);
   await brokerbotRegistryContract.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, shares.address, { gasLimit: 50000});
