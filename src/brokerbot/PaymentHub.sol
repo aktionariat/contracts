@@ -446,14 +446,6 @@ contract PaymentHub {
      * @return amountOut The output amount of the swap to the desired token.
      */
     function _swapToERC20(ISwapRouter.ExactInputParams memory params) internal returns(uint256 amountOut) {
-        /*ISwapRouter.ExactInputParams memory params =
-            ISwapRouter.ExactInputParams({
-                path: params.path,
-                recipient: recipient,
-                deadline: block.timestamp,
-                amountIn: amountIn,
-                amountOutMinimum: params.amountOutMinimum
-            }); */
         amountOut = uniswapRouter.exactInput(params);
         if (amountOut < params.amountOutMinimum){
             revert PaymentHub_SwapError(params.amountOutMinimum, amountOut);

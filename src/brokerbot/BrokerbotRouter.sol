@@ -93,8 +93,8 @@ contract BrokerbotRouter is ISwapRouter {
 	}
 
 	/**
-	 * @notice Sell share tokens for base currency.
-	 * @param params Params struct for swap . See @ISwapRouter for struct definition.
+	 * @notice Sell `amountIn` of share tokens for base currency.
+	 * @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata.
 	 * @return amountOut The amountOut actually received.
 	 */
 	function exactInputSingle(
@@ -109,7 +109,11 @@ contract BrokerbotRouter is ISwapRouter {
 		IERC20(params.tokenOut).safeTransfer(params.recipient, amountOut);
 	}
 
-	// TODO: implement swap to sell share token for any erc20
+  /**
+	 * @notice Sell `amountIn` of share tokens for as much as possible of another along the specified path
+   * @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+   * @return amountOut The amount of the received token
+	 */
 	function exactInput(ExactInputParams calldata params) external payable override checkDeadline(params.deadline) returns (uint256 amountOut) {
 		(address firstTokenIn, address firstTokenOut, uint24 fee) = params.path.decodeFirstPool();
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = getBrokerbotAndPaymentHub(IERC20(firstTokenOut), IERC20(firstTokenIn));
@@ -117,11 +121,12 @@ contract BrokerbotRouter is ISwapRouter {
 		amountOut = paymentHub.sellSharesAndSwap(brokerbot, IERC20(firstTokenIn), address(this), params.amountIn, bytes("\x01"), params, false);
 	}
 
-	// TODO: implement refund of eth that was overpaid
-	function refundETH() external payable override {}
-
-	// TODO: implement to get price 
-	function getQuote() external view {}
+	function refundETH() external payable override {
+		if(address(this).balance > 0) {
+			(bool success, ) = msg.sender.call{value: address(this).balance}(new bytes(0));
+			require(success, 'STE');
+		}
+	}
 
 	function getBrokerbotAndPaymentHub(IERC20 base, IERC20 token) public view returns (IBrokerbot brokerbot, PaymentHub paymentHub) {
 		brokerbot = brokerbotRegistry.getBrokerbot(base, token);
