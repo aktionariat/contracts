@@ -179,7 +179,7 @@ contract Brokerbot is IBrokerbot, Ownable {
      * @param from Who iniciated the sell/buy.
      * @param amount The amount of shares the are sold / The base amount paid to buy sharees.
      * @param ref Reference data blob.
-     * @return The amount of shares bought / The amount paid to buy shares. 
+     * @return The amount of shares bought / The amount received for selling the shares. 
      */
     function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
         if (msg.sender != address(incomingAsset) && msg.sender != paymenthub) {

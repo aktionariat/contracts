@@ -118,7 +118,13 @@ contract BrokerbotRouter is ISwapRouter {
 		(address firstTokenIn, address firstTokenOut, uint24 fee) = params.path.decodeFirstPool();
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = getBrokerbotAndPaymentHub(IERC20(firstTokenOut), IERC20(firstTokenIn));
 		IERC20(firstTokenIn).safeTransferFrom(msg.sender, address(this), params.amountIn); // transfer shares into this contract
-		amountOut = paymentHub.sellSharesAndSwap(brokerbot, IERC20(firstTokenIn), address(this), params.amountIn, bytes("\x01"), params, false);
+		if (IERC20(firstTokenIn).allowance(address(this), address(paymentHub)) == 0){
+			// max is fine as the router shouldn't hold any funds, so this should be ever only needed to be set once per token/paymenthub
+			IERC20(firstTokenIn).approve(address(paymentHub), type(uint256).max); 
+		}
+		ExactInputParams memory modifiedParams = params;
+		modifiedParams.path = params.path.skipToken();
+		amountOut = paymentHub.sellSharesAndSwap(brokerbot, IERC20(firstTokenIn), address(this), params.amountIn, bytes("\x01"), modifiedParams, false);
 	}
 
 	function refundETH() external payable override {

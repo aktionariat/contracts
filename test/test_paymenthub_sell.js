@@ -170,8 +170,6 @@ describe("Sell via PaymentHub", () => {
       const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
       const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
       const ethBalanceSellerAfter = await ethers.provider.getBalance(seller.address);
-      console.log(ethers.utils.formatEther(ethBalanceSellerAfter));
-      console.log(ethers.utils.formatEther(ethBalanceSellerBefore));
       expect(ethBalanceSellerAfter.sub(ethBalanceSellerBefore)).to.equal(ethAmount.sub(gasCost));
       expect(await wethContract.balanceOf(paymentHub.address)).to.equal(0);
       expect(await ethers.provider.getBalance(paymentHub.address)).to.equal(0);
