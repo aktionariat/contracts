@@ -58,7 +58,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     brokerbotRegistryAddress = brokerbotRegistry.address;
   }
   const brokerbotRegistryContract = await ethers.getContractAt("BrokerbotRegistry", brokerbotRegistryAddress);
-  await brokerbotRegistryContract.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, shares.address, { gasLimit: 50000});
+  await brokerbotRegistryContract.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, shares.address, { gasLimit: 90000});
 };  
 
 module.exports.tags = ["Brokerbot"];
