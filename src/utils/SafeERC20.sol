@@ -25,11 +25,6 @@ library SafeERC20 {
     error SafeERC20FailedOperation(address token);
 
     /**
-     * @dev Indicates a failed `decreaseAllowance` request.
-     */
-    error SafeERC20FailedDecreaseAllowance(address spender, uint256 currentAllowance, uint256 requestedDecrease);
-
-    /**
      * @dev Transfer `value` amount of `token` from the calling contract to `to`. If `token` returns no value,
      * non-reverting calls are assumed to be successful.
      */
@@ -43,43 +38,6 @@ library SafeERC20 {
      */
     function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
         _callOptionalReturn(token, abi.encodeCall(token.transferFrom, (from, to, value)));
-    }
-
-    /**
-     * @dev Increase the calling contract's allowance toward `spender` by `value`. If `token` returns no value,
-     * non-reverting calls are assumed to be successful.
-     */
-    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 oldAllowance = token.allowance(address(this), spender);
-        forceApprove(token, spender, oldAllowance + value);
-    }
-
-    /**
-     * @dev Decrease the calling contract's allowance toward `spender` by `requestedDecrease`. If `token` returns no value,
-     * non-reverting calls are assumed to be successful.
-     */
-    function safeDecreaseAllowance(IERC20 token, address spender, uint256 requestedDecrease) internal {
-        unchecked {
-            uint256 currentAllowance = token.allowance(address(this), spender);
-            if (currentAllowance < requestedDecrease) {
-                revert SafeERC20FailedDecreaseAllowance(spender, currentAllowance, requestedDecrease);
-            }
-            forceApprove(token, spender, currentAllowance - requestedDecrease);
-        }
-    }
-
-    /**
-     * @dev Set the calling contract's allowance toward `spender` to `value`. If `token` returns no value,
-     * non-reverting calls are assumed to be successful. Meant to be used with tokens that require the approval
-     * to be set to zero before setting it to a non-zero value, such as USDT.
-     */
-    function forceApprove(IERC20 token, address spender, uint256 value) internal {
-        bytes memory approvalCall = abi.encodeCall(token.approve, (spender, value));
-
-        if (!_callOptionalReturnBool(token, approvalCall)) {
-            _callOptionalReturn(token, abi.encodeCall(token.approve, (spender, 0)));
-            _callOptionalReturn(token, approvalCall);
-        }
     }
 
     /**

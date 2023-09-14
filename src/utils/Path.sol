@@ -3,7 +3,6 @@
 pragma solidity >=0.6.0;
 
 import './BytesLib.sol';
-
 /// @title Functions for manipulating path data for multihop swaps
 library Path {
     using BytesLib for bytes;
@@ -65,7 +64,7 @@ library Path {
     /// @param path The bytes encoded swap path
     /// @return The segment containing all data necessary to target the last pool in the path
     function getLastPool(bytes memory path) internal pure returns (bytes memory) {
-        return path.slice(path.length - POP_OFFSET, path.length);
+        return path.slice(path.length - POP_OFFSET, POP_OFFSET);
     }
 
     /// @notice Skips a token + fee element from the buffer and returns the remainder

@@ -239,7 +239,7 @@ contract Brokerbot is IBrokerbot, Ownable {
         return totPrice;
     }
 
-    function getSellPrice(uint256 shares) public view returns (uint256) {
+    function getSellPrice(uint256 shares) public view override returns (uint256) {
         return getPrice(getPrice() - (shares * increment), shares);
     }
 

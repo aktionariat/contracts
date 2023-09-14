@@ -35,4 +35,6 @@ interface IBrokerbot {
 
   function getBuyPrice(uint256 shares) external view returns (uint256);
 
+  function getSellPrice(uint256 shares) external view returns (uint256);
+
 }
