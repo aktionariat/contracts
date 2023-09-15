@@ -33,7 +33,7 @@ module.exports = {
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  wethAddress: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
   // USDT
   usdtAddress: "0xdac17f958d2ee523a2206206994597c13d831ec7",
   // USDC

@@ -17,17 +17,7 @@ contract BrokerbotRouter is ISwapRouter {
 	using SafeERC20 for IERC20;
 
   BrokerbotRegistry public immutable brokerbotRegistry;
-	struct PaymentParams {
-		IBrokerbot brokerbot;
-		PaymentHub paymentHub;
-		address baseToken;
-		address shareToken;
-		uint256 baseAmount;
-		bytes path;
-		bool hasMultiPools;
-	}
 
-	error Brokerbot_Swap_Failed();
 	error Brokerbot_Deadline_Reached();
 
 	constructor(BrokerbotRegistry _registry) {
@@ -58,9 +48,7 @@ contract BrokerbotRouter is ISwapRouter {
 		// call paymenthub to buy shares with base currency
 		paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
 		// transfer bought shares to recipient
-		if (!IERC20(params.tokenOut).transfer(params.recipient, params.amountOut)) {
-			revert Brokerbot_Swap_Failed();
-		}
+		IERC20(params.tokenOut).safeTransfer(params.recipient, params.amountOut);
   }
 
 	/**
@@ -69,26 +57,23 @@ contract BrokerbotRouter is ISwapRouter {
 	 * @return amountIn The amountIn actually spent.
 	 */
 	function exactOutput(ExactOutputParams calldata params) external payable override checkDeadline(params.deadline) returns (uint256 amountIn) {
-		//PaymentParams memory paymentParams;
 		bytes memory modifiedPath = params.path;
 		(address shareToken, address baseToken, ) = params.path.decodeFirstPool();
 		(, address firstTokenIn, ) = params.path.getLastPool().decodeFirstPool();
-		if (params.path.hasMultiplePools()) {
-			modifiedPath = params.path.skipToken();
-		}
-		//(paymentParams.brokerbot, paymentParams.paymentHub) = getBrokerbotAndPaymentHub(IERC20(paymentParams.baseToken), IERC20(paymentParams.shareToken));
-//		(IBrokerbot brokerbot, PaymentHub paymentHub) = getBrokerbotAndPaymentHub(IERC20(baseToken), IERC20(shareToken));
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = BrokerbotLib.getBrokerbotAndPaymentHub(brokerbotRegistry, IERC20(baseToken), IERC20(shareToken));
-
-		//amountIn = brokerbot.getBuyPrice(params.amountOut);
 		IERC20(firstTokenIn).safeTransferFrom(msg.sender, address(this), params.amountInMaximum);
 		if (IERC20(firstTokenIn).allowance(address(this), address(paymentHub)) == 0){
 			// max is fine as the router shouldn't hold any funds, so this should be ever only needed to be set once per token/paymenthub
 			IERC20(firstTokenIn).approve(address(paymentHub), type(uint256).max); 
 		}
 		// call paymenthub to buy shares with any erc20
-		uint256 baseAmount = brokerbot.getBuyPrice(params.amountOut);
-		(amountIn, ) = paymentHub.payFromERC20AndNotify(brokerbot, baseAmount, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
+		amountIn = brokerbot.getBuyPrice(params.amountOut);
+		if (params.path.hasMultiplePools()) {
+			modifiedPath = params.path.skipToken();
+			(amountIn, ) = paymentHub.payFromERC20AndNotify(brokerbot, amountIn, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
+		} else {
+			paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
+		}
 		IERC20(shareToken).safeTransfer(params.recipient, params.amountOut);
 	}
 
@@ -125,10 +110,19 @@ contract BrokerbotRouter is ISwapRouter {
 			// max is fine as the router shouldn't hold any funds, so this should be ever only needed to be set once per token/paymenthub
 			IERC20(shareToken).approve(address(paymentHub), type(uint256).max); 
 		}
-		ExactInputParams memory modifiedParams = params;
-		modifiedParams.path = params.path.skipToken();
-		amountOut = paymentHub.sellSharesAndSwap(brokerbot, IERC20(shareToken), address(this), params.amountIn, bytes("\x01"), modifiedParams, false);
+		if (params.path.hasMultiplePools()) {
+			ExactInputParams memory modifiedParams = params;
+			modifiedParams.path = params.path.skipToken();
+			amountOut = paymentHub.sellSharesAndSwap(brokerbot, IERC20(shareToken), address(this), params.amountIn, bytes("\x01"), modifiedParams, false);
+		} else {
+			IERC677(shareToken).transferAndCall(address(brokerbot), params.amountIn, bytes("\x01"));
+			// transfer base currency to recipient
+			amountOut = IERC20(baseToken).balanceOf(address(this));
+			IERC20(baseToken).safeTransfer(params.recipient, amountOut);
+		}
 	}
+
+	// TODO: internal fucntions to reduce code duplication
 
 	function refundETH() external payable override {
 		if(address(this).balance > 0) {

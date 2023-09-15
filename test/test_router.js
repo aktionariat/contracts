@@ -91,6 +91,9 @@ describe("Brokerbot Router", () => {
     it("Should deploy quoter successfully", async () => {
       expect(brokerbotQuoter.address).to.exist;
     })
+    it("Should have correct initial state", async () => {
+      expect(await brokerbotQuoter.WETH9()).to.equal(config.wethAddress);
+    })
   });
   describe("Price Quoting", () => {
     beforeEach(async () => {
@@ -220,6 +223,32 @@ describe("Brokerbot Router", () => {
           expect(brokerbotBalanceBefore.add(baseAmount)).to.equal(brokerbotBalanceAfter);
           expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
         })
+        it("Should buy shares with xchf and swap path via router", async () => {
+          const buyer = sig1;
+          // get price in xchf from quoter
+          const amountXCHF = await brokerbotQuoter.callStatic["quoteExactOutput(bytes,uint256)"](pathSingle, randomShareAmount);
+          expect(amountXCHF).to.equal(baseAmount);
+          //approve xchf to router
+          await baseCurrency.connect(buyer).approve(brokerbotRouter.address, config.infiniteAllowance);
+          // log balance
+          const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
+          const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+          const params = {
+            path: pathSingle,
+            recipient: buyer.address,
+            deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+            amountOut: randomShareAmount,
+            amountInMaximum: amountXCHF
+          };
+          // buy shares via router
+          await brokerbotRouter.connect(buyer).exactOutput(params);
+          // log balance after
+          const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+          const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
+          // check balances
+          expect(brokerbotBalanceBefore.add(baseAmount)).to.equal(brokerbotBalanceAfter);
+          expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
+        })
       })
     })
     describe("Sell shares", () => {
@@ -281,6 +310,8 @@ describe("Brokerbot Router", () => {
         expect(brokerbotBalanceBefore.sub(baseAmount)).to.equal(brokerbotBalanceAfter);
         expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
         expect(sellerUsdcBalanceBefore.add(usdcAmount)).to.equal(sellerUsdcBalanceAfter);
+      })
+      it("Should sell shares against xchf via router with path", async () => {
       })
       it("Should revert sell shares via router if deadline is reached", async () => {
         const seller = sig2;

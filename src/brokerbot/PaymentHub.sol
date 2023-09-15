@@ -335,7 +335,8 @@ contract PaymentHub {
      * @param amountInMaximum The maximum amount of the ERC20 to pay (should include some slippage).
      * @param path The encoded path of the swap from erc20 to base currency.
      * @param ref Reference data blob.
-     * @return The amount of shares received by the brokerbot.
+     * @return amountIn The amount erc20 spent to buy shares.
+     * @return amountOut The amount of shares received by the brokerbot.
      */
     function payFromERC20AndNotify(IBrokerbot brokerbot, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external returns (uint256 amountIn, uint256 amountOut) {
         IERC20 base = brokerbot.base();
