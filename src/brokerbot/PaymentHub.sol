@@ -107,13 +107,6 @@ contract PaymentHub {
         _;
     }
 
-    modifier onlySeller(address seller) {
-        if (msg.sender != seller) {
-            revert PaymentHub_InvalidSender(msg.sender);
-        }
-        _;
-    }
-
     modifier onlyForwarder() {
         if (msg.sender != trustedForwarder) {
             revert PaymentHub_InvalidSender(msg.sender);
@@ -205,7 +198,7 @@ contract PaymentHub {
     /**
      * Convenience method to swap ether into base and pay a target address
      */
-    function payFromEther(address recipient, uint256 amountInBase, IERC20 base) public payable {
+    function payFromEther(address recipient, uint256 amountInBase, IERC20 base) public payable returns (uint256 amountIn) {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
             // rely on time stamp is ok, no exact time stamp needed
             // solhint-disable-next-line not-rely-on-time
@@ -213,7 +206,7 @@ contract PaymentHub {
 
         ISwapRouter swapRouter = uniswapRouter;
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = swapRouter.exactOutputSingle{value: msg.value}(params);
+        amountIn = swapRouter.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
@@ -303,13 +296,14 @@ contract PaymentHub {
      * @param brokerbot The brokerbot to pay and receive the shares from.
      * @param amountInBase The amount of base currency used to buy shares.
      * @param ref The reference data blob.
-     * @return sharesOut The amount of shares bought
+     * @return priceInEther The amount of Ether spent.
+     * @return sharesOut The amount of shares bought.
      */
-    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 sharesOut) {
+    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 priceInEther, uint256 sharesOut) {
         IERC20 base = brokerbot.base();
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(brokerbot)) {
-            uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, base);
+            priceInEther = getPriceInEtherFromOracle(amountInBase, base);
             sharesOut = brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
 
             // Pay back ETH that was overpaid
@@ -321,7 +315,7 @@ contract PaymentHub {
             }
 
         } else {
-            payFromEther(address(brokerbot), amountInBase, base);
+            priceInEther = payFromEther(address(brokerbot), amountInBase, base);
             sharesOut = brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
@@ -394,14 +388,13 @@ contract PaymentHub {
      * @notice With this function a user can sell shares and swap them to a desired token. The user has to approve the paymenthub before on the shares contract.
      * @param brokerbot The brokerbot of the shares to sell.
      * @param shares The (draggable)shares address.
-     * @param seller The seller address.
      * @param amountToSell The amount of shares to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
      * @param params Information about the swap.
      * @return amountOut The output amount of the swap to the desired token.
      */
-    function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, address seller, uint256 amountToSell,  bytes calldata ref, ISwapRouter.ExactInputParams memory params, bool unwrapWeth) external onlySeller(seller) returns (uint256 amountOut) {
-        params.amountIn = _sellShares(brokerbot, shares, seller, address(this), amountToSell, ref);
+    function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, uint256 amountToSell,  bytes calldata ref, ISwapRouter.ExactInputParams memory params, bool unwrapWeth) external returns (uint256 amountOut) {
+        params.amountIn = _sellShares(brokerbot, shares, msg.sender, address(this), amountToSell, ref);
         amountOut = _swap(params, unwrapWeth);
     }
 

@@ -140,17 +140,44 @@ describe("Brokerbot Router", () => {
   })
   describe("Swaps", () => {
     beforeEach(async () => {
-      randomShareAmount = chance.natural({ min: 500, max: 50000 });
+      randomShareAmount = chance.natural({ min: 500, max: 5000 });
     })
     describe("Buy shares", () => {
       beforeEach(async () => {
         baseAmount = await brokerbot.getBuyPrice(randomShareAmount);
       })
       describe("Buy shares single", () => {
-        it("Should buy shares with base currency via router", async () => {
+        it("Should buy exact shares with base currency via router", async () => {
           const buyer = sig1;
           const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
-          await baseCurrency.connect(buyer).approve(brokerbotRouter.address, baseAmount);
+          const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+          //add slippage
+          const baseAmountWithSlippage = baseAmount.add(ethers.utils.parseEther("0.02"));
+          await baseCurrency.connect(buyer).approve(brokerbotRouter.address, baseAmountWithSlippage);
+          const params = {
+            tokenIn: baseCurrency.address,
+            tokenOut: draggable.address,
+            fee: 0,
+            recipient: buyer.address,
+            deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+            amountOut: randomShareAmount,
+            amountInMaximum: baseAmountWithSlippage,
+            sqrtPriceLimitX96: 0
+          }
+          await brokerbotRouter.connect(buyer).exactOutputSingle(params);
+          const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+          const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
+          expect(await baseCurrency.balanceOf(brokerbotRouter.address)).to.equal(0);
+          expect(await baseCurrency.balanceOf(paymentHub.address)).to.equal(0);
+          expect(brokerbotBalanceBefore.add(baseAmount)).to.equal(brokerbotBalanceAfter);
+          expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
+        });
+        it("Should buy shares with ETH via router", async () => {
+          const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](baseAmount, brokerbot.address);
+          // send a little bit more for slippage 
+          const priceInETHWithSlippage = priceInETH.mul(101).div(100);
+          const buyer = sig1;
+          const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
           const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
           const params = {
             tokenIn: baseCurrency.address,
@@ -159,12 +186,14 @@ describe("Brokerbot Router", () => {
             recipient: buyer.address,
             deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
             amountOut: randomShareAmount,
-            amountInMaximum: baseAmount,
+            amountInMaximum: priceInETHWithSlippage,
             sqrtPriceLimitX96: 0
           }
-          await brokerbotRouter.connect(buyer).exactOutputSingle(params);
+          await brokerbotRouter.connect(buyer).exactOutputSingle(params, {value: priceInETHWithSlippage});
           const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
           const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
+          expect(await baseCurrency.balanceOf(brokerbotRouter.address)).to.equal(0);
+          expect(await baseCurrency.balanceOf(paymentHub.address)).to.equal(0);
           expect(brokerbotBalanceBefore.add(baseAmount)).to.equal(brokerbotBalanceAfter);
           expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
         });
@@ -191,13 +220,9 @@ describe("Brokerbot Router", () => {
           expect(buyerBalanceBefore).to.equal(buyerBalanceAfter);
         });
       });
-      describe("Buy shares from erc20 with path", () => {
+      describe("Buy shares with path", () => {
         it("Should buy shares with DAI and swap path via router", async () => {
           const buyer = sig1;
-          // get path draggable - base - usdc - dai (in reverse order because of exact out)
-          const types = ["address", "uint24","address","uint24","address","uint24","address"];
-          const values = [draggable.address, 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.daiAddress];
-          path = ethers.utils.solidityPack(types,values);
           // get price in Dai from quoter
           const amountDAI = await brokerbotQuoter.callStatic["quoteExactOutput(bytes,uint256)"](pathDai, randomShareAmount);
           //approve dai to router
@@ -249,6 +274,37 @@ describe("Brokerbot Router", () => {
           expect(brokerbotBalanceBefore.add(baseAmount)).to.equal(brokerbotBalanceAfter);
           expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
         })
+        it("Should buy shares with ether and swap path via router", async () => {
+          const buyer = sig1;
+          // get price in weth from quoter
+          const amountWeth = await brokerbotQuoter.callStatic["quoteExactOutput(bytes,uint256)"](pathWeth, randomShareAmount);
+          const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](baseAmount, brokerbot.address);
+          const priceInETHWithSlippage = amountWeth.mul(101).div(100);
+          // log balance
+          const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
+          const buyerETHBalanceBefore = await ethers.provider.getBalance(buyer.address);
+          const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+          const params = {
+            path: pathWeth,
+            recipient: buyer.address,
+            deadline: await getBlockTimeStamp(ethers).then(t => t + 2),
+            amountOut: randomShareAmount,
+            amountInMaximum: priceInETHWithSlippage
+          }
+          // buy shares via router
+          const txInfo = await brokerbotRouter.connect(buyer).exactOutput(params, {value: priceInETHWithSlippage});
+          //console.log(await txInfo.wait());
+          const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
+          const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
+          // log balance after
+          const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+          const buyerETHBalanceAfter = await ethers.provider.getBalance(buyer.address);
+          const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
+          // check balances
+          expect(brokerbotBalanceBefore.add(baseAmount)).to.equal(brokerbotBalanceAfter);
+          expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
+          expect(buyerETHBalanceBefore.sub(buyerETHBalanceAfter)).to.equal(priceInETH.add(gasCost));
+        })
       })
     })
     describe("Sell shares", () => {
@@ -276,7 +332,34 @@ describe("Brokerbot Router", () => {
         expect(brokerbotBalanceBefore.sub(baseAmount)).to.equal(brokerbotBalanceAfter);
         expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
       })
-      it("Should sell shares against usdc via router", async () => {
+      it("Should sell shares against base currency with swap path via router", async () => {
+        const seller = sig2;
+        // get balances before
+        const sellerBalanceBefore = await draggable.balanceOf(seller.address);
+        const sellerBaseBalanceBefore = await baseCurrency.balanceOf(seller.address);
+        const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+        // approve
+        await draggable.connect(seller).approve(brokerbotRouter.address, randomShareAmount);
+        const params = {
+          path: pathSingle,
+          recipient: seller.address,
+          deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+          amountIn: randomShareAmount,
+          amountOutMinimum: baseAmount  
+        };
+        // make sell
+        await brokerbotRouter.connect(seller).exactInput(params);
+        // get balances after
+        const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+        const sellerBalanceAfter = await draggable.balanceOf(seller.address);
+        const sellerBaseBalanceAfter = await baseCurrency.balanceOf(seller.address);
+        expect(brokerbotBalanceBefore.sub(baseAmount)).to.equal(brokerbotBalanceAfter);
+        expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
+        console.log(sellerBaseBalanceBefore);
+        console.log(sellerBaseBalanceAfter);
+        expect(sellerBaseBalanceAfter.sub(sellerBaseBalanceBefore)).to.equal(baseAmount);
+      })
+      it("Should sell shares against usdc with path via router", async () => {
         // base token needs to be approved for uniswap 
         await paymentHub.approveERC20(config.baseCurrencyAddress);
         // path: XCHF -> USDC
@@ -310,8 +393,6 @@ describe("Brokerbot Router", () => {
         expect(brokerbotBalanceBefore.sub(baseAmount)).to.equal(brokerbotBalanceAfter);
         expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
         expect(sellerUsdcBalanceBefore.add(usdcAmount)).to.equal(sellerUsdcBalanceAfter);
-      })
-      it("Should sell shares against xchf via router with path", async () => {
       })
       it("Should revert sell shares via router if deadline is reached", async () => {
         const seller = sig2;

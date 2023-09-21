@@ -222,19 +222,27 @@ describe("New PaymentHub", () => {
     });
 
     it("Should buy shares with ETH and trade it to XCHF", async () => {
+      const buyer = sig1;
       const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](xchfamount, brokerbot.address);
 
       // send a little bit more for slippage 
       const priceInETHWithSlippage = priceInETH.mul(101).div(100);
-
+      //log balances
       const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
-      const amountSharesOut = await paymentHub.connect(sig1).callStatic.payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETHWithSlippage});
-      await paymentHub.connect(sig1).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETHWithSlippage});
+      const buyerSharesBefore = await draggableShares.balanceOf(buyer.address);
+      const buyerEthBefore = await ethers.provider.getBalance(buyer.address);
+
+      const txInfo = await paymentHub.connect(buyer).payFromEtherAndNotify(brokerbot.address, xchfamount, "0x01", {value: priceInETHWithSlippage});
+      const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
+      const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+      const buyerSharesAfter = await draggableShares.balanceOf(buyer.address);
+      const buyerEthAfter = await ethers.provider.getBalance(buyer.address);
 
       // brokerbot should have after the payment with eth the xchf in the balance
       expect(brokerbotBalanceBefore.add(xchfamount)).to.equal(brokerbotBalanceAfter);
-      expect(amountSharesOut).to.equal(randomShareAmount);
+      expect(buyerSharesAfter.sub(buyerSharesBefore)).to.equal(randomShareAmount);
+      expect(buyerEthBefore.sub(buyerEthAfter)).to.equal(priceInETH.add(gasCost));
     });
 
     it("Should set setting for keeping ETH", async () => {
