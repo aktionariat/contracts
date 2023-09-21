@@ -85,6 +85,7 @@ contract BrokerbotRouter is ISwapRouter {
 
 	/**
 	 * @notice Sell `amountIn` of share tokens for base currency.
+	 * @dev Only use it for selling shares, else there will be no brokerbot found. Output can't be ETH you have to swap WETH to ETH on your integration.
 	 * @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata.
 	 * @return amountOut The amountOut actually received.
 	 */

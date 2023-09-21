@@ -355,21 +355,13 @@ describe("Brokerbot Router", () => {
         const sellerBaseBalanceAfter = await baseCurrency.balanceOf(seller.address);
         expect(brokerbotBalanceBefore.sub(baseAmount)).to.equal(brokerbotBalanceAfter);
         expect(sellerBalanceBefore.sub(randomShareAmount)).to.equal(sellerBalanceAfter);
-        console.log(sellerBaseBalanceBefore);
-        console.log(sellerBaseBalanceAfter);
         expect(sellerBaseBalanceAfter.sub(sellerBaseBalanceBefore)).to.equal(baseAmount);
       })
       it("Should sell shares against usdc with path via router", async () => {
         // base token needs to be approved for uniswap 
         await paymentHub.approveERC20(config.baseCurrencyAddress);
         // path: XCHF -> USDC
-        const typesPrice = ["address","uint24","address"];
-        const valuesPrice = [config.baseCurrencyAddress, 500, config.usdcAddress];
-        pathPrice = ethers.utils.solidityPack(typesPrice,valuesPrice);
-        const usdcAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, pathPrice, false);
-        const types = ["address","uint24","address","uint24","address"];
-        const values = [draggable.address, 0, config.baseCurrencyAddress, 500, config.usdcAddress];
-        path = ethers.utils.solidityPack(types,values);
+        const usdcAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, pathBaseUsdc, false);
         const seller = sig2;
         // get balances before
         const sellerBalanceBefore = await draggable.balanceOf(seller.address);
@@ -378,7 +370,7 @@ describe("Brokerbot Router", () => {
         // approve
         await draggable.connect(seller).approve(brokerbotRouter.address, randomShareAmount);
         const params = {
-          path: path,
+          path: pathUsdc,
           recipient: seller.address,
           deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
           amountIn: randomShareAmount,
