@@ -16,7 +16,7 @@ contract BrokerbotRouter is ISwapRouter {
 	using Path for bytes;
 	using SafeERC20 for IERC20;
 
-  BrokerbotRegistry public immutable brokerbotRegistry;
+    BrokerbotRegistry public immutable brokerbotRegistry;
 
 	error Brokerbot_Deadline_Reached();
 
@@ -25,7 +25,7 @@ contract BrokerbotRouter is ISwapRouter {
 	}
 
 	modifier checkDeadline(uint256 deadline) {
-		if (deadline < block.timestamp) revert Brokerbot_Deadline_Reached();
+	  if (deadline < block.timestamp) revert Brokerbot_Deadline_Reached();
     _;
   }
 
@@ -36,7 +36,7 @@ contract BrokerbotRouter is ISwapRouter {
 
 	/**
 	 * @notice Buy share tokens with base currency.
-	 * @dev not usable for sell shares for excact output, as shares is not divisible (decimals is 0).
+	 * @dev not usable to sell shares for excact output, as shares is not divisible (decimals is 0).
 	 * @dev Single swap with ETH works, but base currency address has to be provided as tokenIn.
 	 * @param params Params struct for swap. See @ISwapRouter for struct definition.
 	 */
@@ -102,10 +102,10 @@ contract BrokerbotRouter is ISwapRouter {
 	}
 
   /**
-	 * @notice Sell `amountIn` of share tokens for as much as possible of another along the specified path
-   * @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
-   * @return amountOut The amount of the received token
-	 */
+	* @notice Sell `amountIn` of share tokens for as much as possible of another along the specified path
+    * @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+    * @return amountOut The amount of the received token
+	*/
 	function exactInput(ExactInputParams calldata params) external payable override checkDeadline(params.deadline) returns (uint256 amountOut) {
 		(address shareToken, address baseToken,) = params.path.decodeFirstPool();
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = BrokerbotLib.getBrokerbotAndPaymentHub(brokerbotRegistry, IERC20(baseToken), IERC20(shareToken));
@@ -145,13 +145,14 @@ contract BrokerbotRouter is ISwapRouter {
 	}
 
 	function _buyWithEther(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 shareAmount, uint256 ethAmount) internal returns (uint256 amountIn) {
-			uint256 baseAmount = brokerbot.getBuyPrice(shareAmount);
-			(amountIn,) = paymentHub.payFromEtherAndNotify{value: ethAmount}(brokerbot, baseAmount, bytes("\x01"));	}
+		uint256 baseAmount = brokerbot.getBuyPrice(shareAmount);
+		(amountIn,) = paymentHub.payFromEtherAndNotify{value: ethAmount}(brokerbot, baseAmount, bytes("\x01"));	
+    }
 
 	function _exactOutputInternalPrepare(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 amountShares, uint256 amountInMaximum, IERC20 tokenIn) internal  returns (uint256 amountIn) {
 		amountIn = brokerbot.getBuyPrice(amountShares); // get current price, so nothing needs to be refunded
 		tokenIn.transferFrom(msg.sender, address(this), amountInMaximum); // transfer base currency into this contract
-    if (tokenIn.allowance(address(this), address(paymentHub)) == 0){
+        if (tokenIn.allowance(address(this), address(paymentHub)) == 0){
 			// max is fine as the router shouldn't hold any funds, so this should be ever only needed to be set once per token/paymenthub
 			tokenIn.approve(address(paymentHub), type(uint256).max); 
 		}

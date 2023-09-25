@@ -12,14 +12,14 @@ import "../utils/BrokerbotLib.sol";
 contract BrokerbotQuoter is IQuoter {
 	using Path for bytes;
 
-  address private immutable weth;
+    address private immutable weth;
 	IQuoter private immutable uniswapQuoter;
 	BrokerbotRegistry private immutable brokerbotRegistry;
 
   constructor(address _weth,  IQuoter _Quoter, BrokerbotRegistry _registry) {
     weth = _weth;
-		uniswapQuoter = _Quoter;
-		brokerbotRegistry = _registry;
+    uniswapQuoter = _Quoter;
+	brokerbotRegistry = _registry;
   }
 
 	/// @inheritdoc IQuoter
@@ -27,9 +27,9 @@ contract BrokerbotQuoter is IQuoter {
 	function quoteExactOutputSingle(
 		address tokenIn,
 		address tokenOut,
-		uint24 fee,
+		uint24 /*fee*/,
 		uint256 amountOut,
-		uint160 sqrtPriceLimitX96
+		uint160 /*sqrtPriceLimitX96*/
 	) external view override returns (uint256 amountIn) {
 		(IBrokerbot brokerbot, ) = BrokerbotLib.getBrokerbotAndPaymentHub(brokerbotRegistry, IERC20(tokenIn), IERC20(tokenOut));
 		amountIn = brokerbot.getBuyPrice(amountOut);
@@ -63,15 +63,15 @@ contract BrokerbotQuoter is IQuoter {
 	function quoteExactInputSingle(
 			address tokenIn,
 			address tokenOut,
-			uint24 fee,
+			uint24 /*fee*/,
 			uint256 amountIn,
-			uint160 sqrtPriceLimitX96
+			uint160 /*sqrtPriceLimitX96*/
 	) public view override returns (uint256 amountOut) {
 		(IBrokerbot brokerbot, ) = BrokerbotLib.getBrokerbotAndPaymentHub(brokerbotRegistry, IERC20(tokenOut), IERC20(tokenIn));
 		amountOut = brokerbot.getSellPrice(amountIn);
 	}
 
 	function WETH9() external view override returns (address) {
-    return weth;
-  }
+        return weth;
+    }
 }
