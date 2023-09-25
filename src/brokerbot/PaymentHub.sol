@@ -379,9 +379,9 @@ contract PaymentHub {
      * @param params Information about the swap.
      * @return The output amount of the swap to the desired token.
      */
-    function sellSharesWithPermitAndSwap(IBrokerbot brokerbot, IERC20Permit shares, address seller,  uint256 amountToSell, bytes calldata ref, PermitInfo calldata permitInfo, ISwapRouter.ExactInputParams memory params, bool unwrapWeTh) external onlySellerAndForwarder(seller) returns (uint256) {
+    function sellSharesWithPermitAndSwap(IBrokerbot brokerbot, IERC20Permit shares, address seller,  uint256 amountToSell, bytes calldata ref, PermitInfo calldata permitInfo, ISwapRouter.ExactInputParams memory params, bool unwrapWeth) external onlySellerAndForwarder(seller) returns (uint256) {
         params.amountIn = sellSharesWithPermit(brokerbot, shares, seller, address(this), amountToSell, ref, permitInfo);
-        return _swap(params, unwrapWeTh);
+        return _swap(params, unwrapWeth);
     }
 
     /**

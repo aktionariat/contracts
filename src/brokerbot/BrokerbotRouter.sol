@@ -16,7 +16,7 @@ contract BrokerbotRouter is ISwapRouter {
 	using Path for bytes;
 	using SafeERC20 for IERC20;
 
-    BrokerbotRegistry public immutable brokerbotRegistry;
+	BrokerbotRegistry public immutable brokerbotRegistry;
 
 	error Brokerbot_Deadline_Reached();
 
@@ -25,9 +25,9 @@ contract BrokerbotRouter is ISwapRouter {
 	}
 
 	modifier checkDeadline(uint256 deadline) {
-	  if (deadline < block.timestamp) revert Brokerbot_Deadline_Reached();
-    _;
-  }
+		if (deadline < block.timestamp) revert Brokerbot_Deadline_Reached();
+  	_;
+	}
 
 	// solhint-disable-next-line no-empty-blocks
 	receive() external payable {
