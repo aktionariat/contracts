@@ -28,7 +28,7 @@ describe("Multisig", () => {
   const lowerRealV = 27;
   const chain_id_inc = 35;
 
-  let chainid = 3
+  let chainid;
 
 
   let randomWallet;
@@ -46,6 +46,7 @@ describe("Multisig", () => {
     randomWallet = ethers.Wallet.createRandom().connect(ethers.provider);
     const mnemonic = process.env.MNEMONIC;
     ownerWallet = ethers.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/0/1").connect(ethers.provider);
+    chainid = (await ethers.provider.getNetwork()).chainId;
   });
 
   it("Should deploy multiSig master contract", async () => {
@@ -192,7 +193,7 @@ describe("Multisig", () => {
     expect(walletBalBefore).to.be.equal(walletBalAfter);
   });
 
-  it("Should revert when contact call is done to an EOA", async () => {
+  it("Should revert when contract call is done to an EOA", async () => {
     const dataTX = await multiSigClone.populateTransaction.setSigner(adr2.address, 2);
     const mnemonic = process.env.MNEMONIC;
     // here using adr1.address as EOA

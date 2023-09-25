@@ -134,7 +134,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
 
   // Note: does not work with contract creation
   function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
-    internal pure returns (bytes32){
+    internal view returns (bytes32){
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
@@ -142,7 +142,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
     all[3] = abi.encodePacked (bytes1 (0x94), to);
     all[4] = toBytes(value);
     all[5] = data;
-    all[6] = toBytes(3); //chain Identifier
+    all[6] = toBytes(block.chainid);
     all[7] = new bytes(0);
     for (uint i = 0; i<8; i++){
       if (i != 2 && i!= 3) {
