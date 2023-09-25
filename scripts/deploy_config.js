@@ -13,6 +13,7 @@ module.exports = {
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
+  brokerbotRegistry: "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98",
   quorumBps: 7500,
   quorumMigration: 7500,
   votePeriodSeconds: 5184000,
@@ -32,7 +33,7 @@ module.exports = {
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  wethAddress: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
   // USDT
   usdtAddress: "0xdac17f958d2ee523a2206206994597c13d831ec7",
   // USDC

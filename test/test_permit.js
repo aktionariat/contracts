@@ -1,6 +1,6 @@
 const { ethers} = require("hardhat");
 const { expect } = require("chai");
-const { setup } = require("./helper/index");
+const { setup, getBlockTimeStamp } = require("./helper/index");
 const Chance = require("chance");
 const { time }  = require("@nomicfoundation/hardhat-network-helpers");
 
@@ -262,7 +262,7 @@ describe("Permit", () => {
       relayer = await ethers.getSigner(trustedForwarder);
       seller = sig3;
       randomShareAmount = chance.natural({ min: 50, max: 500 });
-      baseAmount = await brokerbot.getBuyPrice(randomShareAmount);
+      baseAmount = await brokerbot.getSellPrice(randomShareAmount);
     })
     afterEach(async() => {
       const { trustedForwarder } = await getNamedAccounts();
@@ -421,9 +421,15 @@ describe("Permit", () => {
       const ethBalanceSellerBefore = await ethers.provider.getBalance(seller.address);
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
       ethAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, path, false);
-      const swapOutInfo = {recipient: seller.address, amountOutMinimum: ethAmount, path, unwrapWeth: true};
+      const params = {
+        path: path,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: ethAmount
+      };
       const permitInfo = {exFee: 0, deadline, v, r, s}
-      await paymentHub.connect(relayer).sellSharesWithPermitAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", permitInfo, swapOutInfo);
+      await paymentHub.connect(relayer).sellSharesWithPermitAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", permitInfo, params, true);
       const ethBalanceSellerAfter = await ethers.provider.getBalance(seller.address);
       expect(ethBalanceSellerAfter.sub(ethBalanceSellerBefore)).to.equal(ethAmount);
       expect(await wethContract.balanceOf(paymentHub.address)).to.equal(0);

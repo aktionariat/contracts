@@ -1,5 +1,5 @@
 const {network, ethers, deployments, } = require("hardhat");
-const { setBalances, getTX } = require("./helper/index");
+const { setBalances, getTX, getBlockTimeStamp } = require("./helper/index");
 const Chance = require("chance");
 const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
@@ -89,7 +89,7 @@ describe("Sell via PaymentHub", () => {
   });
   beforeEach(async () => {
     randomShareAmount = chance.natural({ min: 50, max: 500 });
-    baseAmount = await brokerbot.getBuyPrice(randomShareAmount);
+    baseAmount = await brokerbot.getSellPrice(randomShareAmount);
   })
 
   describe("Selling against ERC20", () => {
@@ -110,8 +110,14 @@ describe("Sell via PaymentHub", () => {
       await draggable.connect(seller).approve(paymentHub.address, config.infiniteAllowance);
       expect(await usdcContract.balanceOf(seller.address)).to.equal(0);
       // in real use case slippage should be considerered for usdcAmount (the miniminum out amount from the swap)
-      const swapOutInfo = {recipient: seller.address, amountOutMinimum: usdcAmount, path, unwrapWeth: false};
-      await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", swapOutInfo);
+      const params = {
+        path: path,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: usdcAmount
+      };
+      await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false);
       expect(await usdcContract.balanceOf(seller.address)).to.equal(usdcAmount)
     })
 
@@ -124,8 +130,14 @@ describe("Sell via PaymentHub", () => {
       //console.log(`ethAmount: ${ethers.utils.formatEther(ethAmount)}`);
       expect(await wethContract.balanceOf(seller.address)).to.equal(0);
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
-      const swapOutInfo = {recipient: seller.address, amountOutMinimum: ethAmount, path, unwrapWeth: false};
-      await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", swapOutInfo);
+      const params = {
+        path: path,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: ethAmount
+      };
+      await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false);
       expect(await wethContract.balanceOf(seller.address)).to.equal(ethAmount);
     })
   })
@@ -146,8 +158,15 @@ describe("Sell via PaymentHub", () => {
       //console.log(`ethAmount: ${ethers.utils.formatEther(ethAmount)}`);
       const ethBalanceSellerBefore = await ethers.provider.getBalance(seller.address);
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
-      const swapOutInfo = {recipient: seller.address, amountOutMinimum: ethAmount, path, unwrapWeth: true};
-      const txInfo = await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", swapOutInfo);
+      const unwrapWeth = true;
+      const params = {
+        path: path,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: ethAmount
+      };
+      const txInfo = await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, unwrapWeth);
       const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
       const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
       const ethBalanceSellerAfter = await ethers.provider.getBalance(seller.address);
@@ -167,16 +186,28 @@ describe("Sell via PaymentHub", () => {
       const types = [];
       const values = [];
       path = ethers.utils.solidityPack(types,values);
-      const swapOutInfo = {recipient: seller.address, amountOutMinimum: baseAmount, path, unwrapWeth: false};
-      await expect(paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", swapOutInfo))
+      const params = {
+        path: path,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: baseAmount
+      };
+      await expect(paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false))
         .to.be.revertedWith("slice_outOfBounds");
     })
     it("Should revert if path is invalid", async () => {
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 3000, config.baseCurrencyAddress];
       path = ethers.utils.solidityPack(types,values);
-      const swapOutInfo = {recipient: seller.address, amountOutMinimum: baseAmount, path, unwrapWeth: false};
-      await expect(paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", swapOutInfo))
+      const params = {
+        path: path,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: baseAmount
+      };
+      await expect(paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false))
         .to.be.reverted;
 
     })
@@ -184,9 +215,16 @@ describe("Sell via PaymentHub", () => {
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
       path = ethers.utils.solidityPack(types,values);
-      const swapOutInfo = {recipient: seller.address, amountOutMinimum: baseAmount, path, unwrapWeth: false};
-      await expect(paymentHub.sellSharesAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", swapOutInfo))
-        .to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender").withArgs(deployer.address);
+      const params = {
+        path: path,
+        recipient: seller.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: baseAmount
+      };
+      await expect(paymentHub.sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false))
+        .to.be.revertedWithPanic(0x11);
+        //.to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender").withArgs(deployer.address);
     })
   })
 
@@ -215,8 +253,15 @@ describe("Sell via PaymentHub", () => {
     it("Should sell against ETH with multisig", async () => {
       ethAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, path, false);
       const ethBalanceSellerBefore = await ethers.provider.getBalance(multiSigClone.address);
-      const swapOutInfo = {recipient: multiSigClone.address, amountOutMinimum: ethAmount, path, unwrapWeth: true};
-      const sellDataTX = await paymentHub.populateTransaction.sellSharesAndSwap(brokerbot.address, draggable.address, multiSigClone.address, randomShareAmount, "0x01", swapOutInfo);
+      const unwrapWeth = true;
+      const params = {
+        path: path,
+        recipient: multiSigClone.address,
+        deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
+        amountIn: baseAmount,
+        amountOutMinimum: ethAmount
+      };
+      const sellDataTX = await paymentHub.populateTransaction.sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, unwrapWeth);
       const sellTx = await getTX(paymentHub.address, sellDataTX, multiSigClone, ownerWallet, chainid);
       await multiSigClone.execute(sellTx.nonce, sellTx.to, sellTx.value, sellTx.data, [sellTx.v - (8+chainid*2)], [sellTx.r], [sellTx.s]);
       const ethBalanceSellerAfter = await ethers.provider.getBalance(multiSigClone.address);

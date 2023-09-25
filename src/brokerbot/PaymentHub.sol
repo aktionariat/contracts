@@ -76,13 +76,6 @@ contract PaymentHub {
         bytes32 s;
     }
 
-    struct SwapOutInfo {
-        address recipient;
-        uint256 amountOutMinimum;
-        bytes path;
-        bool unwrapWeth;
-    }
-
     // event to when new forwarder is set
     event ForwarderChanged(address indexed _oldForwarder, address indexed _newForwarder);
 
@@ -109,13 +102,6 @@ contract PaymentHub {
 
     modifier onlySellerAndForwarder(address seller) {
         if (msg.sender != trustedForwarder && msg.sender != seller) {
-            revert PaymentHub_InvalidSender(msg.sender);
-        }
-        _;
-    }
-
-    modifier onlySeller(address seller) {
-        if (msg.sender != seller) {
             revert PaymentHub_InvalidSender(msg.sender);
         }
         _;
@@ -212,7 +198,7 @@ contract PaymentHub {
     /**
      * Convenience method to swap ether into base and pay a target address
      */
-    function payFromEther(address recipient, uint256 amountInBase, IERC20 base) public payable {
+    function payFromEther(address recipient, uint256 amountInBase, IERC20 base) public payable returns (uint256 amountIn) {
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
             // rely on time stamp is ok, no exact time stamp needed
             // solhint-disable-next-line not-rely-on-time
@@ -220,7 +206,7 @@ contract PaymentHub {
 
         ISwapRouter swapRouter = uniswapRouter;
         // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        uint256 amountIn = swapRouter.exactOutputSingle{value: msg.value}(params);
+        amountIn = swapRouter.exactOutputSingle{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
@@ -301,7 +287,7 @@ contract PaymentHub {
     }
 
     function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public returns (uint256) {
-        IERC20(token).safeTransferFrom(msg.sender, address(brokerbot), amount);
+        token.safeTransferFrom(msg.sender, address(brokerbot), amount);
         return brokerbot.processIncoming(token, msg.sender, amount, ref);
     }
 
@@ -310,13 +296,14 @@ contract PaymentHub {
      * @param brokerbot The brokerbot to pay and receive the shares from.
      * @param amountInBase The amount of base currency used to buy shares.
      * @param ref The reference data blob.
-     * @return sharesOut The amount of shares bought
+     * @return priceInEther The amount of Ether spent.
+     * @return sharesOut The amount of shares bought.
      */
-    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 sharesOut) {
+    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 priceInEther, uint256 sharesOut) {
         IERC20 base = brokerbot.base();
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(brokerbot)) {
-            uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, base);
+            priceInEther = getPriceInEtherFromOracle(amountInBase, base);
             sharesOut = brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
 
             // Pay back ETH that was overpaid
@@ -328,7 +315,7 @@ contract PaymentHub {
             }
 
         } else {
-            payFromEther(address(brokerbot), amountInBase, base);
+            priceInEther = payFromEther(address(brokerbot), amountInBase, base);
             sharesOut = brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
@@ -342,17 +329,18 @@ contract PaymentHub {
      * @param amountInMaximum The maximum amount of the ERC20 to pay (should include some slippage).
      * @param path The encoded path of the swap from erc20 to base currency.
      * @param ref Reference data blob.
-     * @return The amount of shares received by the brokerbot.
+     * @return amountIn The amount erc20 spent to buy shares.
+     * @return amountOut The amount of shares received by the brokerbot.
      */
-    function payFromERC20AndNotify(IBrokerbot brokerbot, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external returns (uint256) {
+    function payFromERC20AndNotify(IBrokerbot brokerbot, uint256 amountBase, address erc20, uint256 amountInMaximum, bytes memory path, bytes calldata ref) external returns (uint256 amountIn, uint256 amountOut) {
         IERC20 base = brokerbot.base();
         uint256 balanceBefore = IERC20(base).balanceOf(address(brokerbot));
-        payFromERC20(amountBase, amountInMaximum, erc20, path, address(brokerbot));
+        amountIn = payFromERC20(amountBase, amountInMaximum, erc20, path, address(brokerbot));
         uint256 balanceAfter = IERC20(base).balanceOf(address(brokerbot));
         if (amountBase != (balanceAfter - balanceBefore)) {
             revert PaymentHub_SwapError(amountBase, balanceAfter - balanceBefore);
         }        
-        return brokerbot.processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
+        amountOut = brokerbot.processIncoming(base, msg.sender, balanceAfter - balanceBefore, ref);
     }
 
     /**
@@ -388,27 +376,26 @@ contract PaymentHub {
      * @param amountToSell The amount of shares to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
      * @param permitInfo Information about the permit.
-     * @param swapOutInfo Information about the swap.
+     * @param params Information about the swap.
      * @return The output amount of the swap to the desired token.
      */
-    function sellSharesWithPermitAndSwap(IBrokerbot brokerbot, IERC20Permit shares, address seller,  uint256 amountToSell, bytes calldata ref, PermitInfo calldata permitInfo, SwapOutInfo calldata swapOutInfo) external onlySellerAndForwarder(seller) returns (uint256) {
-        uint256 proceeds = sellSharesWithPermit(brokerbot, shares, seller, address(this), amountToSell, ref, permitInfo);
-        return _swap(proceeds, swapOutInfo);
+    function sellSharesWithPermitAndSwap(IBrokerbot brokerbot, IERC20Permit shares, address seller,  uint256 amountToSell, bytes calldata ref, PermitInfo calldata permitInfo, ISwapRouter.ExactInputParams memory params, bool unwrapWeth) external onlySellerAndForwarder(seller) returns (uint256) {
+        params.amountIn = sellSharesWithPermit(brokerbot, shares, seller, address(this), amountToSell, ref, permitInfo);
+        return _swap(params, unwrapWeth);
     }
 
     /**
      * @notice With this function a user can sell shares and swap them to a desired token. The user has to approve the paymenthub before on the shares contract.
      * @param brokerbot The brokerbot of the shares to sell.
      * @param shares The (draggable)shares address.
-     * @param seller The seller address.
      * @param amountToSell The amount of shares to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
-     * @param swapOutInfo Information about the swap.
+     * @param params Information about the swap.
      * @return amountOut The output amount of the swap to the desired token.
      */
-    function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, address seller, uint256 amountToSell,  bytes calldata ref, SwapOutInfo calldata swapOutInfo) external onlySeller(seller) returns (uint256 amountOut) {
-        uint256 proceeds = _sellShares(brokerbot, shares, seller, address(this), amountToSell, ref);
-        amountOut = _swap(proceeds, swapOutInfo);
+    function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, uint256 amountToSell,  bytes calldata ref, ISwapRouter.ExactInputParams memory params, bool unwrapWeth) external returns (uint256 amountOut) {
+        params.amountIn = _sellShares(brokerbot, shares, msg.sender, address(this), amountToSell, ref);
+        amountOut = _swap(params, unwrapWeth);
     }
 
     /**
@@ -430,41 +417,32 @@ contract PaymentHub {
 
     /**
      * @notice Swap (base currency) token according to given path and unwrap weth if needed.
-     * @param amountIn The amount of (base currency) token to swap.
-     * @param swapOutInfo Information about the swap (includes path).
+     * @param params Information about the swap (includes path).
      * @return amountOut The output amount of the swap to the desired token.
      */
-    function _swap(uint256 amountIn, SwapOutInfo calldata swapOutInfo) internal returns(uint256 amountOut) {
+    function _swap(ISwapRouter.ExactInputParams memory params, bool unwrapWeth) internal returns(uint256 amountOut) {
         // if weth should be unwrapped, swap recipient is this contract and eth is send to seller
-        if (swapOutInfo.unwrapWeth){
-            amountOut = _swapToERC20(address(this), amountIn, swapOutInfo);
+        if (unwrapWeth){
+            address seller = params.recipient;
+            params.recipient = address(this);
+            amountOut = _swapToERC20(params);
             IWETH9(uniswapQuoter.WETH9()).withdraw(amountOut);
-            (bool success, ) = payable(swapOutInfo.recipient).call{value:amountOut}("");
+            (bool success, ) = payable(seller).call{value:amountOut}("");
             if (!success) revert PaymentHub_TransferFailed();
         } else {
-            amountOut = _swapToERC20(swapOutInfo.recipient, amountIn, swapOutInfo);
+            amountOut = _swapToERC20(params);
         }
     }
 
     /**
      * @notice Calls the Uniswap router to swap tokens according to given path.
-     * @param recipient The recipient address of the output tokens
-     * @param amountIn The amount of (base currency) token to swap.
-     * @param swapOutInfo Information about the swap (includes path).
+     * @param params Information about the swap (includes path).
      * @return amountOut The output amount of the swap to the desired token.
      */
-    function _swapToERC20(address recipient, uint256 amountIn, SwapOutInfo calldata swapOutInfo) internal returns(uint256 amountOut) {
-        ISwapRouter.ExactInputParams memory params =
-            ISwapRouter.ExactInputParams({
-                path: swapOutInfo.path,
-                recipient: recipient,
-                deadline: block.timestamp,
-                amountIn: amountIn,
-                amountOutMinimum: swapOutInfo.amountOutMinimum
-            }); 
+    function _swapToERC20(ISwapRouter.ExactInputParams memory params) internal returns(uint256 amountOut) {
         amountOut = uniswapRouter.exactInput(params);
-        if (amountOut < swapOutInfo.amountOutMinimum){
-            revert PaymentHub_SwapError(swapOutInfo.amountOutMinimum, amountOut);
+        if (amountOut < params.amountOutMinimum){
+            revert PaymentHub_SwapError(params.amountOutMinimum, amountOut);
         }
     }
 

@@ -23,7 +23,7 @@ contract Brokerbot is IBrokerbot, Ownable {
 
     using SafeERC20 for IERC20;
 
-    address public paymenthub;
+    address public override paymenthub;
 
     IERC20 public override immutable base;  // ERC-20 currency
     IERC20Permit public override immutable token; // ERC-20 share token
@@ -179,7 +179,7 @@ contract Brokerbot is IBrokerbot, Ownable {
      * @param from Who iniciated the sell/buy.
      * @param amount The amount of shares the are sold / The base amount paid to buy sharees.
      * @param ref Reference data blob.
-     * @return The amount of shares bought / The amount paid to buy shares. 
+     * @return The amount of shares bought / The amount received for selling the shares. 
      */
     function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
         if (msg.sender != address(incomingAsset) && msg.sender != paymenthub) {
@@ -239,11 +239,11 @@ contract Brokerbot is IBrokerbot, Ownable {
         return totPrice;
     }
 
-    function getSellPrice(uint256 shares) public view returns (uint256) {
+    function getSellPrice(uint256 shares) public view override returns (uint256) {
         return getPrice(getPrice() - (shares * increment), shares);
     }
 
-    function getBuyPrice(uint256 shares) public view returns (uint256) {
+    function getBuyPrice(uint256 shares) public view override returns (uint256) {
         return getPrice(getPrice(), shares);
     }
 
