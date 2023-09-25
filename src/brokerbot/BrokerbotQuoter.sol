@@ -12,15 +12,15 @@ import "../utils/BrokerbotLib.sol";
 contract BrokerbotQuoter is IQuoter {
 	using Path for bytes;
 
-    address private immutable weth;
+	address private immutable weth;
 	IQuoter private immutable uniswapQuoter;
 	BrokerbotRegistry private immutable brokerbotRegistry;
 
-  constructor(address _weth,  IQuoter _Quoter, BrokerbotRegistry _registry) {
-    weth = _weth;
-    uniswapQuoter = _Quoter;
-	brokerbotRegistry = _registry;
-  }
+	constructor(address _weth,  IQuoter _Quoter, BrokerbotRegistry _registry) {
+		weth = _weth;
+		uniswapQuoter = _Quoter;
+		brokerbotRegistry = _registry;
+	}
 
 	/// @inheritdoc IQuoter
 	/// @dev only used for buying shares with base currency
