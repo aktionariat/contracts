@@ -157,8 +157,4 @@ contract BrokerbotRouter is ISwapRouter {
 			tokenIn.approve(address(paymentHub), type(uint256).max); 
 		}
 	}
-
-	function exactInputInternalPrepare(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 amountShares, uint256 amountInMaximum, IERC20 tokenIn) internal  returns (uint256 amountIn) {
-		
-	}
 }
