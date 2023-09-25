@@ -230,11 +230,12 @@ describe("Sell via PaymentHub", () => {
 
   describe("Sell with multisig", () => {
     let multiSigClone;
-    let chainid = 3;
+    let chainid;
     let ownerWallet;
     before(async () => {
       const mnemonic = process.env.MNEMONIC;
       ownerWallet = ethers.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/0/1").connect(ethers.provider);
+      chainid = (await ethers.provider.getNetwork()).chainId;
       const tx = await multiSigCloneFactory.create(ownerWallet.address, salts[1]);
       const { events } = await tx.wait();
       const { address } = events.find(Boolean);
