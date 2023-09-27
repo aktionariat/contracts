@@ -391,11 +391,11 @@ contract PaymentHub {
      * @param amountToSell The amount of shares to sell.
      * @param ref Reference e.g. insider declaration and the type of sell.
      * @param params Information about the swap.
-     * @return amountOut The output amount of the swap to the desired token.
+     * @return The output amount of the swap to the desired token.
      */
-    function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, uint256 amountToSell,  bytes calldata ref, ISwapRouter.ExactInputParams memory params, bool unwrapWeth) external returns (uint256 amountOut) {
+    function sellSharesAndSwap(IBrokerbot brokerbot, IERC20 shares, uint256 amountToSell,  bytes calldata ref, ISwapRouter.ExactInputParams memory params, bool unwrapWeth) external returns (uint256) {
         params.amountIn = _sellShares(brokerbot, shares, msg.sender, address(this), amountToSell, ref);
-        amountOut = _swap(params, unwrapWeth);
+        return _swap(params, unwrapWeth);
     }
 
     /**
