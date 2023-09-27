@@ -136,7 +136,7 @@ contract PaymentHub {
     
     /**
      * @notice Get price for given amount and path swapped via uniswap. 
-     * @param amount The exact amount which want get out(exactOutput) or you put in (exactInput).
+     * @param amount The exact amount which you want get out (exactOutput) or you put in (exactInput).
      * @param path The path of the swap (inreverse order for exactOutput).
      * @param exactOutput True if exactOutput should be used or false if exactInput should be used.
      */
@@ -399,7 +399,7 @@ contract PaymentHub {
     }
 
     /**
-     * @notice Tranfsers shares to brokerbot and executes the selling.
+     * @notice Transfers shares to brokerbot and executes the selling.
      * @param brokerbot The brokerbot of the shares to sell.
      * @param shares The (draggable)shares address.
      * @param seller The seller address.
@@ -447,7 +447,7 @@ contract PaymentHub {
     }
 
     /**
-     * Checks if the brokerbot(brokerbot) has setting enabled to keep ether
+     * Checks if the brokerbot has setting enabled to keep ether
      */
     function hasSettingKeepEther(IBrokerbot brokerbot) public view returns (bool) {
         return brokerbot.settings() & KEEP_ETHER == KEEP_ETHER;
