@@ -284,7 +284,7 @@ describe("Multisig", () => {
     expect(await multiSigClone.signers(adr3.address)).to.be.equal(2);
   })
 
-  it("Should revert whenn nonce is used multiple times", async () => {
+  it("Should revert when nonce is used multiple times", async () => {
     const tx = await multiSigCloneFactory.create(randomWallet.address, salts[4]);
     const { gasUsed: createGasUsed, events } = await tx.wait();
     const { address } = events.find(Boolean);
