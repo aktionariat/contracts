@@ -1,4 +1,4 @@
-const {network, ethers, deployments, } = require("hardhat");
+const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
 const config = require("../../scripts/deploy_config.js")
 
 const toBytes32 = (bn) => {
@@ -11,7 +11,6 @@ const setStorageAt = async (address, index, value) => {
 };
 
 async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
-
   await network.provider.request({
     method: "hardhat_impersonateAccount",
     params: [minterAddress],
@@ -80,7 +79,7 @@ async function setBalances(accounts, baseCurrency, daiContract, wbtcContract) {
     await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
 }
 
-async function setup() {
+async function setup(setupBrokerbotEnabled) {
   let baseCurrency;
   let brokerbot;
   let recoveryHub;
@@ -88,6 +87,8 @@ async function setup() {
   let draggableShares;
   let shares;
   let paymentHub;
+  let successor;
+  let successorExternal;
 
   let deployer
   let owner;
@@ -103,17 +104,26 @@ async function setup() {
   signers = [owner,sig1,sig2,sig3,sig4,sig5];
   accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
   
-  // deploy contracts
+  // get common contracts
   baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+  daiContract = await ethers.getContractAt("ERC20Named", config.daiAddress);
+  wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress);
+  usdcContract = await ethers.getContractAt("ERC20Named", config.usdcAddress);baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   
+  // deploy contracts
   await deployments.fixture([
-    "ReoveryHub",
+    "RecoveryHub",
     "OfferFactory",
     "Shares",
     "DraggableShares",
     "AllowlistShares",
     "PaymentHub",
-    "Brokerbot"
+    "Brokerbot",
+    "BrokerbotRegistry",
+    "BrokerbotRouter",
+    "BrokerbotQuoter",
+    "DraggableSharesWithPredecessor",
+    "DraggableSharesWithPredecessorExternal"
   ]);
   
   paymentHub = await ethers.getContract("PaymentHub");
@@ -121,7 +131,10 @@ async function setup() {
   offerFactory = await ethers.getContract("OfferFactory");
   shares = await ethers.getContract("Shares");
   draggableShares = await ethers.getContract("DraggableShares");
+  successor = await ethers.getContract("DraggableSharesWithPredecessor");
+  successorExternal = await ethers.getContract("DraggableSharesWithPredecessorExternal");
   brokerbot = await ethers.getContract("Brokerbot");
+  
   
   // Set Payment Hub for Brokerbot
   await brokerbot.connect(owner).setPaymentHub(paymentHub.address);
@@ -134,6 +147,8 @@ async function setup() {
 
   // Mint baseCurrency Tokens (xchf) to first 5 accounts
   await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+  // Set dai balance to frist 5 accounts
+  await setBalance(daiContract, config.daiBalanceSlot, accounts);
   // set baseCurrency Token (xchf) at brokerbot to sell shares
   await setBalance(baseCurrency, config.xchfBalanceSlot, [brokerbot.address]);
 
@@ -147,12 +162,59 @@ async function setup() {
     await shares.connect(signers[i]).approve(draggableShares.address, config.infiniteAllowance);
     await draggableShares.connect(signers[i]).wrap(accounts[i], 900000);
   }
-  // Deposit some shares to Brokerbot
-  await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
-  await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
+
+  if (setupBrokerbotEnabled) {
+      // Deposit some shares/xchf to Brokerbot
+      await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
+      await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
+  }  
+}
+
+async function getTX(to, dataTX, multisigclone, wallet, chainid) {
+  const contractId = await multisigclone.connect(wallet).contractId();
+  const seq = await multisigclone.nextNonce();
+  const tx_send_ms = {
+    nonce: seq,
+    gasPrice: contractId,
+    gasLimit: 21000,
+    to: to,
+    data: dataTX.data,
+    chainId: chainid,
+  };
+  const flatSig = await wallet.signTransaction(tx_send_ms);
+  const tx1 = ethers.utils.parseTransaction(flatSig);
+  return tx1;
+}
+ async function getBlockTimeStamp(ethers) {
+  // get block timestamp
+  const blockNum = await ethers.provider.getBlockNumber();
+  const block = await ethers.provider.getBlock(blockNum);
+  return block.timestamp;
+ }
+
+//get signer from address through impersonating account with hardhat
+async function getImpersonatedSigner(impersonateAddress) {
+  await network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [impersonateAddress],
+  });
+  const signer = ethers.provider.getSigner(impersonateAddress);
+  return signer;
 }
 
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount};
+module.exports = {
+  mintERC20,
+  setBalance,
+  sendEther,
+  buyingEnabled,
+  sellingEnabled,
+  setBalances,
+  setup,
+  setBalanceWithAmount,
+  getTX,
+  getBlockTimeStamp,
+  getImpersonatedSigner
+};

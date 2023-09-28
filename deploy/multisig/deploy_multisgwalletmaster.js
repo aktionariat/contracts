@@ -20,8 +20,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("MultiSigWalletMasterV4", {
-    contract: "MultiSigWalletV4",
+  const { address } = await deploy("MultiSigWalletMaster", {
+    contract: "MultiSigWalletMaster",
     from: deployer,
     args: [],
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
@@ -30,4 +30,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["MultiSigWalletMasterV4"];
+module.exports.tags = ["MultiSigWalletMaster"];

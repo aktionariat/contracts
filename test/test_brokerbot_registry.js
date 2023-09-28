@@ -50,7 +50,8 @@ describe("Brokerbot Registry", () => {
   
   it("Should register brokerbot", async () => {
     await expect(brokerbotRegistry.connect(sig1).registerBrokerbot(brokerbot.address, config.baseCurrencyAddress, draggable.address))
-      .to.be.revertedWith("not owner")
+      .to.be.revertedWithCustomError(brokerbotRegistry, "Ownable_NotOwner")
+      .withArgs(sig1.address);
     await expect(brokerbotRegistry.registerBrokerbot(brokerbot.address, config.baseCurrencyAddress, draggable.address))
       .to.emit(brokerbotRegistry, "RegisterBrokerbot")
       .withArgs(brokerbot.address, config.baseCurrencyAddress, draggable.address);

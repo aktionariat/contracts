@@ -15,6 +15,18 @@ import "./IERC20.sol";
  * need to send a transaction, and thus is not required to hold Ether at all.
  */
 interface IERC20Permit is IERC20 {
+
+    /*//////////////////////////////////////////////////////////////
+                            Custom errors
+	//////////////////////////////////////////////////////////////*/
+    /// Block timestamp must to be before deadline.
+    /// @param deadline The deadline of the permit.
+    /// @param blockTimestamp The timestamp of the execution block.
+    error Permit_DeadlineExpired(uint256 deadline, uint256 blockTimestamp);
+    /// Recovered address must be owner and not zero address.
+    /// @param signerAddress The recovered signer address.
+    error Permit_InvalidSigner(address signerAddress);
+
     /**
      * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
      * given ``owner``'s signed approval.

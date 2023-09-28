@@ -49,6 +49,16 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
 
   event AddressTypeUpdate(address indexed account, uint8 addressType);
 
+  /// Receiver has flag forbidden.
+  /// @param receiver the address of the forbidden receiver.
+  error Allowlist_ReceiverIsForbidden(address receiver);
+  /// Sender has flag forbidden.
+  /// @param sender the address of the forbidden sender.
+  error Allowlist_SenderIsForbidden(address sender);
+  /// Receiver has no allowlist flag.
+  /// @param receiver the address which isn't allowlisted.
+  error Allowlist_ReceiverNotAllowlisted(address receiver);
+
   bool public restrictTransfers;
 
   constructor(){
@@ -124,7 +134,9 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
       // ok, transfers to allowlisted addresses are always allowed
     } else if (isForbidden(to)){
       // Target is forbidden, but maybe restrictions have been removed and we can clean the flag
-      require(!restrictTransfers, "not allowed");
+      if (restrictTransfers) {
+        revert Allowlist_ReceiverIsForbidden(to);
+      }
       setFlag(to, FLAG_INDEX_FORBIDDEN, false);
     } else {
       if (isPowerlisted(from)){
@@ -136,10 +148,14 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
       // if we made it to here, the target must be a free address and we are not powerlisted
       else if (hasFlagInternal(from, FLAG_INDEX_ALLOWLIST)){
         // We cannot send to free addresses, but maybe the restrictions have been removed and we can clean the flag?
-        require(!restrictTransfers, "not allowed");
+        if (restrictTransfers) {
+          revert Allowlist_ReceiverNotAllowlisted(to);
+        }
         setFlag(from, FLAG_INDEX_ALLOWLIST, false);
       } else if (isForbidden(from)){
-        require(!restrictTransfers, "not allowed");
+        if (restrictTransfers) {
+          revert Allowlist_SenderIsForbidden(from);
+        }
         setFlag(from, FLAG_INDEX_FORBIDDEN, false);
       }
     }

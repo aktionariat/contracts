@@ -57,7 +57,7 @@ module.exports = {
       forking: {
         //enabled: process.env.FORKING === "true",
         url: getForkUrl(),
-        blockNumber: 13759520,
+        blockNumber: 17663503,
       },
       live: false,
       saveDeployments: true,
@@ -193,6 +193,11 @@ module.exports = {
       11155111: process.env.MULTISIG_DEFAULT,
       69: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
+    },
+    trustedForwarder: {
+      default: process.env.TRUSTED_FORWARDER,
+      1: process.env.TRUSTED_FORWARDER, // mainnet 
+      10: process.env.TRUSTED_FORWARDER, // op mainnet
     }
   },
   gasReporter: {
@@ -222,7 +227,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.7",
+        version: "0.8.20",
         settings: {
           optimizer: {
             enabled: true,
