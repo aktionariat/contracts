@@ -116,11 +116,14 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	}
 
 	modifier checkBinding(bool expected) {
-		if (expected && !isBinding()) {
-			revert Draggable_NotBinding();
-		} else if (!expected && isBinding()) {
-			revert Draggable_IsBinding();
-		}
+		if (expected != isBinding()) {
+			if(expected) {
+				revert Draggable_NotBinding();
+			}
+			if(!expected) {
+				revert Draggable_IsBinding();
+			}
+		} 
 		_;
 	}
 
