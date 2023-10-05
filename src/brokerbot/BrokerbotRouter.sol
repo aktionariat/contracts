@@ -8,6 +8,7 @@ import "./BrokerbotRegistry.sol";
 import "../ERC20/IERC677.sol";
 import "../utils/Path.sol";
 import "../utils/BrokerbotLib.sol";
+import "hardhat/console.sol";
 /**
  * @title Brokerbot Swap Router
  * @author Bernhard Ruf, bernhard@aktionariat.com 
@@ -50,6 +51,9 @@ contract BrokerbotRouter is ISwapRouter {
 		} else {
 			amountIn = _exactOutputInternalPrepare(brokerbot, paymentHub, params.amountOut, params.amountInMaximum, IERC20(params.tokenIn));
 			// call paymenthub to buy shares with base currency
+			console.log(msg.sender);
+			console.log(amountIn);
+			console.log(IERC20(params.tokenIn).balanceOf(address(this)));
 			paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
 			refundERC20(IERC20(params.tokenIn));
 		}
@@ -74,9 +78,9 @@ contract BrokerbotRouter is ISwapRouter {
 			amountIn = _exactOutputInternalPrepare(brokerbot, paymentHub, params.amountOut, params.amountInMaximum, IERC20(firstTokenIn));
 			if (params.path.hasMultiplePools()) {
 				modifiedPath = params.path.skipToken();
-				(amountIn, ) = paymentHub.payFromERC20AndNotify(brokerbot, amountIn, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
+				paymentHub.payFromERC20AndNotify(brokerbot, amountIn, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
 			} else {
-				paymentHub.payAndNotify(brokerbot, params.amountInMaximum,  bytes("\x01"));
+				paymentHub.payAndNotify(IERC20(baseToken), brokerbot, params.amountInMaximum,  bytes("\x01"));
 			}
 			refundERC20(IERC20(firstTokenIn));
 		}
@@ -146,7 +150,8 @@ contract BrokerbotRouter is ISwapRouter {
 
 	function _buyWithEther(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 shareAmount, uint256 ethAmount) internal returns (uint256 amountIn) {
 		uint256 baseAmount = brokerbot.getBuyPrice(shareAmount);
-		(amountIn,) = paymentHub.payFromEtherAndNotify{value: ethAmount}(brokerbot, baseAmount, bytes("\x01"));	
+		amountIn = paymentHub.getPriceInEther(baseAmount, brokerbot);
+		paymentHub.payFromEtherAndNotify{value: ethAmount}(brokerbot, baseAmount, bytes("\x01"));	
     }
 
 	function _exactOutputInternalPrepare(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 amountShares, uint256 amountInMaximum, IERC20 tokenIn) internal  returns (uint256 amountIn) {

@@ -35,6 +35,7 @@ import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../utils/SafeERC20.sol";
+import "hardhat/console.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
@@ -280,15 +281,16 @@ contract PaymentHub {
      * @param brokerbot The brokerbot to pay and receive the shares from.
      * @param amountInBase The amount of base currency used to buy shares.
      * @param ref The reference data blob.
-     * @return The amount of shares bought
      */
-    function payAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external returns (uint256) {
-        return payAndNotify(brokerbot.base(), brokerbot, amountInBase, ref);
+    function payAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external {
+        console.log(msg.sender);
+        payAndNotify(brokerbot.base(), brokerbot, amountInBase, ref);
     }
 
-    function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public returns (uint256) {
+    function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public {
+        console.log(msg.sender);
         token.safeTransferFrom(msg.sender, address(brokerbot), amount);
-        return brokerbot.processIncoming(token, msg.sender, amount, ref);
+        brokerbot.processIncoming(token, msg.sender, amount, ref);
     }
 
     /**
@@ -296,15 +298,13 @@ contract PaymentHub {
      * @param brokerbot The brokerbot to pay and receive the shares from.
      * @param amountInBase The amount of base currency used to buy shares.
      * @param ref The reference data blob.
-     * @return priceInEther The amount of Ether spent.
-     * @return sharesOut The amount of shares bought.
      */
-    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 priceInEther, uint256 sharesOut) {
+    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable {
         IERC20 base = brokerbot.base();
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(brokerbot)) {
-            priceInEther = getPriceInEtherFromOracle(amountInBase, base);
-            sharesOut = brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
+            uint256 priceInEther = getPriceInEtherFromOracle(amountInBase, base);
+            brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
@@ -315,8 +315,8 @@ contract PaymentHub {
             }
 
         } else {
-            priceInEther = payFromEther(address(brokerbot), amountInBase, base);
-            sharesOut = brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
+            payFromEther(address(brokerbot), amountInBase, base);
+            brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
         }
     }
 

@@ -7,7 +7,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const { deployer, owner } = await getNamedAccounts();
 
   let brokerbotRegistry
-  if (network.name != "hardhat") {
+  if (network.name != "hardhat1") {
     brokerbotRegistry = "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"; //for production deployment
   } else {
     const brokerbotRegistryContract = await deployments.get('BrokerbotRegistry'); // for testing
@@ -42,3 +42,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 };
 
 module.exports.tags = ["BrokerbotRouter"];
+module.exports.dependencies = ["BrokerbotRegistry"];
