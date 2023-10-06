@@ -1,164 +1,155 @@
-/* global artifacts, contract, assert, web3 */
+// Shared Config
+const config = require("../scripts/deploy_config.js");
 
-// Shared Migration Config
-const config = require("../migrations/migration_config");
+
+const { setup } = require("./helper/index");
 
 // Libraries
-const BN = require("bn.js");
+const { ethers} = require("hardhat");
+const { expect } = require("chai");
+const exp = require("constants");
 
 // Import contracts to be tested
-const PaymentHub = artifacts.require("PaymentHub");
-const ERC20 = artifacts.require("ERC20");
 
 // Test parameters
-const paymentAmountInBase = new BN("1000000000000000");
+const paymentAmountInBase = ethers.utils.parseEther("10");
 
-contract("PaymentHub", (accounts) => {
-  it("should deploy", async () => {
-    const paymentHub = await PaymentHub.deployed();
-    assert(paymentHub.address !== "");
+describe("PaymentHub", () => {
+  let paymentHub;
+  let brokerbot;
+  let base;
+  let accounts;
+  let deployer;
+  let owner;
+  let sig1;
+  let sig2;
+  let sig
+
+  before( async () => {
+    [deployer,owner,sig1,sig2,sig3] = await ethers.getSigners();
+    accounts = [owner.address,sig1.address,sig2.address,sig3.address];
+    paymentHub = await ethers.getContract("PaymentHub");
+    brokerbot = await ethers.getContract("Brokerbot");
+
+    base = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   });
 
-  it("should have correct base currency set", async () => {
-    const paymentHub = await PaymentHub.deployed();
-    const currency = await paymentHub.currency.call();
-    assert.equal(currency, config.baseCurrencyAddress);
+  it("should deploy paymenthub", async () => {
+    expect(paymentHub.address).to.exist;
   });
 
   it("should get price in ether", async () => {
-    const paymentHub = await PaymentHub.deployed();
-    const priceInETH = await paymentHub.getPriceInEther.call(paymentAmountInBase);
-    assert(priceInETH > 0);
+    const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, brokerbot.address);
+    expect(priceInETH).to.be.above(0);
   });
 
   it("should pay using Ether to recipient in baseCurrency", async () => {
     // Used contracts: PaymentHub, Base
-    const paymentHub = await PaymentHub.deployed();
-    const base = await ERC20.at(config.baseCurrencyAddress);
 
     // Get balances before
-    const ethBalanceSenderBefore = new BN(await web3.eth.getBalance(accounts[0]));
-    const baseBalanceRecipientBefore = new BN(await base.balanceOf(accounts[1]));
+    const ethBalanceSenderBefore = await ethers.provider.getBalance(accounts[0]);
+    const baseBalanceRecipientBefore = await base.balanceOf(accounts[1]);
 
     // Execute payment
-    const priceInETH = await paymentHub.getPriceInEther.call(paymentAmountInBase);
-    const txInfo = await paymentHub.payFromEther(
+    const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, brokerbot.address);
+    const txInfo = await paymentHub.connect(owner).payFromEther(
       accounts[1],
       paymentAmountInBase,
-      { from: accounts[0], value: priceInETH }
+      await brokerbot.base(),
+      { value: priceInETH }
     );
-    const tx = await web3.eth.getTransaction(txInfo.tx);
-    const gasCost = new BN(tx.gasPrice).mul(new BN(txInfo.receipt.gasUsed));
+    const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
+    const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
 
     // Get balances after
-    const ethBalanceSenderAfter = new BN(await web3.eth.getBalance(accounts[0]));
-    const baseBalanceRecipientAfter = new BN(await base.balanceOf(accounts[1]));
+    const ethBalanceSenderAfter = await ethers.provider.getBalance(accounts[0]);
+    const baseBalanceRecipientAfter = await base.balanceOf(accounts[1]);
 
     // Check result
-    assert(
-      ethBalanceSenderBefore
-        .sub(priceInETH)
-        .sub(gasCost)
-        .eq(ethBalanceSenderAfter)
-    );
-    assert(
-      baseBalanceRecipientBefore
-        .add(paymentAmountInBase)
-        .eq(baseBalanceRecipientAfter)
-    );
+    expect(ethBalanceSenderBefore.sub(priceInETH).sub(gasCost)).to.equal(ethBalanceSenderAfter);
+    expect(baseBalanceRecipientBefore.add(paymentAmountInBase)).to.equal(baseBalanceRecipientAfter);
   });
 
   it("should return unspent ETH to spender", async () => {
     // Used contracts: PaymentHub, Base
-    const paymentHub = await PaymentHub.deployed();
-    const base = await ERC20.at(config.baseCurrencyAddress);
-
     // Get balances before
-    const ethBalanceSenderBefore = new BN(await web3.eth.getBalance(accounts[0]));
-    const baseBalanceRecipientBefore = new BN(await base.balanceOf(accounts[1]));
+    const ethBalanceSenderBefore = await ethers.provider.getBalance(accounts[0]);
+    const baseBalanceRecipientBefore = await base.balanceOf(accounts[1]);
 
     // Calculate required ETH and set a slippage
-    const priceInETH = new BN(
-      await paymentHub.getPriceInEther.call(paymentAmountInBase)
-    );
-    const priceInEthWithSlippage = priceInETH.mul(new BN(103)).div(new BN(100));
+    const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, brokerbot.address);
+    const priceInEthWithSlippage = priceInETH.mul(103).div(100);
 
     // Execute transaction with increased ETH
-    const txInfo = await paymentHub.payFromEther(
+    const txInfo = await paymentHub.connect(owner).payFromEther(
       accounts[1],
       paymentAmountInBase,
-      { from: accounts[0], value: priceInEthWithSlippage }
+      await brokerbot.base(),
+      { value: priceInEthWithSlippage }
     );
-    const tx = await web3.eth.getTransaction(txInfo.tx);
-    const gasCost = new BN(tx.gasPrice).mul(new BN(txInfo.receipt.gasUsed));
+    const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
+    const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
 
     // Get balances after
-    const ethBalanceSenderAfter = new BN(await web3.eth.getBalance(accounts[0]));
-    const baseBalanceRecipientAfter = new BN(await base.balanceOf(accounts[1]));
-    const ethBalancePaymentHubAfter = new BN(
-      await web3.eth.getBalance(paymentHub.address)
-    );
-    const ethBalanceUniswapAfter = new BN(
-      await web3.eth.getBalance(config.uniswapRouterAddress)
-    );
+    const ethBalanceSenderAfter = await ethers.provider.getBalance(accounts[0]);
+    const baseBalanceRecipientAfter = await base.balanceOf(accounts[1]);
+    const ethBalancePaymentHubAfter = await ethers.provider.getBalance(paymentHub.address);
+    const ethBalanceUniswapAfter = await ethers.provider.getBalance(config.uniswapRouterAddress);
 
     // Check result
-    assert(
-      ethBalanceSenderBefore
-        .sub(priceInETH)
-        .sub(gasCost)
-        .eq(ethBalanceSenderAfter)
-    );
-    assert(
-      baseBalanceRecipientBefore
-        .add(paymentAmountInBase)
-        .eq(baseBalanceRecipientAfter)
-    );
-    assert(ethBalancePaymentHubAfter.isZero());
-    assert(ethBalanceUniswapAfter.isZero());
+    expect(ethBalanceSenderBefore.sub(priceInETH).sub(gasCost)).to.eq(ethBalanceSenderAfter);
+    expect(baseBalanceRecipientBefore.add(paymentAmountInBase)).to.eq(baseBalanceRecipientAfter);
+    expect(ethBalancePaymentHubAfter.isZero()).to.equal(true);
+    expect(ethBalanceUniswapAfter.isZero()).to.equal(true);
   });
 
   it("should make multiple payments in baseCurrency in single transaction", async () => {
-    // Used contracts: PaymentHub, Erc20
-    const paymentHub = await PaymentHub.deployed();
-    const erc20 = await ERC20.at(config.baseCurrencyAddress);
+    // Used contracts: PaymentHub, base
 
     // Get 1/100 of accounts[0] token balance. Send 1, 3, 20 units to accounts[1],[2],[3] respectively.
-    const balance = web3.utils.toBN(await erc20.balanceOf(accounts[0]));
-    const toSendUnit = balance.div(new BN(100));
-    const toSend1 = toSendUnit.mul(new BN(1));
-    const toSend2 = toSendUnit.mul(new BN(3));
-    const toSend3 = toSendUnit.mul(new BN(20));
+    const balance = await base.balanceOf(accounts[0]);
+    const toSendUnit = balance.div(100);
+    const toSend1 = toSendUnit.mul(1);
+    const toSend2 = toSendUnit.mul(3);
+    const toSend3 = toSendUnit.mul(20);
+
+    // get amount that is higher than account balance
+    const toSendTooMuch = toSendUnit.mul(110);
 
     // Set allowance for paymentHub to spend baseCurrency tokens of account[0]
-    await erc20.approve(paymentHub.address, new BN(config.infiniteAllowance));
+    await base.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
 
     // Get balances before
-    const balanceBefore0 = new BN(await erc20.balanceOf(accounts[0]));
-    const balanceBefore1 = new BN(await erc20.balanceOf(accounts[1]));
-    const balanceBefore2 = new BN(await erc20.balanceOf(accounts[2]));
-    const balanceBefore3 = new BN(await erc20.balanceOf(accounts[3]));
+    const balanceBefore0 = await base.balanceOf(accounts[0]);
+    const balanceBefore1 = await base.balanceOf(accounts[1]);
+    const balanceBefore2 = await base.balanceOf(accounts[2]);
+    const balanceBefore3 = await base.balanceOf(accounts[3]);
 
-    // Pay from accounts[0] to [1], [2] and [3] in one transaction
-    await paymentHub.multiPay(
+    // check if reverts with too amount higher as balance
+    await expect(paymentHub.connect(owner).multiPay(
       config.baseCurrencyAddress,
       [accounts[1], accounts[2], accounts[3]],
-      [toSend1, toSend2, toSend3],
-      { from: accounts[0] }
+      [toSend1, toSend2, toSendTooMuch]
+      ))
+      .to.be.reverted;
+
+    // Pay from accounts[0] to [1], [2] and [3] in one transaction
+    await paymentHub.connect(owner).multiPay(
+      config.baseCurrencyAddress,
+      [accounts[1], accounts[2], accounts[3]],
+      [toSend1, toSend2, toSend3]
     );
 
     // Get balances after
-    const balanceAfter0 = new BN(await erc20.balanceOf(accounts[0]));
-    const balanceAfter1 = new BN(await erc20.balanceOf(accounts[1]));
-    const balanceAfter2 = new BN(await erc20.balanceOf(accounts[2]));
-    const balanceAfter3 = new BN(await erc20.balanceOf(accounts[3]));
+    const balanceAfter0 = await base.balanceOf(accounts[0]);
+    const balanceAfter1 = await base.balanceOf(accounts[1]);
+    const balanceAfter2 = await base.balanceOf(accounts[2]);
+    const balanceAfter3 = await base.balanceOf(accounts[3]);
 
     // Check result
-    assert(
-      balanceBefore0.sub(toSend1).sub(toSend2).sub(toSend3).eq(balanceAfter0)
-    );
-    assert(balanceBefore1.add(toSend1).eq(balanceAfter1));
-    assert(balanceBefore2.add(toSend2).eq(balanceAfter2));
-    assert(balanceBefore3.add(toSend3).eq(balanceAfter3));
+    expect(balanceBefore0.sub(toSend1).sub(toSend2).sub(toSend3)).to.eq(balanceAfter0);
+    expect(balanceBefore1.add(toSend1)).to.eq(balanceAfter1);
+    expect(balanceBefore2.add(toSend2)).to.eq(balanceAfter2);
+    expect(balanceBefore3.add(toSend3)).to.eq(balanceAfter3);
   });
 });

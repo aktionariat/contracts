@@ -1,14 +1,24 @@
+const Confirm = require('prompt-confirm');
+const nconf = require('nconf');
+
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
+  
+  if (network.name != "hardhat" && !nconf.get("silent")) {
+    console.log("-----------------------")
+    console.log("Deploy OfferFactory")
+    console.log("-----------------------")
+    console.log("deployer: %s", deployer);
 
-  console.log("-----------------------")
-  console.log("Deploy OfferFactory")
-  console.log("-----------------------")
-  console.log("deployer: %s", deployer);
-
-  const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
+  
+    const prompt = await new Confirm("Addresses correct?").run();
+    if(!prompt) {
+      console.log("exiting");
+      process.exit();
+    }
+  }
 
   const feeData = await ethers.provider.getFeeData();
 

@@ -1,11 +1,10 @@
 require("dotenv").config();
 
-require("@nomiclabs/hardhat-etherscan");
-require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
-require("solidity-coverage");
+require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-deploy");
-require("@nomiclabs/hardhat-truffle5");
+require("hardhat-deploy-ethers");
+require("hardhat-change-network");
+
 require("./tasks");
 
 function getMnemonic(networkName) {
@@ -25,6 +24,14 @@ function getMnemonic(networkName) {
 
 function accounts(networkName){
   return {mnemonic: getMnemonic(networkName)};
+}
+
+function getForkUrl() {
+  if (process.env.LOCAL) {
+    return `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`;
+  } else {
+    return `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`;
+  }
 }
 
 /**
@@ -49,12 +56,13 @@ module.exports = {
       accounts: accounts(),
       forking: {
         //enabled: process.env.FORKING === "true",
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 13191833,
+        url: getForkUrl(),
+        blockNumber: 17663503,
       },
       live: false,
       saveDeployments: true,
-      chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
+      chainId: 1, // 1 for forking mainnet test
       tags: ["test", "local"],
     },
     ropsten: {
@@ -79,23 +87,23 @@ module.exports = {
       gasMultiplier: 2,
     },
     goerli: {
-      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      //url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_GOERLI}`,
       accounts: accounts("goerli"),
       chainId: 5,
       live: true,
       saveDeployments: true,
       tags: ["staging"],
-      gasPrice: 5000000000,
       gasMultiplier: 2,
+      gas: 3000000
     },
-    kovan: {
-      url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: accounts("kovan"),
-      chainId: 42,
+    sepolia: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_SEPOLIA}`,
+      accounts: accounts("sepolia"),
+      chainId: 11155111,
       live: true,
       saveDeployments: true,
       tags: ["staging"],
-      gasPrice: 20000000000,
       gasMultiplier: 2,
     },
     arbitrum: {
@@ -130,6 +138,24 @@ module.exports = {
         l2: "localArbitrum",
       },
     },
+    kovanOptimism: {
+      url: 'https://kovan.optimism.io',
+      accounts: accounts("optimism_kovan"),
+      chainId: 69,
+      live: true,
+      saveDeployments: true,
+      tags: ["staging"],
+      deploy: ['deploy_optimism']
+    },
+    optimism: {
+        //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
+        url: "https://mainnet.optimism.io",
+        accounts: accounts("optimism"),
+        //chainId: 10,
+        live: true,
+        saveDeployments: true,
+        deploy: ['deploy_optimism']
+    },
     polygon: {
       url: "https://polygon-rpc.com",
       accounts: accounts("polygon")
@@ -149,9 +175,22 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
+      3: 1,
+      4: 1,
+      5: 1,
+      11155111: 1,
+      69: 1
     },
     owner: {
-      default: 0,
+      default: 1,
+      //1: process.env.MULTISIG_DEPLOY, // mainnet
+      10: process.env.MULTISIG_DEPLOY, // optimism
+      3: process.env.MULTISIG_DEPLOY, // ropsten
+      4: process.env.MULTISIG_DEPLOY, // rinkeby
+      5: process.env.MULTISIG_DEPLOY, // goerli
+      11155111: process.env.MULTISIG_DEPLOY, // sepolia
+      69: process.env.MULTISIG_DEPLOY, // optimism kovan
+      42161: process.env.MULTISIG_DEPLOY // arb1
     },
     dev: {
       // Default to 1
@@ -160,8 +199,20 @@ module.exports = {
       // 1: "",
     },
     multiSigDefaultOwner: {
-      default: 1,
-      1: process.env.MULTISIG_DEFAULT
+      default: 0,
+      1: process.env.MULTISIG_DEFAULT,
+      10: process.env.MULTISIG_DEFAULT,
+      3: process.env.MULTISIG_DEFAULT,
+      4: process.env.MULTISIG_DEFAULT,
+      5: process.env.MULTISIG_DEFAULT,
+      11155111: process.env.MULTISIG_DEFAULT,
+      69: process.env.MULTISIG_DEFAULT,
+      42161: process.env.MULTISIG_DEFAULT,
+    },
+    trustedForwarder: {
+      default: process.env.TRUSTED_FORWARDER,
+      1: process.env.TRUSTED_FORWARDER, // mainnet
+      10: process.env.TRUSTED_FORWARDER, // op mainnet
     }
   },
   gasReporter: {
@@ -171,13 +222,27 @@ module.exports = {
     // url: "http://192.168.0.100:8546",
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
-  etherscan: {
-    apiKey: "VTBTEUWDU1MVQ11Z5FSW1DQX56389ZFWVQ"
+  verify: {
+    etherscan: {
+      apiKey: {
+        mainnet: process.env.ETHERSCAN_API_KEY,
+        ropsten: process.env.ETHERSCAN_API_KEY,
+        rinkeby: process.env.ETHERSCAN_API_KEY,
+        goerli: process.env.ETHERSCAN_API_KEY,
+        sepolia: process.env.ETHERSCAN_API_KEY,
+        // optimism
+        optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+        kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+        // polygon
+        polygon: process.env.POLYGONSCAN_API_KEY,
+        polygonMumbai: process.env.POLYGONSCAN_API_KEY,
+      }
+    },
   },
   solidity: {
     compilers: [
       {
-        version: "0.8.7",
+        version: "0.8.20",
         settings: {
           optimizer: {
             enabled: true,
@@ -193,4 +258,7 @@ module.exports = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
+  mocha: {
+    timeout: 100000
+  }
 };

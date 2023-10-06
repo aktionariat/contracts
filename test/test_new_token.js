@@ -1,26 +1,31 @@
-const {network, ethers, } = require("hardhat");
-const { expect } = require("chai");
+const {network, ethers, getNamedAccounts} = require("hardhat");
 const Chance = require("chance");
+const { setBalance, setBalanceWithAmount } = require("./helper/index");
+const { expect } = require("chai");
+const { PANIC_CODES } = require("@nomicfoundation/hardhat-chai-matchers/panic");
 
 // Shared  Config
-const config = require("../migrations/migration_config");
+const config = require("../scripts/deploy_config.js");
+const exp = require("constants");
 
 describe("New Standard", () => {
   let draggable
   let shares
   let recoveryHub;
   let baseCurrency;
+  let brokerbot;
   let paymentHub;
-  let forceSend;
   let offerFactory
   let allowlistShares;
   let allowlistDraggable;
 
+  let deployer
   let owner;
   let sig1;
   let sig2;
   let sig3;
   let sig4;
+  let sig5;
   let accounts;
   let signers;
   let oracle;
@@ -34,83 +39,55 @@ describe("New Standard", () => {
   const TYPE_DEFAULT = 0;
   const TYPE_ALLOWLISTED = 1;
   const TYPE_FORBIDDEN = 2;
-  const TYPE_POWERLISTED = 3;
+  const TYPE_POWERLISTED = 4;
 
   before(async () => {
     // get signers and accounts of them
-    [owner,sig1,sig2,sig3,sig4,oracle] = await ethers.getSigners();
-    signers = [owner,sig1,sig2,sig3,sig4];
-    accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address];
+    [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
+    signers = [owner,sig1,sig2,sig3,sig4,sig5];
+    accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
+    oracle = owner;
     chance = new Chance();
 
-    // random test data with chance
-    name = chance.sentence({words: 3});
-    symbol = chance.word({length: chance.natural({min: 1, max: 5})}).toUpperCase();
-    terms = chance.word({length: chance.natural({min: 1, max: 10})});
-    dterms = chance.word({length: chance.natural({min: 1, max: 10})});
-
     // deploy contracts
-    baseCurrency = await ethers.getContractAt("ERC20Basic",config.baseCurrencyAddress);
-    
-    forceSend = await await ethers.getContractFactory("ForceSend")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
 
-    paymentHub = await await ethers.getContractFactory("PaymentHub")
-      .then(factory => factory.deploy(config.baseCurrencyAddress))
-      .then(contract => contract.deployed());
+    await deployments.fixture([
+      "ReoveryHub",
+      "OfferFactory",
+      "Shares",
+      "DraggableShares",
+      "AllowlistShares",
+      //"AllowlistDraggableShares",
+      "PaymentHub",
+      "Brokerbot"
+    ]);
 
-    recoveryHub = await ethers.getContractFactory("RecoveryHub")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());
+    paymentHub = await ethers.getContract("PaymentHub");
+    recoveryHub = await ethers.getContract("RecoveryHub");
+    offerFactory = await ethers.getContract("OfferFactory");
+    shares = await ethers.getContract("Shares");
+    draggable = await ethers.getContract("DraggableShares");
+    allowlistShares = await ethers.getContract("AllowlistShares");
+    //allowlistDraggable = await ethers.getContract("AllowlistDraggableShares");
+    brokerbot = await ethers.getContract("Brokerbot");
 
-    offerFactory = await ethers.getContractFactory("OfferFactory")
-      .then(factory => factory.deploy())
-      .then(contract => contract.deployed());    
-
-    shares = await ethers.getContractFactory("Shares")
-     .then(factory => factory.deploy(symbol, name, terms, config.totalShares, owner.address, recoveryHub.address))
-     .then(contract => contract.deployed());
-
-    draggable = await ethers.getContractFactory("DraggableShares")
-      .then(factory => factory.deploy(dterms, shares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address))
-      .then(contract => contract.deployed());
-
-    allowlistShares = await ethers.getContractFactory("AllowlistShares")
-      .then(factory => factory.deploy(symbol, name, terms, config.totalShares, recoveryHub.address, owner.address))
-      .then(contract => contract.deployed());
-    // use for gas usage calc
-    // const { gasUsed: createGasUsed } = await allowlistShares.deployTransaction.wait();
-    // console.log("Deployment gas usage: %s", await createGasUsed.toString());
-
+    // coverage has a problem with deplyoing this contract via hardhat-deploy
     allowlistDraggable = await ethers.getContractFactory("AllowlistDraggableShares")
-      .then(factory => factory.deploy(dterms, allowlistShares.address, config.quorumBps, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address, owner.address))
+      .then(factory => factory.deploy(config.allowlist_terms, allowlistShares.address, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHub.address, offerFactory.address, oracle.address, owner.address))
       .then(contract => contract.deployed());
 
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
-    const signer = await ethers.provider.getSigner(config.baseCurrencyMinterAddress);
-    await forceSend.send(config.baseCurrencyMinterAddress, {value: ethers.utils.parseEther("2")});
-    for (let i = 0; i < 5; i++) {
-      await baseCurrency.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
-     //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
-    }
-    await network.provider.request({
-      method: "hardhat_stopImpersonatingAccount",
-      params: [config.baseCurrencyMinterAddress],
-    });
+    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
 
-    //Mint shares to first 5 accounts
-    for( let i = 0; i < 5; i++) {
-      await shares.mint(accounts[i], 1000000);
+    //Mint shares to accounts
+    for( let i = 0; i < accounts.length; i++) {
+      await shares.connect(owner).mint(accounts[i], 1000000);
     }
 
      // Convert some Shares to DraggableShares
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < accounts.length; i++) {
       await shares.connect(signers[i]).approve(draggable.address, config.infiniteAllowance);
       await draggable.connect(signers[i]).wrap(accounts[i], 900000);
     }
@@ -124,10 +101,18 @@ describe("New Standard", () => {
       });
 
       it("Should have params specified at the constructor", async() => {
-        expect(await shares.name()).to.equal(name);
-        expect(await shares.symbol()).to.equal(symbol);
-        expect(await shares.terms()).to.equal(terms);
-      }); 
+        expect(await shares.name()).to.equal(config.name);
+        expect(await shares.symbol()).to.equal(config.symbol);
+        expect(await shares.terms()).to.equal(config.terms);
+      });
+
+      it("Should set the right owner", async () =>{
+        expect(await shares.owner()).to.equal(owner.address);
+      });
+
+      it("Should get right claim deleter", async () => {
+        expect(await shares.getClaimDeleter()).to.equal(owner.address);
+      });
     });
 
     describe("Draggable Shares", () => {
@@ -136,8 +121,13 @@ describe("New Standard", () => {
       });
   
       it("Should have params specified at the constructor", async() => {
-        expect(await draggable.terms()).to.equal(dterms);
+        expect(await draggable.terms()).to.equal(config.terms);
+        expect(await draggable.name()).to.equal(config.name + " SHA");
       }); 
+
+      it("Should get right claim deleter", async () => {
+        expect(await draggable.getClaimDeleter()).to.equal(oracle.address);
+      });
     });
 
     describe("AllowlistShares", () => {
@@ -146,9 +136,9 @@ describe("New Standard", () => {
       });
 
       it("Should have params specified at the constructor", async() => {
-        expect(await allowlistShares.name()).to.equal(name);
-        expect(await allowlistShares.symbol()).to.equal(symbol);
-        expect(await allowlistShares.terms()).to.equal(terms);
+        expect(await allowlistShares.name()).to.equal(config.allowlist_name);
+        expect(await allowlistShares.symbol()).to.equal(config.allowlist_symbol);
+        expect(await allowlistShares.terms()).to.equal(config.allowlist_terms);
       }); 
     });
 
@@ -156,9 +146,9 @@ describe("New Standard", () => {
       it("Should deploy contracts", async () => {
         expect(allowlistDraggable.address).to.exist;
       });
-  
+
       it("Should have params specified at the constructor", async() => {
-        expect(await allowlistDraggable.terms()).to.equal(dterms);
+        expect(await allowlistDraggable.terms()).to.equal(config.allowlist_terms);
       }); 
     });
   });
@@ -167,62 +157,509 @@ describe("New Standard", () => {
     it("should have some ETH in first 5 accounts", async () => {  
       for (let i = 0; i < 5; i++) {
         const balance = ethers.BigNumber.from(await ethers.provider.getBalance(accounts[i]));
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
-  
+
     it("should have some BaseCurrency in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await baseCurrency.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some Shares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await shares.balanceOf(accounts[i]);
-        assert(!balance.isZero(), "Balance is 0");
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
 
     it("should have some DraggableShares in first 5 accounts", async () => {
       for (let i = 0; i < 5; i++) {
         const balance = await draggable.balanceOf(accounts[i]);
-        assert(!balance.isZero());
+        expect(balance.isZero(), "Balance is 0").to.be.false;
       }
     });
-  
+  });
+
+  describe("Shares", () => {
+
+    it("Should change terms for shares", async () => {
+      const newTerms = "www.test.com/newterms";
+      await shares.connect(owner).setTerms(newTerms);
+
+      // check if terms set correct
+      expect(await shares.terms()).to.equal(newTerms);
+    });
+
+    it("Should emit event for shares announcment", async () => {
+      const message = "Test";
+      await expect(shares.connect(owner).announcement(message))
+        .to.emit(shares, 'Announcement')
+        .withArgs(message);
+    });
+
+    it("Should set new name", async () => {
+      const newName = "New Shares";
+      const newSymbol = "NSHR"
+      await shares.connect(owner).setName(newSymbol, newName);
+      expect(await shares.name()).to.equal(newName);
+      expect(await shares.symbol()).to.equal(newSymbol);
+    });
+
+    it("Should set new total shares", async () => {
+      const randomChange = chance.natural({ min: 1, max: 50000 });
+      const totalSupply = await shares.totalValidSupply();
+      let newTotalShares = await totalSupply.add(randomChange);
+
+      // should revert if new total shares is < than valid supply
+      await expect(shares.connect(owner).setTotalShares(totalSupply.sub(randomChange)))
+        .to.be.revertedWithCustomError(shares, "Shares_InvalidTotalShares")
+        .withArgs(totalSupply, totalSupply.sub(randomChange));
+
+      let totalShares = await shares.totalShares();
+      newTotalShares = totalShares.add(randomChange);
+
+      // set correct new total and check if set correct
+      await shares.connect(owner).setTotalShares(newTotalShares);
+      totalShares = await shares.totalShares();
+      expect(totalShares).to.equal(newTotalShares);
+    });
+
+    it("Should declare tokens invalid", async () => {
+      const randomdAmount = chance.natural({ min: 1, max: 50000 });
+      const invalidTokenBefore = await shares.invalidTokens();
+      const holderBalance = await shares.balanceOf(sig4.address);
+
+      // try to declare too many tokens invalid
+      await expect(shares.connect(owner).declareInvalid(sig4.address, holderBalance.add(1), "more than I have"))
+        .to.be.revertedWithCustomError(shares, "ERC20InsufficientBalance")
+        .withArgs(sig4.address, holderBalance, holderBalance.add(1));
+
+      await expect(shares.connect(owner).declareInvalid(sig4.address, randomdAmount, "test"))
+        .to.emit(shares, "TokensDeclaredInvalid")
+        .withArgs(sig4.address, randomdAmount, "test");
+
+      const invalidTokenAfter = await shares.invalidTokens();
+      expect(invalidTokenBefore.add(randomdAmount)).to.equal(invalidTokenAfter);
+    });
+
+    it("Should burn shares", async () => {
+      const randomAmountToBurn = chance.natural({min:1, max: 5000});
+      const balanceBefore = await shares.balanceOf(sig3.address);
+      await shares.connect(sig3).burn(randomAmountToBurn);
+      const balanceAfter = await shares.balanceOf(sig3.address);
+      expect(balanceBefore.sub(randomAmountToBurn)).to.equal(balanceAfter);
+    });
+
+    it("Should revert when trying to mint more shares than total shares", async () => {
+      const totalShares = await shares.totalShares();
+      const totalValidSupply = await shares.totalValidSupply();
+      const amountToMint = totalShares.sub(totalValidSupply).add(1);
+      await expect(shares.connect(owner).mint(sig1.address, amountToMint))
+        .to.be.revertedWithCustomError(shares, "Shares_InsufficientTotalShares")
+        .withArgs(totalShares, totalValidSupply.add(amountToMint));
+    })
+
+    it("Should revert with overflow when trying to mint more than uint256 shares", async () => {
+      const totalValidSupply = await shares.totalValidSupply();
+      const amountToMint = ethers.constants.MaxUint256.sub(totalValidSupply).add(1);
+      await expect(shares.connect(owner).mint(sig1.address, amountToMint))
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW);
+    })
+
+    it("Should mint and call on shares", async () => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const totalShares = await shares.totalShares();
+
+      //set new total shares as we mint more
+      await shares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint));
+      const balanceBefore = await draggable.balanceOf(sig2.address);
+      // mint shares and wrap them in draggable
+      await shares.connect(owner).mintAndCall(sig2.address, draggable.address, randomAmountToMint, "0x01");
+      const balanceAfter = await draggable.balanceOf(sig2.address);
+
+      expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
+    });
+
+    it("Should revert if mintMany(AndCall) is called with unequal array lengths", async () => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const randomAmountToMint2 = chance.natural({min:1, max: 5000});
+      await expect(shares.connect(owner).mintMany([sig2.address], [randomAmountToMint, randomAmountToMint2]))
+        .to.be.revertedWithCustomError(shares, "Shares_UnequalLength")
+        .withArgs(1, 2);
+      await expect(shares.connect(owner).mintManyAndCall([sig2.address], draggable.address, [randomAmountToMint, randomAmountToMint], "0x01"))
+        .to.be.revertedWithCustomError(shares, "Shares_UnequalLength")
+        .withArgs(1, 2);
+    })
+
+    it("Should mint and call on shares for multiple addresses", async() => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const totalShares = await shares.totalShares();
+
+      //set new total shares as we mint more
+      await shares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint*2));
+      const balance2Before = await draggable.balanceOf(sig2.address);
+      const balance3Before = await draggable.balanceOf(sig3.address);
+      // mint shares and wrap them in draggable
+      await shares.connect(owner).mintManyAndCall([sig2.address, sig3.address], draggable.address, [randomAmountToMint, randomAmountToMint], "0x01");
+      const balance2After = await draggable.balanceOf(sig2.address);
+      const balance3After = await draggable.balanceOf(sig3.address);
+
+      expect(balance2Before.add(randomAmountToMint)).to.equal(balance2After);
+      expect(balance3Before.add(randomAmountToMint)).to.equal(balance3After);
+    });
+
+    it("Should mint shares to multiple addresses", async() => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const randomAmountToMint2 = chance.natural({min:1, max: 5000});
+      const totalShares = await shares.totalShares();
+
+      //set new total shares as we mint more
+      await shares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint+randomAmountToMint2));
+      const balance2Before = await shares.balanceOf(sig2.address);
+      const balance3Before = await shares.balanceOf(sig3.address);
+      // mint shares
+      await shares.connect(owner).mintMany([sig2.address, sig3.address], [randomAmountToMint, randomAmountToMint2]);
+      const balance2After = await shares.balanceOf(sig2.address);
+      const balance3After = await shares.balanceOf(sig3.address);
+
+      expect(balance2Before.add(randomAmountToMint)).to.equal(balance2After);
+      expect(balance3Before.add(randomAmountToMint2)).to.equal(balance3After);
+    });
+
+    it("Should wrap some more shares with transferAndCall", async () => {
+      const randomAmountToWrap = chance.natural({min: 1, max: 500});
+      const balanceBefore = await draggable.balanceOf(sig1.address);
+      await shares.connect(sig1).transferAndCall(draggable.address, randomAmountToWrap, "0x01");
+      const balanceAfter = await draggable.balanceOf(sig1.address);
+      expect(balanceBefore.add(randomAmountToWrap)).to.equal(balanceAfter);
+    })
+
+    it("Should allow transfer ownership", async () => {
+      await expect(shares.connect(owner).transferOwnership(sig1.address))
+        .to.emit(shares, "OwnershipTransferred")
+        .withArgs(owner.address, sig1.address);
+      expect(await shares.owner()).to.equal(sig1.address);
+      await shares.connect(sig1).transferOwnership(owner.address)
+    });
+  });
+
+  describe("Draggable Shares", () => {
+    it("Should set new oracle", async () => {
+      const newOracle = sig1.address;
+      // revert if not oracle 
+      await expect(draggable.connect(sig1).setOracle(newOracle))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
+      await draggable.connect(oracle).setOracle(newOracle);
+      expect(await draggable.oracle()).to.equal(newOracle);
+      // reset oracle for offer testing
+      await expect(draggable.connect(sig1).setOracle(owner.address))
+        .to.emit(draggable, 'ChangeOracle')
+        .withArgs(owner.address);
+    });
+
+    it("Should burn draggable shares", async () => {
+      const randomAmountToBurn = chance.natural({min:1, max: 5000});
+      const balanceBefore = await shares.balanceOf(draggable.address);
+      const balanceBeforeDraggable = await draggable.balanceOf(sig3.address);
+      const totalSupplyBefore = await shares.totalSupply();
+
+      // burn token which burns also shares which are in the drraggable contract
+      // and reduces supply from shares
+      await draggable.connect(sig3).burn(randomAmountToBurn);
+      const balanceAfter = await shares.balanceOf(draggable.address);
+      const balanceAfterDraggable = await draggable.balanceOf(sig3.address);
+      const totalSupplyAfter= await shares.totalSupply();
+      expect(balanceBeforeDraggable.sub(randomAmountToBurn)).to.equal(balanceAfterDraggable);
+      expect(balanceBefore.sub(randomAmountToBurn)).to.equal(balanceAfter);
+      expect(totalSupplyBefore.sub(randomAmountToBurn)).to.equal(totalSupplyAfter);
+    });
+
+    it("Should revert wrapping(mint) w/o shares", async () => {
+      const amount = 100
+      // wrap from address without token
+      await expect(draggable.connect(deployer).wrap(deployer.address, amount))
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // should throw underflow panic error
+      // info: correct wrapping is done in the first before starting loc 44
+    });
+
+    it("Should revert on unwrap", async () => {
+      await expect(draggable.connect(sig2).unwrap(10))
+        .to.be.revertedWithCustomError(draggable, "Draggable_IsBinding");
+    });
+
+    it("Should revert when onTokenTransfer isn't called from wrapped token (prevent minting)", async () => {
+      await expect(draggable.connect(sig2).onTokenTransfer(sig1.address, 100, "0x01"))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
+    })
+
+    it("Should revert if drag isn't called from offer contract", async () => {
+      await expect(draggable.connect(sig2).drag(sig2.address, config.baseCurrencyAddress))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
+    })
+    it("Should revert if notifyOfferEnded isn't called from offer contract", async () => {
+      await expect(draggable.connect(sig2).notifyOfferEnded())
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
+    })
+    it("Should revert if notifyVoted isn't called from offer contract", async () => {
+      await expect(draggable.connect(sig2).notifyVoted(sig2.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig2.address);
+    })
+
+    it("Should revert on overflow", async () => {
+      // first set total shares > uint224
+      await shares.connect(owner).setTotalShares("0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+      const largeNumber = "0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+      const balanceBefore = await shares.balanceOf(sig1.address);
+      await expect(shares.connect(owner).mint(sig1.address, largeNumber))
+        .to.be.revertedWithCustomError(shares, "ERC20BalanceOverflow")
+        .withArgs(sig1.address, balanceBefore, largeNumber);
+      // set total shares back 
+      await shares.connect(owner).setTotalShares(config.totalShares);
+    })
+
+    it("Should revert on underflow", async () => {
+      // first set a flag e.g. claim
+      await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
+      await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig4.address);
+      
+      await expect(draggable.connect(sig4).transfer(sig2.address, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
+        .to.be.revertedWithCustomError(draggable, "ERC20InsufficientBalance")
+        .withArgs(sig4.address, await draggable.balanceOf(sig4.address), "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+      await draggable.connect(oracle).deleteClaim(sig4.address);
+    })
+
+    it("Should revert when transfer or mint to 0x0 address", async () => {
+      await expect(shares.connect(owner).transfer(ethers.constants.AddressZero, 1))
+        .to.be.revertedWithCustomError(shares, "ERC20InvalidReceiver")
+        .withArgs(ethers.constants.AddressZero);
+      await expect(shares.connect(owner).mint(ethers.constants.AddressZero, 1))
+        .to.be.revertedWithCustomError(shares, "ERC20InvalidReceiver")
+        .withArgs(ethers.constants.AddressZero);
+      await expect(draggable.connect(owner).transfer(ethers.constants.AddressZero, 1))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidReceiver")
+        .withArgs(ethers.constants.AddressZero);
+    })
+
+    it("Should set new terms for draggable", async () => {
+      const oldTerms = "test.ch/terms";
+      const newTerms = "investor.test.ch";
+      expect(await draggable.terms()).to.equal(oldTerms)
+      await expect(draggable.connect(sig1).setTerms("test")).to.be.revertedWithCustomError(draggable, "ERC20InvalidSender");
+      await expect(draggable.connect(owner).setTerms(newTerms)).to.emit(draggable, 'ChangeTerms').withArgs(newTerms);
+      expect(await draggable.terms()).to.equal(newTerms);
+    })
   });
 
   describe("Recovery", () => {
+    const collateralAddress = config.baseCurrencyAddress;
+    const collateralRate = 10;
     it("Should able to disable recovery", async () => {
       const recovery = await ethers.getContractAt("RecoveryHub", await draggable.recovery());
       await recovery.connect(sig1).setRecoverable(false);
-      expect(await recoveryHub.isRecoveryEnabled(sig1.address)).to.equal(false);
+      expect(await recoveryHub.isRecoverable(sig1.address)).to.equal(false);
     });
 
     it("Should revert declare lost on disabled recovery", async () => {
       await expect(recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig1.address))
-        .to.be.revertedWith("disabled");
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_RecoveryDisabled")
+        .withArgs(sig1.address);
     });
+
+    it("Should revert declare lost with bad collateral", async () => {
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, config.wbtcAddress, sig4.address))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_BadCollateral")
+        .withArgs(config.wbtcAddress);
+    })
+
+    it("Should revert declare lost on empty address", async () => {
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, deployer.address))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_NothingToRecover")
+        .withArgs(draggable.address, deployer.address);
+    })
+
+    it("Should revert declare lost if there was no allowance set to recoveryhub", async () => {
+      await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // underflow on transfeFrom because allowance 0
+    })
+
+    it("Should revert declare lost if claimer hasn't enough collateral", async () => {
+      await draggable.connect(deployer).approve(recoveryHub.address, config.infiniteAllowance);
+      await expect(recoveryHub.connect(deployer).declareLost(draggable.address, draggable.address, sig4.address))
+        .to.be.revertedWithPanic(PANIC_CODES.ARITHMETIC_UNDER_OR_OVERFLOW); // underflow on transfeFrom because balance 0
+    })
+
+    it("Should set custom claim collateral for shares", async () => {
+      // check for custom collateral address("0x0000000000000000000000000000000000000000")
+      await shares.connect(owner).setCustomClaimCollateral(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"), 100);
+      expect(await shares.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
+
+      // test that collateralRate is not 0
+      await expect(shares.connect(owner).setCustomClaimCollateral(collateralAddress, 0))
+        .to.be.revertedWithCustomError(shares, "Recoverable_RateZero");
+      // test that only owner can set
+      await expect(shares.connect(sig1).setCustomClaimCollateral(collateralAddress, collateralRate))
+        .to.be.revertedWithCustomError(shares, "Ownable_NotOwner")
+        .withArgs(sig1.address);
+      // test with owner
+      await shares.connect(owner).setCustomClaimCollateral(collateralAddress, collateralRate);
+      expect(await shares.customCollateralAddress()).to.equal(collateralAddress);
+      expect(await shares.customCollateralRate()).to.equal(collateralRate);
+      expect(await shares.getCollateralRate(shares.address)).to.equal(1);
+      expect(await shares.getCollateralRate(collateralAddress)).to.equal(collateralRate);
+      expect(await shares.getCollateralRate(draggable.address)).to.equal(0);
+    });
+
+    it("Draggable should get conversion factors from shares", async () => {
+      expect(await draggable.getCollateralRate(ethers.utils.getAddress("0x0000000000000000000000000000000000000000"))).to.equal(0);
+      expect(await draggable.getCollateralRate(draggable.address)).to.equal(1);
+      expect(await draggable.getCollateralRate(shares.address)).to.equal(1);
+      expect(await draggable.getCollateralRate(collateralAddress)).to.equal(await ethers.BigNumber.from(collateralRate));
+    });
+
+    it("Should revert if notifyClaimMade isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).notifyClaimMade(sig1.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
+    })
+
+    it("Should revert if notifyClaimDeleted isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).notifyClaimDeleted(sig1.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
+    })
+
+    it("Should revert if recover isn't called from RecoveryHub", async () => {
+      await expect(draggable.connect(sig1).recover(sig2.address, sig1.address))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig1.address);
+    })
+
+    it("Should delete claim", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const claimAdress = sig5.address;
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+      const balanceClaimer = await draggable.balanceOf(claimAdress);
+
+      // delete without claim should revert
+      await expect(recoveryHub.deleteClaim(lostAddress))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_ClaimNotFound");
+
+      // declare token lost
+      const tx = await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // get claimant
+      expect(await recoveryHub.getClaimant(draggable.address, lostAddress)).to.be.equal(claimAdress);
+      // get collataral
+      const collateralRate = await draggable.getCollateralRate(draggable.address);
+      expect(await recoveryHub.getCollateral(draggable.address, lostAddress)).to.be.equal(lostAddressBalance.mul(collateralRate));
+      // get collateral type
+      expect(await recoveryHub.getCollateralType(draggable.address, lostAddress)).to.be.equal(draggable.address);
+      // get timestamp
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block= await ethers.provider.getBlock(blockNum);
+      expect(await recoveryHub.getTimeStamp(draggable.address, lostAddress)).to.be.equal(block.timestamp);
+      
+      // delete claim as non oracle
+      await expect(draggable.connect(sig4).deleteClaim(lostAddress))
+        .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
+        .withArgs(sig4.address);
+      // delete claim as oracle
+      await draggable.connect(oracle).deleteClaim(lostAddress);
+      expect(await draggable.balanceOf(claimAdress)).to.equal(balanceClaimer);
+    })
+
+    it("Should remove claim when token are transfered", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // declare on same addresse should revert
+      await expect(recoveryHub.connect(sig1).declareLost(draggable.address, draggable.address, lostAddress))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_AlreadyClaimed")
+        .withArgs(draggable.address, lostAddress);
+      // check if flag is set
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.true;
+      // transfer to lost address
+      await draggable.connect(owner).transfer(lostAddress, "10");
+      // after transfer to lost address still claim on it
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.true;
+      // transfer from last address (to clear claim)
+      await draggable.connect(lostSigner).transfer(sig5.address, "10");
+      // claim cleared
+      expect(await draggable.hasFlag(lostAddress, 10)).to.be.false;
+      // get collateral
+      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
+
+      // move funds back to sig5
+      await draggable.connect(sig4).transfer(sig5.address, lostAddressBalance);
+    });
+    
+    it("Should remove claim when lost address calls clearClaimFromUser", async () => {
+      await draggable.connect(sig5).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig4.address;
+      const lostSigner = sig4;
+      const lostAddressBalance = await draggable.balanceOf(lostAddress);
+
+      // declare token lost
+      await recoveryHub.connect(sig5).declareLost(draggable.address, draggable.address, lostAddress);
+      // check if flag is set
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // clear claim
+      await recoveryHub.connect(lostSigner).clearClaimFromUser(draggable.address);
+      // claim cleared
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(false);
+      // get collateral
+      expect(await draggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
+    });
+
+    it("Should revert recover if there is no claim", async () => {
+      await expect(recoveryHub.connect(sig1).recover(draggable.address, deployer.address))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_ClaimNotFound")
+        .withArgs(deployer.address);
+    })
+
     it("Should able to recover token", async () => {
-      await draggable.connect(sig2).approve(recoveryHub.address, config.infiniteAllowance);
-      const amountLost = await draggable.balanceOf(sig3.address);
-      const amountClaimer = await draggable.balanceOf(sig2.address);
-      await recoveryHub.connect(sig2).declareLost(draggable.address, draggable.address, sig3.address);
+      const claimer = sig2;
+      const lostAddress = sig3.address;
+      await draggable.connect(claimer).approve(recoveryHub.address, config.infiniteAllowance);
+      const amountLost = await draggable.balanceOf(lostAddress);
+      const amountClaimer = await draggable.balanceOf(claimer.address);
+      // sig2 declares lost funds at sig3
+      await recoveryHub.connect(claimer).declareLost(draggable.address, draggable.address, lostAddress);
 
       // check if flag is set
       // FLAG_CLAIM_PRESENT = 10
-      expect(await draggable.hasFlag(sig3.address, 10)).to.equal(true);
+      expect(await draggable.hasFlag(lostAddress, 10)).to.equal(true);
 
       // revert if not the claimer tries to recover
-      await expect(recoveryHub.connect(sig4).recover(draggable.address, sig3.address)).to.be.revertedWith("not claimant");
+      await expect(recoveryHub.connect(sig4).recover(draggable.address, lostAddress))
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_InvalidSender")
+        .withArgs(sig4.address);
 
       // revert if to early
-      await expect(recoveryHub.connect(sig2).recover(draggable.address, sig3.address)).to.be.revertedWith("too early");
+      const claim = await recoveryHub.claims(draggable.address, lostAddress);
+      const claimPeriod = await draggable.claimPeriod().then(p => p.toNumber());
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNum);
+      const blockTimestamp = ethers.BigNumber.from(block.timestamp);
+      await expect(recoveryHub.connect(claimer).recover(draggable.address, lostAddress))
+        //.to.be.revertedWith("too early");
+        .to.be.revertedWithCustomError(recoveryHub, "RecoveryHub_InClaimPeriod")
+        .withArgs(claim.timestamp.add(claimPeriod), blockTimestamp.add(1));
 
       // add claim period (180 days)
-      const claimPeriod = await draggable.claimPeriod().then(p => p.toNumber());
       await ethers.provider.send("evm_increaseTime", [claimPeriod]);
       await ethers.provider.send("evm_mine");
 
@@ -233,40 +670,117 @@ describe("New Standard", () => {
   });
 
   describe("Offer", () => {
+    let pricePerShare;
+    let salt;
+    let offer;
+    const overrides = {
+      value: ethers.utils.parseEther("5.0")
+    }
     beforeEach(async () => {
-      const overrides = {
-        value: ethers.utils.parseEther("5.0")
-      }
-      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("2"), baseCurrency.address, overrides)
+      pricePerShare = ethers.utils.parseEther("2");
+      salt = ethers.utils.formatBytes32String('1');
+      await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
       const blockNum = await ethers.provider.getBlockNumber();
       const block= await ethers.provider.getBlock(blockNum);
+      offer = await ethers.getContractAt("Offer", await draggable.offer());
     });
+
+    it("Should predict offer address", async () => {
+      const predictedAddress = await offerFactory.predictOfferAddress(salt, sig1.address, draggable.address, pricePerShare, baseCurrency.address, config.quorumBps, config.votePeriodSeconds);
+      expect(predictedAddress).to.equal(await draggable.offer());
+    })
+
     it("Should able to make aquisition offer", async () => {
-      const offer = await draggable.offer();
-      expect(offer).to.exist;
-      expect(offer).to.not.equal("0x0000000000000000000000000000000000000000");
+      const offerAdr = await draggable.offer();
+      expect(offerAdr).to.exist;
+      expect(offerAdr).to.not.equal("0x0000000000000000000000000000000000000000");
     });
     
-    it("Shareholder can vote", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
+    it("Should set voted flag and change votes if user votes and changes decision after", async () => {
       await offer.connect(sig1).voteYes();
       // FLAG_VOTED = 1
       expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.true;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.false;
+
+      // Change to no vote
+      await offer.connect(sig1).voteNo();
+      expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.false;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.true;
+
+      // Change back to yes vote
+      await offer.connect(sig1).voteYes();
+      expect(await draggable.hasFlag(sig1.address, 1)).to.equal(true);
+      expect(await offer.hasVotedYes(sig1.address)).to.be.true;
+      expect(await offer.hasVotedNo(sig1.address)).to.be.false;
     });
 
+    it("Should not allow double voting (votes get counted multiple times", async () => {
+      await offer.connect(sig1).voteYes();
+      const yesVotes = await offer.yesVotes();
+      const voterShares = await draggable.balanceOf(sig1.address);
+      expect(yesVotes).to.be.equal(voterShares);
+      
+      // Vote again
+      await offer.connect(sig1).voteYes();
+      const yesVotesAfter = await offer.yesVotes();
+      expect(yesVotes).to.be.equal(voterShares);
+    })
+
+    it("Should update votes if token is moved", async () => {
+      await offer.connect(sig1).voteYes();
+      await offer.connect(sig2).voteNo();
+      const yesVotes = await offer.yesVotes();
+      const noVotes = await offer.noVotes();
+      const randomAmount = chance.natural({ min: 1, max: 100 });
+      await draggable.connect(sig1).transfer(sig2.address, randomAmount);
+      const yesVotesAfter = await offer.yesVotes();
+      const noVotesAfter = await offer.noVotes();
+      expect(yesVotes.sub(randomAmount)).to.be.equal(yesVotesAfter);
+      expect(noVotes.add(randomAmount)).to.be.equal(noVotesAfter);
+    })
+
+    it("Should revert voting if voting is closed", async () => {
+      // move to after voting deadline (60days)
+      const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
+      await ethers.provider.send("evm_increaseTime", [votePeriod]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(offer.connect(sig3).voteYes())
+        .to.be.revertedWithCustomError(offer, "Offer_VotingEnded");
+    })
+
+    it("Should revert if reportExternalVotes isn't called from oracle or to many votes are reported", async () => {
+      const tooManyExternalTokens = ethers.BigNumber.from(300000000);
+      const externalTokens = ethers.BigNumber.from(3000000);
+      const totalVotingTokens = await draggable.totalVotingTokens();
+      const totalSupply = await draggable.totalSupply();
+      await expect(offer.connect(sig1).reportExternalVotes(externalTokens, 0))
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig1.address);
+      await expect(offer.connect(oracle).reportExternalVotes(tooManyExternalTokens, 0))
+        .to.be.revertedWithCustomError(offer, "Offer_TooManyVotes")
+        .withArgs(totalVotingTokens, totalSupply.add(tooManyExternalTokens));
+    })
+
+    it("Should revert cancel if not called from the buyer", async () => {
+      await expect(offer.connect(sig2).cancel())
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
+    })
+
     it("Should able to contest offer after expiry", async () => {
-      const threedays = 30*24*60*60;
-      const expiry = await draggable.votePeriod().then(period => period.add(threedays));
+      const thirtydays = 30*24*60*60;
+      const expiry = await draggable.votePeriod().then(period => period.add(thirtydays));
       await ethers.provider.send("evm_increaseTime", [expiry.toNumber()]);
       await ethers.provider.send("evm_mine");
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.contest();
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
 
     it("Should able to contest offer if declined", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       await offer.connect(owner).voteNo();
       await offer.connect(sig2).voteNo();
       await offer.connect(sig3).voteNo();
@@ -274,34 +788,100 @@ describe("New Standard", () => {
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
+
+    it("Should able to contest offer if not well funded", async () => {
+      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
+      await offer.contest();
+      const offerAfterContest = await draggable.offer();
+      expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
+      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+    });
+
+    it("Should revert competing offer if it isn't in same currency", async () => {
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("3"), config.wbtcAddress, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_OfferInWrongCurrency")
+    })
     
     it("Should be able to make better offer", async () => {
       // offer from sig1
       const offerBefore = await draggable.offer();
       expect(offerBefore).to.exist;
       
-      const overrides = {
-        value: ethers.utils.parseEther("5.0")
-      }
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('4'), ethers.utils.parseEther("1"), baseCurrency.address, overrides))
-        .to.revertedWith("old offer better");
-      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('4'), ethers.utils.parseEther("3"), baseCurrency.address, overrides);
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("1"), baseCurrency.address, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_OldOfferBetter")
+        .withArgs(await offer.price(),ethers.utils.parseEther("1"));
+      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides);
       
       // new offer from sig1
       const offerAfter = await draggable.offer();
       expect(offerAfter).to.exist;
       expect(offerAfter).to.not.equal("0x0000000000000000000000000000000000000000");
       expect(offerAfter).to.not.equal(offerBefore);
-      
     });
-    
+
+    it("Should revert if competing offer isn't called from token", async () => {
+      const tx = await offerFactory.connect(sig2).create(
+        ethers.utils.formatBytes32String('3'), sig2.address, ethers.utils.parseEther("2.3"), baseCurrency.address, config.quorumBps, config.votePeriodSeconds, overrides);
+      const { events } = await tx.wait();
+      const { address } = events.find(Boolean);
+      await expect(offer.connect(sig2).makeCompetingOffer(address))
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
+    })
+
+    it("Should revert if notifyMoved isn't called from token", async () => {
+      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1")))
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig1.address);
+    })
+
+    it("Should revert competing offer if old offer is already accepted", async () => {
+      // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
+      const externalTokens = ethers.BigNumber.from(3000000);
+      await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
+      for(let i = 0; i<signers.length; i++){
+        await offer.connect(signers[i]).voteYes();
+      }
+
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_AlreadyAccepted");
+    })
+
+    it("Should revert competing offer if user account isn't well funded", async () => {
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("100"), baseCurrency.address, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_NotWellFunded");
+    })
+
+    it("Should revert execution if sender isn't buyer", async () => {
+      await expect(offer.connect(sig2).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
+    })
+
+    it("Should revert execution if offer isn't accepted", async () => {
+      await expect(offer.connect(sig1).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_NotAccepted");
+    })
+
+    it("Should revert if transfer of offer currency fails", async () => {
+      // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
+      const externalTokens = ethers.BigNumber.from(3000000);
+      await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
+      for(let i = 0; i<signers.length; i++){
+        await offer.connect(signers[i]).voteYes();
+      }
+      //set balance to low to transfer
+      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("insufficient tokens");
+      //set balance back
+      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+    })
 
     it("Should be able to execute offer", async () => {
-      const offer = await ethers.getContractAt("Offer", await draggable.offer());
       // buyer share balance before voting/excute
       const buyerBal = await shares.balanceOf(sig1.address);
 
-      // vote and get total of draggable sahres
+      // vote and get total of draggable shares
       let draggableTotal = 0
       for(let i = 0; i<signers.length; i++){
         await offer.connect(signers[i]).voteYes();
@@ -309,16 +889,56 @@ describe("New Standard", () => {
       }
 
       // collect external vote
-      const externalTokens = ethers.BigNumber.from(3000000);
+      const externalTokens = ethers.BigNumber.from(100000);
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
 
-      //execute
+      // execute revert as external+yes in not 75% of total shares
+      await expect(offer.connect(sig1).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_NotAccepted");
+
+      // move to after voting deadline (60days)
+      const votePeriod = await draggable.votePeriod().then(p => p.toNumber());
+      await ethers.provider.send("evm_increaseTime", [votePeriod]);
+      await ethers.provider.send("evm_mine");
+
+      expect(await offer.isDeclined()).to.be.false;
+
+      //execute now after deadline only needs more 75% of total votes
       await baseCurrency.connect(sig1).approve(offer.address, config.infiniteAllowance);
-      await offer.connect(sig1).execute();
+      await expect(offer.connect(sig1).execute())
+        .to.emit(draggable, "NameChanged")
+        .withArgs(`${config.baseCurrencyName} (Wrapped)`, `${config.baseCurrencySymbol}S`);
 
       // after execute all draggable shares are transfered to the buyer, if the buyer already had
       // shares they have to be added to compare to the new balance
       expect(await shares.balanceOf(sig1.address)).to.equal(draggableTotal.add(buyerBal));
+
+      // wrapped token in draggable is now base currency
+      expect(await draggable.wrapped()).to.equal(baseCurrency.address);
+
+      // balance of draggable in base currency is pricePerShare*totalSupply
+      const draggableBaseCurrencyBalance = await baseCurrency.balanceOf(draggable.address);
+      const draggableTotalSupply = await draggable.totalSupply();
+      expect(draggableBaseCurrencyBalance).to.equal(await draggableTotalSupply.mul(pricePerShare));
+
+      // unwrap conversion factor is base currency balance / totalsupply
+      const factor = await draggable.unwrapConversionFactor();
+      expect(factor).to.equal(await draggableBaseCurrencyBalance.div(draggableTotalSupply));
+
+      // revert new offer after execute
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(
+        ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+          .to.be.revertedWithCustomError(draggable, "Draggable_NotBinding");
+
+      // should be able to unwrap token
+      const baseBefore = await baseCurrency.balanceOf(sig2.address);
+      const draggableBefore = await draggable.balanceOf(sig2.address);
+      //console.log(factor.toString());
+      await draggable.connect(sig2).unwrap(10);
+      const draggableAfter = await draggable.balanceOf(sig2.address);
+      const baseAfter = await baseCurrency.balanceOf(sig2.address);
+      expect(draggableBefore.sub(10)).to.equal(draggableAfter);
+      expect(baseBefore.add(factor.mul(10))).to.equal(baseAfter);
     });
 
     afterEach(async () => {
@@ -330,87 +950,214 @@ describe("New Standard", () => {
   });
 
   describe("Allowlist", () => {
-    it("Should allowlist address and mint", async () => {
-      // use sig1 for allowlist
-      const allowlistAddress = sig1.address;
-      await allowlistShares["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
-      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
-      await allowlistShares.mint(allowlistAddress, "1000");
-      const balanceAllow = await allowlistShares.balanceOf(allowlistAddress);
-      expect(balanceAllow).to.equal(ethers.BigNumber.from(1000));
-    });
-
+    // sig1 will be powerlist
+    // sig2 will be forbidden
+    // sig3 will be allowlist -> default
+    // sig4 will be allowlist
+    // sig5 will be default
     it("Should set forbidden and revert mint", async () => {
       //use sig2 for blacklist
       const forbiddenAddress = sig2.address;
-      await allowlistShares["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
-      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
-      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
 
-      await expect(allowlistShares.mint(forbiddenAddress, "1000")).to.be.revertedWith("not allowed");
+      // mint to non type set works
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1");
+
+      //set type forbidden
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.be.false;
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.be.true;
+
+      // after setting forbidden reverts
+      await expect(allowlistShares.connect(owner).mint(forbiddenAddress, "1000"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_ReceiverIsForbidden")
+        .withArgs(forbiddenAddress);
       const balanceForbidden = await allowlistShares.balanceOf(forbiddenAddress);
-      expect(balanceForbidden).to.equal(ethers.BigNumber.from(0));
+      expect(balanceForbidden).to.equal(ethers.BigNumber.from(1));
+
+      // forbidden can't transfer (sig2.address = forbidden)
+      await expect(allowlistShares.connect(sig2).transfer(sig1.address, "1"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_SenderIsForbidden")
+        .withArgs(sig2.address);
     });
 
-    it("Should set allowlist for default address when minted from powerlisted", async () => {
+    it("Should set allowlist for default address when minted from 0 (powerlisted)", async () => {
       //use sig3 for default address
       const defaultAddress = sig3.address
+      // before mint is not allowlisted
       expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
       expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
 
-      await allowlistShares.mint(defaultAddress, "1000");
+      await expect(allowlistShares.connect(owner).mint(defaultAddress, "1000"))
+        .to.emit(allowlistShares, "AddressTypeUpdate")
+        .withArgs(defaultAddress, TYPE_ALLOWLISTED);
+      
+      // after mint is allowlisted
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
       const balancedef = await allowlistShares.balanceOf(defaultAddress);
       expect(balancedef).to.equal(ethers.BigNumber.from(1000));
-      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);      
     });
+
+    it("Should set powerlist to not owner and transfer token to default", async () => {
+      //set adr/sig1 as powerlist
+      const powerlistAddress = sig1.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](powerlistAddress, TYPE_POWERLISTED);
+      expect(await allowlistShares.isPowerlisted(powerlistAddress)).to.equal(true);
+
+      // powerlist can't mint
+      await expect(allowlistShares.connect(sig1).mint(powerlistAddress, "1000"))
+        .to.be.revertedWithCustomError(allowlistShares, "Ownable_NotOwner")
+        .withArgs(sig1.address);
+
+      // mint to powerlist
+      await await allowlistShares.connect(owner).mint(powerlistAddress, "1000");
+
+      //use sig4 for default address
+      const defaultAddress = sig4.address
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isPowerlisted(defaultAddress)).to.equal(false);
+
+      // transfer from powerlist to default(sig4)
+      const balanceBefore = await allowlistShares.balanceOf(defaultAddress);
+      await allowlistShares.connect(sig1).transfer(defaultAddress, "100");
+      const balanceAfter = await allowlistShares.balanceOf(defaultAddress);
+      expect(balanceBefore.add(100)).to.equal(balanceAfter);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);
+    });
+
+    it("Should set allowlist address to default and transfer to default/allowlist, but not to forbidden address", async () => {
+      // use sig3 for the default sender
+      const defaultAddress = sig3.address
+      // is still allowlisted
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(true);  
+      // set to default and make shares transferable
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      // is not allowlisted anymore
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      
+      // is not possible to send from default(sig3) to forbidden(sig2)
+      const forbiddenAddress = sig2.address
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+      await expect(allowlistShares.connect(sig3).transfer(forbiddenAddress, "100"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_ReceiverIsForbidden")
+        .withArgs(forbiddenAddress);
+
+      // is possible to send from default(sig3) to fresh/default(sig5)
+      const freshAddress = sig5.address
+      expect(await allowlistShares.isForbidden(freshAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(freshAddress)).to.equal(false);
+      await allowlistShares.connect(sig3).transfer(freshAddress, "100");
+      const balanceFresh = await allowlistShares.balanceOf(freshAddress);
+      expect(balanceFresh).to.equal(ethers.BigNumber.from(100));
+      // fresh address is still default
+      expect(await allowlistShares.isForbidden(freshAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(freshAddress)).to.equal(false);
+
+      // is possible to send from default(sig3) to allowlist(sig4)
+      const allowAddress = sig4.address;
+      expect(await allowlistShares.isForbidden(allowAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(allowAddress)).to.equal(true);
+      const balAllowBefore = await allowlistShares.balanceOf(allowAddress);
+      await allowlistShares.connect(sig3).transfer(allowAddress, "100");
+      const balAllowAfter = await allowlistShares.balanceOf(allowAddress);
+      expect(balAllowBefore.add(100)).to.equal(balAllowAfter);
+    });
+
+    it("Should not allow transfer from allowlist to default", async () => {
+      // sig4 is allowlist address
+      const allowAddress = sig4.address;
+      expect(await allowlistShares.isForbidden(allowAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(allowAddress)).to.equal(true);
+
+      // sig5 is default address
+      const defaultAddress = sig5.address
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+
+      // transfer from allowlist(sig4) to default(sig5) should fail
+      await expect(allowlistShares.connect(sig4).transfer(defaultAddress, "100"))
+        .to.be.revertedWithCustomError(allowlistShares, "Allowlist_ReceiverNotAllowlisted")
+        .withArgs(defaultAddress);
+    });
+
+    it("Should mint and call on allowlistShares to allowlistDraggable", async () => {
+      const randomAmountToMint = chance.natural({min:1, max: 5000});
+      const totalShares = await allowlistShares.totalShares();
+
+      //set new total shares as we mint more
+      await allowlistShares.connect(owner).setTotalShares(totalShares.add(randomAmountToMint));
+      const balanceBefore = await allowlistDraggable.balanceOf(sig5.address);
+      // mint shares and wrap them in draggable
+      await allowlistShares.connect(owner).mintAndCall(sig5.address, allowlistDraggable.address, randomAmountToMint, "0x01");
+      const balanceAfter = await allowlistDraggable.balanceOf(sig5.address);
+
+      expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
+    });
+
+    it("Should set type for multiple addresses", async () => {
+      const addressesToAdd = [sig2.address, sig3.address, sig4.address];
+      // first check if revert non-owner
+      await expect(allowlistShares.connect(sig1)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN))
+        .to.be.revertedWithCustomError(allowlistShares, "Ownable_NotOwner")
+        .withArgs(sig1.address);
+      // second check if works with owner
+      await allowlistShares.connect(owner)["setType(address[],uint8)"](addressesToAdd, TYPE_FORBIDDEN);
+      for( let i = 0; i < addressesToAdd.length; i++) {
+        expect(await allowlistShares.isForbidden(addressesToAdd[i])).to.be.true;
+      }
+    })
   });
 
   describe("Allowlist Draggable", () => {
+
+    it("Should revert if not owner sets type", async () => {
+      // use sig1 for allowlist
+      const allowlistAddress = sig1.address;
+      await expect(allowlistDraggable.connect(sig1)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED))
+        .to.be.revertedWithCustomError(allowlistDraggable, "Ownable_NotOwner")
+        .withArgs(sig1.address);
+    });
+
     it("Should allow wrap on allowlist", async () => {
       // use sig1 for allowlist
       const allowlistAddress = sig1.address;
-      await allowlistDraggable["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
+      await allowlistDraggable.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
       expect(await allowlistDraggable.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
-
-      // wrap w/o permission should revert
-      await expect(allowlistDraggable.connect(sig1).wrap(allowlistAddress, "10"))
-        .to.be.revertedWith("not allowed");
-
-      // set allowlist on shares
-      await allowlistShares["setType(address,uint8)"](allowlistDraggable.address, TYPE_ALLOWLISTED);
       // set allowance
       await allowlistShares.connect(sig1).approve(allowlistDraggable.address, config.infiniteAllowance);
-      // wrap w/ permisson 
-      await allowlistDraggable.connect(sig1).wrap(allowlistAddress, "10");
+
+      // wrap w/ permisson
+      await allowlistDraggable.connect(sig1).wrap(allowlistAddress, "100");
       const balanceAllow = await allowlistDraggable.balanceOf(allowlistAddress);
-      expect(balanceAllow).to.equal(ethers.BigNumber.from(10));
+      expect(balanceAllow).to.equal(ethers.BigNumber.from(100));
     });
 
     it("Should revert wrap to forbidden", async () => {
-      //use sig2 for blacklist
+      //use sig2 for forbidden
       const forbiddenAddress = sig2.address;
 
       // mint shares
-      await allowlistShares["setType(address,uint8)"](forbiddenAddress, TYPE_ALLOWLISTED);
-      await allowlistShares.mint(forbiddenAddress, "1000");
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_ALLOWLISTED);
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1000");
 
       // set forbidden on draggable
-      await allowlistDraggable["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      await allowlistDraggable.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
       
       // set allowance
       await allowlistShares.connect(sig2).approve(allowlistDraggable.address, config.infiniteAllowance);
 
       // excpect revert on wrap
       await expect(allowlistDraggable.connect(sig2).wrap(forbiddenAddress, "10"))
-        .to.be.revertedWith("not allowed");
+        .to.be.revertedWithCustomError(allowlistDraggable, "Allowlist_ReceiverIsForbidden")
+        .withArgs(forbiddenAddress);
       const balanceForbidden = await allowlistDraggable.balanceOf(forbiddenAddress);
       expect(balanceForbidden).to.equal(ethers.BigNumber.from(0));
     });
 
     it("Should set allowlist for default address when wrapped from powerlisted", async () => {
       // mint for powerlisted
-      await allowlistShares["setType(address,uint8)"](owner.address, TYPE_POWERLISTED);
-      await allowlistShares.mint(owner.address, "1000");
+      await allowlistShares.connect(owner)["setType(address,uint8)"](owner.address, TYPE_POWERLISTED);
+      await allowlistShares.connect(owner).mint(owner.address, "1000");
 
       //use sig3 for default address
       const defaultAddress = sig3.address
@@ -418,9 +1165,106 @@ describe("New Standard", () => {
       expect(await allowlistDraggable.isForbidden(defaultAddress)).to.equal(false);
 
       // set allowance
-      await allowlistShares.approve(allowlistDraggable.address, config.infiniteAllowance);
-      await allowlistDraggable.wrap(defaultAddress, "10");
+      await allowlistShares.connect(owner).approve(allowlistDraggable.address, config.infiniteAllowance);
+      await allowlistDraggable.connect(owner).wrap(defaultAddress, "10");
       expect(await allowlistDraggable.canReceiveFromAnyone(defaultAddress)).to.equal(true);     
+    });
+  });
+
+  describe("Remove restriction", () => {
+    it("Should remove restriction", async () => {
+      // restrict should be true
+      expect(await allowlistShares.restrictTransfers()).to.equal(true);
+      expect(await allowlistDraggable.restrictTransfers()).to.equal(true);
+
+      // can only be set by owner
+      await expect(allowlistShares.setApplicable(false))
+        .to.be.revertedWithCustomError(allowlistShares, "Ownable_NotOwner")
+        .withArgs(deployer.address);
+      await expect(allowlistDraggable.setApplicable(false))
+        .to.be.revertedWithCustomError(allowlistDraggable, "Ownable_NotOwner")
+        .withArgs(deployer.address);
+
+      await allowlistShares.connect(owner).setApplicable(false);
+      await allowlistDraggable.connect(owner).setApplicable(false);
+
+      // restrict should be false
+      expect(await allowlistShares.restrictTransfers()).to.equal(false)
+      expect(await allowlistDraggable.restrictTransfers()).to.equal(false)
+    });
+
+    it("Should clean forbidden address after removed restriction", async () => {
+      //use sig2 for blacklist
+      const forbiddenAddress = sig2.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+
+      await allowlistShares.connect(owner).mint(forbiddenAddress, "1000");
+
+      //check if is now default
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
+    });
+
+    it("Should clean allowlist address after removed restriction", async () => {
+      // use sig4 for allowlist
+      const allowlistAddress = sig4.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](allowlistAddress, TYPE_ALLOWLISTED);
+      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(true);
+
+      // use sig5 as default
+      const defaultAddress = sig5.address
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+
+      // allow transfer from allowlist(sig4) to default(sig5) -- (what failed before with resriction on)
+      await allowlistShares.connect(sig4).transfer(defaultAddress, "10");
+      // cleans allowlist address to be default now
+      expect(await allowlistShares.canReceiveFromAnyone(allowlistAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(allowlistAddress)).to.equal(false);
+    });
+
+    it("Should clean forbidden address after removed restriction", async () => {
+      // use sig4 for forbidden
+      const forbiddenAddress = sig4.address;
+      await allowlistShares.connect(owner)["setType(address,uint8)"](forbiddenAddress, TYPE_FORBIDDEN);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(true);
+
+      // use sig5 as default
+      const defaultAddress = sig5.address
+      await allowlistShares.connect(owner)["setType(address,uint8)"](defaultAddress, TYPE_DEFAULT);
+      expect(await allowlistShares.canReceiveFromAnyone(defaultAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(defaultAddress)).to.equal(false);
+
+      // allow transfer from allowlist(sig4) to default(sig5) -- (what failed before with resriction on)
+      await allowlistShares.connect(sig4).transfer(defaultAddress, "10");
+      // cleans allowlist address to be default now
+      expect(await allowlistShares.canReceiveFromAnyone(forbiddenAddress)).to.equal(false);
+      expect(await allowlistShares.isForbidden(forbiddenAddress)).to.equal(false);
+    });
+
+
+    it("Should remove claim when token are transfered", async () => {
+      await allowlistDraggable.connect(sig1).approve(recoveryHub.address, config.infiniteAllowance);
+      const lostAddress = sig3.address;
+      const lostSigner = sig3;
+      const lostAddressBalance = await allowlistDraggable.balanceOf(lostAddress);
+
+      // declare token lost
+      await recoveryHub.connect(sig1).declareLost(allowlistDraggable.address, allowlistDraggable.address, lostAddress);
+      // check if flag is set
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer to lost address
+      await allowlistDraggable.connect(sig1).transfer(lostAddress, "10");
+      // after transfer to lost address still claim on it
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(true);
+      // transfer from lost address (to clear claim)
+      await allowlistDraggable.connect(lostSigner).transfer(sig1.address, "10");
+      // claim cleared
+      expect(await allowlistDraggable.hasFlag(lostAddress, 10)).to.equal(false);
+      // get collateral
+      expect(await allowlistDraggable.balanceOf(lostAddress)).to.equal(await lostAddressBalance.mul(2))
     });
   });
 });
