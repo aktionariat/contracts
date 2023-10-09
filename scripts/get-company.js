@@ -4,7 +4,7 @@ const { getCompanyId } = require("./register-helper");
 
 
 async function main() {
-  const name = "test"
+  const name = "Internal Test Company"
   const companyNr = await getCompanyId(name)
   console.log(companyNr)
 

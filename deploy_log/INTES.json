@@ -1,0 +1,36 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Internal Test Company",
+  "multisigSigner": "0xdcaa50578efe0a2ab95767a6dc41d104d543e8d9",
+  "symbol": "INTES",
+  "name": "Internal Test Company Shares",
+  "terms": "https://www.aktionariat.com/terms-of-service",
+  "totalShares": "1000000",
+  "sharePrice": "1000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0xACe4EbC45aDd63aEE25098A2F611F82b3FF44787",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0xD83e8CE48Cc68bf6337aa5709F8AddC282db21Bc",
+    "offerFactory": "0x7F34B9d2C3682B70ff6e8bc8fa2Ed69Def2F81Cd",
+    "draggable": "0x25F5119d4c9B599dBfc16e4445E16Ad3f1fdDF31",
+    "paymentHub": "0x931dD6e2b3a1893645D920C2b5A6E837a9b7879e",
+    "brokerbot": "0xBa013ba113cCa605d85863e89384Ddec0658dF0d",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x25F5119d4c9B599dBfc16e4445E16Ad3f1fdDF31"
+  },
+  "blocknumber": "18069159",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}
