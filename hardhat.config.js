@@ -157,8 +157,11 @@ module.exports = {
         deploy: ['deploy_optimism']
     },
     polygon: {
-      url: "https://polygon-rpc.com",
-      accounts: accounts("polygon")
+      url: "https://polygon-mainnet.g.alchemy.com/v2/dcZ8VPNo96mXO7G5bI5ZSEaW6FsHyCsw",
+      accounts: accounts("polygon"),
+      chainId: 137,
+      live: true,
+      saveDeployments: true
     },
     mumbai: {
       url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
@@ -175,22 +178,26 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
+      137: 1,
       3: 1,
       4: 1,
       5: 1,
       11155111: 1,
-      69: 1
+      69: 1,
+      80001: 1,
     },
     owner: {
       default: 1,
       //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
+      137: process.env.MULTISIG_DEPLOY, // polygon
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli
       11155111: process.env.MULTISIG_DEPLOY, // sepolia
       69: process.env.MULTISIG_DEPLOY, // optimism kovan
-      42161: process.env.MULTISIG_DEPLOY // arb1
+      42161: process.env.MULTISIG_DEPLOY, // arb1
+      8001: process.env.MULTISIG_DEPLOY  // mumbai
     },
     dev: {
       // Default to 1
@@ -208,6 +215,7 @@ module.exports = {
       11155111: process.env.MULTISIG_DEFAULT,
       69: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
+      80001: process.env.MULTISIG_DEFAULT
     },
     trustedForwarder: {
       default: process.env.TRUSTED_FORWARDER,
@@ -242,7 +250,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.20",
+        version: "0.8.21",
         settings: {
           optimizer: {
             enabled: true,

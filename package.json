@@ -52,7 +52,7 @@
     "ethers": "^5.7.1",
     "ethers-decode-error": "^1.0.0",
     "got": "^11.8.3",
-    "hardhat": "^2.14",
+    "hardhat": "^2.18",
     "hardhat-change-network": "^0.0.7",
     "hardhat-dependency-compiler": "^1.1.2",
     "hardhat-deploy": "^0.11.26",
