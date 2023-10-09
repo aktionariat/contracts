@@ -26,7 +26,7 @@ async function getGasPrice() {
       maxFeePerGas: ethers.utils.parseUnits(Math.ceil(json.fast.maxFee) + '', 'gwei'),
       baseFee: ethers.utils.parseUnits(Math.ceil(json.estimatedBaseFee) + '', 'gwei'),
     };
-    console.log(feeData); // You can log feeData here
+    //console.log(feeData); // You can log feeData here
     return feeData; // Return the feeData object
   } catch (error) {
     console.error('Fetch error:', error);

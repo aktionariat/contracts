@@ -1,7 +1,7 @@
 const Confirm = require('prompt-confirm');
 const config = require("../scripts/deploy_config.js");
 const nconf = require('nconf');
-const { getGasPrice } = require('../../scripts/helper/polygongasstation.js');
+const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -39,7 +39,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-    maxFeePerGas: feeData.maxFeePerGas
+    maxFeePerGas: feeData.maxFeePerGas,
+    gasLimit: 3000000
   });
 };
 
