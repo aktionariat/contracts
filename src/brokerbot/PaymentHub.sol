@@ -33,7 +33,6 @@ import "../ERC20/IERC20Permit.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../utils/SafeERC20.sol";
 
 /**
@@ -65,8 +64,6 @@ contract PaymentHub {
     
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
-    AggregatorV3Interface internal immutable priceFeedCHFUSD;
-    AggregatorV3Interface internal immutable priceFeedETHUSD;
 
     struct PermitInfo {
         uint256 exFee;
@@ -92,12 +89,10 @@ contract PaymentHub {
     /// @param swappedAmount Swapped amount.
     error PaymentHub_SwapError(uint256 amountBase, uint256 swappedAmount);
 
-    constructor(address _trustedForwarder, IQuoter _quoter, ISwapRouter swapRouter, AggregatorV3Interface _aggregatorCHFUSD, AggregatorV3Interface _aggregatorETHUSD) {
+    constructor(address _trustedForwarder, IQuoter _quoter, ISwapRouter swapRouter) {
         trustedForwarder = _trustedForwarder;
         uniswapQuoter = _quoter;
         uniswapRouter = swapRouter;
-        priceFeedCHFUSD = _aggregatorCHFUSD;
-        priceFeedETHUSD = _aggregatorETHUSD;
     }
 
     modifier onlySellerAndForwarder(address seller) {
@@ -161,38 +156,7 @@ contract PaymentHub {
      * @return The price in wei.
      */
     function getPriceInEther(uint256 amountInBase, IBrokerbot brokerBot) public returns (uint256) {
-        if ((address(brokerBot) != address(0)) && hasSettingKeepEther(brokerBot)) {
-            return getPriceInEtherFromOracle(amountInBase, IBrokerbot(brokerBot).base());
-        } else {
-            return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), address(brokerBot.base()), DEFAULT_FEE, amountInBase, 0);
-        }
-    }
-
-    /**
-     * Price in ETH with 18 decimals
-     */
-    function getPriceInEtherFromOracle(uint256 amountInBase, IERC20 base) public view returns (uint256) {
-        if(address(base) == CHF_TOKEN) {
-            return getLatestPriceCHFUSD() * amountInBase / getLatestPriceETHUSD();
-        } else {
-            return amountInBase * DENOMINATOR / getLatestPriceETHUSD();
-        }
-    }
-
-    /**
-     * Returns the latest price of eth/usd pair from chainlink with 8 decimals
-     */
-    function getLatestPriceETHUSD() public view returns (uint256) {
-        (, int256 price, , , ) = priceFeedETHUSD.latestRoundData();
-        return uint256(price);
-    }
-
-    /**
-     * Returns the latest price of chf/usd pair from chainlink with 8 decimals
-     */
-    function getLatestPriceCHFUSD() public view returns (uint256) {
-        (, int256 price, , , ) = priceFeedCHFUSD.latestRoundData();
-        return uint256(price);
+        return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), address(brokerBot.base()), DEFAULT_FEE, amountInBase, 0);
     }
 
     /**
@@ -301,23 +265,8 @@ contract PaymentHub {
      */
     function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 priceInEther, uint256 sharesOut) {
         IERC20 base = brokerbot.base();
-        // Check if the brokerbot has setting to keep ETH
-        if (hasSettingKeepEther(brokerbot)) {
-            priceInEther = getPriceInEtherFromOracle(amountInBase, base);
-            sharesOut = brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
-
-            // Pay back ETH that was overpaid
-            if (priceInEther < msg.value) {
-                (bool success, ) = msg.sender.call{value:msg.value - priceInEther}(""); // return change
-                if (!success) {
-                    revert PaymentHub_TransferFailed();
-                }
-            }
-
-        } else {
-            priceInEther = payFromEther(address(brokerbot), amountInBase, base);
-            sharesOut = brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
-        }
+        priceInEther = payFromEther(address(brokerbot), amountInBase, base);
+        sharesOut = brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
     }
 
     /***
