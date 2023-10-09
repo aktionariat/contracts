@@ -25,6 +25,7 @@ const {
  } = require("./lib/inquirer");
 const {config} = require('./default_config.js');
 const nconf = require('nconf');
+const { getGasPrice } = require("../scripts/helper/polygongasstation");
 const git = simpleGit();
 
 task("gas-price", "Prints gas price").setAction(async function({ address }, { ethers }) {
@@ -64,6 +65,12 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                 case "optimism":
                     factory = "0x12d57174b35D64Fc2798E7AA62F8379Bb49C2250" // optimism factory
                     break;
+                case "mumbai":
+                    factory = "0x0235FB5902b84885bA79BDbce417C49E3720eb2d" // polygon mumbai
+                    break;
+                case "polygon":
+                    factory = "0x1776C349696CccAE06541542C5ED954CDf9859cC" // polygon mainnet
+                    break;
             }
         }
         if(owner == undefined) {
@@ -87,8 +94,8 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                 process.exit();
             }
         }
-
-        const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000 });
+        const feeData = await getGasPrice();
+        const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000, gasPrice: feeData.maxFeePerGas });
         console.log(`deploying MultiSigWallet Clone (tx: ${tx.hash}) with Nonce: ${tx.nonce}`);
         const { events } = await tx.wait();
         const { address } = events.find(Boolean);
