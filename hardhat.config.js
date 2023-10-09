@@ -157,7 +157,7 @@ module.exports = {
         deploy: ['deploy_optimism']
     },
     polygon: {
-      url: "https://polygon-mainnet.g.alchemy.com/v2/dcZ8VPNo96mXO7G5bI5ZSEaW6FsHyCsw",
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
       accounts: accounts("polygon"),
       chainId: 137,
       live: true,
