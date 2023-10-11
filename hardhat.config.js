@@ -215,7 +215,8 @@ module.exports = {
       11155111: process.env.MULTISIG_DEFAULT,
       69: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
-      80001: process.env.MULTISIG_DEFAULT
+      80001: process.env.MULTISIG_DEFAULT,
+      137: process.env.MULTISIG_DEFAULT
     },
     trustedForwarder: {
       default: process.env.TRUSTED_FORWARDER,

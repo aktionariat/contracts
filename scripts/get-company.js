@@ -4,7 +4,7 @@ const { getCompanyId } = require("./register-helper");
 
 
 async function main() {
-  const name = "test"
+  const name = "Polygon Example Company"
   const companyNr = await getCompanyId(name)
   console.log(companyNr)
 
