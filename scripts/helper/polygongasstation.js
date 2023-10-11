@@ -22,9 +22,9 @@ async function getGasPrice() {
     }
     const json = await response.json();
     const feeData = {
-      maxPriorityFeePerGas: ethers.utils.parseUnits(Math.ceil(json.fast.maxPriorityFee,) + '', 'gwei'),
-      maxFeePerGas: ethers.utils.parseUnits(Math.ceil(json.fast.maxFee) + '', 'gwei'),
-      baseFee: ethers.utils.parseUnits(Math.ceil(json.estimatedBaseFee) + '', 'gwei'),
+      maxPriorityFeePerGas: ethers.parseUnits(Math.ceil(json.fast.maxPriorityFee,) + '', 'gwei'),
+      maxFeePerGas: ethers.parseUnits(Math.ceil(json.fast.maxFee) + '', 'gwei'),
+      baseFee: ethers.parseUnits(Math.ceil(json.estimatedBaseFee) + '', 'gwei'),
     };
     //console.log(feeData); // You can log feeData here
     return feeData; // Return the feeData object

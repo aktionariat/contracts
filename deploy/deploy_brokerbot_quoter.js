@@ -8,12 +8,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const { deployer, owner } = await getNamedAccounts();
 
   let brokerbotRegistry
-  if (network.name != "hardhat") {
+  /*if (network.name != "hardhat") {
     brokerbotRegistry = "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"; //for production deployment
   } else {
-    const brokerbotRegistryContract = await deployments.get('BrokerbotRegistry'); // for testing
+    */const brokerbotRegistryContract = await deployments.get('BrokerbotRegistry'); // for testing
     brokerbotRegistry = brokerbotRegistryContract.address;
-  }
+  //}
   const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"; // ethereum mainnet
   const wethAddress = config.wethAddress;
     

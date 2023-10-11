@@ -6,7 +6,7 @@ const fs = require('fs-extra');
 const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
 const { getCompanyId, registerMultiSignature, registerToken, registerBrokerbot } = require("../scripts/register-helper");
-const { ethers: { constants: { MaxUint256 }}} = require("ethers");
+const { ethers } = require("ethers");
 const {
     askReviewConfirm,
     askNetwork, 
@@ -95,7 +95,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
             }
         }
         const feeData = await getGasPrice();
-        const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000, gasPrice: feeData.maxFeePerGas });
+        const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.encodeBytes32String(salt), { gasLimit: 300000 });
         console.log(`deploying MultiSigWallet Clone (tx: ${tx.hash}) with Nonce: ${tx.nonce}`);
         const { events } = await tx.wait();
         const { address } = events.find(Boolean);
