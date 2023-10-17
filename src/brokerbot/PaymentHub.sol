@@ -282,12 +282,10 @@ contract PaymentHub {
      * @param ref The reference data blob.
      */
     function payAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external {
-        console.log(msg.sender);
         payAndNotify(brokerbot.base(), brokerbot, amountInBase, ref);
     }
 
     function payAndNotify(IERC20 token, IBrokerbot brokerbot, uint256 amount, bytes calldata ref) public {
-        console.log(msg.sender);
         token.safeTransferFrom(msg.sender, address(brokerbot), amount);
         brokerbot.processIncoming(token, msg.sender, amount, ref);
     }

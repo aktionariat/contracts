@@ -50,13 +50,10 @@ contract BrokerbotRouter is ISwapRouter {
 		} else {
 			amountIn = _exactOutputInternalPrepare(brokerbot, paymentHub, params.amountOut, params.amountInMaximum, IERC20(params.tokenIn));
 			// call paymenthub to buy shares with base currency
-			console.log(msg.sender);
-			console.log(amountIn);
-			console.log(IERC20(params.tokenIn).balanceOf(address(this)));
 			paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
 			refundERC20(IERC20(params.tokenIn));
 		}
-		IERC20(params.tokenOut).safeTransfer(msg.sender, params.amountOut);
+		IERC20(params.tokenOut).safeTransfer(params.recipient, params.amountOut);
   }
 
 	/**
