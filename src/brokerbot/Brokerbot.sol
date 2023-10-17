@@ -18,7 +18,6 @@ import "../ERC20/IERC20Permit.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "./IBrokerbot.sol";
 import "../utils/SafeERC20.sol";
-import "hardhat/console.sol";
 
 contract Brokerbot is IBrokerbot, Ownable {
 
@@ -183,7 +182,6 @@ contract Brokerbot is IBrokerbot, Ownable {
      * @return The amount of shares bought / The amount received for selling the shares. 
      */
     function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
-        console.log("test");
         if (msg.sender != address(incomingAsset) && msg.sender != paymenthub) {
             revert Brokerbot_InvalidSender(msg.sender);
         }

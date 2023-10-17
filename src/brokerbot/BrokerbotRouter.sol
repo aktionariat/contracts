@@ -8,7 +8,6 @@ import "./BrokerbotRegistry.sol";
 import "../ERC20/IERC677.sol";
 import "../utils/Path.sol";
 import "../utils/BrokerbotLib.sol";
-import "hardhat/console.sol";
 /**
  * @title Brokerbot Swap Router
  * @author Bernhard Ruf, bernhard@aktionariat.com 

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 //import '../utils/SafeERC20.sol';
-import 'hardhat/console.sol';
 import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 contract ExampleTrades {

@@ -35,7 +35,6 @@ import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../utils/SafeERC20.sol";
-import "hardhat/console.sol";
 
 /**
  * A hub for payments. This allows tokens that do not support ERC 677 to enjoy similar functionality,
