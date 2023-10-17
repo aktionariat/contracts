@@ -49,20 +49,20 @@ describe("Brokerbot Registry", () => {
   });
   
   it("Should register brokerbot", async () => {
-    await expect(brokerbotRegistry.connect(sig1).registerBrokerbot(brokerbot.address, config.baseCurrencyAddress, draggable.address))
+    await expect(brokerbotRegistry.connect(sig1).registerBrokerbot(await brokerbot.getAddress(), config.baseCurrencyAddress, await draggable.getAddress()))
       .to.be.revertedWithCustomError(brokerbotRegistry, "Ownable_NotOwner")
       .withArgs(sig1.address);
-    await expect(brokerbotRegistry.registerBrokerbot(brokerbot.address, config.baseCurrencyAddress, draggable.address))
+    await expect(brokerbotRegistry.registerBrokerbot(await brokerbot.getAddress(), config.baseCurrencyAddress, await draggable.getAddress()))
       .to.emit(brokerbotRegistry, "RegisterBrokerbot")
-      .withArgs(brokerbot.address, config.baseCurrencyAddress, draggable.address);
-    const registry = await brokerbotRegistry.getBrokerbot(config.baseCurrencyAddress, draggable.address);
-    expect(registry).to.be.equal(brokerbot.address);
+      .withArgs(await brokerbot.getAddress(), config.baseCurrencyAddress, await draggable.getAddress());
+    const registry = await brokerbotRegistry.getBrokerbot(config.baseCurrencyAddress, await draggable.getAddress());
+    expect(registry).to.be.equal(await brokerbot.getAddress());
   });
 
   it("Should emit event on sync", async () => {
-    await expect(brokerbotRegistry.syncBrokerbot(brokerbot.address))
+    await expect(brokerbotRegistry.syncBrokerbot(await brokerbot.getAddress()))
       .to.emit(brokerbotRegistry, "SyncBrokerbot")
-      .withArgs(brokerbot.address);
+      .withArgs(await brokerbot.getAddress());
   });
 
 });

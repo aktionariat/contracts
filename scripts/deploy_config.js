@@ -39,7 +39,7 @@ module.exports = {
   // USDC
   usdcAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   // brokerbot
-  BUYING_ENABLED: 0x1,
-  SELLING_ENABLED: 0x2,
+  BUYING_ENABLED: 1n,
+  SELLING_ENABLED: 2n,
   KEEP_ETHER: 0x4
 };

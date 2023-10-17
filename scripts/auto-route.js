@@ -55,7 +55,7 @@ async function main() {
 
   let sig1;
   [sig1] = await ethers.getSigners();
-  const daiAmount = ethers.utils.parseUnits("10000", 18);
+  const daiAmount = ethers.parseUnits("10000", 18);
   const daiCurrencyAmount = CurrencyAmount.fromRawAmount(XCHF, daiAmount);
   const alphaRouterConfig = {
     protcols: Protocol.V2,

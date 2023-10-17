@@ -42,11 +42,11 @@ describe("Sell via PaymentHub", () => {
   const exFee = "100000000000000000";
 
   const salts = [
-    ethers.utils.formatBytes32String('1'),
-    ethers.utils.formatBytes32String('2'),
-    ethers.utils.formatBytes32String('3'),
-    ethers.utils.formatBytes32String('4'),
-    ethers.utils.formatBytes32String('5')
+    ethers.encodeBytes32String('1'),
+    ethers.encodeBytes32String('2'),
+    ethers.encodeBytes32String('3'),
+    ethers.encodeBytes32String('4'),
+    ethers.encodeBytes32String('5')
   ];
 
   before(async () => {
@@ -76,13 +76,13 @@ describe("Sell via PaymentHub", () => {
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
       await shares.connect(owner).mint(accounts[i], 2000000);
-      await shares.connect(signers[i]).approve(draggable.address, config.infiniteAllowance);
+      await shares.connect(signers[i]).approve(await draggable.getAddress(), config.infiniteAllowance);
       await draggable.connect(signers[i]).wrap(accounts[i], 600000);
     }
 
     // Deposit some shares to Brokerbot
-    await draggable.connect(owner).transfer(brokerbot.address, 500000 );
-    await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
+    await draggable.connect(owner).transfer(await brokerbot.getAddress(), 500000 );
+    await baseCurrency.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseEther("100000"));
 
     // appove base currency in payment hub
     await paymentHub.approveERC20(config.baseCurrencyAddress);
@@ -117,7 +117,7 @@ describe("Sell via PaymentHub", () => {
         amountIn: baseAmount,
         amountOutMinimum: usdcAmount
       };
-      await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false);
+      await paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, false);
       expect(await usdcContract.balanceOf(seller.address)).to.equal(usdcAmount)
     })
 
@@ -137,7 +137,7 @@ describe("Sell via PaymentHub", () => {
         amountIn: baseAmount,
         amountOutMinimum: ethAmount
       };
-      await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false);
+      await paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, false);
       expect(await wethContract.balanceOf(seller.address)).to.equal(ethAmount);
     })
   })
@@ -166,7 +166,7 @@ describe("Sell via PaymentHub", () => {
         amountIn: baseAmount,
         amountOutMinimum: ethAmount
       };
-      const txInfo = await paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, unwrapWeth);
+      const txInfo = await paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, unwrapWeth);
       const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
       const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
       const ethBalanceSellerAfter = await ethers.provider.getBalance(seller.address);
@@ -193,7 +193,7 @@ describe("Sell via PaymentHub", () => {
         amountIn: baseAmount,
         amountOutMinimum: baseAmount
       };
-      await expect(paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false))
+      await expect(paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, false))
         .to.be.revertedWith("slice_outOfBounds");
     })
     it("Should revert if path is invalid", async () => {
@@ -207,7 +207,7 @@ describe("Sell via PaymentHub", () => {
         amountIn: baseAmount,
         amountOutMinimum: baseAmount
       };
-      await expect(paymentHub.connect(seller).sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false))
+      await expect(paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, false))
         .to.be.reverted;
 
     })
@@ -222,7 +222,7 @@ describe("Sell via PaymentHub", () => {
         amountIn: baseAmount,
         amountOutMinimum: baseAmount
       };
-      await expect(paymentHub.sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, false))
+      await expect(paymentHub.sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, false))
         .to.be.revertedWithPanic(0x11);
         //.to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender").withArgs(deployer.address);
     })
@@ -244,7 +244,7 @@ describe("Sell via PaymentHub", () => {
       await draggable.connect(owner).transfer(multiSigClone.address, 500 );
       // set allowance from multisig
       const approveTxData = await draggable.populateTransaction.approve(paymentHub.address, config.infiniteAllowance);
-      const approveTx = await getTX(draggable.address, approveTxData, multiSigClone, ownerWallet, chainid);
+      const approveTx = await getTX(await draggable.getAddress(), approveTxData, multiSigClone, ownerWallet, chainid);
       await multiSigClone.execute(approveTx.nonce, approveTx.to, approveTx.value, approveTx.data, [approveTx.v - (8+chainid*2)], [approveTx.r], [approveTx.s]);    
       // path: XCHF -> WETH
       const types = ["address","uint24","address"];
@@ -262,7 +262,7 @@ describe("Sell via PaymentHub", () => {
         amountIn: baseAmount,
         amountOutMinimum: ethAmount
       };
-      const sellDataTX = await paymentHub.populateTransaction.sellSharesAndSwap(brokerbot.address, draggable.address, randomShareAmount, "0x01", params, unwrapWeth);
+      const sellDataTX = await paymentHub.populateTransaction.sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, unwrapWeth);
       const sellTx = await getTX(paymentHub.address, sellDataTX, multiSigClone, ownerWallet, chainid);
       await multiSigClone.execute(sellTx.nonce, sellTx.to, sellTx.value, sellTx.data, [sellTx.v - (8+chainid*2)], [sellTx.r], [sellTx.s]);
       const ethBalanceSellerAfter = await ethers.provider.getBalance(multiSigClone.address);

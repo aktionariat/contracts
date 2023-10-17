@@ -5,7 +5,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const multisigCloneFactoryDeployment= await deployments.get("MultiSigCloneFactory");
   const multisigCloneFactory = await ethers.getContractAt("MultiSigCloneFactory", multisigCloneFactoryDeployment.address);
-  const createTx = await multisigCloneFactory.create(multiSigDefaultOwner, ethers.utils.formatBytes32String('1'));
+  const createTx = await multisigCloneFactory.create(multiSigDefaultOwner, ethers.encodeBytes32String('1'));
   const { events } = await createTx.wait();
   const { address:multisigAddress } = events.find(Boolean);
 

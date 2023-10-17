@@ -170,7 +170,7 @@ describe("Permit", () => {
   //////////////////////////////////////////////////////////////*/
   describe("Permit Draggable Shares", () => {
     beforeEach(async() => {
-      contractAddress = draggable.address;
+      contractAddress = await draggable.getAddress();
       domain = {
         chainId: chainId,
         verifyingContract: contractAddress,
@@ -249,7 +249,7 @@ describe("Permit", () => {
     let randomShareAmount;
     let baseAmount;
     beforeEach(async() => {
-      contractAddress = draggable.address;
+      contractAddress = await draggable.getAddress();
       domain = {
         chainId: chainId,
         verifyingContract: contractAddress,
@@ -289,7 +289,7 @@ describe("Permit", () => {
       const { v, r, s } = ethers.utils.splitSignature(await seller._signTypedData(domain, permitType, permitValue));
       // relayer calls sell via paymenthub
       const permitInfo = {exFee, deadline, v, r, s}
-      await expect(paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo))
+      await expect(paymentHub.connect(relayer).sellSharesWithPermit(await brokerbot.getAddress(), await draggable.getAddress(), seller.address, seller.address, value, "0x01", permitInfo))
         .to.be.revertedWithCustomError(paymentHub, "PaymentHub_InvalidSender")
         .withArgs(relayer.address);
     });
@@ -313,7 +313,7 @@ describe("Permit", () => {
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
       const permitInfo = {exFee, deadline, v, r, s}
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo);
+      await paymentHub.connect(relayer).sellSharesWithPermit(await brokerbot.getAddress(), await draggable.getAddress(), seller.address, seller.address, value, "0x01", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
       expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(sellPrice.sub(exFee));
@@ -337,7 +337,7 @@ describe("Permit", () => {
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
       const permitInfo = {exFee: 0, deadline, v, r, s}
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x01", permitInfo);
+      await paymentHub.connect(relayer).sellSharesWithPermit(await brokerbot.getAddress(), await draggable.getAddress(), seller.address, seller.address, value, "0x01", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
       expect(baseCurrencyAfter.sub(baseCurrencyBefore)).to.be.equal(baseAmount);
@@ -363,7 +363,7 @@ describe("Permit", () => {
       const sharesBefore = await draggable.balanceOf(seller.address);
       // fee should be 0 on sell for fiat
       const permitInfo = {exFee: 0, deadline, v, r, s}
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, seller.address, value, "0x02", permitInfo);
+      await paymentHub.connect(relayer).sellSharesWithPermit(await brokerbot.getAddress(), await draggable.getAddress(), seller.address, seller.address, value, "0x02", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
       expect(baseCurrencyBefore).to.be.equal(baseCurrencyAfter);
@@ -389,7 +389,7 @@ describe("Permit", () => {
       //console.log(`baseCurrencyBefore: ${baseCurrencyBefore}`);
       const sharesBefore = await draggable.balanceOf(seller.address);
       const permitInfo = {exFee, deadline, v, r, s}
-      await paymentHub.connect(relayer).sellSharesWithPermit(brokerbot.address, draggable.address, seller.address, offRamp, value, "0x01", permitInfo);
+      await paymentHub.connect(relayer).sellSharesWithPermit(await brokerbot.getAddress(), await draggable.getAddress(), seller.address, offRamp, value, "0x01", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(offRamp);
       //console.log(`baseCurrencyAfter: ${baseCurrencyAfter}`);
       const sharesAfter = await draggable.balanceOf(seller.address);
@@ -429,7 +429,7 @@ describe("Permit", () => {
         amountOutMinimum: ethAmount
       };
       const permitInfo = {exFee: 0, deadline, v, r, s}
-      await paymentHub.connect(relayer).sellSharesWithPermitAndSwap(brokerbot.address, draggable.address, seller.address, randomShareAmount, "0x01", permitInfo, params, true);
+      await paymentHub.connect(relayer).sellSharesWithPermitAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), seller.address, randomShareAmount, "0x01", permitInfo, params, true);
       const ethBalanceSellerAfter = await ethers.provider.getBalance(seller.address);
       expect(ethBalanceSellerAfter.sub(ethBalanceSellerBefore)).to.equal(ethAmount);
       expect(await wethContract.balanceOf(paymentHub.address)).to.equal(0);
@@ -458,7 +458,7 @@ describe("Permit", () => {
       const buyPrice = await brokerbot.getBuyPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(buyer.address);
       const sharesBefore = await draggable.balanceOf(buyer.address);
-      await paymentHub.connect(relayer).payAndNotifyWithPermit(buyer.address, brokerbot.address, value, "0x", deadline, v, r, s);
+      await paymentHub.connect(relayer).payAndNotifyWithPermit(buyer.address, await brokerbot.getAddress(), value, "0x", deadline, v, r, s);
       const baseCurrencyAfter = await baseCurrency.balanceOf(buyer.address);
       const sharesAfter = await draggable.balanceOf(buyer.address);
       expect(baseCurrencyBefore.sub(buyPrice)).to.be.equal(baseCurrencyAfter);
@@ -520,7 +520,7 @@ describe("Permit", () => {
   //////////////////////////////////////////////////////////////*/
   describe("Permit Allowlist Draggable Shares", () => {
     before(async() => {
-      contractAddress = allowlistDraggable.address;
+      contractAddress = await allowlistDraggable.getAddress();
       domain = {
         chainId: chainId,
         verifyingContract: contractAddress,

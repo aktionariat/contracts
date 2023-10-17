@@ -7,9 +7,9 @@ const config = require("../scripts/deploy_config.js");
 // Libraries
 const Chance = require("chance");
 const { ethers } = require("hardhat");
-const { buyingEnabled, sellingEnabled, setup } = require("./helper/index");
+const { buyingEnabled, sellingEnabled, setup, randomBigInt } = require("./helper/index");
 const { expect } = require("chai");
-const exp = require("constants");
+const helpers = require("@nomicfoundation/hardhat-network-helpers");
 
 // Contract hardcoded variables
 const BUYING_ENABLED = 0x1;
@@ -39,7 +39,7 @@ describe("Brokerbot", () => {
 
   describe("init", () => {
     it("should deploy", async () => {
-      expect(brokerbot.address).to.exist;
+      expect(await brokerbot.getAddress()).to.exist;
     });
 
     it("should have updated version number", async () => {
@@ -55,7 +55,7 @@ describe("Brokerbot", () => {
       expect(baseCurrency).to.equal(config.baseCurrencyAddress);
       expect(brokerbotOwner).to.equal(owner.address);
       expect(await price.toString()).to.equal(config.sharePrice);
-      expect(increment.isZero()).to.eq(true);
+      expect(increment).to.eq(0n);
     });
   });
 
@@ -68,7 +68,7 @@ describe("Brokerbot", () => {
       // Used Contract: Brokerbot      
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getBuyPrice(0);
-      expect(priceZeroShares.isZero()).to.eq(true);
+      expect(priceZeroShares).to.eq(0n);
       
       // getPrice cost for 1 share
       const priceOneShare = await brokerbot.getBuyPrice(1);
@@ -77,9 +77,9 @@ describe("Brokerbot", () => {
       
       // Do 100 times with random number of shares
       for (let i = 0; i < 10; i++) {
-        const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
+        const randomNumberShares = randomBigInt(2, 50000);
         const priceRandomNumberShares = await brokerbot.getBuyPrice(randomNumberShares);
-        expect(priceOneShare.mul(randomNumberShares)).to.eq(priceRandomNumberShares);
+        expect(priceOneShare*randomNumberShares).to.eq(priceRandomNumberShares);
       }
     });
     
@@ -88,7 +88,7 @@ describe("Brokerbot", () => {
       
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getSellPrice(0);
-      expect(priceZeroShares.isZero()).to.equal(true);
+      expect(priceZeroShares).to.equal(0n);
       
       // getPrice cost for 1 share
       const priceOneShare = await brokerbot.getSellPrice(1);
@@ -97,9 +97,9 @@ describe("Brokerbot", () => {
       
       // Do 100 times with random number of shares
       for (let i = 0; i < 10; i++) {
-        const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
+        const randomNumberShares = randomBigInt(2, 50000);
         const priceRandomNumberShares = await brokerbot.getSellPrice(randomNumberShares);
-        expect(priceOneShare.mul(randomNumberShares)).to.eq(priceRandomNumberShares);
+        expect(priceOneShare*randomNumberShares).to.eq(priceRandomNumberShares);
       }
     });
     
@@ -108,18 +108,18 @@ describe("Brokerbot", () => {
       // Get existing and reset while incrementing by delta
       const price = await brokerbot.getPrice();
       const incrementBefore = await brokerbot.increment();
-      const delta = ethers.BigNumber.from("1000000000000000");
-      await brokerbot.connect(owner).setPrice(price, incrementBefore.add(delta));
+      const delta = BigInt("1000000000000000");
+      await brokerbot.connect(owner).setPrice(price, incrementBefore + delta);
       const incrementAfter = await brokerbot.increment();
       
       // Check result
-      expect(incrementBefore.add(delta)).to.eq(incrementAfter);
+      expect(incrementBefore + delta).to.eq(incrementAfter);
     });
     
     it("should calculate buy price correctly - with increment - no drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random increment
-      const increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 1000 }).toString(),"finney");
+      const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 1000 }).toString(),"finney");
       
       /*const increment = web3.utils.toWei(new Chance().integer({ min: 1, max: 1000 }),
         "milli"
@@ -128,7 +128,7 @@ describe("Brokerbot", () => {
       
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getBuyPrice(0);
-      expect(priceZeroShares.isZero()).to.eq(true);
+      expect(priceZeroShares).to.eq(0n);
       
       // getPrice cost for 1 share
       const priceOneShare = await brokerbot.getBuyPrice(1);
@@ -137,18 +137,18 @@ describe("Brokerbot", () => {
       
       // Do 10 times with random number of shares
       for (let i = 0; i < 10; i++) {
-        const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
+        const randomNumberShares = randomBigInt(2, 50000);
         // Get price from contract
         const priceRandomNumberShares = await brokerbot.getBuyPrice(
           randomNumberShares
         );
           
         // Calculate the most straightforward way
-        let calculatedPrice = ethers.BigNumber.from(0);
+        let calculatedPrice = 0n;
         let priceForShare = priceOneShare;
         for (let share = 0; share < randomNumberShares; share++) {
-          calculatedPrice = calculatedPrice.add(priceForShare);
-          priceForShare = priceForShare.add(increment);
+          calculatedPrice = calculatedPrice + priceForShare;
+          priceForShare = priceForShare + increment;
         }
         
         // Check result
@@ -159,34 +159,34 @@ describe("Brokerbot", () => {
     it("should calculate sell price correctly - with increment - no drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random increment
-      const increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
+      const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
         "gwei"
         );
       await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
       
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getSellPrice(0);
-      expect(priceZeroShares.isZero()).to.eq(true);
+      expect(priceZeroShares).to.eq(0n);
       
       // getPrice cost for 1 share
       const priceOneShare = await brokerbot.getSellPrice(1);
       const quotePrice = await brokerbot.getPrice();
-      expect(priceOneShare).to.eq(quotePrice.sub(increment));
+      expect(priceOneShare).to.eq(quotePrice-increment);
       
       // Do 10 times with random number of shares
       for (let i = 0; i < 10; i++) {
-        const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
+        const randomNumberShares = randomBigInt(2, 50000);
           // Get price from contract
           const priceRandomNumberShares = await brokerbot.getSellPrice(
             randomNumberShares
             );
             
             // Calculate the most straightforward way
-            let calculatedPrice = ethers.BigNumber.from(0);
+            let calculatedPrice = 0n;
             let priceForShare = priceOneShare;
             for (let share = 0; share < randomNumberShares; share++) {
-              calculatedPrice = calculatedPrice.add(priceForShare);
-              priceForShare = priceForShare.sub(increment);
+              calculatedPrice = calculatedPrice + priceForShare;
+              priceForShare = priceForShare - increment;
             }
             
             // Check result
@@ -197,16 +197,16 @@ describe("Brokerbot", () => {
     it("Should calculate buy price correctly - no increment - with drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random drift
-      const oneDay = 24 * 60 * 60;
-      const secondsPerStep = 10;
-      const driftIncrement = ethers.utils.parseEther("0.001");
+      const oneDay = 24n * 60n * 60n;
+      const secondsPerStep = 10n;
+      const driftIncrement = ethers.parseEther("0.001");
 
       await brokerbot.connect(owner).setPrice(config.sharePrice, 0);
       await brokerbot.connect(owner).setDrift(secondsPerStep, driftIncrement);
       
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getBuyPrice(0);
-      expect(priceZeroShares.isZero()).to.eq(true);
+      expect(priceZeroShares).to.eq(0n);
       
       // getPrice cost for 1 share at start
       const priceOneShare = await brokerbot.getBuyPrice(1);
@@ -217,13 +217,12 @@ describe("Brokerbot", () => {
       
       // Do 10 times with random number times after start
       for (let i = 0; i < 10; i++) {
-        const randomNumberDays = new Chance().natural({ min: 2, max: 30 });
+        const randomNumberDays = randomBigInt(2, 30);
         // 
-        await ethers.provider.send("evm_increaseTime", [oneDay*randomNumberDays]);
-        await ethers.provider.send("evm_mine");
+        await helpers.time.increase(oneDay*randomNumberDays);
         // Get price from contract
         const priceRandomNumberDays = await brokerbot.getBuyPrice(1);
-        let calculatedPrice = currentPrice.add(driftIncrement.mul((oneDay*randomNumberDays)/secondsPerStep));
+        let calculatedPrice = currentPrice+(driftIncrement*((oneDay*randomNumberDays)/secondsPerStep));
         // Check result
         expect(priceRandomNumberDays).to.eq(calculatedPrice);
         currentPrice = calculatedPrice;
@@ -233,17 +232,17 @@ describe("Brokerbot", () => {
     it("Should calculate sell price correctly - no increment - with negative drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random drift
-      const oneDay = 24 * 60 * 60;
-      const secondsPerStep = 100;
-      const driftIncrement = ethers.utils.parseEther("-0.0001");
-      const startPrice = ethers.utils.parseEther("5");
+      const oneDay = 24n * 60n * 60n;
+      const secondsPerStep = 100n;
+      const driftIncrement = ethers.parseEther("-0.0001");
+      const startPrice = ethers.parseEther("5");
 
       await brokerbot.connect(owner).setPrice(startPrice, 0);
       await brokerbot.connect(owner).setDrift(secondsPerStep, driftIncrement);
       
       // 0 cost for 0 shares
       const priceZeroShares = await brokerbot.getSellPrice(0);
-      expect(priceZeroShares.isZero()).to.eq(true);
+      expect(priceZeroShares).to.eq(0n);
       
       // getPrice cost for 1 share at start
       const priceOneShare = await brokerbot.getSellPrice(1);
@@ -254,13 +253,12 @@ describe("Brokerbot", () => {
       
       // Do 10 times with random number times after start
       for (let i = 0; i < 10; i++) {
-        const randomNumberDays = new Chance().natural({ min: 2, max: 30 });
+        const randomNumberDays = randomBigInt(2, 30);
         // 
-        await ethers.provider.send("evm_increaseTime", [oneDay*randomNumberDays]);
-        await ethers.provider.send("evm_mine");
+        await helpers.time.increase(oneDay*randomNumberDays);
         // Get price from contract
         const priceRandomNumberDays = await brokerbot.getSellPrice(1);
-        let calculatedPrice = currentPrice.add(driftIncrement.mul((oneDay*randomNumberDays)/secondsPerStep));
+        let calculatedPrice = currentPrice+(driftIncrement*((oneDay*randomNumberDays)/secondsPerStep));
         // Check result
         if(calculatedPrice < 0 ) {
           expect(priceRandomNumberDays).to.eq(0);
@@ -305,19 +303,20 @@ describe("Brokerbot", () => {
       await brokerbot.connect(owner).setEnabled(false, true);
       
       // Random number of shares to buy
-      const sharesToBuy = new Chance().natural({ min: 1, max: 500 });
+      const sharesToBuy = randomBigInt(1, 500);
       const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-      const buyPriceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](buyPrice, brokerbot.address);
+      const buyPriceInETH = await paymentHub.getPriceInEther(buyPrice, await brokerbot.getAddress()).callStatic;
       
       // Base payment should fail
       await expect(paymentHub.connect(owner)["payAndNotify(address,uint256,bytes)"](
-        brokerbot.address, buyPrice, "0x20"))
+        await brokerbot.getAddress(), buyPrice, "0x20"))
           .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");
         
       // ETH payment should fail
-      await expect(paymentHub.connect(owner).payFromEtherAndNotify(
-        brokerbot.address, buyPrice, "0x20", { value: buyPriceInETH }))
-          .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");
+      // TODO: no ETH payment on polygon: change to pay with matic
+      /*await expect(paymentHub.connect(owner).payFromEtherAndNotify(
+        await brokerbot.getAddress(), buyPrice, "0x20", { value: buyPriceInETH }))
+          .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");*/
     });
         
     it("should not allow selling shares when selling is disabled", async () => {
@@ -326,12 +325,12 @@ describe("Brokerbot", () => {
       await brokerbot.connect(owner).setEnabled(true, false);
       
       // Random number of shares to buy
-      const sharesToSell = new Chance().natural({ min: 1, max: 500 });
+      const sharesToSell = randomBigInt(1, 500);
       
       // Base payment should fail
       await expect(paymentHub.connect(owner)["payAndNotify(address,address,uint256,bytes)"](
-        draggableShares.address,
-        brokerbot.address,
+        await draggableShares.getAddress(),
+        await brokerbot.getAddress(),
         sharesToSell,
         "0x20"
       )).to.be.revertedWithCustomError(brokerbot, "Brokerbot_SellingDisabled");
@@ -345,17 +344,17 @@ describe("Brokerbot", () => {
     it("should calculate number of shares for given baseCurrency amount sent (getShares)", async () => {
       // Used Contract: Brokerbot
       // Set random price and increment
-      const price = ethers.utils.parseUnits(new Chance().integer({ min: 1000, max: 10000 }).toString(),
+      const price = ethers.parseUnits(new Chance().integer({ min: 1000, max: 10000 }).toString(),
         "finney"
         );
-      const increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 1000 }).toString(),
+      const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 1000 }).toString(),
         "finney"
         );
         await brokerbot.connect(owner).setPrice(price, increment);
         
         // No payment no shares
         const sharesZeroPaid = await brokerbot.getShares(0);
-        expect(sharesZeroPaid.isZero()).to.equal(true);
+        expect(sharesZeroPaid).to.equal(0n);
         
         // Sent payment worth 1 share
         const singlePrice = await brokerbot.getBuyPrice(1);
@@ -364,7 +363,7 @@ describe("Brokerbot", () => {
         
         // Repeat with random number of shares
         for (let i = 0; i < 10; i++) {
-          const randomNumberShares = new Chance().natural({ min: 2, max: 50000 });
+          const randomNumberShares = randomBigInt(2, 50000);
           const priceRandomNumberShares = await brokerbot.getBuyPrice(
             randomNumberShares
             );
@@ -394,7 +393,7 @@ describe("Brokerbot", () => {
         "0xb866480b21eb64d2b6e2fd710ba3667ab01b2e2e",
       ];
       const shares = [
-        50, 20, 10, 450, 50, 10, 12, 50, 20, 12, 10, 10, 10, 50, 50, 50,
+        50n, 20n, 10n, 450n, 50n, 10n, 12n, 50n, 20n, 12n, 10n, 10n, 10n, 50n, 50n, 50n,
       ];
       const costs = [
         "1000000000000000000",
@@ -434,7 +433,7 @@ describe("Brokerbot", () => {
       ];
 
       const brokerbotBalanceBefore = await draggableShares.balanceOf(
-        brokerbot.address
+        await brokerbot.getAddress()
       );
       const buyerBalancesBefore = await Promise.all(
         buyers.map(async (address) => {
@@ -445,7 +444,7 @@ describe("Brokerbot", () => {
       await brokerbot.connect(owner).notifyTradesAndTransfer(buyers, shares, costs, ref);
 
       const brokerbotBalanceAfter = await draggableShares.balanceOf(
-        brokerbot.address
+        await brokerbot.getAddress()
       );
       const buyerBalancesAfter = await Promise.all(
         buyers.map(async (address) => {
@@ -458,20 +457,20 @@ describe("Brokerbot", () => {
         let balance = buyerBalancesBefore[i];
         for (let j = 0; j < buyers.length; j++) {
           if (buyers[i] === buyers[j]) {
-            balance = balance.add(shares[j]);
+            balance = balance + shares[j];
           }
         }
         expect(balance).to.eq(buyerBalancesAfter[i]);
       }
 
-      const totalShares = shares.reduce((a, b) => a + b, 0);
-      expect(brokerbotBalanceBefore.sub(totalShares)).to.eq(brokerbotBalanceAfter);
+      const totalShares = shares.reduce((a, b) => a + b, 0n);
+      expect(brokerbotBalanceBefore-(totalShares)).to.eq(brokerbotBalanceAfter);
     });
 
     it("should be able to externaly distribute shares to multiple shareholders", async () => {
       // Used Contract: Brokerbot, Draggable Shares
       // Initialize with random increment
-      let increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
+      let increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
       "gwei"
       );
       await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
@@ -497,7 +496,7 @@ describe("Brokerbot", () => {
         "0xb866480b21eb64d2b6e2fd710ba3667ab01b2e2e",
       ];
       const shares = [
-        50, 20, 10, 450, 50, 10, 12, 50, 20, 12, 10, 10, 10, 50, 50, 50,
+        50n, 20n, 10n, 450n, 50n, 10n, 12n, 50n, 20n, 12n, 10n, 10n, 10n, 50n, 50n, 50n,
       ];
       const costs = [
         "1000000000000000000",
@@ -537,7 +536,7 @@ describe("Brokerbot", () => {
       ];
 
       const brokerbotBalanceBefore = await draggableShares.balanceOf(
-        brokerbot.address
+        await brokerbot.getAddress()
       );
       const buyerBalancesBefore = await Promise.all(
         buyers.map(async (address) => {
@@ -545,14 +544,14 @@ describe("Brokerbot", () => {
         })
       );
 
-      const sharesAmount = shares.reduce((a,b) => a+b, 0);
+      const sharesAmount = shares.reduce((a,b) => a+b, 0n);
 
       await brokerbot.connect(owner).notifyTrades(buyers, shares, costs, ref);
 
       const price2 = await brokerbot.getBuyPrice(1);
 
       const brokerbotBalanceAfter = await draggableShares.balanceOf(
-        brokerbot.address
+        await brokerbot.getAddress()
       );
       const buyerBalancesAfter = await Promise.all(
         buyers.map(async (address) => {
@@ -566,37 +565,37 @@ describe("Brokerbot", () => {
       }
 
       expect(brokerbotBalanceBefore).to.eq(brokerbotBalanceAfter);
-      expect(price1.add(increment.mul(sharesAmount))).to.eq(price2);
+      expect(price1 + (increment*(sharesAmount))).to.eq(price2);
     });
     
     it('should support external trades', async () => {
       // Used Contract: Brokerbot
       // Initialize with random increment
-      let increment = ethers.utils.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
+      let increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
       "gwei"
       );
       await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
       
-      let balanceBefore = await draggableShares.balanceOf(brokerbot.address);
+      let balanceBefore = await draggableShares.balanceOf(await brokerbot.getAddress());
       let price1 = await brokerbot.getBuyPrice(1);
-      const amountBuy1 = 700;
-      const priceAfterBuy1 = price1.add(increment.mul(amountBuy1));
-      await expect(brokerbot.connect(owner).notifyTrade(accounts[0], amountBuy1, price1.mul(amountBuy1), "0x"))
+      const amountBuy1 = 700n;
+      const priceAfterBuy1 = price1 + (increment*(amountBuy1));
+      await expect(brokerbot.connect(owner).notifyTrade(accounts[0], amountBuy1, price1*(amountBuy1), "0x"))
         .to.emit(brokerbot, 'Trade').withArgs(
-          draggableShares.address, accounts[0], "0x", amountBuy1, baseCurrency.address, price1.mul(amountBuy1), 0, priceAfterBuy1
+          await draggableShares.getAddress(), accounts[0], "0x", amountBuy1, await baseCurrency.getAddress(), price1*(amountBuy1), 0, priceAfterBuy1
         );
-      const amountBuy2 = 300;
-      const priceAfterBuy2 = priceAfterBuy1.add(increment.mul(amountBuy2));
-      await expect(await brokerbot.connect(owner).notifyTradeAndTransfer(accounts[0], amountBuy2, price1.mul(amountBuy2), "0x"))
+      const amountBuy2 = 300n;
+      const priceAfterBuy2 = priceAfterBuy1 + (increment*(amountBuy2));
+      await expect(await brokerbot.connect(owner).notifyTradeAndTransfer(accounts[0], amountBuy2, price1*(amountBuy2), "0x"))
         .to.emit(brokerbot, 'Trade').withArgs(
-          draggableShares.address, accounts[0], "0x", amountBuy2, baseCurrency.address, price1.mul(amountBuy2), 0, priceAfterBuy2
+          await draggableShares.getAddress(), accounts[0], "0x", amountBuy2, await baseCurrency.getAddress(), price1*(amountBuy2), 0, priceAfterBuy2
         );
       let price2 = await brokerbot.getBuyPrice(1);
-      let balanceAfter = await draggableShares.balanceOf(brokerbot.address);
+      let balanceAfter = await draggableShares.balanceOf(await brokerbot.getAddress());
       
-      expect(price1.add(increment.mul(amountBuy1+amountBuy2))).to.eq(price2);
+      expect(price1 + (increment*(amountBuy1+amountBuy2))).to.eq(price2);
       // only the amount at buy2 (300) with transfer should change balance
-      expect(balanceAfter.add(300)).to.eq(balanceBefore);
+      expect(balanceAfter + amountBuy2).to.eq(balanceBefore);
     })
     
     it('should allow selling shares against BaseCurrency', async () => {
@@ -604,19 +603,19 @@ describe("Brokerbot", () => {
       const sellPrice = await brokerbot.getSellPrice(10);
       const baseCurrencyBefore = await baseCurrency.balanceOf(sig1.address);
 
-      await expect(draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x04"))
+      await expect(draggableShares.connect(sig1).transferAndCall(await brokerbot.getAddress(), 10, "0x04"))
         .to.be.revertedWith("unknown ref");
-      expect(await draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x"))
+      expect(await draggableShares.connect(sig1).transferAndCall(await brokerbot.getAddress(), 10, "0x"))
         .to.emit(brokerbot, "Trade").withArgs(
-          draggableShares.address, sig1.address, 10, baseCurrency.address, "1000000000000000000", 0, sellPrice
+          await draggableShares.getAddress(), sig1.address, 10, await baseCurrency.getAddress(), "1000000000000000000", 0, sellPrice
         );
       const baseCurrencyAfter = await baseCurrency.balanceOf(sig1.address);
-      expect(baseCurrencyBefore.add(sellPrice)).to.be.equal(baseCurrencyAfter);
+      expect(baseCurrencyBefore + sellPrice).to.be.equal(baseCurrencyAfter);
     })
 
     it("Should allow indirect sale", async () => {
       const baseCurrencyBefore = await baseCurrency.balanceOf(sig1.address);
-      await draggableShares.connect(sig1).transferAndCall(brokerbot.address, 10, "0x02");
+      await draggableShares.connect(sig1).transferAndCall(await brokerbot.getAddress(), 10, "0x02");
       const baseCurrencyAfter = await baseCurrency.balanceOf(sig1.address);
       expect(baseCurrencyBefore).to.be.equal(baseCurrencyAfter);
     })
@@ -632,13 +631,13 @@ describe("Brokerbot", () => {
     })
 
     it("Should be able to withdraw erc20 from brokerbot", async () => {
-      await expect(brokerbot.connect(sig1).withdraw(draggableShares.address, owner.address, 10))
+      await expect(brokerbot.connect(sig1).withdraw(await draggableShares.getAddress(), owner.address, 10))
         .to.be.revertedWithCustomError(brokerbot, "Brokerbot_NotAuthorized")
         .withArgs(sig1.address);
       const ownerBalBefore = await draggableShares.balanceOf(owner.address);
-      await brokerbot.connect(owner).withdraw(draggableShares.address, owner.address, 10);
+      await brokerbot.connect(owner).withdraw(await draggableShares.getAddress(), owner.address, 10);
       const ownerBalAfter = await draggableShares.balanceOf(owner.address);
-      expect(ownerBalBefore.add(10)).to.be.equal(ownerBalAfter);
+      expect(ownerBalBefore + 10n).to.be.equal(ownerBalAfter);
 
     })
   });

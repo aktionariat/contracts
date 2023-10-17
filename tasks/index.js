@@ -428,8 +428,8 @@ function writeConfig(deployConfig) {
     nconf.set('name', deployConfig.shareName);
     nconf.set('terms', deployConfig.terms);
     nconf.set('totalShares', deployConfig.totalNumber);
-    nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
-    nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
+    nconf.set('sharePrice', ethers.parseEther(deployConfig.price).toString());
+    nconf.set('increment', ethers.parseEther(deployConfig.increment).toString());
     nconf.set('quorumBps', deployConfig.quorum*100);
     nconf.set('quorumMigration', deployConfig.quorumMigration*100);
     nconf.set('votePeriodSeconds', deployConfig.votePeriod*24*60*60);
@@ -442,8 +442,8 @@ function writeBrokerbotConfig(deployConfig) {
     nconf.set("symbol", deployConfig.companyName);
     nconf.set("multisigAddress", deployConfig.owner);
     nconf.set("brokerbot:shares", deployConfig.tokenAddress);
-    nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
-    nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
+    nconf.set('sharePrice', ethers.parseEther(deployConfig.price).toString());
+    nconf.set('increment', ethers.parseEther(deployConfig.increment).toString());
     nconf.save();
 }
 
