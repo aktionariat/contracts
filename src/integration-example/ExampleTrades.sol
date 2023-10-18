@@ -100,7 +100,7 @@ contract ExampleTrades {
         TransferHelper.safeApprove(USDC, address(brokerbotRouter), amountInMaximum);
         ISwapRouter.ExactOutputParams memory params =
             ISwapRouter.ExactOutputParams({
-                path: abi.encodePacked(SHARE_TOKEN, uint24(0), BASE_TOKEN, poolFee, USDC),
+                path: abi.encodePacked(SHARE_TOKEN, uint24(0), BASE_TOKEN, poolFee, WETH9, poolFee, USDC),
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountOut: amountOut,
@@ -114,6 +114,30 @@ contract ExampleTrades {
             TransferHelper.safeApprove(USDC, address(brokerbotRouter), 0);
             TransferHelper.safeTransfer(USDC, msg.sender, amountInMaximum - amountIn);
         }
+    }
+
+    /// @notice sellSharesMultihop trades an amount of shares for USDC.
+    /// @dev The calling address must approve this contract to spend the shares token for this function to succeed. 
+    /// @param amountIn The exact amount of shares to receive on this trade
+    /// @return amountOut The amount of token in actually spent in the trade.
+    function sellSharesMultihop(uint256 amountIn) external returns (uint256 amountOut) {
+        // Transfer the specified amount of base currency tokens (XCHF) to this contract.
+        TransferHelper.safeTransferFrom(SHARE_TOKEN, msg.sender, address(this), amountIn);
+
+        // Approve the router to spend the specified `amountInMaximum` of token in (USDC in this example)
+        // In production, you should choose the maximum amount to spend based on oracles or other data sources to achieve a better swap.
+        //USDC.approve(address(brokerbotRouter), amountInMaximum);
+        TransferHelper.safeApprove(SHARE_TOKEN, address(brokerbotRouter), amountIn);
+        ISwapRouter.ExactInputParams memory params =
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(SHARE_TOKEN, uint24(0), BASE_TOKEN, poolFee, WETH9, poolFee, USDC),
+                recipient: msg.sender,
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0
+            });
+        // Executes trade returning the amountIn needed to spend to receive the desired amountOut.
+        amountOut = brokerbotRouter.exactInput(params);
     }
 /*
     /// @notice buySharesMultihopEther trades a minimum possible amount of token in  for a fixed amount of shares.
