@@ -74,7 +74,7 @@ contract BrokerbotRouter is ISwapRouter {
 			amountIn = _exactOutputInternalPrepare(brokerbot, paymentHub, params.amountOut, params.amountInMaximum, IERC20(firstTokenIn));
 			if (params.path.hasMultiplePools()) {
 				modifiedPath = params.path.skipToken();
-				paymentHub.payFromERC20AndNotify(brokerbot, amountIn, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
+				(amountIn, ) = paymentHub.payFromERC20AndNotify(brokerbot, amountIn, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
 			} else {
 				paymentHub.payAndNotify(IERC20(baseToken), brokerbot, params.amountInMaximum,  bytes("\x01"));
 			}
@@ -109,7 +109,6 @@ contract BrokerbotRouter is ISwapRouter {
 	function exactInput(ExactInputParams calldata params) external payable override checkDeadline(params.deadline) returns (uint256 amountOut) {
 		(address shareToken, address baseToken,) = params.path.decodeFirstPool();
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = BrokerbotLib.getBrokerbotAndPaymentHub(brokerbotRegistry, IERC20(baseToken), IERC20(shareToken));
-
 		IERC20(shareToken).safeTransferFrom(msg.sender, address(this), params.amountIn); // transfer shares into this contract
 		if (IERC20(shareToken).allowance(address(this), address(paymentHub)) == 0){
 			// max is fine as the router shouldn't hold any funds, so this should be ever only needed to be set once per token/paymenthub
@@ -153,7 +152,7 @@ contract BrokerbotRouter is ISwapRouter {
 	function _exactOutputInternalPrepare(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 amountShares, uint256 amountInMaximum, IERC20 tokenIn) internal  returns (uint256 amountIn) {
 		amountIn = brokerbot.getBuyPrice(amountShares); // get current price, so nothing needs to be refunded
 		tokenIn.transferFrom(msg.sender, address(this), amountInMaximum); // transfer base currency into this contract
-        if (tokenIn.allowance(address(this), address(paymentHub)) == 0){
+    if (tokenIn.allowance(address(this), address(paymentHub)) == 0){
 			// max is fine as the router shouldn't hold any funds, so this should be ever only needed to be set once per token/paymenthub
 			tokenIn.approve(address(paymentHub), type(uint256).max); 
 		}
