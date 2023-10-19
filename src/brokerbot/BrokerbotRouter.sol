@@ -53,7 +53,7 @@ contract BrokerbotRouter is ISwapRouter {
 			paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
 			refundERC20(IERC20(params.tokenIn));
 		}
-		IERC20(params.tokenOut).safeTransfer(msg.sender, params.amountOut);
+		IERC20(params.tokenOut).safeTransfer(params.recipient, params.amountOut);
   }
 
 	/**
