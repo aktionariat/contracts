@@ -37,6 +37,10 @@ async function main() {
   const quoteBuyUsdc = await quoterContract.callStatic["quoteExactOutput(bytes,uint256)"](path, 10);
   console.log(`Quote for buying 10 DAKS shares: ${ethers.utils.formatUnits(quoteBuyUsdc, 6)} USDC`);
 
+  // get quote for sellin shares with path
+  const quoteSellUsdc = await quoterContract.callStatic["quoteExactInput(bytes,uint256)"](path, 10);
+  console.log(`Quote for selling 10 DAKS shares: ${ethers.utils.formatUnits(quoteSellUsdc, 6)} USDC`);
+
 }
   
 main()
