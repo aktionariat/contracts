@@ -8,6 +8,7 @@ import "./BrokerbotRegistry.sol";
 import "../ERC20/IERC677.sol";
 import "../utils/Path.sol";
 import "../utils/BrokerbotLib.sol";
+
 /**
  * @title Brokerbot Swap Router
  * @author Bernhard Ruf, bernhard@aktionariat.com 
@@ -54,7 +55,7 @@ contract BrokerbotRouter is ISwapRouter {
 			refundERC20(IERC20(params.tokenIn));
 		}
 		IERC20(params.tokenOut).safeTransfer(params.recipient, params.amountOut);
-  }
+	}
 
 	/**
 	 * @notice Buy share tokens with any erc20 by given a uniswap routing path
@@ -101,7 +102,7 @@ contract BrokerbotRouter is ISwapRouter {
 		IERC20(params.tokenOut).safeTransfer(params.recipient, amountOut);
 	}
 
-  /**
+	/**
 	 * @notice Sell `amountIn` of share tokens for as much as possible of another along the specified path.
 	 * @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata.
 	 * @return amountOut The amount of the received token
