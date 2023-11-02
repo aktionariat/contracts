@@ -9,6 +9,7 @@ import "../ERC20/IERC677.sol";
 import "../utils/Path.sol";
 import "../utils/BrokerbotLib.sol";
 
+
 /**
  * @title Brokerbot Swap Router
  * @author Bernhard Ruf, bernhard@aktionariat.com 
@@ -55,7 +56,7 @@ contract BrokerbotRouter is ISwapRouter {
 			refundERC20(IERC20(params.tokenIn));
 		}
 		IERC20(params.tokenOut).safeTransfer(params.recipient, params.amountOut);
-  }
+	}
 
 	/**
 	 * @notice Buy share tokens with any erc20 by given a uniswap routing path
@@ -77,7 +78,7 @@ contract BrokerbotRouter is ISwapRouter {
 				modifiedPath = params.path.skipToken();
 				(amountIn, ) = paymentHub.payFromERC20AndNotify(brokerbot, amountIn, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
 			} else {
-				paymentHub.payAndNotify(brokerbot, params.amountInMaximum,  bytes("\x01"));
+				paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
 			}
 			refundERC20(IERC20(firstTokenIn));
 		}
