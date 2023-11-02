@@ -294,15 +294,15 @@ describe("Brokerbot Router", () => {
         it("Should buy shares with xchf + sliagge and swap path via router and return unused xchf", async () => {
           const buyer = sig1;
           // get price in xchf from quoter
-          const amountXCHF = await brokerbotQuoter.callStatic["quoteExactOutput(bytes,uint256)"](pathSingle, randomShareAmount);
+          const amountXCHF = await brokerbotQuoter.quoteExactOutput.staticCall(pathSingle, randomShareAmount);
           expect(amountXCHF).to.equal(baseAmount);
           // add arbitrary slipplage
-          const amountXCHFWithSlippage = amountXCHF.add(ethers.utils.parseUnits("1000", "18"));
+          const amountXCHFWithSlippage = amountXCHF + ethers.parseUnits("1000", 18);
           //approve xchf to router
-          await baseCurrency.connect(buyer).approve(brokerbotRouter.address, config.infiniteAllowance);
+          await baseCurrency.connect(buyer).approve(await brokerbotRouter.getAddress(), config.infiniteAllowance);
           // log balance
           const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
-          const brokerbotBalanceBefore = await baseCurrency.balanceOf(brokerbot.address);
+          const brokerbotBalanceBefore = await baseCurrency.balanceOf(await brokerbot.getAddress());
           const params = {
             path: pathSingle,
             recipient: buyer.address,
@@ -313,11 +313,11 @@ describe("Brokerbot Router", () => {
           // buy shares via router
           await brokerbotRouter.connect(buyer).exactOutput(params);
           // log balance after
-          const brokerbotBalanceAfter = await baseCurrency.balanceOf(brokerbot.address);
+          const brokerbotBalanceAfter = await baseCurrency.balanceOf(await brokerbot.getAddress());
           const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
           // check balances
-          expect(brokerbotBalanceBefore.add(baseAmount)).to.equal(brokerbotBalanceAfter);
-          expect(buyerBalanceBefore.add(randomShareAmount)).to.equal(buyerBalanceAfter);
+          expect(brokerbotBalanceBefore + baseAmount).to.equal(brokerbotBalanceAfter);
+          expect(buyerBalanceBefore + randomShareAmount).to.equal(buyerBalanceAfter);
         });
 
         it("Should buy shares with ether and swap path via router", async () => {
