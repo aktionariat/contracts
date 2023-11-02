@@ -183,6 +183,7 @@ async function getTX(to, dataTX, multisigclone, wallet, chainid) {
     to: to,
     data: dataTX.data,
     chainId: chainid,
+    type: 0
   };
   const flatSig = await wallet.signTransaction(tx_send_ms);
   const tx1 = Transaction.from(flatSig);

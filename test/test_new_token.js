@@ -76,9 +76,6 @@ describe("New Standard", () => {
     let recoveryHubAddress = await recoveryHub.getAddress();
     let offerFactoryAddress = await offerFactory.getAddress();
     let allowlistSharesAddress = await allowlistShares.getAddress();
-    /*allowlistDraggable = await ethers.getContractFactory("AllowlistDraggableShares")
-      .then(factory => factory.deployContract(config.allowlist_terms, allowlistSharesAddress, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHubAddress, offerFactoryAddress, oracle.address, owner.address))
-      .then(contract => contract.waitForDeployment());*/
     allowlistDraggable = await ethers.deployContract("AllowlistDraggableShares", [config.allowlist_terms, allowlistSharesAddress, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHubAddress, offerFactoryAddress, oracle.address, owner.address]);
     await allowlistDraggable.waitForDeployment();
 

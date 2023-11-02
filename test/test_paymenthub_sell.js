@@ -10,6 +10,7 @@ const { decodeError } = require('ethers-decode-error');
 // Shared  Config
 const config = require("../scripts/deploy_config.js");
 const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
+const { Signature } = require("ethers");
 
 describe("Sell via PaymentHub", () => {
   let shares;
@@ -38,8 +39,6 @@ describe("Sell via PaymentHub", () => {
   let daiAmount
   let randomShareAmount
   let path;
-
-  const exFee = "100000000000000000";
 
   const salts = [
     ethers.encodeBytes32String('1'),
@@ -96,18 +95,18 @@ describe("Sell via PaymentHub", () => {
     beforeEach(async () => {
       // set sig as seller
       seller = sig1;
-      await draggable.connect(seller).approve(paymentHub.address, config.infiniteAllowance);
+      await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
     })
     it("Should sell against USDC", async () => {
       // path: XCHF -> USDC
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 500, config.usdcAddress];
-      path = ethers.utils.solidityPack(types,values);
-      const usdcAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, path, false);
+      path = ethers.solidityPacked(types,values);
+      const usdcAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
       //console.log(`xchfaumont: ${ethers.utils.formatUnits(baseAmount,18)}`);
       //console.log(`usdcAmount: ${ethers.utils.formatUnits(usdcAmount,6)}`);
-      expect(parseFloat(ethers.utils.formatUnits(usdcAmount,6))).to.be.above(parseFloat(ethers.utils.formatUnits(baseAmount,18)));
-      await draggable.connect(seller).approve(paymentHub.address, config.infiniteAllowance);
+      expect(parseFloat(ethers.formatUnits(usdcAmount,6))).to.be.above(parseFloat(ethers.formatUnits(baseAmount,18)));
+      await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
       expect(await usdcContract.balanceOf(seller.address)).to.equal(0);
       // in real use case slippage should be considerered for usdcAmount (the miniminum out amount from the swap)
       const params = {
@@ -125,8 +124,8 @@ describe("Sell via PaymentHub", () => {
       // path: XCHF -> WETH
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
-      path = ethers.utils.solidityPack(types,values);
-      const ethAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, path, false);
+      path = ethers.solidityPacked(types,values);
+      const ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
       //console.log(`ethAmount: ${ethers.utils.formatEther(ethAmount)}`);
       expect(await wethContract.balanceOf(seller.address)).to.equal(0);
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
@@ -150,11 +149,11 @@ describe("Sell via PaymentHub", () => {
       // path: XCHF -> WETH
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
-      path = ethers.utils.solidityPack(types,values);
-      ethAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, path, false);
+      path = ethers.solidityPacked(types,values);
+      ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
     })
     it("Should sell against ETH", async () => {
-      await draggable.connect(seller).approve(paymentHub.address, config.infiniteAllowance);
+      await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
       //console.log(`ethAmount: ${ethers.utils.formatEther(ethAmount)}`);
       const ethBalanceSellerBefore = await ethers.provider.getBalance(seller.address);
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
@@ -167,12 +166,12 @@ describe("Sell via PaymentHub", () => {
         amountOutMinimum: ethAmount
       };
       const txInfo = await paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, unwrapWeth);
-      const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
-      const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
+      const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
+      const gasCost = gasPrice * cumulativeGasUsed;
       const ethBalanceSellerAfter = await ethers.provider.getBalance(seller.address);
-      expect(ethBalanceSellerAfter.sub(ethBalanceSellerBefore)).to.equal(ethAmount.sub(gasCost));
-      expect(await wethContract.balanceOf(paymentHub.address)).to.equal(0);
-      expect(await ethers.provider.getBalance(paymentHub.address)).to.equal(0);
+      expect(ethBalanceSellerAfter - ethBalanceSellerBefore).to.equal(ethAmount - gasCost);
+      expect(await wethContract.balanceOf(await paymentHub.getAddress())).to.equal(0);
+      expect(await ethers.provider.getBalance(await paymentHub.getAddress())).to.equal(0);
     })
 
   })
@@ -180,12 +179,12 @@ describe("Sell via PaymentHub", () => {
     beforeEach(async () => {
       // set sig as seller
       seller = sig1;
-      await draggable.connect(seller).approve(paymentHub.address, config.infiniteAllowance);
+      await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
     })
     it("Should revert sell if path is empty", async () => {
       const types = [];
       const values = [];
-      path = ethers.utils.solidityPack(types,values);
+      path = ethers.solidityPacked(types,values);
       const params = {
         path: path,
         recipient: seller.address,
@@ -199,7 +198,7 @@ describe("Sell via PaymentHub", () => {
     it("Should revert if path is invalid", async () => {
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 3000, config.baseCurrencyAddress];
-      path = ethers.utils.solidityPack(types,values);
+      path = ethers.solidityPacked(types,values);
       const params = {
         path: path,
         recipient: seller.address,
@@ -214,7 +213,7 @@ describe("Sell via PaymentHub", () => {
     it("Should revert if swap wasn't iniciated by seller", async () => {
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
-      path = ethers.utils.solidityPack(types,values);
+      path = ethers.solidityPacked(types,values);
       const params = {
         path: path,
         recipient: seller.address,
@@ -234,39 +233,40 @@ describe("Sell via PaymentHub", () => {
     let ownerWallet;
     before(async () => {
       const mnemonic = process.env.MNEMONIC;
-      ownerWallet = ethers.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/0/1").connect(ethers.provider);
+      ownerWallet = ethers.Wallet.fromPhrase(mnemonic, "m/44'/60'/0'/0/1").connect(ethers.provider);
       chainid = (await ethers.provider.getNetwork()).chainId;
       const tx = await multiSigCloneFactory.create(ownerWallet.address, salts[1]);
-      const { events } = await tx.wait();
-      const { address } = events.find(Boolean);
-      multiSigClone = await ethers.getContractAt("MultiSigWalletMaster",address);
+      const { logs } = await tx.wait();
+      const address = logs[1].args[0];
+      multiSigClone = await ethers.getContractAt("MultiSigWalletMaster", address);
       // send some shares to multisig
-      await draggable.connect(owner).transfer(multiSigClone.address, 500 );
+      await draggable.connect(owner).transfer(multiSigClone.getAddress(), 500 );
       // set allowance from multisig
-      const approveTxData = await draggable.populateTransaction.approve(paymentHub.address, config.infiniteAllowance);
-      const approveTx = await getTX(await draggable.getAddress(), approveTxData, multiSigClone, ownerWallet, chainid);
-      await multiSigClone.execute(approveTx.nonce, approveTx.to, approveTx.value, approveTx.data, [approveTx.v - (8+chainid*2)], [approveTx.r], [approveTx.s]);    
+      const approveTxData = await draggable.approve.populateTransaction(await paymentHub.getAddress(), config.infiniteAllowance);
+      const data = await ownerWallet.populateTransaction(approveTxData);
+      const approveTx = await getTX(await draggable.getAddress(), data, multiSigClone, ownerWallet, chainid);
+      await multiSigClone.execute(approveTx.nonce, approveTx.to, approveTx.value, approveTx.data, [approveTx.signature.v], [approveTx.signature.r], [approveTx.signature.s]);    
       // path: XCHF -> WETH
       const types = ["address","uint24","address"];
       const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
-      path = ethers.utils.solidityPack(types,values);
+      path = ethers.solidityPacked(types,values);
     });
     it("Should sell against ETH with multisig", async () => {
-      ethAmount = await paymentHub.callStatic["getPriceERC20(uint256,bytes,bool)"](baseAmount, path, false);
-      const ethBalanceSellerBefore = await ethers.provider.getBalance(multiSigClone.address);
+      ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
+      const ethBalanceSellerBefore = await ethers.provider.getBalance(await multiSigClone.getAddress());
       const unwrapWeth = true;
       const params = {
         path: path,
-        recipient: multiSigClone.address,
+        recipient: await multiSigClone.getAddress(),
         deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
         amountIn: baseAmount,
         amountOutMinimum: ethAmount
       };
-      const sellDataTX = await paymentHub.populateTransaction.sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, unwrapWeth);
-      const sellTx = await getTX(paymentHub.address, sellDataTX, multiSigClone, ownerWallet, chainid);
-      await multiSigClone.execute(sellTx.nonce, sellTx.to, sellTx.value, sellTx.data, [sellTx.v - (8+chainid*2)], [sellTx.r], [sellTx.s]);
-      const ethBalanceSellerAfter = await ethers.provider.getBalance(multiSigClone.address);
-      expect(ethBalanceSellerAfter.sub(ethBalanceSellerBefore)).to.equal(ethAmount);
+      const sellDataTX = await paymentHub.sellSharesAndSwap.populateTransaction(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, unwrapWeth);
+      const sellTx = await getTX(await paymentHub.getAddress(), sellDataTX, multiSigClone, ownerWallet, chainid);
+      await multiSigClone.execute(sellTx.nonce, sellTx.to, sellTx.value, sellTx.data, [sellTx.signature.v], [sellTx.signature.r], [sellTx.signature.s]);
+      const ethBalanceSellerAfter = await ethers.provider.getBalance(await multiSigClone.getAddress());
+      expect(ethBalanceSellerAfter - ethBalanceSellerBefore).to.equal(ethAmount);
     });
   })
 

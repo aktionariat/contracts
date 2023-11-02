@@ -72,7 +72,7 @@ describe("Payment Integration", () => {
   it("should allow buying shares by sending ETH through PaymentHub", async () => {
     // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
     // Transfer is not processed if token sender is not a known currency contract or PaymentHub
-    const buyPriceInETH = await paymentHub.getPriceInEther(buyPrice,  await brokerbot.getAddress()).callStatic;
+    const buyPriceInETH = await paymentHub.getPriceInEther.staticCall(buyPrice,  await brokerbot.getAddress());
 
     // Balance before
     const balanceSenderBefore = await ethers.provider.getBalance(accounts[0]);
@@ -87,8 +87,8 @@ describe("Payment Integration", () => {
       "0x20",
       { value: buyPriceInETH }
     );
-    const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
-    const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
+    const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
+    const gasCost = gasPrice * cumulativeGasUsed;
 
     // Balance after
     const balanceSenderAfter = await ethers.provider.getBalance(accounts[0]);
@@ -98,7 +98,7 @@ describe("Payment Integration", () => {
 
     // Check Results
     expect(balanceSenderBefore - buyPriceInETH - gasCost).to.equal(balanceSenderAfter);
-    expect(baseBalanceBrokerbotBefore - buyPrice).to.equal(baseBalanceBrokerbotAfter);
+    expect(baseBalanceBrokerbotBefore + buyPrice).to.equal(baseBalanceBrokerbotAfter);
     expect(shareBalanceSenderBefore + sharesToBuy).to.equal(shareBalanceSenderAfter);
     expect(shareBalanceBrokerbotBefore - sharesToBuy).to.equal(shareBalanceBrokerbotAfter);
   });
