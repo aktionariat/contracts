@@ -1,0 +1,35 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "PTC03",
+  "multisigSigner": "0x447ffD9a116efb3D77f47802cc4869C3730f723C",
+  "symbol": "PTC03",
+  "name": "polygon test shares 03",
+  "terms": "iae",
+  "totalShares": "10000",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x234a91427A589AF82D437d516eAF9B47594fdba1",
+  "address": {
+    "recoveryHub": "0x0235FB5902b84885bA79BDbce417C49E3720eb2d",
+    "share": "0xbf6E868e1961FDfE558Ef24742c25E2fB3172a15",
+    "offerFactory": "0x48860132882c2b463b8110B2Dc2a0489D1d0FF60",
+    "draggable": "0x4F3a6Cf62e6bB3BBf272701194570a76656Dc2Df",
+    "paymentHub": "0x3f3dBa58C3c2CCFfC8aBA6170050A86af4916F60",
+    "brokerbot": "0xB959c2985fdE33882B9a3844Cbd6642b22bC94eA",
+    "brokerbotRegistry": "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE"
+  },
+  "brokerbot": {
+    "shares": "0x4F3a6Cf62e6bB3BBf272701194570a76656Dc2Df"
+  },
+  "blocknumber": 50302850,
+  "version": {
+    "shares": "3",
+    "brokerbot": "8"
+  }
+}

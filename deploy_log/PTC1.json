@@ -1,0 +1,17 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Polygon Test Company",
+  "multisigSigner": "0x447ffD9a116efb3D77f47802cc4869C3730f723C",
+  "symbol": "PTC1",
+  "name": "Polygon Test Shares",
+  "terms": "www.test.poly",
+  "totalShares": "1000000",
+  "sharePrice": "1000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true
+}

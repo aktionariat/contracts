@@ -1,0 +1,35 @@
+{
+  "network": "mumbai",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "M006",
+  "multisigSigner": "0x447ffD9a116efb3D77f47802cc4869C3730f723C",
+  "symbol": "MTST006",
+  "name": "Mumbai test shares 006",
+  "terms": "www.aeiate.de",
+  "totalShares": "1000000",
+  "sharePrice": "10000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x26DEA5c6BD79316d1503200464520Ff5649940E0",
+  "address": {
+    "recoveryHub": "0x1776C349696CccAE06541542C5ED954CDf9859cC",
+    "share": "0x95590998c2E30F3CfAAa9646691C86719dad0A26",
+    "offerFactory": "0x19fec015535AcB6Bc5fBC372f168E21328F36b14",
+    "draggable": "0x53426324157938C5b7ab8532ec307B5d8F5f26EB",
+    "paymentHub": "0xc557D5AaCa8646F6742fB322c7497f7E610033bA",
+    "brokerbot": "0x8F4eBa22f5763c241e1F5D243E5776e80dd99d58",
+    "brokerbotRegistry": "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE"
+  },
+  "brokerbot": {
+    "shares": "0x53426324157938C5b7ab8532ec307B5d8F5f26EB"
+  },
+  "blocknumber": 42751974,
+  "version": {
+    "shares": "3",
+    "brokerbot": "8"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "network": "mumbai",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Mumbai Test 003",
+  "multisigSigner": "0x447ffD9a116efb3D77f47802cc4869C3730f723C",
+  "symbol": "MTST003",
+  "name": "Mumbai Test Shares 003",
+  "terms": "www.iaei.ae",
+  "totalShares": "100000",
+  "sharePrice": "1000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true
+}

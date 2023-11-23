@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
+const { getGasPrice } = require('../../scripts/helper/polygongasstation');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -35,7 +36,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     }
   }
 
-  const feeData = await ethers.provider.getFeeData();
+  //const feeData = await ethers.provider.getFeeData();
+  const feeData = await getGasPrice();
 
   const { address } = await deploy(nconf.get("symbol")+"Brokerbot", {
     contract: "Brokerbot",
@@ -55,7 +57,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const version = await brokerbotContract.VERSION();
   
   // register brokerbot at registry
-  brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE"); // (mumbai) is fixed address (change will mess up subgraph)
+  brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0xec0739be570c77c9b544802e4c06a95be719ee5f"); // (polygon) is fixed address (change will mess up subgraph)
   const prompt = await new Confirm("Register brokerbot?").run();
     if(prompt) {
       await brokerbotRegistry.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, sharesAddress, { gasLimit: 50000});
