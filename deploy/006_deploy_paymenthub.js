@@ -1,7 +1,6 @@
 const Confirm = require('prompt-confirm');
 const config = require("../scripts/deploy_config.js");
 const nconf = require('nconf');
-const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;

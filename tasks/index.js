@@ -25,7 +25,6 @@ const {
  } = require("./lib/inquirer");
 const {config} = require('./default_config.js');
 const nconf = require('nconf');
-const { getGasPrice } = require("../scripts/helper/polygongasstation");
 const git = simpleGit();
 
 task("gas-price", "Prints gas price").setAction(async function({ address }, { ethers }) {
@@ -94,7 +93,6 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                 process.exit();
             }
         }
-        //const feeData = await getGasPrice();
         const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.encodeBytes32String(salt), { gasLimit: 300000 });
         console.log(`deploying MultiSigWallet Clone (tx: ${tx.hash}) with Nonce: ${tx.nonce}`);
         const { logs } = await tx.wait();
