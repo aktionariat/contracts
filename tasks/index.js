@@ -94,11 +94,11 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                 process.exit();
             }
         }
-        const feeData = await getGasPrice();
+        //const feeData = await getGasPrice();
         const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.encodeBytes32String(salt), { gasLimit: 300000 });
         console.log(`deploying MultiSigWallet Clone (tx: ${tx.hash}) with Nonce: ${tx.nonce}`);
-        const { events } = await tx.wait();
-        const { address } = events.find(Boolean);
+        const { logs } = await tx.wait();
+        const address = logs[1].args[0];
         console.log(`MultiSig cloned at: ${address}`);
 
         nconf.set("multisigAddress", address);
@@ -414,6 +414,9 @@ function formatAddress (networkName, address) {
         case "optimism":
             formattedAddress = "optimism-"+address;
             break;
+        case "polygon":
+            formattedAddress = "polygon-"+address;
+            break;
         default:
             console.log(`${networkName} not supported`);
             process.exit();
@@ -510,6 +513,12 @@ async function switchToBranch(networkName) {
             break;
         case "goerliOptimism":
             await git.checkout("op-deploy-template");
+            break;
+        case "polygon":
+            await git.checkout("polygon");
+            break;
+        case "mumbai":
+            await git.checkout("polygon");
             break;
         case "hardhat": 
             break;

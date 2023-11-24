@@ -325,6 +325,7 @@ module.exports = {
         choices: [
           'Mainnet',
           'Optimism',
+          'Polygon'
         ],
         filter(val) {
           return val.toLowerCase();
