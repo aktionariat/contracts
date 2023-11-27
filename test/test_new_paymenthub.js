@@ -206,8 +206,7 @@ describe("New PaymentHub", () => {
     });
   });
 
-  // TODO: rework test for matic and WETH
-  describe.skip("Trading with ETH", () => {
+  describe("Trading with ETH", () => {
     beforeEach(async () => {
       randomShareAmount = randomBigInt(1, 5000);
       xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
@@ -233,8 +232,8 @@ describe("New PaymentHub", () => {
       const buyerEthBefore = await ethers.provider.getBalance(buyer.address);
 
       const txInfo = await paymentHub.connect(buyer).payFromEtherAndNotify(await brokerbot.getAddress(), xchfamount, "0x01", {value: priceInETHWithSlippage});
-      const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
-      const gasCost = effectiveGasPrice * cumulativeGasUsed;
+      const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
+      const gasCost = gasPrice * cumulativeGasUsed;
       const brokerbotBalanceAfter = await baseCurrency.balanceOf(await brokerbot.getAddress());
       const buyerSharesAfter = await draggableShares.balanceOf(buyer.address);
       const buyerEthAfter = await ethers.provider.getBalance(buyer.address);
@@ -250,7 +249,8 @@ describe("New PaymentHub", () => {
       const settingsBefore = await brokerbot.settings();
 
       // new setting with combination of old setting plus keep ETH
-      const newSetting = settingsBefore.xor(settingKeepETh);
+      //const newSetting = settingsBefore.xor(settingKeepETh);
+      const newSetting = settingsBefore ^ settingKeepETh;
 
       await brokerbot.connect(owner).setSettings(newSetting);
       const settingsAfter = await brokerbot.settings();
@@ -280,9 +280,9 @@ describe("New PaymentHub", () => {
       const brokerbotETHBefore = await ethers.provider.getBalance(await brokerbot.getAddress());
       const buyerETHBefore = await ethers.provider.getBalance(sig1.address);
       const tx = await paymentHub.connect(sig1).payFromEtherAndNotify(await brokerbot.getAddress(), xchfamount, "0x01", {value: pricePlus});
-      const { effectiveGasPrice, cumulativeGasUsed} = await tx.wait();
+      const { gasPrice, cumulativeGasUsed} = await tx.wait();
       // get how much eth was paid for tx
-      const gasPaid = effectiveGasPrice* cumulativeGasUsed;
+      const gasPaid = gasPrice * cumulativeGasUsed;
       const brokerbotETHAfter = await ethers.provider.getBalance(await brokerbot.getAddress());
       const buyerETHAfter = await ethers.provider.getBalance(sig1.address);
       // console.log(await ethers.utils.formatEther(brokerbotETHAfter));
@@ -309,7 +309,7 @@ describe("New PaymentHub", () => {
         .to.emit(brokerbot, 'Withdrawn').withArgs(owner.address, brokerbotETHBefore);
       const brokerbotETHAfter = await ethers.provider.getBalance(await brokerbot.getAddress());
       const ownerETHAfter = await ethers.provider.getBalance(owner.address);
-      expect(brokerbotETHAfter.isZero()).to.be.true;
+      expect(brokerbotETHAfter).to.be.equal(0n);
       expect(ownerETHAfter).to.be.above(ownerETHBefore);
     });
   });

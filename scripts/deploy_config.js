@@ -41,5 +41,5 @@ module.exports = {
   // brokerbot
   BUYING_ENABLED: 1n,
   SELLING_ENABLED: 2n,
-  KEEP_ETHER: 0x4
+  KEEP_ETHER: 4n
 };
