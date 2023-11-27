@@ -21,7 +21,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   }
 
   const feeData = await ethers.provider.getFeeData();
-  
+
   const { address } = await deploy("BrokerbotRegistry", {
     contract: "BrokerbotRegistry",
     from: deployer,
