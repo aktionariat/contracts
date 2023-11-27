@@ -313,10 +313,9 @@ describe("Brokerbot", () => {
           .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");
         
       // ETH payment should fail
-      // TODO: no ETH payment on polygon: change to pay with matic
-      /*await expect(paymentHub.connect(owner).payFromEtherAndNotify(
+      await expect(paymentHub.connect(owner).payFromEtherAndNotify(
         await brokerbot.getAddress(), buyPrice, "0x20", { value: buyPriceInETH }))
-          .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");*/
+          .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");
     });
         
     it("should not allow selling shares when selling is disabled", async () => {

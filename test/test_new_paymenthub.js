@@ -319,14 +319,14 @@ describe("New PaymentHub", () => {
       randomShareAmount = randomBigInt(1, 5000);
       daiAmount = await brokerbotDAI.getBuyPrice(randomShareAmount);
     });
-    // TODO: rework this test
-    it.skip("Should get right ETH price ", async () => {
+
+    it("Should get right ETH price ", async () => {
       const priceeth = await paymentHub.getLatestPriceETHUSD();
       // console.log(await priceeth.toString());
       // console.log(await daiAmount.toString());
       const priceInETH = await paymentHub.getPriceInEtherFromOracle(daiAmount, await brokerbotDAI.getAddress());
       expect(ethers.formatEther(priceInETH)).to.equal(
-        ethers.formatEther(daiAmount * (BigNumber(10)^(8)) /priceeth));
+        ethers.formatEther(daiAmount * 10n ** 8n / priceeth));
     });
 
     it("Should buy shares with ETH and trade it to DAI", async () => {
