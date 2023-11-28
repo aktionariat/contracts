@@ -1,6 +1,6 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_polygon.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -14,7 +14,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     */const brokerbotRegistryContract = await deployments.get('BrokerbotRegistry'); // for testing
     brokerbotRegistry = brokerbotRegistryContract.address;
   //}
-  const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"; // ethereum mainnet
+  const uniswapQuoter = config.uniswapQuoterAddress; // ethereum mainnet
   const wethAddress = config.wethAddress;
     
   if (network.name != "hardhat" && !nconf.get("silent")) {

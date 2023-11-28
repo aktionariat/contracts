@@ -4,7 +4,7 @@ const { setup, getBlockTimeStamp, randomBigInt } = require("./helper/index");
 const { time }  = require("@nomicfoundation/hardhat-network-helpers");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_polygon.js");
 
 describe("Permit", () => {
   let draggable;

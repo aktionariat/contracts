@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const { PANIC_CODES } = require("@nomicfoundation/hardhat-chai-matchers/panic");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_polygon.js");
 const exp = require("constants");
 
 describe("New Standard", () => {

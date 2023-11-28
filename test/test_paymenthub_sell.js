@@ -1,16 +1,11 @@
 const {network, ethers, deployments, } = require("hardhat");
 const { setBalances, getTX, getBlockTimeStamp } = require("./helper/index");
 const Chance = require("chance");
-const { AlphaRouter } = require('@uniswap/smart-order-router');
-const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
-const { encodeRouteToPath } = require("@uniswap/v3-sdk");
 const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
-const { Signature } = require("ethers");
+const config = require("../scripts/deploy_config_polygon.js");
 
 describe("Sell via PaymentHub", () => {
   let shares;

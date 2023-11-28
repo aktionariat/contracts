@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 
 // Shared Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_polygon.js");
 
 // Libraries
 const Chance = require("chance");
@@ -305,7 +305,7 @@ describe("Brokerbot", () => {
       // Random number of shares to buy
       const sharesToBuy = randomBigInt(1, 500);
       const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-      const buyPriceInETH = await paymentHub.getPriceInEther(buyPrice, await brokerbot.getAddress()).callStatic;
+      const buyPriceInETH = await paymentHub.getPriceInEther.staticCall(buyPrice, await brokerbot.getAddress());
       
       // Base payment should fail
       await expect(paymentHub.connect(owner)["payAndNotify(address,uint256,bytes)"](
