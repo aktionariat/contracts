@@ -1,5 +1,5 @@
 const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
-const config = require("../../scripts/deploy_config.js")
+const config = require("../../scripts/deploy_config_polygon.js")
 const Chance = require("chance");
 const { Transaction } = require("ethers");
 
@@ -74,7 +74,7 @@ async function sellingEnabled(brokerbot) {
 
 async function setBalances(accounts, baseCurrency, daiContract, wbtcContract) {
   // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
     // Set (manipulate local) DAI balance for first 5 accounts
     await setBalance(daiContract, config.daiBalanceSlot, accounts);
     // Set (manipulate local) WBTC balance for first 5 accounts
@@ -84,6 +84,7 @@ async function setBalances(accounts, baseCurrency, daiContract, wbtcContract) {
 async function setup(setupBrokerbotEnabled) {
   let baseCurrency;
   let brokerbot;
+  let brokerbotDAI;
   let recoveryHub;
   let offerFactory;
   let draggableShares;
@@ -111,7 +112,6 @@ async function setup(setupBrokerbotEnabled) {
   daiContract = await ethers.getContractAt("ERC20Named", config.daiAddress);
   wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress);
   usdcContract = await ethers.getContractAt("ERC20Named", config.usdcAddress);
-  baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   
   // deploy contracts
   await deployments.fixture([
@@ -122,6 +122,7 @@ async function setup(setupBrokerbotEnabled) {
     "AllowlistShares",
     "PaymentHub",
     "Brokerbot",
+    "BrokerbotDAI",
     "BrokerbotRegistry",
     "BrokerbotRouter",
     "BrokerbotQuoter",
@@ -137,6 +138,7 @@ async function setup(setupBrokerbotEnabled) {
   successor = await ethers.getContract("DraggableSharesWithPredecessor");
   successorExternal = await ethers.getContract("DraggableSharesWithPredecessorExternal");
   brokerbot = await ethers.getContract("Brokerbot");
+  brokerbotDAI = await ethers.getContract("BrokerbotDAI");
   
   
   // Set Payment Hub for Brokerbot
@@ -148,13 +150,11 @@ async function setup(setupBrokerbotEnabled) {
   await brokerbot.connect(owner).approve(await draggableShares.getAddress(), await paymentHub.getAddress(), config.infiniteAllowance);
   await brokerbot.connect(owner).approve(await baseCurrency.getAddress(), await paymentHub.getAddress(), config.infiniteAllowance);
 
-  // Mint baseCurrency Tokens (xchf) to first 5 accounts
-  await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
-  // Set dai balance to frist 5 accounts
-  await setBalance(daiContract, config.daiBalanceSlot, accounts);
+  // Set (manipulate local) balances (xchf,dai,wbtc) for first 5 accounts
+  await setBalances(accounts, baseCurrency, daiContract, wbtcContract);
   // set baseCurrency Token (xchf) at brokerbot to sell shares
-  await setBalance(baseCurrency, config.xchfBalanceSlot, [await brokerbot.getAddress()]);
-
+  await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, [await brokerbot.getAddress()]);
+  
   //Mint shares to first 5 accounts
   for( let i = 0; i < accounts.length; i++) {
     await shares.connect(owner).mint(accounts[i], 1000000);
@@ -167,9 +167,11 @@ async function setup(setupBrokerbotEnabled) {
   }
 
   if (setupBrokerbotEnabled) {
-      // Deposit some shares/xchf to Brokerbot
+      // Deposit some shares/basecurrency to Brokerbot
       await draggableShares.connect(owner).transfer(await brokerbot.getAddress(), 500000);
-      await baseCurrency.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseEther("100000"));
+      //await baseCurrency.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseEther("100000"));
+      await shares.connect(owner).transfer(await brokerbotDAI.getAddress(), 50000);
+
   }  
 }
 

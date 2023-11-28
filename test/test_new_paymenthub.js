@@ -6,10 +6,10 @@ const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
 const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
+const { setup } = require("./helper/index");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_polygon.js");
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.BrowserProvider(network.provider);
@@ -81,31 +81,17 @@ describe("New PaymentHub", () => {
     chance = new Chance();
 
     // deploy contracts
+    await setup(true);
+
+    // get references
     baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
     daiContract = await ethers.getContractAt("ERC20Named", config.daiAddress);
     wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress)
-
-    await deployments.fixture(["Shares", "DraggableShares", "PaymentHub", "Brokerbot", "BrokerbotDAI"]);
     paymentHub = await ethers.getContract("PaymentHub");
     shares = await ethers.getContract("Shares");
     draggableShares = await ethers.getContract("DraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
     brokerbotDAI = await ethers.getContract("BrokerbotDAI");
-
-    // Set (manipulate local) balances (xchf,dai,wbtc) for first 5 accounts
-    await setBalances(accounts, baseCurrency, daiContract, wbtcContract);
-
-    //Mint shares to first 5 accounts
-    for( let i = 0; i < 5; i++) {
-      await shares.connect(owner).mint(accounts[i], 2000000);
-      await shares.connect(signers[i]).approve(await draggableShares.getAddress(), config.infiniteAllowance);
-      await draggableShares.connect(signers[i]).wrap(accounts[i], 600000);
-    }
-
-    // Deposit some shares to Brokerbot
-    await draggableShares.connect(owner).transfer(await brokerbot.getAddress(), 500000 );
-    await shares.connect(owner).transfer(await brokerbotDAI.getAddress(), 500000);
-    await baseCurrency.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseEther("100000"));
   });
 
   describe("Deployment", () => {
@@ -162,6 +148,7 @@ describe("New PaymentHub", () => {
     });
     it("Should be able to recover token sent to paymenthub", async () => {
       const wrongSent = randomBigInt(1, 500);
+      console.log(sig1.address);
       const balBefore = await baseCurrency.balanceOf(sig1.address);
       await baseCurrency.connect(sig1).transfer(await paymentHub.getAddress(), wrongSent);
       const balInbetween = await baseCurrency.balanceOf(sig1.address);
@@ -326,7 +313,7 @@ describe("New PaymentHub", () => {
       // console.log(await daiAmount.toString());
       const priceInETH = await paymentHub.getPriceInEtherFromOracle(daiAmount, await brokerbotDAI.getAddress());
       expect(ethers.formatEther(priceInETH)).to.equal(
-        ethers.formatEther(daiAmount * (BigNumber(10)^(8)) /priceeth));
+        ethers.formatEther(daiAmount * 10n^8n / priceeth));
     });
 
     it("Should buy shares with ETH and trade it to DAI", async () => {
