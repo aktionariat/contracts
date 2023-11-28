@@ -1,6 +1,5 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
-const { recoverAddress } = require('ethers/lib/utils');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -54,8 +53,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   // set config 
   nconf.set("brokerbot:shares", address);
   nconf.set("address:share", address);
-  nconf.set("blocknumber", receipt.blockNumber);
-  nconf.set("version:shares", version);
+  nconf.set("blocknumber", receipt.blockNumber.toString());
+  nconf.set("version:shares", version.toString());
 };
 
 module.exports.tags = [nconf.get("symbol")+"Shares"];

@@ -1,13 +1,15 @@
 const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
 const config = require("../../scripts/deploy_config.js")
+const Chance = require("chance");
+const { Transaction } = require("ethers");
 
 const toBytes32 = (bn) => {
-  return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
+  return ethers.hexlify(ethers.zeroPadValue('0x'+bn.toString(16), 32));
 };
 
 const setStorageAt = async (address, index, value) => {
   await ethers.provider.send("hardhat_setStorageAt", [address, index, value]);
-  await ethers.provider.send("evm_mine", []); // Just mines to the next block
+  await ethers.provider.send("hardhat_mine", []); // Just mines to the next block
 };
 
 async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
@@ -16,9 +18,9 @@ async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
     params: [minterAddress],
   });
   const signer = await ethers.provider.getSigner(minterAddress);
-  await forceSend.send(minterAddress, {value: ethers.utils.parseEther("2")});
+  await forceSend.send(minterAddress, {value: ethers.parseEther("2")});
   for (let i = 0; i < 5; i++) {
-    await erc20Contract.connect(signer).mint(accounts[i], ethers.utils.parseEther("10000000"));
+    await erc20Contract.connect(signer).mint(accounts[i], ethers.parseEther("10000000"));
     //console.log("account %s chf %s", accounts[i], await baseCurrency.balanceOf(accounts[i]));
   }
   await network.provider.request({
@@ -28,23 +30,23 @@ async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
 }
 
 async function setBalance(erc20Contract, slot, accounts) {
-  const locallyManipulatedBalance = ethers.utils.parseEther("100000000");
+  const locallyManipulatedBalance = ethers.parseEther("100000000");
   setBalanceWithAmount(erc20Contract, slot, accounts, locallyManipulatedBalance);
 }
 
 async function setBalanceWithAmount(erc20Contract, slot, accounts, amount) {
-  const newFormatedBalance = toBytes32(amount).toString();
+  let newFormatedBalance = toBytes32(amount).toString();    
 
   for (let i = 0; i < accounts.length; i++) {
     // Get storage slot index
-    const index = ethers.utils.solidityKeccak256(
+    const index = ethers.solidityPackedKeccak256(
       ["uint256", "uint256"],
       [accounts[i], slot] // key, slot
-    );
-
+    ); 
+    
     // Manipulate local balance (needs to be bytes32 string)
     await setStorageAt(
-      erc20Contract.address,
+      await erc20Contract.getAddress(),
       index.toString(),
       newFormatedBalance
     );
@@ -55,7 +57,7 @@ async function setBalanceWithAmount(erc20Contract, slot, accounts, amount) {
 async function sendEther(signer, to, amount) {
   const tx = await signer.sendTransaction({
     to: to,
-    value: ethers.utils.parseEther(amount)
+    value: ethers.parseEther(amount)
   });
   return await tx.wait();
 }
@@ -108,7 +110,8 @@ async function setup(setupBrokerbotEnabled) {
   baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   daiContract = await ethers.getContractAt("ERC20Named", config.daiAddress);
   wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress);
-  usdcContract = await ethers.getContractAt("ERC20Named", config.usdcAddress);baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+  usdcContract = await ethers.getContractAt("ERC20Named", config.usdcAddress);
+  baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   
   // deploy contracts
   await deployments.fixture([
@@ -137,20 +140,20 @@ async function setup(setupBrokerbotEnabled) {
   
   
   // Set Payment Hub for Brokerbot
-  await brokerbot.connect(owner).setPaymentHub(paymentHub.address);
+  await brokerbot.connect(owner).setPaymentHub(await paymentHub.getAddress());
 
   // Allow payment hub to spend baseCurrency from accounts[0] and draggableShares from Brokerbot
-  await draggableShares.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
-  await baseCurrency.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
-  await brokerbot.connect(owner).approve(draggableShares.address, paymentHub.address, config.infiniteAllowance);
-  await brokerbot.connect(owner).approve(baseCurrency.address, paymentHub.address, config.infiniteAllowance);
+  await draggableShares.connect(owner).approve(await paymentHub.getAddress(), config.infiniteAllowance);
+  await baseCurrency.connect(owner).approve(await paymentHub.getAddress(), config.infiniteAllowance);
+  await brokerbot.connect(owner).approve(await draggableShares.getAddress(), await paymentHub.getAddress(), config.infiniteAllowance);
+  await brokerbot.connect(owner).approve(await baseCurrency.getAddress(), await paymentHub.getAddress(), config.infiniteAllowance);
 
   // Mint baseCurrency Tokens (xchf) to first 5 accounts
   await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
   // Set dai balance to frist 5 accounts
   await setBalance(daiContract, config.daiBalanceSlot, accounts);
   // set baseCurrency Token (xchf) at brokerbot to sell shares
-  await setBalance(baseCurrency, config.xchfBalanceSlot, [brokerbot.address]);
+  await setBalance(baseCurrency, config.xchfBalanceSlot, [await brokerbot.getAddress()]);
 
   //Mint shares to first 5 accounts
   for( let i = 0; i < accounts.length; i++) {
@@ -159,14 +162,14 @@ async function setup(setupBrokerbotEnabled) {
 
   // Convert some Shares to DraggableShares
   for (let i = 0; i < signers.length; i++) {
-    await shares.connect(signers[i]).approve(draggableShares.address, config.infiniteAllowance);
+    await shares.connect(signers[i]).approve(await draggableShares.getAddress(), config.infiniteAllowance);
     await draggableShares.connect(signers[i]).wrap(accounts[i], 900000);
   }
 
   if (setupBrokerbotEnabled) {
       // Deposit some shares/xchf to Brokerbot
-      await draggableShares.connect(owner).transfer(brokerbot.address, 500000);
-      await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
+      await draggableShares.connect(owner).transfer(await brokerbot.getAddress(), 500000);
+      await baseCurrency.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseEther("100000"));
   }  
 }
 
@@ -180,9 +183,10 @@ async function getTX(to, dataTX, multisigclone, wallet, chainid) {
     to: to,
     data: dataTX.data,
     chainId: chainid,
+    type: 0
   };
   const flatSig = await wallet.signTransaction(tx_send_ms);
-  const tx1 = ethers.utils.parseTransaction(flatSig);
+  const tx1 = Transaction.from(flatSig);
   return tx1;
 }
  async function getBlockTimeStamp(ethers) {
@@ -202,6 +206,11 @@ async function getImpersonatedSigner(impersonateAddress) {
   return signer;
 }
 
+function randomBigInt(min, max) {
+  return BigInt(new Chance().natural({ min: min, max: max }));
+
+}
+
 
 //export * from "./time"
 
@@ -216,5 +225,6 @@ module.exports = {
   setBalanceWithAmount,
   getTX,
   getBlockTimeStamp,
-  getImpersonatedSigner
+  getImpersonatedSigner,
+  randomBigInt
 };

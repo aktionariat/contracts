@@ -48,35 +48,35 @@ describe("Set up", () => {
   it("should have some ETH in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = await ethers.provider.getBalance(accounts[i]);
-      expect(balance.isZero(), "Balance is 0").to.be.false;
+      expect(balance).to.be.greaterThan(0n);
     }
   });
 
   it("should have some BaseCurrency in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = await baseCurrency.balanceOf(accounts[i]);
-      expect(balance.isZero(), "Balance is 0").to.be.false;
+      expect(balance).to.be.greaterThan(0n);
     }
   });
 
   it("should have some Shares in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = await shares.balanceOf(accounts[i]);
-      expect(balance.isZero(), "Balance is 0").to.be.false;
+      expect(balance).to.be.greaterThan(0n);
     }
   });
 
   it("should have some DraggableShares in first 5 accounts", async () => {
     for (let i = 0; i < 5; i++) {
       const balance = await draggableShares.balanceOf(accounts[i]);
-      expect(balance.isZero(), "Balance is 0").to.be.false;
+      expect(balance).to.be.greaterThan(0n);
     }
   });
 
   it("should have DraggableShares and BaseCurrency deposited into the Brokerbot", async () => {
-    const tokenBalance = await draggableShares.balanceOf(brokerbot.address);
-    const baseBalance = await baseCurrency.balanceOf(brokerbot.address);
-    expect(tokenBalance.isZero()).to.eq(false, "Balance is 0");
-    expect(baseBalance.isZero()).to.eq(false, "Balance is 0");
+    const tokenBalance = await draggableShares.balanceOf(await brokerbot.getAddress());
+    const baseBalance = await baseCurrency.balanceOf(await brokerbot.getAddress());
+    expect(tokenBalance).is.greaterThan(0n);
+    expect(baseBalance).is.greaterThan(0n);
   });
 });

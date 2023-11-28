@@ -37,8 +37,8 @@ describe("Migration", () => {
 
   describe("Deploy successor", () => {
     it("Should deploy successor contact", async () => {
-      expect(successor.address).to.exist;
-      expect(successorExternal.address).to.exist;
+      expect(await successor.getAddress()).to.exist;
+      expect(await successorExternal.getAddress()).to.exist;
     })
   })
 
@@ -49,10 +49,10 @@ describe("Migration", () => {
     })
     it("Should revert if there is an open offer", async () => {
       const overrides = {
-        value: ethers.utils.parseEther("5.0")
+        value: ethers.parseEther("5.0")
       }
-      pricePerShare = ethers.utils.parseUnits("2", 18);
-      salt = ethers.utils.formatBytes32String('1');
+      pricePerShare = ethers.parseUnits("2", 18);
+      salt = ethers.encodeBytes32String('1');
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, config.baseCurrencyAddress, overrides)
       await expect(successor.initiateMigration()).to.be.revertedWithCustomError(draggable, "Draggable_OpenOffer");
       const offer = await ethers.getContractAt("Offer", await draggable.offer());
@@ -61,29 +61,29 @@ describe("Migration", () => {
     it("Should revert when more yes votes than total shares", async () => {
       // move token to successor
       let balance1 = await draggable.balanceOf(sig2.address);
-      let tokenToMint = balance1.mul(4);
-      await shares.connect(owner).mintAndCall(sig2.address, draggable.address, tokenToMint, "0x01");
-      await draggable.connect(sig2).approve(successor.address, config.infiniteAllowance);
+      let tokenToMint = balance1 * 4n;
+      await shares.connect(owner).mintAndCall(sig2.address, await draggable.getAddress(), tokenToMint, "0x01");
+      await draggable.connect(sig2).approve(await successor.getAddress(), config.infiniteAllowance);
       await successor.connect(sig2).wrap(sig2.address, tokenToMint);      
       // declare token invalid to set total shares lower
       const invalidAmount = await draggable.totalSupply();
       const totalShares = await shares.totalShares();
-      await shares.connect(owner).declareInvalid(draggable.address, invalidAmount, "0x01");
+      await shares.connect(owner).declareInvalid(await draggable.getAddress(), invalidAmount, "0x01");
       await shares.connect(owner).setTotalShares(600000);
       // call migrate with too many votes
       await expect(successor.initiateMigration()).to.be.revertedWithCustomError(draggable, "Draggable_TooManyVotes")
-        .withArgs(await shares.totalShares(), await draggable.balanceOf(successor.address));
+        .withArgs(await shares.totalShares(), await draggable.balanceOf(await successor.getAddress()));
       await shares.connect(owner).setTotalShares(totalShares);
     })
     it("Should migrate successfully", async () => {
       let votingToken = await draggable.totalVotingTokens();
       let balance1 = await draggable.balanceOf(sig2.address); // 900'000
-      let tokenToMint = balance1.mul(4); // 3'600'000
+      let tokenToMint = balance1 * 4n; // 3'600'000
       // mint shares and wrap them in draggable
-      await shares.connect(owner).mintAndCall(sig2.address, draggable.address, tokenToMint, "0x01");
+      await shares.connect(owner).mintAndCall(sig2.address, await draggable.getAddress(), tokenToMint, "0x01");
       // move enough shares to successor (5*900'000 = 4'500'000)
       for( let i = 1; i < signers.length; i++) {
-        await draggable.connect(signers[i]).approve(successor.address, config.infiniteAllowance);
+        await draggable.connect(signers[i]).approve(await successor.getAddress(), config.infiniteAllowance);
         await successor.connect(signers[i]).wrap(signers[i].address, balance1);
       }
       await successor.connect(sig2).wrap(sig2.address, tokenToMint); 
@@ -92,18 +92,18 @@ describe("Migration", () => {
       await successor.initiateMigration();
       let votingTokenSuccessor = await successor.totalVotingTokens();
       expect(votingToken).to.be.equal(votingTokenSuccessor);
-      expect(await successor.wrapped()).to.be.equal(shares.address);
+      expect(await successor.wrapped()).to.be.equal(await shares.getAddress());
       expect(await draggable.unwrapConversionFactor()).to.be.equal(1);
     })
   })
   describe("Migration with external votes", () => {
     it("Should revert when migrateWithExternalApproval is called not from oracle", async () => {
-      await expect(draggable.connect(sig1).migrateWithExternalApproval(successorExternal.address, 1000))
+      await expect(draggable.connect(sig1).migrateWithExternalApproval(await successorExternal.getAddress(), 1000))
         .to.be.revertedWithCustomError(draggable, "ERC20InvalidSender")
         .withArgs(sig1.address);
     })
     it("Should revert when more external votes are reported as possible", async () => {
-      await expect(draggable.connect(owner).migrateWithExternalApproval(successorExternal.address, 10000000000))
+      await expect(draggable.connect(owner).migrateWithExternalApproval(await successorExternal.getAddress(), 10000000000))
         .to.be.revertedWithCustomError(draggable, "Draggable_TooManyVotes")
         .withArgs(await draggable.totalVotingTokens(), 10005400000);
     })
@@ -111,11 +111,11 @@ describe("Migration", () => {
       const votingToken = await draggable.totalVotingTokens();
       const balSigner = await draggable.balanceOf(sig2.address);
       // change owner to succesor, so that it can mint and transfer token to draggable
-      await draggable.connect(owner).setOracle(successorExternal.address);
+      await draggable.connect(owner).setOracle(await successorExternal.getAddress());
 
       // move current draggable shares to successor (amount: 5400000)
       for( let i = 0; i < signers.length; i++) {
-        await draggable.connect(signers[i]).approve(successorExternal.address, config.infiniteAllowance);
+        await draggable.connect(signers[i]).approve(await successorExternal.getAddress(), config.infiniteAllowance);
         await successorExternal.connect(signers[i]).wrap(signers[i].address, balSigner);
       }
       const externalVotes = 3000000; // makes total 8400000 which is over the 75% quorum
@@ -127,10 +127,10 @@ describe("Migration", () => {
       await successorExternal.connect(owner).initiateMigrationWithExternalApproval(externalVotes);
       const votingTokenSuccessor = await successorExternal.totalVotingTokens();
       expect(votingToken).to.be.equal(votingTokenSuccessor);
-      expect(await successorExternal.wrapped()).to.be.equal(shares.address);
+      expect(await successorExternal.wrapped()).to.be.equal(await shares.getAddress());
       expect(await draggable.unwrapConversionFactor()).to.be.equal(1);
       // check if oracle can be set on predecessor
-      expect(await draggable.oracle()).to.be.equal(successorExternal.address);
+      expect(await draggable.oracle()).to.be.equal(await successorExternal.getAddress());
       await expect(successorExternal.setPredecessorOracle(owner.address))
         .to.be.revertedWithCustomError(successor, "ERC20InvalidSender")
         .withArgs(deployer.address);
@@ -156,22 +156,22 @@ describe("Migration", () => {
     })
     it("Should migrate with to non draggable with predecossor with only external votes successfully", async () => {
       const totalshares = await shares.totalShares();
-      await expect(draggable.connect(owner).migrateWithExternalApproval(migrationShare.address, totalshares))
+      await expect(draggable.connect(owner).migrateWithExternalApproval(await migrationShare.getAddress(), totalshares))
         .to.emit(draggable, "NameChanged")
         .withArgs("Migration Shares SHA", "MSS");
-      expect(await draggable.wrapped()).to.be.equal(migrationShare.address);
+      expect(await draggable.wrapped()).to.be.equal(await migrationShare.getAddress());
       expect(await draggable.name()).to.be.equal("Migration Shares SHA");
       expect(await draggable.symbol()).to.be.equal("MSS");
     })
     it("Should migrate with to draggable with predecossor with only external votes successfully", async () => {
       const totalshares = await shares.totalShares();
-      await draggable.connect(owner).setOracle(successorExternal.address);
-      expect(await successorExternal.wrapped()).to.be.equal(draggable.address);
+      await draggable.connect(owner).setOracle(await successorExternal.getAddress());
+      expect(await successorExternal.wrapped()).to.be.equal(await draggable.getAddress());
       await successorExternal.connect(owner).initiateMigrationWithExternalApproval(totalshares);
       expect(await draggable.name()).to.be.equal("Test Shares SHA SHA");
       expect(await draggable.symbol()).to.be.equal("SHRSS");
-      expect(await draggable.wrapped()).to.be.equal(successorExternal.address);
-      expect(await successorExternal.wrapped()).to.be.equal(shares.address);
+      expect(await draggable.wrapped()).to.be.equal(await successorExternal.getAddress());
+      expect(await successorExternal.wrapped()).to.be.equal(await shares.getAddress());
     })
   })
 })
