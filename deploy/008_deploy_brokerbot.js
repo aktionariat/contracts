@@ -12,7 +12,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   
   const price = config.sharePrice;
   const increment = 0;
-  const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
+  const baseCurrencyContract = config.baseCurrencyAddress;
   
   
   if (network.name != "hardhat") {

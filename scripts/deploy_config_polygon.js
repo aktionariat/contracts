@@ -4,7 +4,7 @@ module.exports = {
   name: "Test Shares",
   terms: "test.ch/terms",
   totalShares: 10000000,
-  sharePrice: "1000000000000000000",
+  sharePrice: "1000000", // with usdc (decimals 6)
   baseCurrencyAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",  // usdc polygon
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
   baseCurrencyName: "USD Coin",
@@ -34,7 +34,9 @@ module.exports = {
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  wethAddress: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+  // WMATIC
+  wmaticAddres: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
   // USDT
   usdtAddress: "0xdac17f958d2ee523a2206206994597c13d831ec7",
   // USDC
