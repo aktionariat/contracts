@@ -26,6 +26,9 @@ module.exports = {
   // DAI
   daiAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",//optimis
   daiBalanceSlot: 2,
+  // USDC
+  usdcAddress: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", // optimism
+  usdcBalanceSlot: 2,
   // WBTC
   wbtcAddress: "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
   wbtcBalanceSlot: 0,

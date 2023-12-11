@@ -1,6 +1,5 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
-const { recoverAddress } = require('ethers/lib/utils');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
