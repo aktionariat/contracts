@@ -6,9 +6,8 @@ pragma solidity ^0.8.0;
 
 import "./ERC20Flaggable.sol";
 import "./IERC20Permit.sol";
-
 abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
-   
+
    /*//////////////////////////////////////////////////////////////
                             EIP-2612 STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -28,7 +27,9 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
         bytes32 r,
         bytes32 s
     ) public override {
-        require(deadline >= block.timestamp, "PERMIT_DEADLINE_EXPIRED");
+        if (deadline < block.timestamp) {
+            revert Permit_DeadlineExpired(deadline, block.timestamp);
+        }
 
         unchecked { // unchecked to save a little gas with the nonce increment...
             address recoveredAddress = ecrecover(
@@ -54,7 +55,9 @@ abstract contract ERC20PermitLight is ERC20Flaggable, IERC20Permit {
                 s
             );
 
-            require(recoveredAddress != address(0) && recoveredAddress == owner, "INVALID_SIGNER");
+            if (recoveredAddress == address(0) || recoveredAddress != owner) {
+                revert Permit_InvalidSigner(recoveredAddress);
+            }
             _approve(recoveredAddress, spender, value);
         }
     }

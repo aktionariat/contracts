@@ -6,6 +6,12 @@ import "./IRecoveryHub.sol";
 
 interface IRecoverable is IERC20{
 
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+    //////////////////////////////////////////////////////////////*/
+    /// The new custom claim collateral rate has to be always > 0. 
+    error Recoverable_RateZero();
+
     // returns the recovery hub
     function recovery() external view returns (IRecoveryHub);
 

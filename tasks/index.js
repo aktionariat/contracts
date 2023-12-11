@@ -6,7 +6,7 @@ const fs = require('fs-extra');
 const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
 const { getCompanyId, registerMultiSignature, registerToken, registerBrokerbot } = require("../scripts/register-helper");
-const { ethers: { constants: { MaxUint256 }}} = require("ethers");
+const { ethers } = require("ethers");
 const {
     askReviewConfirm,
     askNetwork, 
@@ -67,6 +67,12 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                 case "optimism":
                     factory = "0xaE52FDaaDEbfe4D943546d3f60640Ba6959B8fcb" // optimism factory
                     break;
+                case "mumbai":
+                    factory = "0x0235FB5902b84885bA79BDbce417C49E3720eb2d" // polygon mumbai
+                    break;
+                case "polygon":
+                    factory = "0x1776C349696CccAE06541542C5ED954CDf9859cC" // polygon mainnet
+                    break;
             }
         }
         if(owner == undefined) {
@@ -90,11 +96,10 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
                 process.exit();
             }
         }
-
-        const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.utils.formatBytes32String(salt), { gasLimit: 300000 });
+        const tx = await multiSigCloneFactory.connect(deployerSigner).create(owner, ethers.encodeBytes32String(salt), { gasLimit: 300000 });
         console.log(`deploying MultiSigWallet Clone (tx: ${tx.hash}) with Nonce: ${tx.nonce}`);
-        const { events } = await tx.wait();
-        const { address } = events.find(Boolean);
+        const { logs } = await tx.wait();
+        const address = logs[1].args[0];
         console.log(`MultiSig cloned at: ${address}`);
 
         nconf.set("multisigAddress", address);
@@ -417,6 +422,9 @@ function formatAddress (networkName, address) {
         case "optimism":
             formattedAddress = "optimism-"+address;
             break;
+        case "polygon":
+            formattedAddress = "polygon-"+address;
+            break;
         default:
             console.log(`${networkName} not supported`);
             process.exit();
@@ -431,8 +439,8 @@ function writeConfig(deployConfig) {
     nconf.set('name', deployConfig.shareName);
     nconf.set('terms', deployConfig.terms);
     nconf.set('totalShares', deployConfig.totalNumber);
-    nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
-    nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
+    nconf.set('sharePrice', ethers.parseEther(deployConfig.price).toString());
+    nconf.set('increment', ethers.parseEther(deployConfig.increment).toString());
     nconf.set('quorumBps', deployConfig.quorum*100);
     nconf.set('quorumMigration', deployConfig.quorumMigration*100);
     nconf.set('votePeriodSeconds', deployConfig.votePeriod*24*60*60);
@@ -445,8 +453,8 @@ function writeBrokerbotConfig(deployConfig) {
     nconf.set("symbol", deployConfig.companyName);
     nconf.set("multisigAddress", deployConfig.owner);
     nconf.set("brokerbot:shares", deployConfig.tokenAddress);
-    nconf.set('sharePrice', ethers.utils.parseEther(deployConfig.price).toString());
-    nconf.set('increment', ethers.utils.parseEther(deployConfig.increment).toString());
+    nconf.set('sharePrice', ethers.parseEther(deployConfig.price).toString());
+    nconf.set('increment', ethers.parseEther(deployConfig.increment).toString());
     nconf.save();
 }
 
@@ -485,7 +493,6 @@ function displayDeployBrokerbotConfig(deployConfig) {
 function setBaseCurrency() {
     const networkName = nconf.get("network");
     // set basecurrecny - right now only XCHF supported
-    // TODO: switches for test nets
     console.log(`networkname: ${networkName}`);
     switch (networkName) {
         case "mainnet":
@@ -514,6 +521,12 @@ async function switchToBranch(networkName) {
             break;
         case "goerliOptimism":
             await git.checkout("op-deploy-template");
+            break;
+        case "polygon":
+            await git.checkout("polygon");
+            break;
+        case "mumbai":
+            await git.checkout("polygon");
             break;
         case "hardhat": 
             break;

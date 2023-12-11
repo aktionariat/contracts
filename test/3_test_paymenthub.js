@@ -1,18 +1,13 @@
 // Shared Config
 const config = require("../scripts/deploy_config_optimism.js");
 
-
-const { setup } = require("./helper/index");
-
 // Libraries
 const { ethers} = require("hardhat");
 const { expect } = require("chai");
-const exp = require("constants");
-
-// Import contracts to be tested
+const { setup } = require("./helper/index");
 
 // Test parameters
-const paymentAmountInBase = ethers.utils.parseEther("10");
+const paymentAmountInBase = ethers.parseEther("10");
 
 describe("PaymentHub", () => {
   let paymentHub;
@@ -28,19 +23,22 @@ describe("PaymentHub", () => {
   before( async () => {
     [deployer,owner,sig1,sig2,sig3] = await ethers.getSigners();
     accounts = [owner.address,sig1.address,sig2.address,sig3.address];
+    // deploy contracts
+    await setup(true);
+
     paymentHub = await ethers.getContract("PaymentHub");
     brokerbot = await ethers.getContract("Brokerbot");
-
     base = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
   });
 
   it("should deploy paymenthub", async () => {
-    expect(paymentHub.address).to.exist;
+    expect(await paymentHub.getAddress()).to.exist;
   });
 
   it("should get price in ether", async () => {
-    const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, brokerbot.address);
-    expect(priceInETH).to.be.above(0);
+    //const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    expect(priceInETH).to.be.above(0n);
   });
 
   it("should pay using Ether to recipient in baseCurrency", async () => {
@@ -51,23 +49,24 @@ describe("PaymentHub", () => {
     const baseBalanceRecipientBefore = await base.balanceOf(accounts[1]);
 
     // Execute payment
-    const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, brokerbot.address);
+    //const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
     const txInfo = await paymentHub.connect(owner).payFromEther(
       accounts[1],
       paymentAmountInBase,
       await brokerbot.base(),
       { value: priceInETH }
     );
-    const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
-    const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
+    const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
+    const gasCost = gasPrice * cumulativeGasUsed;
 
     // Get balances after
     const ethBalanceSenderAfter = await ethers.provider.getBalance(accounts[0]);
     const baseBalanceRecipientAfter = await base.balanceOf(accounts[1]);
 
     // Check result
-    expect(ethBalanceSenderBefore.sub(priceInETH).sub(gasCost)).to.equal(ethBalanceSenderAfter);
-    expect(baseBalanceRecipientBefore.add(paymentAmountInBase)).to.equal(baseBalanceRecipientAfter);
+    expect(ethBalanceSenderBefore - priceInETH - gasCost).to.equal(ethBalanceSenderAfter);
+    expect(baseBalanceRecipientBefore + paymentAmountInBase).to.equal(baseBalanceRecipientAfter);
   });
 
   it("should return unspent ETH to spender", async () => {
@@ -77,8 +76,8 @@ describe("PaymentHub", () => {
     const baseBalanceRecipientBefore = await base.balanceOf(accounts[1]);
 
     // Calculate required ETH and set a slippage
-    const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, brokerbot.address);
-    const priceInEthWithSlippage = priceInETH.mul(103).div(100);
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    const priceInEthWithSlippage = priceInETH * 103n / 100n;
 
     // Execute transaction with increased ETH
     const txInfo = await paymentHub.connect(owner).payFromEther(
@@ -87,20 +86,20 @@ describe("PaymentHub", () => {
       await brokerbot.base(),
       { value: priceInEthWithSlippage }
     );
-    const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
-    const gasCost = effectiveGasPrice.mul(cumulativeGasUsed);
+    const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
+    const gasCost = gasPrice * cumulativeGasUsed;
 
     // Get balances after
     const ethBalanceSenderAfter = await ethers.provider.getBalance(accounts[0]);
     const baseBalanceRecipientAfter = await base.balanceOf(accounts[1]);
-    const ethBalancePaymentHubAfter = await ethers.provider.getBalance(paymentHub.address);
+    const ethBalancePaymentHubAfter = await ethers.provider.getBalance(await paymentHub.getAddress());
     const ethBalanceUniswapAfter = await ethers.provider.getBalance(config.uniswapRouterAddress);
 
     // Check result
-    expect(ethBalanceSenderBefore.sub(priceInETH).sub(gasCost)).to.eq(ethBalanceSenderAfter);
-    expect(baseBalanceRecipientBefore.add(paymentAmountInBase)).to.eq(baseBalanceRecipientAfter);
-    expect(ethBalancePaymentHubAfter.isZero()).to.equal(true);
-    expect(ethBalanceUniswapAfter.isZero()).to.equal(true);
+    expect(ethBalanceSenderBefore - priceInETH - gasCost).to.eq(ethBalanceSenderAfter);
+    expect(baseBalanceRecipientBefore + paymentAmountInBase).to.eq(baseBalanceRecipientAfter);
+    expect(ethBalancePaymentHubAfter).to.equal(0n);
+    expect(ethBalanceUniswapAfter).to.equal(0n);
   });
 
   it("should make multiple payments in baseCurrency in single transaction", async () => {
@@ -108,16 +107,16 @@ describe("PaymentHub", () => {
 
     // Get 1/100 of accounts[0] token balance. Send 1, 3, 20 units to accounts[1],[2],[3] respectively.
     const balance = await base.balanceOf(accounts[0]);
-    const toSendUnit = balance.div(100);
-    const toSend1 = toSendUnit.mul(1);
-    const toSend2 = toSendUnit.mul(3);
-    const toSend3 = toSendUnit.mul(20);
+    const toSendUnit = balance / 100n;
+    const toSend1 = toSendUnit * 1n;
+    const toSend2 = toSendUnit * 3n;
+    const toSend3 = toSendUnit * 20n;
 
     // get amount that is higher than account balance
-    const toSendTooMuch = toSendUnit.mul(110);
+    const toSendTooMuch = toSendUnit * 110n;
 
     // Set allowance for paymentHub to spend baseCurrency tokens of account[0]
-    await base.connect(owner).approve(paymentHub.address, config.infiniteAllowance);
+    await base.connect(owner).approve(await paymentHub.getAddress(), config.infiniteAllowance);
 
     // Get balances before
     const balanceBefore0 = await base.balanceOf(accounts[0]);
@@ -147,9 +146,9 @@ describe("PaymentHub", () => {
     const balanceAfter3 = await base.balanceOf(accounts[3]);
 
     // Check result
-    expect(balanceBefore0.sub(toSend1).sub(toSend2).sub(toSend3)).to.eq(balanceAfter0);
-    expect(balanceBefore1.add(toSend1)).to.eq(balanceAfter1);
-    expect(balanceBefore2.add(toSend2)).to.eq(balanceAfter2);
-    expect(balanceBefore3.add(toSend3)).to.eq(balanceAfter3);
+    expect(balanceBefore0 - toSend1 - toSend2 - toSend3).to.eq(balanceAfter0);
+    expect(balanceBefore1 + toSend1).to.eq(balanceAfter1);
+    expect(balanceBefore2 + toSend2).to.eq(balanceAfter2);
+    expect(balanceBefore3 + toSend3).to.eq(balanceAfter3);
   });
 });

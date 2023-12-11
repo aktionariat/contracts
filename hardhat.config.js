@@ -190,27 +190,49 @@ module.exports = {
         live: true,
         saveDeployments: true,
         deploy: ['deploy_optimism']
+    },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
+      accounts: accounts("polygon"),
+      chainId: 137,
+      live: true,
+      saveDeployments: true
+    },
+    mumbai: {
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
+      accounts: accounts("mumbai"),
+      chainId: 80001,
+      live: true,
+      saveDeployments: true,
+      tags: ["staging"],
+      gasPrice: 5000000000,
+      gasMultiplier: 2,
+      gas: 3000000
     }
   },
   namedAccounts: {
     deployer: {
       default: 0,
+      137: 1,
       3: 1,
       4: 1,
       5: 1,
       11155111: 1,
-      420: 1
+      420: 1,
+      80001: 1,
     },
     owner: {
       default: 1,
       //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
+      137: process.env.MULTISIG_DEPLOY, // polygon
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli
       11155111: process.env.MULTISIG_DEPLOY, // sepolia
       420: process.env.MULTISIG_DEPLOY, // optimism goerli
-      42161: process.env.MULTISIG_DEPLOY // arb1
+      42161: process.env.MULTISIG_DEPLOY, // arb1
+      8001: process.env.MULTISIG_DEPLOY  // mumbai
     },
     dev: {
       // Default to 1
@@ -228,6 +250,13 @@ module.exports = {
       11155111: process.env.MULTISIG_DEFAULT,
       420: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
+      80001: process.env.MULTISIG_DEFAULT,
+      137: process.env.MULTISIG_DEFAULT
+    },
+    trustedForwarder: {
+      default: process.env.TRUSTED_FORWARDER,
+      1: process.env.TRUSTED_FORWARDER, // mainnet
+      10: process.env.TRUSTED_FORWARDER, // op mainnet
     }
   },
   gasReporter: {

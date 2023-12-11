@@ -5,7 +5,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, dev, multiSigDefaultOwner } = await getNamedAccounts();
 
-  const multiSigWalletMaster = await deployments.get('MultiSigWalletMasterV4');
+  const multiSigWalletMaster = await deployments.get('MultiSigWalletMaster');
 
 
   if (network.name != "hardhat") {
@@ -35,4 +35,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["MultiSigCloneFactory"];
-module.exports.dependencies = ['MultiSigWalletMasterV4'];
+module.exports.dependencies = ['MultiSigWalletMaster'];

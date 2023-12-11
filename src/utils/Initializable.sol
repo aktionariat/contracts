@@ -36,11 +36,15 @@ abstract contract Initializable {
      */
     bool private _initialized;
 
+    error Initializable_AlreadyInitalized();
+
     /**
      * @dev Modifier to protect the initializer function from being invoked twice.
      */
     modifier initializer() {
-        require(!_initialized, "already initialized");
+        if (_initialized) {
+            revert Initializable_AlreadyInitalized();
+        }
         _;
         _initialized = true;
     }

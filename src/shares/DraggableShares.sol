@@ -42,7 +42,8 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
 
     string public terms;
 
-    event ChangeTerms(string terms); 
+    /// Event when the terms are changed with setTerms().
+    event ChangeTerms(string terms);
 
     constructor(
         string memory _terms,
@@ -62,7 +63,7 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         _recoveryHub.setRecoverable(false);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable, IERC20) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(IERC20, ERC20Flaggable, ERC20Recoverable) public returns (bool) {
         return super.transfer(to, value);
     }
 
@@ -93,8 +94,11 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         }
     }
 
-    function setTerms(string calldata _terms) external override {
-        require(msg.sender == oracle, "not oracle");
+    /**
+     * @notice This function allows the oracle to set the terms.
+     * @param _terms The new terms.
+     */
+    function setTerms(string calldata _terms) external override onlyOracle {
         terms = _terms;
         emit ChangeTerms(terms);
     }
