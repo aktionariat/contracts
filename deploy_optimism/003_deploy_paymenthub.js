@@ -3,7 +3,7 @@ const Confirm = require('prompt-confirm');
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer } = await getNamedAccounts();
+  const { deployer, trustedForwarder } = await getNamedAccounts();
 
   const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
   const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
@@ -15,6 +15,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("deployer: %s", deployer);
     console.log("uniswap qouter: %s", uniswapQuoter);
     console.log("uniswap router: %s", uniswapRouter);
+    console.log("trusted forwarder: %s", trustedForwarder);
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -29,7 +30,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     contract: "PaymentHub",
     from: deployer,
     args: [
-      deployer,
+      trustedForwarder,
       uniswapQuoter,
       uniswapRouter
     ],

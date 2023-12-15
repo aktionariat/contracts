@@ -15,7 +15,9 @@ module.exports = {
   quorumBps: 7500,
   quorumMigration: 7500,
   votePeriodSeconds: 5184000,
+  brokerbotRegistryAddress: "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093",
   uniswapRouterAddress: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+  uniswapQuoterAddress: "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6",
   // Allowlist
   allowlist_symbol: "ASHR",
   allowlist_name: "Test Allowlist Shares",
@@ -27,8 +29,8 @@ module.exports = {
   daiAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",//optimis
   daiBalanceSlot: 2,
   // USDC
-  usdcAddress: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", // optimism
-  usdcBalanceSlot: 2,
+  usdcAddress: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607", // optimism
+  usdcBalanceSlot: 0,
   // WBTC
   wbtcAddress: "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
   wbtcBalanceSlot: 0,
@@ -36,7 +38,7 @@ module.exports = {
   // WETH
   wethAddress: "0x4200000000000000000000000000000000000006",
   // brokerbot
-  BUYING_ENABLED: 0x1,
-  SELLING_ENABLED: 0x2,
-  KEEP_ETHER: 0x4
+  BUYING_ENABLED: 1n,
+  SELLING_ENABLED: 2n,
+  KEEP_ETHER: 4n
 };

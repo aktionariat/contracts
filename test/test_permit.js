@@ -26,7 +26,7 @@ describe("Permit", () => {
   let sig5;
   let oracle;
 
-  const exFee = 100000000000000000n;
+  let exFee;
 
   /*//////////////////////////////////////////////////////////////
                       EIP-712 Signature 
@@ -41,7 +41,7 @@ describe("Permit", () => {
       { name: 'deadline', type: 'uint256',},
     ],
   }
-  let chainId = 1 ;
+  let chainId;
   let contractAddress;
 
   before(async() => {
@@ -69,6 +69,9 @@ describe("Permit", () => {
     let allowlistSharesAddress = await allowlistShares.getAddress();
     allowlistDraggable = await ethers.deployContract("AllowlistDraggableShares", [config.allowlist_terms, allowlistSharesAddress, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHubAddress, offerFactoryAddress, oracle.address, owner.address]);
     await allowlistDraggable.waitForDeployment();
+
+    exFee = ethers.parseUnits("0.01", await baseCurrency.decimals());
+    chainId = Number((await ethers.provider.getNetwork()).chainId);
   })
 
   /*//////////////////////////////////////////////////////////////
@@ -299,7 +302,7 @@ describe("Permit", () => {
       const sellPrice = await brokerbot.getSellPrice(value);
       const baseCurrencyBefore = await baseCurrency.balanceOf(seller.address);
       const sharesBefore = await draggable.balanceOf(seller.address);
-      const permitInfo = {exFee, deadline, v, r, s}
+      const permitInfo = {exFee, deadline, v, r, s};
       await paymentHub.connect(relayer).sellSharesWithPermit(await brokerbot.getAddress(), await draggable.getAddress(), seller.address, seller.address, value, "0x01", permitInfo);
       const baseCurrencyAfter = await baseCurrency.balanceOf(seller.address);
       const sharesAfter = await draggable.balanceOf(seller.address);
@@ -389,8 +392,8 @@ describe("Permit", () => {
       await paymentHub.approveERC20(config.baseCurrencyAddress);
       const wethContract = await ethers.getContractAt("ERC20Named", config.wethAddress);
       // path: XCHF -> WETH
-      const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
+      const types = ["address","uint24","address","uint24","address"];
+      const values = [config.baseCurrencyAddress, 500, config.daiAddress, 3000, config.wethAddress];
       path = ethers.solidityPacked(types,values);
       const nonce = await draggable.connect(seller).nonces(seller.address);
       const deadline = ethers.MaxUint256;

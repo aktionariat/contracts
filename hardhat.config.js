@@ -70,12 +70,13 @@ module.exports = {
       forking: {
         enabled: process.env.FORKING === "true",
         url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
-        blockNumber: 4180042, //optimism transaction index
+        blockNumber: 106997919, //optimism transaction index
+        //blockNumber: 4180042, //optimism transaction index
       },
       live: false,
       saveDeployments: true,
       //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
-    chainId: 1, // 1 for forking mainnet test
+      chainId: 10, // 1 for forking mainnet test
       tags: ["test", "local"],
       deploy: ['deploy_optimism']
     },
@@ -224,7 +225,7 @@ module.exports = {
     owner: {
       default: 1,
       //1: process.env.MULTISIG_DEPLOY, // mainnet
-      10: process.env.MULTISIG_DEPLOY, // optimism
+      //10: process.env.MULTISIG_DEPLOY, // optimism
       137: process.env.MULTISIG_DEPLOY, // polygon
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby

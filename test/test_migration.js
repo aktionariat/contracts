@@ -2,7 +2,7 @@ const { ethers} = require("hardhat");
 const { expect } = require("chai");
 const { setup } = require("./helper/index");
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_optimism.js");
 
 describe("Migration", () => {
   let draggable;
@@ -168,8 +168,8 @@ describe("Migration", () => {
       await draggable.connect(owner).setOracle(await successorExternal.getAddress());
       expect(await successorExternal.wrapped()).to.be.equal(await draggable.getAddress());
       await successorExternal.connect(owner).initiateMigrationWithExternalApproval(totalshares);
-      expect(await draggable.name()).to.be.equal("Test Shares SHA SHA");
-      expect(await draggable.symbol()).to.be.equal("SHRSS");
+      expect(await draggable.name()).to.be.equal(config.name + " SHA SHA");
+      expect(await draggable.symbol()).to.be.equal(config.symbol + "SS");
       expect(await draggable.wrapped()).to.be.equal(await successorExternal.getAddress());
       expect(await successorExternal.wrapped()).to.be.equal(await shares.getAddress());
     })

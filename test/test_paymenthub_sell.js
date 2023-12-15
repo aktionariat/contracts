@@ -8,9 +8,7 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
-const { Signature } = require("ethers");
+const config = require("../scripts/deploy_config_optimism.js");
 
 describe("Sell via PaymentHub", () => {
   let shares;
@@ -97,37 +95,38 @@ describe("Sell via PaymentHub", () => {
       seller = sig1;
       await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
     })
-    it("Should sell against USDC", async () => {
-      // path: XCHF -> USDC
+    it("Should sell against DAI", async () => {
+      // path: XCHF -> DAI
       const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 500, config.usdcAddress];
+      const values = [config.baseCurrencyAddress, 500, config.daiAddress]
       path = ethers.solidityPacked(types,values);
-      const usdcAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
+      const daiAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
       //console.log(`xchfaumont: ${ethers.utils.formatUnits(baseAmount,18)}`);
       //console.log(`usdcAmount: ${ethers.utils.formatUnits(usdcAmount,6)}`);
-      expect(parseFloat(ethers.formatUnits(usdcAmount,6))).to.be.above(parseFloat(ethers.formatUnits(baseAmount,18)));
+      expect(parseFloat(ethers.formatUnits(daiAmount, await daiContract.decimals()))).to.be.above(parseFloat(ethers.formatUnits(baseAmount, await baseCurrency.decimals())));
       await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
-      expect(await usdcContract.balanceOf(seller.address)).to.equal(0);
+      const daiStartAmount = ethers.parseUnits("100000000", await daiContract.decimals());
+      expect(await daiContract.balanceOf(seller.address)).to.equal(daiStartAmount);
       // in real use case slippage should be considerered for usdcAmount (the miniminum out amount from the swap)
       const params = {
         path: path,
         recipient: seller.address,
         deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
         amountIn: baseAmount,
-        amountOutMinimum: usdcAmount
+        amountOutMinimum: daiAmount
       };
       await paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, false);
-      expect(await usdcContract.balanceOf(seller.address)).to.equal(usdcAmount)
+      expect(await daiContract.balanceOf(seller.address)).to.equal(daiAmount + daiStartAmount);
     })
 
     it("Should sell against WETH", async () => {
       // path: XCHF -> WETH
-      const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
+      const types = ["address","uint24","address","uint24","address"];
+      const values = [config.baseCurrencyAddress, 500, config.daiAddress, 3000, config.wethAddress];
       path = ethers.solidityPacked(types,values);
       const ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
       //console.log(`ethAmount: ${ethers.utils.formatEther(ethAmount)}`);
-      expect(await wethContract.balanceOf(seller.address)).to.equal(0);
+      expect(await wethContract.balanceOf(seller.address)).to.equal(0n);
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
       const params = {
         path: path,
@@ -147,8 +146,8 @@ describe("Sell via PaymentHub", () => {
       // set sig as seller
       seller = sig1;
       // path: XCHF -> WETH
-      const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
+      const types = ["address","uint24","address","uint24","address"];
+      const values = [config.baseCurrencyAddress, 500, config.daiAddress, 3000, config.wethAddress];
       path = ethers.solidityPacked(types,values);
       ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
     })
@@ -247,8 +246,8 @@ describe("Sell via PaymentHub", () => {
       const approveTx = await getTX(await draggable.getAddress(), data, multiSigClone, ownerWallet, chainid);
       await multiSigClone.execute(approveTx.nonce, approveTx.to, approveTx.value, approveTx.data, [approveTx.signature.v], [approveTx.signature.r], [approveTx.signature.s]);    
       // path: XCHF -> WETH
-      const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
+      const types = ["address","uint24","address","uint24","address"];
+      const values = [config.baseCurrencyAddress, 500, config.daiAddress, 3000, config.wethAddress];
       path = ethers.solidityPacked(types,values);
     });
     it("Should sell against ETH with multisig", async () => {

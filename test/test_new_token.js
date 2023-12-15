@@ -282,7 +282,7 @@ describe("New Standard", () => {
       await shares.connect(owner).mintAndCall(sig2.address, await draggable.getAddress(), randomAmountToMint, "0x01");
       const balanceAfter = await draggable.balanceOf(sig2.address);
 
-      expect(balanceBefore.add(randomAmountToMint)).to.equal(balanceAfter);
+      expect(balanceBefore + randomAmountToMint).to.equal(balanceAfter);
     });
 
     it("Should revert if mintMany(AndCall) is called with unequal array lengths", async () => {
@@ -455,15 +455,6 @@ describe("New Standard", () => {
       const newTerms = "investor.test.ch";
       expect(await draggable.terms()).to.equal(oldTerms)
       await expect(draggable.connect(sig1).setTerms("test")).to.be.revertedWithCustomError(draggable, "ERC20InvalidSender");
-      await expect(draggable.connect(owner).setTerms(newTerms)).to.emit(draggable, 'ChangeTerms').withArgs(newTerms);
-      expect(await draggable.terms()).to.equal(newTerms);
-    })
-
-    it("Should set new terms for draggable", async () => {
-      const oldTerms = "test.ch/terms";
-      const newTerms = "investor.test.ch";
-      expect(await draggable.terms()).to.equal(oldTerms)
-      await expect(draggable.connect(sig1).setTerms("test")).to.be.revertedWith("not oracle");
       await expect(draggable.connect(owner).setTerms(newTerms)).to.emit(draggable, 'ChangeTerms').withArgs(newTerms);
       expect(await draggable.terms()).to.equal(newTerms);
     })
@@ -883,7 +874,7 @@ describe("New Standard", () => {
       }
       //set balance to low to transfer
       await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseEther("10"));
-      await expect(offer.connect(sig1).execute()).to.be.revertedWith("insufficient tokens");
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("ERC20: transfer amount exceeds balance");
       //set balance back
       await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
     })

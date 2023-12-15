@@ -46,6 +46,7 @@ describe("Multisig", () => {
 
     randomWallet = ethers.Wallet.createRandom().connect(ethers.provider);
     const mnemonic = ethers.Mnemonic.fromPhrase(process.env.MNEMONIC);
+    console.log("test");
     //ownerWallet = ethers.Wallet.fromPhrase(mnemonic, "m/44'/60'/0'/0/1").connect(ethers.provider);
     ownerWallet = ethers.HDNodeWallet.fromMnemonic(mnemonic,"m/44'/60'/0'/0").deriveChild(1).connect(ethers.provider);
     chainid = Number((await ethers.provider.getNetwork()).chainId);

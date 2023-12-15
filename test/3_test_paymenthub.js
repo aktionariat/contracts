@@ -6,9 +6,6 @@ const { ethers} = require("hardhat");
 const { expect } = require("chai");
 const { setup } = require("./helper/index");
 
-// Test parameters
-const paymentAmountInBase = ethers.parseEther("10");
-
 describe("PaymentHub", () => {
   let paymentHub;
   let brokerbot;
@@ -19,6 +16,8 @@ describe("PaymentHub", () => {
   let sig1;
   let sig2;
   let sig
+  
+  let paymentAmountInBase;
 
   before( async () => {
     [deployer,owner,sig1,sig2,sig3] = await ethers.getSigners();
@@ -29,6 +28,7 @@ describe("PaymentHub", () => {
     paymentHub = await ethers.getContract("PaymentHub");
     brokerbot = await ethers.getContract("Brokerbot");
     base = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+    paymentAmountInBase = ethers.parseUnits("10", await base.decimals());
   });
 
   it("should deploy paymenthub", async () => {
