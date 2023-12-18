@@ -1,0 +1,36 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
+  "companyName": "Switzerlend AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "LEND",
+  "name": "Switzerlend AG C1 Shares",
+  "terms": "https://tokens.lend.ch/",
+  "totalShares": "712028",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 6666,
+  "quorumMigration": 9000,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x0Af5512165975e76Ee9425B0e3f3781Bd17CAD24",
+  "address": {
+    "recoveryHub": "0xc6AfD3b605957b9BA94143F59d451c657F507516",
+    "share": "0x0618d80830f4aDB887032D23eafd5B99eB276771",
+    "offerFactory": "0x7F34B9d2C3682B70ff6e8bc8fa2Ed69Def2F81Cd",
+    "draggable": "0x343324F53CBEEE3Ee6d171f2a20F005964C98047",
+    "paymentHub": "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C",
+    "brokerbot": "0x6c9653Ec2C6A69DCeE9Fc3005FeF02D2D5Cf1dDc",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"
+  },
+  "brokerbot": {
+    "shares": "0x343324F53CBEEE3Ee6d171f2a20F005964C98047"
+  },
+  "blocknumber": "18811923",
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}

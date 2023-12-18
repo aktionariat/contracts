@@ -10,8 +10,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const owner = nconf.get("multisigAddress");
 
   const sharesAddress = nconf.get("brokerbot:shares")
-  const paymentHub = await deployments.get("PaymentHub");
-  nconf.set("address:paymentHub", paymentHub.address);
+  //const paymentHub = await deployments.get("PaymentHub");
+  const paymentHubAddress = "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C";
+  nconf.set("address:paymentHub", paymentHubAddress);
   
   const price = nconf.get("sharePrice");
   const increment = nconf.get("increment");
@@ -24,7 +25,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
     console.log("shares: %s", sharesAddress);
-    console.log("paymentHub: %s", paymentHub.address);
+    console.log("paymentHub: %s (is fixed, check (template) deployment script if there are paymenthub changes", paymentHubAddress);
     console.log("base xchf: %s", baseCurrencyContract);
     console.log("owner: %s", owner);  // don't forget to set it in deploy_config.js as the multsigadr
 
@@ -46,7 +47,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
       increment,
       baseCurrencyContract,
       owner,
-      paymentHub.address],
+      paymentHubAddress],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -69,4 +70,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
 
 module.exports.tags = [nconf.get("symbol")+"Brokerbot"];
-module.exports.dependencies = ["PaymentHub"];
+//module.exports.dependencies = ["PaymentHub"];
