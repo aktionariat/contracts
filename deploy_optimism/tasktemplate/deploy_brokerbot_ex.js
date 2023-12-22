@@ -11,7 +11,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const sharesAddress = nconf.get("brokerbot:shares")
   //const paymentHub = await deployments.get("PaymentHub");
-  const paymentHub = await ethers.getContractAt("PaymentHub", "0x06512E6bAB2712fCa9F4D123C80FCE34de2bC2D7");
+  const paymentHub = await ethers.getContractAt("PaymentHub", "0x7e08078AdCcBFda94daf16184FBfa50acBdEb848");
   nconf.set("address:paymentHub", paymentHub.address);
   
   const price = nconf.get("sharePrice");
@@ -65,7 +65,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   //set config
   nconf.set("address:brokerbot", address);
   nconf.set("address:brokerbotRegistry", brokerbotRegistry.address);
-  nconf.set("version:brokerbot", version);
+  nconf.set("version:brokerbot", version.toString());
 };
 
 

@@ -1,0 +1,38 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "AUVISO Audio Visual Solutions AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "AUVI",
+  "name": "AUVISO Audio Visual Solutions AG Mitarbeiteraktien",
+  "terms": "investors.auviso.ch",
+  "totalShares": "2240000",
+  "sharePrice": "15000000000000000000",
+  "increment": "0",
+  "quorumBps": 5100,
+  "quorumMigration": 5100,
+  "votePeriodSeconds": 2592000,
+  "Allowlist": true,
+  "Draggable": true,
+  "multisigAddress": "0xfd8C5fD8C99bf4f9C0179b60865916e6D04103Ee",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "allowlist": {
+      "shares": "0xE51ae6D0106Cd5a3a685154ca8400b903BE15e8A",
+      "draggable": "0xA4fB4335d8a3A2cc74877Ecb2E52eB45E8425779"
+    },
+    "offerFactory": "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531",
+    "paymentHub": "0x7e08078AdCcBFda94daf16184FBfa50acBdEb848",
+    "brokerbot": "0xF12292E8801752bCCD56E90EF70165Ba8475A505",
+    "brokerbotRegistry": "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093"
+  },
+  "brokerbot": {
+    "shares": "0xA4fB4335d8a3A2cc74877Ecb2E52eB45E8425779"
+  },
+  "blocknumber": 113652307,
+  "version": {
+    "shares": 3,
+    "brokerbot": 7
+  },
+  "deployBrokerbot": true
+}
