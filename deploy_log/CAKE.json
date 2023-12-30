@@ -1,0 +1,36 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "Impuls Management Group AG",
+  "multisigSigner": "0xC3F5c8Ba3E782679226ad252B837c9422e6b38Be",
+  "symbol": "CAKE",
+  "name": "Cakefriends Shares",
+  "terms": "investieren.cakefriends.ch",
+  "totalShares": "11000000",
+  "sharePrice": "100000000000000000",
+  "increment": "0",
+  "quorumBps": 6667,
+  "quorumMigration": 6667,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0xB28a583C0a1cd89ef4c59a599B816D73e6486B38",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "share": "0xAF4dB3711bB5e1f1DdD4114d28c6eF70faC7DB0C",
+    "offerFactory": "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531",
+    "draggable": "0xf34efaA8f9B950C6e32652F1fEc63Cf56F8CeF1D",
+    "paymentHub": "0x7e08078AdCcBFda94daf16184FBfa50acBdEb848",
+    "brokerbot": "0x5395B2825081377f7E3E5B4473FDf3119E70B1E9",
+    "brokerbotRegistry": "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093"
+  },
+  "brokerbot": {
+    "shares": "0xf34efaA8f9B950C6e32652F1fEc63Cf56F8CeF1D"
+  },
+  "blocknumber": "113829080",
+  "version": {
+    "shares": 3,
+    "brokerbot": "7"
+  },
+  "deployBrokerbot": true
+}
