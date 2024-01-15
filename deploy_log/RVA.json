@@ -1,0 +1,36 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "Reederei Vully AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "RVA",
+  "name": "Reederei Vully AG Shares",
+  "terms": "https://investors.attila.swiss",
+  "totalShares": "28871",
+  "sharePrice": "100000000000000000000",
+  "increment": "0",
+  "quorumBps": 5000,
+  "quorumMigration": 5000,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0xD3152720eC114D8E2e26dcE1D73c0F8fAB176bdc",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "share": "0x03998093D22Db7b5729047aF62BFbe96212683D0",
+    "offerFactory": "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531",
+    "draggable": "0x44a876B8Ff6390c06E9961a3Dd4ddCF9761996d4",
+    "paymentHub": "0x7e08078AdCcBFda94daf16184FBfa50acBdEb848",
+    "brokerbot": "0x7af6a6844BcE0f1D6DF5Df5111d02324D3F61694",
+    "brokerbotRegistry": "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093"0xD3152720eC114D8E2e26dcE1D73c0F8fAB176bdc
+  },
+  "brokerbot": {
+    "shares": "0x44a876B8Ff6390c06E9961a3Dd4ddCF9761996d4"
+  },
+  "blocknumber": "114740922",
+  "version": {
+    "shares": 3,
+    "brokerbot": "7"
+  },
+  "deployBrokerbot": true
+}
