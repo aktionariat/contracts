@@ -26,7 +26,7 @@ describe("Permit", () => {
   let sig5;
   let oracle;
 
-  const exFee = 100000000000000000n;
+  let exFee;
 
   /*//////////////////////////////////////////////////////////////
                       EIP-712 Signature 
@@ -41,7 +41,7 @@ describe("Permit", () => {
       { name: 'deadline', type: 'uint256',},
     ],
   }
-  let chainId = 1 ;
+  let chainId;
   let contractAddress;
 
   before(async() => {
@@ -69,6 +69,9 @@ describe("Permit", () => {
     let allowlistSharesAddress = await allowlistShares.getAddress();
     allowlistDraggable = await ethers.deployContract("AllowlistDraggableShares", [config.allowlist_terms, allowlistSharesAddress, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHubAddress, offerFactoryAddress, oracle.address, owner.address]);
     await allowlistDraggable.waitForDeployment();
+
+    exFee = ethers.parseUnits("0.01", await baseCurrency.decimals());
+    chainId = Number((await ethers.provider.getNetwork()).chainId);
   })
 
   /*//////////////////////////////////////////////////////////////

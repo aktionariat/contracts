@@ -35,13 +35,16 @@ module.exports = {
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+  wethAddress: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // use wmatic for tests
+  //wethAddress: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
   // WMATIC
   wmaticAddres: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
   // USDT
-  usdtAddress: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  usdtAddress: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+  usdtBalanceSlot: 0,
   // USDC
-  usdcAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+  usdcAddress: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", // use usdt for tests
+  //usdcAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
   // brokerbot
   BUYING_ENABLED: 1n,
   SELLING_ENABLED: 2n,

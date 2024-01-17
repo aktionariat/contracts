@@ -80,8 +80,8 @@ describe("New Standard", () => {
     await allowlistDraggable.waitForDeployment();
 
     
-    // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    // Mint baseCurrency Tokens to first 5 accounts
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
 
     //Mint shares to accounts
     for( let i = 0; i < accounts.length; i++) {
@@ -679,7 +679,7 @@ describe("New Standard", () => {
       value: ethers.parseEther("5.0")
     }
     beforeEach(async () => {
-      pricePerShare = ethers.parseEther("2");
+      pricePerShare = ethers.parseUnits("2", await baseCurrency.decimals());
       salt = ethers.encodeBytes32String('1');
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, await baseCurrency.getAddress(), overrides)
       const blockNum = await ethers.provider.getBlockNumber();
@@ -793,15 +793,15 @@ describe("New Standard", () => {
 
     it("Should able to contest offer if not well funded", async () => {
       //await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseEther("1"));
-      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseEther("10"));;
+      await setBalanceWithAmount(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address], ethers.parseUnits("10", await baseCurrency.decimals()));;
       await offer.contest();
       const offerAfterContest = await draggable.offer();
-      expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
-      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+      expect(offerAfterContest).to.equal(ethers.ZeroAddress);
+      await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address]);
     });
 
     it("Should revert competing offer if it isn't in same currency", async () => {
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('1'), ethers.parseEther("3"), config.wbtcAddress, overrides))
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('1'), ethers.parseUnits("3", await baseCurrency.decimals()), config.wbtcAddress, overrides))
         .to.be.revertedWithCustomError(offer, "Offer_OfferInWrongCurrency")
     })
     
@@ -810,10 +810,10 @@ describe("New Standard", () => {
       const offerBefore = await draggable.offer();
       expect(offerBefore).to.exist;
       
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseEther("1"), await baseCurrency.getAddress(), overrides))
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseUnits("1", await baseCurrency.decimals()), await baseCurrency.getAddress(), overrides))
         .to.be.revertedWithCustomError(offer, "Offer_OldOfferBetter")
-        .withArgs(await offer.price(),ethers.parseEther("1"));
-      await draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseEther("2.3"), await baseCurrency.getAddress(), overrides);
+        .withArgs(await offer.price(),ethers.parseUnits("1", await baseCurrency.decimals()));
+      await draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseUnits("2.3", await baseCurrency.decimals()), await baseCurrency.getAddress(), overrides);
       
       // new offer from sig1
       const offerAfter = await draggable.offer();
@@ -824,7 +824,7 @@ describe("New Standard", () => {
 
     it("Should revert if competing offer isn't called from token", async () => {
       const tx = await offerFactory.connect(sig2).create(
-        ethers.encodeBytes32String('3'), sig2.address, ethers.parseEther("2.3"), await baseCurrency.getAddress(), config.quorumBps, config.votePeriodSeconds, overrides);
+        ethers.encodeBytes32String('3'), sig2.address, ethers.parseUnits("2.3", await baseCurrency.decimals()), await baseCurrency.getAddress(), config.quorumBps, config.votePeriodSeconds, overrides);
       const { logs } = await tx.wait();
       await expect(offer.connect(sig2).makeCompetingOffer(logs[0].address))
         .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
@@ -832,7 +832,7 @@ describe("New Standard", () => {
     })
 
     it("Should revert if notifyMoved isn't called from token", async () => {
-      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.parseEther("1")))
+      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.parseUnits("1", await baseCurrency.decimals())))
         .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
         .withArgs(sig1.address);
     })
@@ -845,12 +845,12 @@ describe("New Standard", () => {
         await offer.connect(signers[i]).voteYes();
       }
 
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseEther("2.3"), await baseCurrency.getAddress(), overrides))
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseUnits("2.3", await baseCurrency.decimals()), await baseCurrency.getAddress(), overrides))
         .to.be.revertedWithCustomError(offer, "Offer_AlreadyAccepted");
     })
 
     it("Should revert competing offer if user account isn't well funded", async () => {
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseEther("100"), await baseCurrency.getAddress(), overrides))
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.encodeBytes32String('2'), ethers.parseUnits("100", await baseCurrency.decimals()), await baseCurrency.getAddress(), overrides))
         .to.be.revertedWithCustomError(offer, "Offer_NotWellFunded");
     })
 
@@ -873,10 +873,10 @@ describe("New Standard", () => {
         await offer.connect(signers[i]).voteYes();
       }
       //set balance to low to transfer
-      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseEther("10"));
-      await expect(offer.connect(sig1).execute()).to.be.revertedWith("insufficient tokens");
+      await setBalanceWithAmount(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address], ethers.parseUnits("10", await baseCurrency.decimals()));
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("ERC20: transfer amount exceeds balance");
       //set balance back
-      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+      await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address]);
     })
 
     it("Should be able to execute offer", async () => {
@@ -929,7 +929,7 @@ describe("New Standard", () => {
 
       // revert new offer after execute
       await expect(draggable.connect(sig1).makeAcquisitionOffer(
-        ethers.encodeBytes32String('2'), ethers.parseEther("2.3"), await baseCurrency.getAddress(), overrides))
+        ethers.encodeBytes32String('2'), ethers.parseUnits("2.3", await baseCurrency.decimals()), await baseCurrency.getAddress(), overrides))
           .to.be.revertedWithCustomError(draggable, "Draggable_NotBinding");
 
       // should be able to unwrap token

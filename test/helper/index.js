@@ -30,7 +30,7 @@ async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
 }
 
 async function setBalance(erc20Contract, slot, accounts) {
-  const locallyManipulatedBalance = ethers.parseEther("100000000");
+  const locallyManipulatedBalance = ethers.parseUnits("100000000", await erc20Contract.decimals());
   setBalanceWithAmount(erc20Contract, slot, accounts, locallyManipulatedBalance);
 }
 

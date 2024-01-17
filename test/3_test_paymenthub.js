@@ -7,7 +7,7 @@ const { expect } = require("chai");
 const { setup } = require("./helper/index");
 
 // Test parameters
-const paymentAmountInBase = ethers.parseEther("10");
+let paymentAmountInBase;
 
 describe("PaymentHub", () => {
   let paymentHub;
@@ -29,6 +29,7 @@ describe("PaymentHub", () => {
     paymentHub = await ethers.getContract("PaymentHub");
     brokerbot = await ethers.getContract("Brokerbot");
     base = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+    paymentAmountInBase = ethers.parseUnits("10", await base.decimals());
   });
 
   it("should deploy paymenthub", async () => {
@@ -75,6 +76,9 @@ describe("PaymentHub", () => {
     const ethBalanceSenderBefore = await ethers.provider.getBalance(accounts[0]);
     const baseBalanceRecipientBefore = await base.balanceOf(accounts[1]);
 
+    // need to check how much matic is lying on router which we will get buy swapping with eth and calling refundETH on the Router
+    const routerETH = await ethers.provider.getBalance(config.uniswapRouterAddress);
+
     // Calculate required ETH and set a slippage
     const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
     const priceInEthWithSlippage = priceInETH * 103n / 100n;
@@ -98,8 +102,8 @@ describe("PaymentHub", () => {
     // Check result
     expect(ethBalanceSenderBefore - priceInETH - gasCost).to.eq(ethBalanceSenderAfter);
     expect(baseBalanceRecipientBefore + paymentAmountInBase).to.eq(baseBalanceRecipientAfter);
-    expect(ethBalancePaymentHubAfter).to.equal(0n);
     expect(ethBalanceUniswapAfter).to.equal(0n);
+    expect(ethBalancePaymentHubAfter).to.equal(routerETH);
   });
 
   it("should make multiple payments in baseCurrency in single transaction", async () => {

@@ -62,9 +62,9 @@ module.exports = {
       forking: {
         //enabled: process.env.FORKING === "true",
         url: getForkUrl(),
-        blockNumber: 50340881,
+        blockNumber: 52347676,
       },
-      live: false,
+      live: true,
       saveDeployments: true,
       //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
       //chainId: 1, // 1 for forking mainnet test
@@ -186,7 +186,7 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
-      137: 1,
+      //137: 1, // polygon 
       3: 1,
       4: 1,
       5: 1,

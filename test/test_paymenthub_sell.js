@@ -76,7 +76,7 @@ describe("Sell via PaymentHub", () => {
 
     // Deposit some shares to Brokerbot
     await draggable.connect(owner).transfer(await brokerbot.getAddress(), 500000 );
-    await baseCurrency.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseEther("100000"));
+    await baseCurrency.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseUnits("100000", await baseCurrency.decimals()));
 
     // appove base currency in payment hub
     await paymentHub.approveERC20(config.baseCurrencyAddress);
@@ -92,27 +92,27 @@ describe("Sell via PaymentHub", () => {
       seller = sig1;
       await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
     })
-    it("Should sell against USDC", async () => {
-      // path: XCHF -> USDC
+    it("Should sell against DAI", async () => {
+      // path: USDC -> DAI
       const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 500, config.usdcAddress];
+      const values = [config.baseCurrencyAddress, 500, config.daiAddress];
       path = ethers.solidityPacked(types,values);
-      const usdcAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
+      const daiAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
       //console.log(`xchfaumont: ${ethers.utils.formatUnits(baseAmount,18)}`);
       //console.log(`usdcAmount: ${ethers.utils.formatUnits(usdcAmount,6)}`);
-      expect(parseFloat(ethers.formatUnits(usdcAmount,6))).to.be.above(parseFloat(ethers.formatUnits(baseAmount,18)));
+      expect(daiAmount).to.be.above(0n);
       await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
-      expect(await usdcContract.balanceOf(seller.address)).to.equal(0);
-      // in real use case slippage should be considerered for usdcAmount (the miniminum out amount from the swap)
+      const sellerDAIBalanceBefore = await daiContract.balanceOf(seller.address);
+      // in real use case slippage should be considerered for daiAmount (the miniminum out amount from the swap)
       const params = {
         path: path,
         recipient: seller.address,
         deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
         amountIn: baseAmount,
-        amountOutMinimum: usdcAmount
+        amountOutMinimum: daiAmount
       };
       await paymentHub.connect(seller).sellSharesAndSwap(await brokerbot.getAddress(), await draggable.getAddress(), randomShareAmount, "0x01", params, false);
-      expect(await usdcContract.balanceOf(seller.address)).to.equal(usdcAmount)
+      expect(await daiContract.balanceOf(seller.address)).to.equal(sellerDAIBalanceBefore + daiAmount)
     })
 
     it("Should sell against WETH", async () => {
