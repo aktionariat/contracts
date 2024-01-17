@@ -252,7 +252,7 @@ contract Brokerbot is IBrokerbot, Ownable {
             return 0;
         } else {
             uint256 highest = lowest + (shares - 1) * increment;
-            return ((lowest + highest) / 2) * shares;
+            return ((lowest + highest)) * shares / 2;
         }
     }
 
