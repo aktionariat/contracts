@@ -1,5 +1,6 @@
 module.exports = {
   // Parameters used during contract development and testing
+  chainId: 1,
   symbol: "SHR",
   name: "Test Shares",
   terms: "test.ch/terms",

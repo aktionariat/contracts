@@ -1,5 +1,6 @@
 module.exports = {
   // Parameters used during contract development and testing
+  chainId: 137,
   symbol: "SHR",
   name: "Test Shares",
   terms: "test.ch/terms",
@@ -7,7 +8,7 @@ module.exports = {
   sharePrice: "1000000", // with usdc (decimals 6)
   baseCurrencyAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",  // usdc polygon
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
-  baseCurrencyName: "USD Coin",
+  baseCurrencyName: "USD Coin (PoS)",
   baseCurrencySymbol: "USDC",
   baseCurrencyBalanceSlot: 0,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
