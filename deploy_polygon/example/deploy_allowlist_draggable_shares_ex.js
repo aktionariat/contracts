@@ -1,5 +1,5 @@
 const Confirm = require('prompt-confirm');
-const config = require("./deploy_config.js");
+const config = require("./deploy_config_ex.js");
 
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {

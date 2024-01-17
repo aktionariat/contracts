@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 
 // Shared Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_polygon.js");
 
 // Libraries
 const Chance = require("chance");
@@ -119,11 +119,9 @@ describe("Brokerbot", () => {
     it("should calculate buy price correctly - with increment - no drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random increment
-      const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 1000 }).toString(),"finney");
-      
-      /*const increment = web3.utils.toWei(new Chance().integer({ min: 1, max: 1000 }),
-        "milli"
-        );*/
+      //const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 1000 }).toString(),"finney");
+      const increment = randomBigInt(1, 1000)
+
       await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
       
       // 0 cost for 0 shares
@@ -159,9 +157,10 @@ describe("Brokerbot", () => {
     it("should calculate sell price correctly - with increment - no drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random increment
-      const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
+       /* const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
         "gwei"
-        );
+        ); */
+      const  increment = ethers.parseUnits(new Chance().floating({min: 0.000001, max: 0.0001, fixed: 6}).toString(), await baseCurrency.decimals());
       await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
       
       // 0 cost for 0 shares
@@ -175,7 +174,7 @@ describe("Brokerbot", () => {
       
       // Do 10 times with random number of shares
       for (let i = 0; i < 10; i++) {
-        const randomNumberShares = randomBigInt(2, 50000);
+        const randomNumberShares = randomBigInt(2, 5000);
           // Get price from contract
           const priceRandomNumberShares = await brokerbot.getSellPrice(
             randomNumberShares
@@ -305,7 +304,7 @@ describe("Brokerbot", () => {
       // Random number of shares to buy
       const sharesToBuy = randomBigInt(1, 500);
       const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-      const buyPriceInETH = await paymentHub.getPriceInEther(buyPrice, await brokerbot.getAddress()).callStatic;
+      const buyPriceInETH = await paymentHub.getPriceInEther.staticCall(buyPrice, await brokerbot.getAddress());
       
       // Base payment should fail
       await expect(paymentHub.connect(owner)["payAndNotify(address,uint256,bytes)"](

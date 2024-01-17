@@ -27,10 +27,15 @@ function accounts(networkName){
 }
 
 function getForkUrl() {
-  if (process.env.LOCAL) {
-    return `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`;
-  } else {
-    return `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`;
+  switch (process.env.FORK_NETWORK) {
+    case "polygon":
+      return `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`;
+    default:
+      if (process.env.LOCAL) {
+        return `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`;
+      } else {
+        return `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`;
+      }
   }
 }
 
@@ -57,12 +62,13 @@ module.exports = {
       forking: {
         //enabled: process.env.FORKING === "true",
         url: getForkUrl(),
-        blockNumber: 17663503,
+        blockNumber: 52347676,
       },
-      live: false,
+      live: true,
       saveDeployments: true,
       //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
-      chainId: 1, // 1 for forking mainnet test
+      //chainId: 1, // 1 for forking mainnet test
+      chainId: 137,
       tags: ["test", "local"],
     },
     ropsten: {
@@ -161,7 +167,8 @@ module.exports = {
       accounts: accounts("polygon"),
       chainId: 137,
       live: true,
-      saveDeployments: true
+      saveDeployments: true,
+      deploy: ['deploy_polygon']
     },
     mumbai: {
       url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
@@ -172,13 +179,14 @@ module.exports = {
       tags: ["staging"],
       gasPrice: 5000000000,
       gasMultiplier: 2,
-      gas: 3000000
+      gas: 3000000,
+      deploy: ['deploy_polygon']
     }
   },
   namedAccounts: {
     deployer: {
       default: 0,
-      137: 1,
+      //137: 1, // polygon 
       3: 1,
       4: 1,
       5: 1,
@@ -190,7 +198,7 @@ module.exports = {
       default: 1,
       //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
-      137: process.env.MULTISIG_DEPLOY, // polygon
+      //137: process.env.MULTISIG_DEPLOY, // polygon
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli

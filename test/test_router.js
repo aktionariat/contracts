@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_polygon.js");
 
 describe("Brokerbot Router", () => {
   let draggable;
@@ -164,7 +164,7 @@ describe("Brokerbot Router", () => {
           const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
           const brokerbotBalanceBefore = await baseCurrency.balanceOf(await brokerbot.getAddress());
           //add slippage
-          const baseAmountWithSlippage = baseAmount + ethers.parseEther("0.02");
+          const baseAmountWithSlippage = baseAmount + ethers.parseUnits("0.02", await baseCurrency.decimals());
           await baseCurrency.connect(buyer).approve(await brokerbotRouter.getAddress(), baseAmountWithSlippage);
           const params = {
             tokenIn: await baseCurrency.getAddress(),
@@ -297,7 +297,7 @@ describe("Brokerbot Router", () => {
           const amountXCHF = await brokerbotQuoter.quoteExactOutput.staticCall(pathSingle, randomShareAmount);
           expect(amountXCHF).to.equal(baseAmount);
           // add arbitrary slipplage
-          const amountXCHFWithSlippage = amountXCHF + ethers.parseUnits("1000", 18);
+          const amountXCHFWithSlippage = amountXCHF + ethers.parseUnits("1000", await baseCurrency.decimals());
           //approve xchf to router
           await baseCurrency.connect(buyer).approve(await brokerbotRouter.getAddress(), config.infiniteAllowance);
           // log balance
