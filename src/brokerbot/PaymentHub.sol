@@ -52,16 +52,12 @@ contract PaymentHub {
     // Version 6: added transferEther function
     // Version 7: added sell against eth and erc20, version, add permitinfo/swapinfo struct
     // Version 8: use SafeERC20 for transfers
+    // Version 8a: remove unused vars, function for keep eth
     uint8 public constant VERSION = 0x8;
 
     address public trustedForwarder;
 
     uint24 private constant DEFAULT_FEE = 3000;
-    uint256 private constant DENOMINATOR = 1e8;
-    address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
-
-    uint8 private constant KEEP_ETHER = 0x4; // copied from brokerbot
-    
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
 
@@ -393,13 +389,6 @@ contract PaymentHub {
         if (amountOut < params.amountOutMinimum){
             revert PaymentHub_SwapError(params.amountOutMinimum, amountOut);
         }
-    }
-
-    /**
-     * Checks if the brokerbot has setting enabled to keep ether
-     */
-    function hasSettingKeepEther(IBrokerbot brokerbot) public view returns (bool) {
-        return brokerbot.settings() & KEEP_ETHER == KEEP_ETHER;
     }
 
     /**
