@@ -1,0 +1,36 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "Rüedu Bern AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "RUED",
+  "name": "Rüedu Bern AG Shares",
+  "terms": "investieren.ruedu.ch",
+  "totalShares": "100000",
+  "sharePrice": "1000000000000000000",
+  "increment": "0",
+  "quorumBps": 5100,
+  "quorumMigration": 5100,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x662FB00C51e1F7Ca535A92942A6edc4B17A37811",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "share": "0x4ac11C1C2FEe4DBCD0816DFc763D133d014515f6",
+    "offerFactory": "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531",
+    "draggable": "0x758FAFc6957f01BA9E22A7d471Ca81Ce32b5aa1f",
+    "paymentHub": "0x7e08078AdCcBFda94daf16184FBfa50acBdEb848",
+    "brokerbot": "0x6058b0b21B5b4edD3E1a6BfbC3584d91A15771BD",
+    "brokerbotRegistry": "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093"
+  },
+  "brokerbot": {
+    "shares": "0x758FAFc6957f01BA9E22A7d471Ca81Ce32b5aa1f"
+  },
+  "blocknumber": "115333654",
+  "version": {
+    "shares": 3,
+    "brokerbot": "7"
+  },
+  "deployBrokerbot": true
+}
