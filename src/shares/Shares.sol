@@ -29,6 +29,7 @@ pragma solidity ^0.8.0;
 
 import "../ERC20/ERC20Named.sol";
 import "../ERC20/ERC20PermitLight.sol";
+import "../ERC20/ERC20Permit2.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "../recovery/ERC20Recoverable.sol";
 import "../shares/IShares.sol";
@@ -47,7 +48,7 @@ import "../shares/IShares.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
+contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2, IShares{
 
     // Version history:
     // 1: everything before 2022-07-19
@@ -71,11 +72,13 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
         string memory _terms,
         uint256 _totalShares,
         address _owner,
-        IRecoveryHub _recoveryHub
+        IRecoveryHub _recoveryHub,
+        address _permit2
     )
         ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight()
+        ERC20Permit2(_permit2)
     {
         totalShares = _totalShares;
         terms = _terms;
@@ -214,6 +217,10 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
     function burn(uint256 _amount) override external {
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
+    }
+
+    function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
+        return super.allowance(owner,spender);
     }
 
 }
