@@ -73,12 +73,12 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
         uint256 _totalShares,
         address _owner,
         IRecoveryHub _recoveryHub,
-        address _permit2
+        Permit2Hub _permit2Hub
     )
         ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight()
-        ERC20Permit2(_permit2)
+        ERC20Permit2(_permit2Hub)
     {
         totalShares = _totalShares;
         terms = _terms;
@@ -220,7 +220,7 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
     }
 
     function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
-        return super.allowance(owner,spender);
+        return super.allowance(owner, spender);
     }
 
 }

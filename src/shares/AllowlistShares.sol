@@ -40,9 +40,9 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     uint256 _totalShares,
     IRecoveryHub _recoveryHub,
     address _owner,
-    address _permit2
+    Permit2Hub _permit2Hub
   )
-    Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub, _permit2)
+    Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub, _permit2Hub)
     ERC20Allowlistable()
   {
     // initialization in shares
