@@ -11,11 +11,8 @@ describe("Permit2", () => {
   let shares;
   let permit2Hub;
   let offerFactory;
-  let paymentHub;
-  let brokerbot;
   let allowlistShares;
   let allowlistDraggable;
-  let baseCurrency;
 
   let deployer
   let owner;
@@ -24,11 +21,7 @@ describe("Permit2", () => {
   let sig3;
   let sig4;
   let sig5;
-  let oracle;
   let chainid;
-
-  const PERMIT_ENABLED = 1;
-  const PERMIT_DISABLED = 2;
 
   before(async() => {
     chainid = (await ethers.provider.getNetwork()).chainId;
@@ -64,9 +57,9 @@ describe("Permit2", () => {
 
   describe("Permit2 Hub", () => {
     it("Should revert if en/disable from non-owner", async () => {
-      expect(await permit2Hub.permit2Enabled()).to.be.equal(PERMIT_ENABLED);
+      expect(await permit2Hub.permit2Disabled()).to.be.equal(false);
       await expect(permit2Hub.connect(sig1).togglePermit2()).to.be.revertedWithCustomError(shares, "Ownable_NotOwner");
-      expect(await permit2Hub.permit2Enabled()).to.be.equal(PERMIT_ENABLED);
+      expect(await permit2Hub.permit2Disabled()).to.be.equal(false);
     });
 
     it("Should be en/disablable for all by trusted owner", async () => {
@@ -74,15 +67,15 @@ describe("Permit2", () => {
       const { trustedForwarder } = await getNamedAccounts();
       const permit2HubOwner = await getImpersonatedSigner(trustedForwarder);
       // check state before
-      expect(await permit2Hub.permit2Enabled()).to.be.equal(PERMIT_ENABLED);
+      expect(await permit2Hub.permit2Disabled()).to.be.equal(false);
       // change state to disable
       await permit2Hub.connect(permit2HubOwner).togglePermit2();
       // check state change
-      expect(await permit2Hub.permit2Enabled()).to.be.equal(PERMIT_DISABLED);
+      expect(await permit2Hub.permit2Disabled()).to.be.equal(true);
       // change state back to enable
       await permit2Hub.connect(permit2HubOwner).togglePermit2();
       // check state change
-      expect(await permit2Hub.permit2Enabled()).to.be.equal(PERMIT_ENABLED);
+      expect(await permit2Hub.permit2Disabled()).to.be.equal(false);
     });
   })
 
