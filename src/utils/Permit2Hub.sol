@@ -12,7 +12,7 @@ contract Permit2Hub is Ownable {
   uint8 public permit2Enabled = PERMIT_ENABLED;
   address public immutable permit2;
 
-   mapping(address => bool) public permit2Disabled; // disable permit2 (e.g. for long term storage)
+  mapping(address => bool) public permit2Disabled; // disable permit2 (e.g. for long term storage)
 
   event ChangedPermit2(uint8 newSetting);
 

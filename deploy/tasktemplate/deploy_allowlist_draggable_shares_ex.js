@@ -12,12 +12,21 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const shares = await deployments.get(symbol+"AllowlistShares");
   const recoveryHub = await deployments.get("RecoveryHub");
   const offerFactory = await deployments.get("OfferFactory");
+  const permit2Hub = await deployments.get("Permit2Hub");
   nconf.set("address:recoveryHub", recoveryHub.address);
   nconf.set("address:offerFactory", offerFactory.address);
   
   const terms = nconf.get("terms");
   const quorumBps = nconf.get("quorumBps");
+  const quorumMigration = nconf.get("quorumMigration");
   const votePeriodSeconds = nconf.get("votePeriodSeconds");
+
+  const params = {
+    wrappedToken: shares.address,
+    quorumDrag: quorumBps,
+    quorumMigration: quorumMigration,
+    votePeriod: votePeriodSeconds
+  }
 
   if (network.name != "hardhat" && !nconf.get("silent")) {
     console.log("-----------------------")
@@ -27,6 +36,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("shares: %s", shares.address);
     console.log("recoveryHub: %s", recoveryHub.address);
     console.log("offer factory: %s", offerFactory.address);
+    console.log("permit2hub: %s", permit2Hub.address);
     console.log("owner: %s", owner); // don't forget to set it in deploy_config.js as the multsigadr
     
     const prompt = await new Confirm("Addresses correct?").run();
@@ -43,13 +53,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     from: deployer,
     args: [
       terms,
-      shares.address,
-      quorumBps,
-      votePeriodSeconds,
+      params,
       recoveryHub.address,
       offerFactory.address,
       owner,
-      owner],
+      permit2Hub.address
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas,

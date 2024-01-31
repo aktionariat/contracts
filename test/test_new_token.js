@@ -71,12 +71,19 @@ describe("New Standard", () => {
     allowlistShares = await ethers.getContract("AllowlistShares");
     //allowlistDraggable = await ethers.getContract("AllowlistDraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
+    permit2Hub = await ethers.getContract("Permit2Hub");
 
     // coverage has a problem with deplyoing this contract via hardhat-deploy
     let recoveryHubAddress = await recoveryHub.getAddress();
     let offerFactoryAddress = await offerFactory.getAddress();
     let allowlistSharesAddress = await allowlistShares.getAddress();
-    allowlistDraggable = await ethers.deployContract("AllowlistDraggableShares", [config.allowlist_terms, allowlistSharesAddress, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHubAddress, offerFactoryAddress, oracle.address, owner.address]);
+    const draggableParams = {
+      wrappedToken: allowlistSharesAddress,
+      quorumDrag: config.quorumBps,
+      quorumMigration: config.quorumMigration,
+      votePeriod: config.votePeriodSeconds
+    }
+    allowlistDraggable = await ethers.deployContract("AllowlistDraggableShares", [config.allowlist_terms, draggableParams, recoveryHubAddress, offerFactoryAddress, oracle.address, permit2Hub.getAddress()]);
     await allowlistDraggable.waitForDeployment();
 
     

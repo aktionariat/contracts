@@ -3,7 +3,7 @@
 pragma solidity ^0.8.21;
 
 import "./ERC20Flaggable.sol";
-import "./Permit2Hub.sol";
+import "../utils/Permit2Hub.sol";
 
 abstract contract ERC20Permit2 is ERC20Flaggable {
 

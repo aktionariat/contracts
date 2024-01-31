@@ -76,6 +76,13 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	address public override oracle;
 
+	struct DraggableParams {
+		IERC20 wrappedToken;
+		uint256 quorumDrag;
+		uint256 quorumMigration;
+		uint256 votePeriod;
+	}
+
 	event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
 	event ChangeOracle(address oracle);
 
@@ -83,19 +90,16 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	 * Note that the Brokerbot only supports tokens that revert on failure and where transfer never returns false.
      */
 	constructor(
-		IERC20 _wrappedToken,
-		uint256 _quorum,
-		uint256 _quorumMigration,
-		uint256 _votePeriod,
+		DraggableParams memory _params,
 		IOfferFactory _offerFactory,
 		address _oracle
 	) 
 		ERC20Flaggable(0)
 	{
-		wrapped = _wrappedToken;
-		quorum = _quorum;
-		quorumMigration = _quorumMigration;
-		votePeriod = _votePeriod;
+		wrapped = _params.wrappedToken;
+		quorum = _params.quorumDrag;
+		quorumMigration = _params.quorumMigration;
+		votePeriod = _params.votePeriod;
 		factory = _offerFactory;
 		oracle = _oracle;
 	}
@@ -267,8 +271,8 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 			// if you have the quorum, you can cancel the offer first if necessary
 			revert Draggable_OpenOffer();
 		}
-		if (yesVotes * QUORUM_MULTIPLIER < totalVotes * quorum) {
-			revert Draggable_QuorumNotReached(totalVotes * quorum, yesVotes * QUORUM_MULTIPLIER);
+		if (yesVotes * QUORUM_MULTIPLIER < totalVotes * quorumMigration) {
+			revert Draggable_QuorumNotReached(totalVotes * quorumMigration, yesVotes * QUORUM_MULTIPLIER);
 		}
 		_replaceWrapped(IERC20(successor), successor);
 		emit MigrationSucceeded(successor, yesVotes, additionalVotes, totalVotes);

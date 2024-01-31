@@ -39,15 +39,13 @@ contract DraggableSharesWithPredecessorExternal is DraggableShares {
   constructor(
     IDraggable _predecessor,
     string memory _terms,
-    IERC20 _wrappedToken,
-    uint256 _quorumBps,
-    uint256 _quorumMigration,
-    uint256 _votePeriodSeconds,
+    DraggableParams memory _params,
     IRecoveryHub _recoveryHub,
     IOfferFactory _offerFactory,
-    address _oracle
+    address _oracle,
+    Permit2Hub _permit2Hub
   )
-    DraggableShares(_terms, _wrappedToken, _quorumBps, _quorumMigration, _votePeriodSeconds, _recoveryHub, _offerFactory, _oracle)
+    DraggableShares(_terms, _params, _recoveryHub, _offerFactory, _oracle, _permit2Hub)
   {
     predecessor = _predecessor;
   }

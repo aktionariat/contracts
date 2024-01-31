@@ -61,13 +61,20 @@ describe("Permit", () => {
     paymentHub = await ethers.getContract("PaymentHub");
     brokerbot = await ethers.getContract("Brokerbot");
     baseCurrency = await ethers.getContractAt("ERC20Named", config.baseCurrencyAddress);
+    permit2Hub = await ethers.getContract("Permit2Hub");
 
 
     // coverage has a problem with deplyoing this contract via hardhat-deploy
     let recoveryHubAddress = await recoveryHub.getAddress();
     let offerFactoryAddress = await offerFactory.getAddress();
     let allowlistSharesAddress = await allowlistShares.getAddress();
-    allowlistDraggable = await ethers.deployContract("AllowlistDraggableShares", [config.allowlist_terms, allowlistSharesAddress, config.quorumBps, config.quorumMigration, config.votePeriodSeconds, recoveryHubAddress, offerFactoryAddress, oracle.address, owner.address]);
+    const draggableParams = {
+      wrappedToken: allowlistSharesAddress,
+      quorumDrag: config.quorumBps,
+      quorumMigration: config.quorumMigration,
+      votePeriod: config.votePeriodSeconds
+    }
+    allowlistDraggable = await ethers.deployContract("AllowlistDraggableShares", [config.allowlist_terms, draggableParams, recoveryHubAddress, offerFactoryAddress, oracle.address, permit2Hub.getAddress()]);
     await allowlistDraggable.waitForDeployment();
   })
 
@@ -534,7 +541,7 @@ describe("Permit", () => {
       }
       const { v, r, s } = ethers.Signature.from(await sig2.signTypedData(domain, permitType, permitValue));
       // execute permit with sig1
-      expect(await allowlistDraggable.allowance(permitOwner, spender)).to.be.eq(0)
+      expect(await allowlistDraggable.allowance(permitOwner, spender)).to.be.eq(0n)
       await allowlistDraggable.connect(sig1).permit(
         permitOwner, 
         spender,
@@ -545,6 +552,7 @@ describe("Permit", () => {
         s
         )
       // check allowance of sig2
+      
       expect(await allowlistDraggable.allowance(permitOwner, spender)).to.be.eq(value)
     });
   })

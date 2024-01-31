@@ -30,21 +30,18 @@ pragma solidity ^0.8.0;
 import "../ERC20/ERC20Allowlistable.sol";
 import "./DraggableShares.sol";
 
-contract AllowlistDraggableShares is ERC20Allowlistable, DraggableShares {
+contract AllowlistDraggableShares is DraggableShares, ERC20Allowlistable {
 
   constructor(
     string memory _terms,
-    IERC20 _wrappedToken,
-    uint256 _quorum,
-    uint256 _quorumMigration,
-    uint256 _votePeriod,
+    DraggableParams memory _params,
     IRecoveryHub _recoveryHub,
     IOfferFactory _offerFactory,
     address _oracle,
-    address _owner
+    Permit2Hub _permit2Hub
   )
-    DraggableShares(_terms, _wrappedToken, _quorum, _quorumMigration, _votePeriod, _recoveryHub, _offerFactory, _oracle)
-    Ownable(_owner)
+    DraggableShares(_terms, _params, _recoveryHub, _offerFactory, _oracle, _permit2Hub)
+    Ownable(_oracle)
   {
     // initialization is done in ERC20Allowlistbale and DraggableShares
   }
@@ -55,6 +52,10 @@ contract AllowlistDraggableShares is ERC20Allowlistable, DraggableShares {
   
   function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, DraggableShares) internal {
     super._beforeTokenTransfer(from, to, amount);
+  }
+
+    function allowance(address owner, address spender) public view override(DraggableShares, ERC20Flaggable) returns (uint256) {
+        return super.allowance(owner,spender);
   }
 
 }
