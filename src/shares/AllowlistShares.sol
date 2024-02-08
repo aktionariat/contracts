@@ -39,9 +39,10 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     string memory _terms,
     uint256 _totalShares,
     IRecoveryHub _recoveryHub,
-    address _owner
+    address _owner,
+    Permit2Hub _permit2Hub
   )
-    Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub)
+    Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub, _permit2Hub)
     ERC20Allowlistable()
   {
     // initialization in shares
@@ -57,6 +58,10 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
 
   function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Allowlistable) internal {
     super._beforeTokenTransfer(from, to, amount);
+  }
+
+  function allowance(address owner, address spender) public view override(Shares, ERC20Flaggable) returns (uint256) {
+        return super.allowance(owner,spender);
   }
 
 }

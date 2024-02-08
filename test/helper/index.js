@@ -126,7 +126,8 @@ async function setup(setupBrokerbotEnabled) {
     "BrokerbotRouter",
     "BrokerbotQuoter",
     "DraggableSharesWithPredecessor",
-    "DraggableSharesWithPredecessorExternal"
+    "DraggableSharesWithPredecessorExternal",
+    "Permit2Hub"
   ]);
   
   paymentHub = await ethers.getContract("PaymentHub");
