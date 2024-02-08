@@ -10,7 +10,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const owner = nconf.get("multisigAddress");
 
   const sharesAddress = nconf.get("brokerbot:shares")
-  const paymentHub = await deployments.get("PaymentHub");
+  // const paymentHub = await deployments.get("PaymentHub");
+  const paymentHub = await ethers.getContractAt("PaymentHub", "0x3f3dBa58C3c2CCFfC8aBA6170050A86af4916F60");
   nconf.set("address:paymentHub", paymentHub.address);
   
   const price = nconf.get("sharePrice");
@@ -70,4 +71,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
 
 module.exports.tags = [nconf.get("symbol")+"Brokerbot"];
-module.exports.dependencies = ["PaymentHub"];
+//module.exports.dependencies = ["PaymentHub"];

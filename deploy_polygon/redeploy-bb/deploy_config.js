@@ -1,8 +1,8 @@
 module.exports = {
-  // Parameters used during contract development and testing
-  symbol: "DAKS",
-  sharePrice: "14000000000000000000",
-  increment: "10000000000000",
-  baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08", // mainent xchf
-  multisigAddress: "0x4Fd9DbA1d53B7E6cC933a2Fdd12B1c012a0654F6"
+  // The redeploy-bb folder is for manual deployment - the tasks will use the tasktemplate folder
+  symbol: "PEXS",
+  sharePrice: "10000000000000000",
+  increment: "100000000000000",
+  baseCurrencyAddress: "0x23a72dfa62cd95c08ee116a285ae4f05cbeccd18", // polygon xchf
+  multisigAddress: "0xaa0e9f43b9b434b704b690b72ecfe6a9bb3d7253"
 };
