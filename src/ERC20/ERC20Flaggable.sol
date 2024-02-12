@@ -122,7 +122,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     /**
      * @dev See `IERC20.allowance`.
      */
-    function allowance(address owner, address spender) external view override returns (uint256) {
+    function allowance(address owner, address spender) public view virtual override returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -152,7 +152,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      */
     function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _transfer(sender, recipient, amount);
-        uint256 currentAllowance = _allowances[sender][msg.sender];
+        uint256 currentAllowance = allowance(sender, msg.sender);
         if (currentAllowance < INFINITE_ALLOWANCE){
             // Only decrease the allowance if it was not set to 'infinite'
             // Documented in /doc/infiniteallowance.md

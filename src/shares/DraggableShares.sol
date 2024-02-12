@@ -30,6 +30,7 @@ pragma solidity ^0.8.0;
 import "../recovery/ERC20Recoverable.sol";
 import "../draggable/ERC20Draggable.sol";
 import "../ERC20/ERC20PermitLight.sol";
+import "../ERC20/ERC20Permit2.sol";
 
 /**
  * @title CompanyName AG Shares SHA
@@ -38,7 +39,7 @@ import "../ERC20/ERC20PermitLight.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
+contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, ERC20Permit2 {
 
     string public terms;
 
@@ -47,17 +48,17 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
 
     constructor(
         string memory _terms,
-        IERC20 _wrappedToken,
-        uint256 _quorumBps,
-        uint256 _quorumMigration,
-        uint256 _votePeriodSeconds,
+        DraggableParams memory _params,
         IRecoveryHub _recoveryHub,
         IOfferFactory _offerFactory,
-        address _oracle
+        address _oracle,
+        Permit2Hub _permit2Hub
     )
-        ERC20Draggable(_wrappedToken, _quorumBps, _quorumMigration, _votePeriodSeconds, _offerFactory, _oracle)
+        ERC20Draggable(_params, _offerFactory, _oracle)
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight() 
+        ERC20Permit2(_permit2Hub)
+
     {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
         _recoveryHub.setRecoverable(false);
@@ -105,6 +106,10 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Draggable) internal {
         super._beforeTokenTransfer(from, to, amount);
+    }
+
+    function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
+        return super.allowance(owner, spender);
     }
 
 }

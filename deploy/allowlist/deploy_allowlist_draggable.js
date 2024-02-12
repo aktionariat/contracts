@@ -8,6 +8,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const shares = await deployments.get('AllowlistShares');
   const recoveryHub = await deployments.get("RecoveryHub");
   const offerFactory = await deployments.get("OfferFactory");
+  const permit2Hub = await deployments.get("Permit2Hub");
 
   // owner of allowlistshares and allowlist draggableshares is the same.
   // no need to create another multisig wallet
@@ -18,12 +19,22 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const quorumBps = 10;
   const quorumMigration = 6000;
   const votePeriodSeconds = 36000;
+  const params = {
+    wrappedToken: shares.address,
+    quorumDrag: quorumBps,
+    quorumMigration: quorumMigration,
+    votePeriod: votePeriodSeconds
+  }
 
   if (network.name != "hardhat") {
     console.log("-----------------------")
     console.log("Deploy Allowlist DraggableShares")
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
+    console.log("shares: %s", shares.address);
+    console.log("recoveryHub: %s", recoveryHub.address);
+    console.log("offer factory: %s", offerFactory.address);
+    console.log("permit2hub: %s", permit2Hub.address);
     console.log("owner: %s", owner)  // don't forget to set it in hardhat.config.js as the multsig account
     
     const prompt = await new Confirm("Addresses correct?").run();
@@ -40,14 +51,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     from: deployer,
     args: [
       terms,
-      shares.address,
-      quorumBps,
-      quorumMigration,
-      votePeriodSeconds,
+      params,
       recoveryHub.address,
       offerFactory.address,
       owner,
-      owner],
+      permit2Hub.address
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas,
