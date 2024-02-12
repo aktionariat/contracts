@@ -6,6 +6,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deployer, owner } = await getNamedAccounts();
 
   const recoveryHub = await deployments.get("RecoveryHub");
+  const permit2Hub = await deployments.get("Permit2Hub");
   
   const symbol = "ASHR";
   const name = "Test Allowlist Shares";
@@ -17,6 +18,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Deploy Allowlist Shares")
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
+    console.log("recoveryHub: %s", recoveryHub.address);
+    console.log("permit2hub: %s", permit2Hub.address);
     console.log("owner: %s", owner)  // don't forget to set it in hardhat.config.js as the multsig account
     
     const prompt = await new Confirm("Addresses correct?").run();
@@ -37,7 +40,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       totalShares,
       recoveryHub.address,
-      owner],
+      owner,
+      permit2Hub.address
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -45,4 +50,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["AllowlistShares"];
-module.exports.dependencies = ["RecoveryHub"];
+module.exports.dependencies = ["RecoveryHub", "Permit2Hub"];

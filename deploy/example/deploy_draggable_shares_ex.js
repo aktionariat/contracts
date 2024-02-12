@@ -11,10 +11,19 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const shares = await deployments.get('Shares'+config.symbol);
   const recoveryHub = await deployments.get("RecoveryHub");
   const offerFactory = await deployments.get("OfferFactory");
+  const permit2Hub = await deployments.get("Permit2Hub");
   
   const terms = config.terms;
   const quorumBps = config.quorumBps;
+  const quorumMigration = config.quorumMigration;
   const votePeriodSeconds = config.votePeriodSeconds;
+
+  const params = {
+    wrappedToken: shares.address,
+    quorumDrag: quorumBps,
+    quorumMigration: quorumMigration,
+    votePeriod: votePeriodSeconds
+  }
   
   if (network.name != "hardhat") {
     console.log("-----------------------");
@@ -24,6 +33,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("shares: %s", shares.address);
     console.log("recoveryHub: %s", recoveryHub.address);
     console.log("offer factory: %s", offerFactory.address);
+    console.log("permit2hub: %s", permit2Hub.address);
     console.log("owner: %s", owner); // don't forget to set it in deploy_config.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
@@ -34,19 +44,18 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   }
 
   const feeData = await ethers.provider.getFeeData();
-  
+
   const { address } = await deploy("DraggableShares"+config.symbol, {
     contract: "DraggableShares",
     from: deployer,
     args: [
       terms,
-      shares.address,
-      quorumBps,
-      quorumBps,
-      votePeriodSeconds,
+      params,
       recoveryHub.address,
       offerFactory.address,
-      owner],
+      owner,
+      permit2Hub.address
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas

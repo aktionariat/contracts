@@ -482,7 +482,6 @@ function displayDeployBrokerbotConfig(deployConfig) {
 function setBaseCurrency() {
     const networkName = nconf.get("network");
     // set basecurrecny - right now only XCHF supported
-    // TODO: switches for test nets
     console.log(`networkname: ${networkName}`);
     switch (networkName) {
         case "mainnet":

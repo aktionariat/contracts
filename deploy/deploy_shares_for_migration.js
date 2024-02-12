@@ -7,6 +7,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const recoveryHub = await deployments.get("RecoveryHub");
   //const recoveryHub = "0xc6AfD3b605957b9BA94143F59d451c657F507516";
+  const permit2Hub = await deployments.get("Permit2Hub");
 
 
   const symbol = "MS";
@@ -21,6 +22,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("deployer: %s", deployer);
     console.log("recoveryHub: %s", recoveryHub);
     console.log("owner: %s", deployer); // don't forget to set it in the hardhat config
+    console.log("permit2Hub: %s", permit2Hub.address); 
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -40,7 +42,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       totalShares,
       deployer,
-      recoveryHub.address],
+      recoveryHub.address,
+      permit2Hub.address
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas

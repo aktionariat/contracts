@@ -76,6 +76,13 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	address public override oracle;
 
+	struct DraggableParams {
+		IERC20 wrappedToken;
+		uint256 quorumDrag;
+		uint256 quorumMigration;
+		uint256 votePeriod;
+	}
+
 	event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
 	event ChangeOracle(address oracle);
 
@@ -83,19 +90,16 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	 * Note that the Brokerbot only supports tokens that revert on failure and where transfer never returns false.
      */
 	constructor(
-		IERC20 _wrappedToken,
-		uint256 _quorum,
-		uint256 _quorumMigration,
-		uint256 _votePeriod,
+		DraggableParams memory _params,
 		IOfferFactory _offerFactory,
 		address _oracle
 	) 
 		ERC20Flaggable(0)
 	{
-		wrapped = _wrappedToken;
-		quorum = _quorum;
-		quorumMigration = _quorumMigration;
-		votePeriod = _votePeriod;
+		wrapped = _params.wrappedToken;
+		quorum = _params.quorumDrag;
+		quorumMigration = _params.quorumMigration;
+		votePeriod = _params.votePeriod;
 		factory = _offerFactory;
 		oracle = _oracle;
 	}
@@ -212,7 +216,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		IOffer newOffer = factory.create{value: msg.value}(
 			salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
 
-		if (offerExists()) {
+		if (_offerExists()) {
 			offer.makeCompetingOffer(newOffer);
 		}
 		offer = newOffer;
@@ -250,25 +254,25 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		if (totalSupply() + additionalVotes > totalVotingTokens()) {
 			revert Draggable_TooManyVotes(totalVotingTokens(), totalSupply() + additionalVotes);
 		}
-		migrate(successor, additionalVotes);
+		_migrate(successor, additionalVotes);
 	}
 
 	function migrate() external override {
-		migrate(msg.sender, 0);
+		_migrate(msg.sender, 0);
 	}
 
-	function migrate(address successor, uint256 additionalVotes) internal {
+	function _migrate(address successor, uint256 additionalVotes) internal {
 		uint256 yesVotes = additionalVotes + balanceOf(successor);
 		uint256 totalVotes = totalVotingTokens();
 		if (yesVotes > totalVotes) {
 			revert Draggable_TooManyVotes(totalVotes, yesVotes);
 		}
-		if (offerExists()) {
+		if (_offerExists()) {
 			// if you have the quorum, you can cancel the offer first if necessary
 			revert Draggable_OpenOffer();
 		}
-		if (yesVotes * QUORUM_MULTIPLIER < totalVotes * quorum) {
-			revert Draggable_QuorumNotReached(totalVotes * quorum, yesVotes * QUORUM_MULTIPLIER);
+		if (yesVotes * QUORUM_MULTIPLIER < totalVotes * quorumMigration) {
+			revert Draggable_QuorumNotReached(totalVotes * quorumMigration, yesVotes * QUORUM_MULTIPLIER);
 		}
 		_replaceWrapped(IERC20(successor), successor);
 		emit MigrationSucceeded(successor, yesVotes, additionalVotes, totalVotes);
@@ -282,7 +286,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		return IShares(address(wrapped)).totalShares();
 	}
 
-	function hasVoted(address voter) internal view returns (bool) {
+	function _hasVoted(address voter) internal view returns (bool) {
 		return hasFlagInternal(voter, FLAG_VOTE_HINT);
 	}
 
@@ -291,8 +295,8 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	}
 
 	function _beforeTokenTransfer(address from, address to,	uint256 amount) internal virtual override {
-		if (hasVoted(from) || hasVoted(to)) {
-			if (offerExists()) {
+		if (_hasVoted(from) || _hasVoted(to)) {
+			if (_offerExists()) {
 				offer.notifyMoved(from, to, amount);
 			} else {
 				setFlag(from, FLAG_VOTE_HINT, false);
@@ -302,7 +306,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		super._beforeTokenTransfer(from, to, amount);
 	}
 
-	function offerExists() internal view returns (bool) {
-		return address(offer) != address(0);
+	function _offerExists() internal view returns (bool) {
+		return address(offer) != address(0) && ! offer.isKilled();		// needs to have contract deployed AND offer needs to be not in deleted state
 	}
 }
