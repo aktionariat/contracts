@@ -216,7 +216,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		IOffer newOffer = factory.create{value: msg.value}(
 			salt, msg.sender, pricePerShare, currency, quorum, votePeriod);
 
-		if (offerExists()) {
+		if (_offerExists()) {
 			offer.makeCompetingOffer(newOffer);
 		}
 		offer = newOffer;
@@ -254,20 +254,20 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		if (totalSupply() + additionalVotes > totalVotingTokens()) {
 			revert Draggable_TooManyVotes(totalVotingTokens(), totalSupply() + additionalVotes);
 		}
-		migrate(successor, additionalVotes);
+		_migrate(successor, additionalVotes);
 	}
 
 	function migrate() external override {
-		migrate(msg.sender, 0);
+		_migrate(msg.sender, 0);
 	}
 
-	function migrate(address successor, uint256 additionalVotes) internal {
+	function _migrate(address successor, uint256 additionalVotes) internal {
 		uint256 yesVotes = additionalVotes + balanceOf(successor);
 		uint256 totalVotes = totalVotingTokens();
 		if (yesVotes > totalVotes) {
 			revert Draggable_TooManyVotes(totalVotes, yesVotes);
 		}
-		if (offerExists()) {
+		if (_offerExists()) {
 			// if you have the quorum, you can cancel the offer first if necessary
 			revert Draggable_OpenOffer();
 		}
@@ -286,7 +286,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		return IShares(address(wrapped)).totalShares();
 	}
 
-	function hasVoted(address voter) internal view returns (bool) {
+	function _hasVoted(address voter) internal view returns (bool) {
 		return hasFlagInternal(voter, FLAG_VOTE_HINT);
 	}
 
@@ -295,8 +295,8 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	}
 
 	function _beforeTokenTransfer(address from, address to,	uint256 amount) internal virtual override {
-		if (hasVoted(from) || hasVoted(to)) {
-			if (offerExists()) {
+		if (_hasVoted(from) || _hasVoted(to)) {
+			if (_offerExists()) {
 				offer.notifyMoved(from, to, amount);
 			} else {
 				setFlag(from, FLAG_VOTE_HINT, false);
@@ -306,7 +306,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		super._beforeTokenTransfer(from, to, amount);
 	}
 
-	function offerExists() internal view returns (bool) {
-		return address(offer) != address(0);
+	function _offerExists() internal view returns (bool) {
+		return address(offer) != address(0) && ! offer.isKilled();		// needs to have contract deployed AND offer needs to be not in deleted state
 	}
 }

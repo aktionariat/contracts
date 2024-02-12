@@ -29,6 +29,12 @@ interface IOffer {
 	error Offer_TooManyVotes(uint256 maxVotes, uint256 reportedVotes);
 	/// Competing offer needs to be in the same currency.
 	error Offer_OfferInWrongCurrency();
+	/// Offer got already killed.
+	error Offer_IsKilled();
+
+	/*//////////////////////////////////////////////////////////////
+                            Function Interfaces
+	//////////////////////////////////////////////////////////////*/
 
 	function makeCompetingOffer(IOffer newOffer) external;
 
@@ -44,4 +50,6 @@ interface IOffer {
 	function voteYes() external;
 
 	function voteNo() external;
+
+	function isKilled() external view returns (bool);
 }
