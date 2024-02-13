@@ -1,7 +1,8 @@
 const {network, ethers, getNamedAccounts} = require("hardhat");
 const Chance = require("chance");
-const { setBalance, setBalanceWithAmount, randomBigInt } = require("./helper/index");
+const { setBalance, setBalanceWithAmount, randomBigInt, setup } = require("./helper/index");
 const { expect } = require("chai");
+
 
 // Shared  Config
 const config = require("../scripts/deploy_config_polygon.js");
@@ -24,6 +25,8 @@ describe("Test offer", () => {
   let oracle;
 
   let chance;
+  const licenseFeeAddress = "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D";
+  const fee = ethers.parseEther("5000.0")
 
   before(async () => {
     // get signers and accounts of them
@@ -34,31 +37,22 @@ describe("Test offer", () => {
     chance = new Chance();
 
     // deploy contracts
-    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+    await setup(false);
 
-    await deployments.fixture([
-      "OfferFactory",
-      "Shares",
-      "DraggableShares",
-    ]);
+    // get references
+    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
 
     offerFactory = await ethers.getContract("OfferFactory");
     shares = await ethers.getContract("Shares");
     draggable = await ethers.getContract("DraggableShares");
 
-    
-    // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
-
-    //Mint shares to accounts
+    //Give enough matic
+    const balanceToMint = ethers.toBeHex(ethers.parseEther("1000000.0"));
     for( let i = 0; i < accounts.length; i++) {
-      await shares.connect(owner).mint(accounts[i], 1000000);
-    }
-
-     // Convert some Shares to DraggableShares
-    for (let i = 0; i < accounts.length; i++) {
-      await shares.connect(signers[i]).approve(await draggable.getAddress(), config.infiniteAllowance);
-      await draggable.connect(signers[i]).wrap(accounts[i], 900000);
+      await network.provider.send("hardhat_setBalance", [
+        accounts[i],
+        balanceToMint,
+      ]);
     }
 
   });
@@ -67,14 +61,20 @@ describe("Test offer", () => {
     let pricePerShare;
     let salt;
     let offer;
+    const feePaid = ethers.parseEther("6000.0");
     const overrides = {
-      value: ethers.parseEther("5.0")
+      value: feePaid
     }
     beforeEach(async () => {
       pricePerShare = ethers.parseUnits("2", await baseCurrency.decimals());
       salt = ethers.encodeBytes32String(Date.now().toString());
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, await baseCurrency.getAddress(), overrides)
       offer = await ethers.getContractAt("Offer", await draggable.offer());
+    });
+
+    it("Should pay fee", async () => {
+      const balance = await ethers.provider.getBalance(licenseFeeAddress);
+      expect(balance).to.be.equal(fee);
     });
 
     it("Should predict offer address", async () => {
@@ -162,12 +162,15 @@ describe("Test offer", () => {
         .withArgs(sig2.address);
     });
 
-    it("Should able to contest offer after expiry", async () => {
+    it("Should able to contest offer after expiry and check if buyer gets overpaid fee back", async () => {
       const thirtydays = 30n*24n*60n*60n;
       const expiry = await draggable.votePeriod().then(period => period + thirtydays);
       await ethers.provider.send("evm_increaseTime", [Number(expiry)]);
       await ethers.provider.send("evm_mine");
-      await offer.contest();
+      const buyerBalanceBefore = await ethers.provider.getBalance(sig1.address);
+      await expect(offer.contest()).to.emit(offer, "OfferEnded").withArgs(sig1.address, false, "expired");
+      const buyerBalanceAfter = await ethers.provider.getBalance(sig1.address);
+      expect(buyerBalanceAfter - buyerBalanceBefore).to.be.equal(feePaid - fee);
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
@@ -176,7 +179,8 @@ describe("Test offer", () => {
       await offer.connect(owner).voteNo();
       await offer.connect(sig2).voteNo();
       await offer.connect(sig3).voteNo();
-      await offer.contest();
+      await offer.connect(sig4).voteNo();
+      await expect(offer.contest()).to.emit(offer, "OfferEnded").withArgs(sig1.address, false, "declined");
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
     });
@@ -184,7 +188,7 @@ describe("Test offer", () => {
     it("Should able to contest offer if not well funded", async () => {
       //await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseUnits("1"));
       await setBalanceWithAmount(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address], ethers.parseUnits("10", await baseCurrency.decimals()));;
-      await offer.contest();
+      await expect(offer.contest()).to.emit(offer, "OfferEnded").withArgs(sig1.address, false, "lack of funds");
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
       await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address]);
