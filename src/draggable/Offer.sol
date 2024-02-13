@@ -89,7 +89,7 @@ contract Offer is IOffer {
         emit OfferCreated(_buyer, _token, _price, _currency);
         // License Fee to Aktionariat AG, also ensures that offer is serious.
         // Any circumvention of this license fee payment is a violation of the copyright terms.
-        payable(LICENSE_FEE_ADDRESS).transfer(3 ether);
+        payable(LICENSE_FEE_ADDRESS).transfer(5000 ether);
     }
 
     modifier onlyBuyer {
