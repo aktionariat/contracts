@@ -205,7 +205,7 @@ module.exports = {
       11155111: process.env.MULTISIG_DEPLOY, // sepolia
       69: process.env.MULTISIG_DEPLOY, // optimism kovan
       42161: process.env.MULTISIG_DEPLOY, // arb1
-      8001: process.env.MULTISIG_DEPLOY  // mumbai
+      80001: process.env.MULTISIG_DEPLOY  // mumbai
     },
     dev: {
       // Default to 1
@@ -230,6 +230,8 @@ module.exports = {
       default: process.env.TRUSTED_FORWARDER,
       1: process.env.TRUSTED_FORWARDER, // mainnet
       10: process.env.TRUSTED_FORWARDER, // op mainnet
+      137: process.env.TRUSTED_FORWARDER, // polygon
+      80001: 1,
     }
   },
   gasReporter: {

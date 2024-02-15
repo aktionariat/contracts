@@ -8,8 +8,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const owner = nconf.get("multisigAddress");
   
-  const recoveryHub = await deployments.get("RecoveryHub");
-  nconf.set("address:recoveryHub", recoveryHub.address);
+  // const recoveryHub = await deployments.get("RecoveryHub");
+  // nconf.set("address:recoveryHub", await recoveryHub.getAddress());
+  // nconf.set("address:permit2Hub", await permit2Hub.getAddress());
+  const recoveryHub = await ethers.getContractAt("RecoveryHub", nconf.get("address:recoveryHub"));
+  const permit2Hub = await ethers.getContractAt("Permit2Hub", nconf.get("address:permit2Hub"));
 
   const symbol = nconf.get("symbol");
   const name = nconf.get("name");
@@ -21,7 +24,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Deploy Shares "+ symbol)
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("recoveryHub: %s", recoveryHub.address);
+    console.log("recoveryHub: %s", await recoveryHub.getAddress());
+    console.log("permit2hub: %s", await permit2Hub.getAddress());
     console.log("owner: %s", owner); // don't forget to set it in deploy_config.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
@@ -42,7 +46,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       totalShares,
       owner,
-      recoveryHub.address],
+      await recoveryHub.getAddress(),
+      await permit2Hub.getAddress()
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas

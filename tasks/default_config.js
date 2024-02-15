@@ -6,6 +6,37 @@ const config = {
     sepolia: "0x2181c6817Cc2429bbf5C50D532D18c7008E6863A", // sepolia usdc
     polygon: "0x23a72dfa62cd95c08ee116a285ae4f05cbeccd18", // ploygon xchf
   },
+  brokerbotRegistry: {
+    mainnet: "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98",
+    optimism: "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093",
+    polygon: "0xec0739be570c77c9b544802e4c06a95be719ee5f", // for test companies
+    //polygon: "0xec0739be570c77c9b544802e4c06a95be719ee5f", // for live
+    mumbai: "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE"
+  },
+  recoveryHub: {
+    mainnet: "",
+    optimism: "",
+    polygon: "",
+    mumbai: "0x1776C349696CccAE06541542C5ED954CDf9859cC"
+  },
+  offerFactory: {
+    mainnet: "",
+    optimism: "",
+    polygon: "",
+    mumbai: "0x4A9519256A707873a32d0e436182AeE2967694C4"
+  },
+  paymentHub: {
+    mainnet: "",
+    optimism: "",
+    polygon: "",
+    mumbai: "0x6a972E875f4bB56b1e82027aEa3E58076d32119c"
+  },
+  permit2Hub: {
+    mainnet: "",
+    optimism: "",
+    polygon: "",
+    mumbai: "0xd6e98A2BDe37B7bCA4D265429D91af5c3CA3E74a"
+  },
   deployLogDir: "./deploy_log"
 };
 

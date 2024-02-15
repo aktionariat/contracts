@@ -1,5 +1,5 @@
 module.exports = {
-  // Parameters used during contract development and testing
+  // Parameters used during contract development(non-tasktemplate) and testing
   chainId: 137,
   symbol: "SHR",
   name: "Test Shares",
@@ -51,5 +51,4 @@ module.exports = {
   KEEP_ETHER: 4n,
   //permit2
   permit2Address: "0x000000000022d473030f116ddee9f6b43ac78ba3", // Mainnet, Goerli, Arbitrum, Optimism, Polygon
-  permit2HubAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b"
 };
