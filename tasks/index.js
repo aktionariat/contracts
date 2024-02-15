@@ -76,7 +76,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
             owner = multiSigDefaultOwner;
         }
 
-        multiSigCloneFactory = await ethers.getContractAt("MultiSigCloneFactory", factory);
+        multiSigCloneFactory = await ethers.getContractAt("src/multisig/MultiSigCloneFactory.sol:MultiSigCloneFactory", factory);
 
         if (network.name != "hardhat" && !nconf.get("silent")) {
             console.log("-----------------------")
@@ -134,7 +134,8 @@ task("init-deploy", "creates files for client deployment")
     }
 
     nconf.set("network", network.name);
-    setBaseCurrency();
+    setBaseCurrency(); // set basecurrency dependent on chain
+    setBaseContracts(); // set base contracts addresses dependent on chain
     writeConfig(deployConfig);
 
     // deploy multisig
@@ -237,26 +238,37 @@ task("deploy-brokerbot", "Deploy a new brokerbot")
                 increment = await askIncrement();
             }
             deployConfig = {companyName, owner, tokenAddress, price, increment};
+            // create deploy log
+            if(!files.directoryExists(config.deployLogDir)) {
+                files.createDirectory(config.deployLogDir)
+            }
+            fs.writeFileSync(`${config.deployLogDir}/${deployConfig.companyName}-NewBrokerbot.json`, "{}");
+            nconf.add("deploy", {type: "file", file: `${config.deployLogDir}/${deployConfig.companyName}-NewBrokerbot.json`});
+            nconf.set("network", network.name);
+            setBaseCurrency();
+            setBaseContracts();
+            deployConfig.baseAddress = nconf.get("baseCurrencyAddress");
             displayDeployBrokerbotConfig(deployConfig);
             reviewCorrect = await askConfirmWithMsg("Are the values correct?");
         } while (!reviewCorrect)
-        console.log(deployConfig);
 
-        // create deploy log
-        if(!files.directoryExists(config.deployLogDir)) {
-            files.createDirectory(config.deployLogDir)
-        }
-        fs.writeFileSync(`${config.deployLogDir}/${deployConfig.companyName}-NewBrokerbot.json`, "{}");
-        nconf.add("deploy", {type: "file", file: `${config.deployLogDir}/${deployConfig.companyName}-NewBrokerbot.json`});
-        nconf.set("network", network.name);
-        setBaseCurrency();
         // write nconf
         writeBrokerbotConfig(deployConfig);
-        console.log(nconf.get("multisigAddress"));
         // deploy brokerbot
         await hre.run("deploy", {
             tags: deployConfig.companyName+"Brokerbot",
         });
+        // register at the backend
+        const doRegister = await askConfirmWithMsg("Do you want to register the contracts in the back-end?");
+        if (network.name != "hardhat" && doRegister) {
+            await hre.run("register", {
+                choices: "Brokerbot",
+                name: nconf.get("companyName"),
+                brokerbotAddress: nconf.get("address:brokerbot"),
+            });
+        }
+        // write deploy log
+        nconf.save();
     });
 
 task("companyId", "Gives back the company id")
@@ -496,11 +508,48 @@ function setBaseCurrency() {
         case "sepolia":
             nconf.set("baseCurrencyAddress", config.xchf.sepolia);
             break;
+        case "polygon":
+            nconf.set("baseCurrencyAddress", config.xchf.polygon);
+            break;
         default:
             nconf.set("baseCurrencyAddress", config.xchf.mainnet);
             break;
     }
     //nconf.set("baseCurrencyAddress", networkName == "mainnet" ? config.xchf.mainnet : config.xchf.optimism);
+}
+// sets all base contracts: recoveryhub, paymenthub, permit2hub, offerfactory, brokerbotregistry
+function setBaseContracts() {
+    const networkName = nconf.get("network");
+    switch (networkName) {
+        case "optimsim":
+            nconf.set("address:recoveryHub", config.recoveryHub.optimism);
+            nconf.set("address:offerFactory", config.offerFactory.optimism);
+            nconf.set("address:permit2Hub", config.permit2Hub.optimism);
+            nconf.set("address:paymentHub", config.paymentHub.optimism);
+            nconf.set("address:brokerbotRegistry", config.brokerbotRegistry.optimism);
+            break;
+        case "polygon":
+            nconf.set("address:recoveryHub", config.recoveryHub.polygon);
+            nconf.set("address:offerFactory", config.offerFactory.polygon);
+            nconf.set("address:permit2Hub", config.permit2Hub.polygon);
+            nconf.set("address:paymentHub", config.paymentHub.polygon);
+            nconf.set("address:brokerbotRegistry", config.brokerbotRegistry.polygon);
+            break;
+        case "mumbai":
+            nconf.set("address:recoveryHub", config.recoveryHub.mumbai);
+            nconf.set("address:offerFactory", config.offerFactory.mumbai);
+            nconf.set("address:permit2Hub", config.permit2Hub.mumbai);
+            nconf.set("address:paymentHub", config.paymentHub.mumbai);
+            nconf.set("address:brokerbotRegistry", config.brokerbotRegistry.mumbai);
+            break;
+        default:
+            nconf.set("address:recoveryHub", config.recoveryHub.mainnet);
+            nconf.set("address:offerFactory", config.offerFactory.mainnet);
+            nconf.set("address:permit2Hub", config.permit2Hub.mainnet);
+            nconf.set("address:paymentHub", config.paymentHub.mainnet);
+            nconf.set("address:brokerbotRegistry", config.brokerbotRegistry.mainnet);
+            break;
+    }
 }
 
 async function switchToBranch(networkName) {

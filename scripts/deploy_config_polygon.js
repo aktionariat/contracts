@@ -1,5 +1,5 @@
 module.exports = {
-  // Parameters used during contract development and testing
+  // Parameters used during contract development(non-tasktemplate) and testing
   chainId: 137,
   symbol: "SHR",
   name: "Test Shares",
@@ -51,5 +51,12 @@ module.exports = {
   KEEP_ETHER: 4n,
   //permit2
   permit2Address: "0x000000000022d473030f116ddee9f6b43ac78ba3", // Mainnet, Goerli, Arbitrum, Optimism, Polygon
-  permit2HubAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b"
+  // hub and standard addresses  (aktionariat)
+  // brokerbotRegistry: "0xec0739be570c77c9b544802e4c06a95be719ee5f", // polygon test companies
+  // mumbai
+  brokerbotRegistryAddress: "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE", // mumbai
+  offerFactoryAddress: "0x4A9519256A707873a32d0e436182AeE2967694C4", // mumbai
+  recoveryHubAddress: "0x1776C349696CccAE06541542C5ED954CDf9859cC", // mumbai
+  permit2HubAddress: "0xd6e98A2BDe37B7bCA4D265429D91af5c3CA3E74a", // mumbai
+  paymentHubAddress: "0x6a972E875f4bB56b1e82027aEa3E58076d32119c" // mumbai
 };
