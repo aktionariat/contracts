@@ -9,7 +9,7 @@ const config = {
   brokerbotRegistry: {
     mainnet: "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98",
     optimism: "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093",
-    polygon: "0xec0739be570c77c9b544802e4c06a95be719ee5f", // for test companies
+    polygon: "0x6548FAD069F2eDa512a658c17606Eed81095c93D", // for test companies
     //polygon: "0xec0739be570c77c9b544802e4c06a95be719ee5f", // for live
     mumbai: "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE"
   },

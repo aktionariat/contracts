@@ -1,0 +1,38 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0x23a72dfa62cd95c08ee116a285ae4f05cbeccd18",
+  "address": {
+    "recoveryHub": "0x0235FB5902b84885bA79BDbce417C49E3720eb2d",
+    "offerFactory": "0x425cE8A2d6A2fAF2506ce32437666d3156136a43",
+    "permit2Hub": "0xF08c085748711078C32338e3356c0E533a4a22aC",
+    "paymentHub": "0x562Db37cc371765DfB7A66A9277f1786ECf1499f",
+    "brokerbotRegistry": "0xec0739be570c77c9b544802e4c06a95be719ee5f",
+    "share": "0x7b6811a82B03eE0308885854D5Fb3B139B4f02c1",
+    "draggable": "0x5062aCFBBe502315833701827cf6F84f8CfD6916",
+    "brokerbot": "0x6BE8A23062caA14d620E8FD31D947A152FfD8B1a"
+  },
+  "companyName": "Polygon Example Company",
+  "multisigSigner": "0x0faf038eed96c11e9de9ff2e74b387c6b917b651",
+  "symbol": "PNEX",
+  "name": "Polygon NEW Example Shares",
+  "terms": "invest.nothing.com",
+  "totalShares": "1000000000000000",
+  "sharePrice": "1000000000000000",
+  "increment": "100000000000",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0xaa0e9f43b9B434B704b690B72ecFe6A9Bb3d7253",
+  "brokerbot": {
+    "shares": "0x5062aCFBBe502315833701827cf6F84f8CfD6916"
+  },
+  "blocknumber": 53597287,
+  "version": {
+    "shares": "4",
+    "draggable": "4",
+    "brokerbot": "8",
+    "paymentHub": "8"
+  }
+}
