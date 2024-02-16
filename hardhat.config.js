@@ -186,7 +186,7 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
-      //137: 1, // polygon 
+      137: 1, // polygon 
       3: 1,
       4: 1,
       5: 1,

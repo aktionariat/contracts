@@ -8,7 +8,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deployer, trustedForwarder } = await getNamedAccounts();
 
   const permit2Address = config.permit2Address;
-  const owner =  trustedForwarder
+  const owner =  trustedForwarder;
+  // const owner =  deployer;
+  
   
   if (network.name != "hardhat"&& !nconf.get("silent")) {
     console.log("-----------------------")
@@ -32,7 +34,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     from: deployer,
     args: [
       permit2Address,
-      trustedForwarder
+      owner
     ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
