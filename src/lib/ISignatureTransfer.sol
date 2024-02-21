@@ -84,6 +84,7 @@ interface ISignatureTransfer is IEIP712 {
         bytes calldata signature
     ) external;
 
+
     /// @notice Invalidates the bits specified in mask for the bitmap at the word position
     /// @dev The wordPos is maxed at type(uint248).max
     /// @param wordPos A number to index the nonceBitmap at

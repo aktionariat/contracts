@@ -11,6 +11,7 @@ import {PermitHash} from "./PermitHash.sol";
 import {EIP712} from "./EIP712.sol";
 
 contract SignatureTransfer is ISignatureTransfer, EIP712 {
+
     using SignatureVerification for bytes;
     using SafeTransferLib for ERC20;
     using PermitHash for PermitTransferFrom;
@@ -28,7 +29,6 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
 
     error OverFilled();
 
-    /// @inheritdoc ISignatureTransfer
     function permitTransferFrom(
         PermitTransferFrom memory permit,
         SignatureTransferDetails calldata transferDetails,
@@ -46,10 +46,8 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         bytes32 witness,
         string calldata witnessTypeString,
         bytes calldata signature
-    ) external {
-        _permitTransferFrom(
-            permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature
-        );
+    ) external returns (uint256){
+        permitTransferFrom(permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature);
     }
 
     /// @notice Transfers a token using a signed permit message.
@@ -64,13 +62,12 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         address owner,
         bytes32 dataHash,
         bytes calldata signature
-    ) private {
+    ) private returns (uint256){
         uint256 requestedAmount = transferDetails.requestedAmount;
 
         if (block.timestamp > permit.deadline) revert SignatureExpired(permit.deadline);
-        if (requestedAmount > permit.permitted.amount) revert InvalidAmount(permit.permitted.amount);
 
-        _useUnorderedNonce(owner, permit.nonce);
+        _useUnorderedNonce(owner, permit.nonce, requestedAmount, permit.permitted.amount);
 
         signature.verify(_hashTypedData(dataHash), owner);
 
@@ -103,12 +100,14 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         uint256 bit = 1 << bitPos;
         uint256 state = nonceBitmap[from][wordPos];
         if (state & bit == 1) revert InvalidNonce();
-        if (amount < max){
-            uint256 total = partialFills[from][nonce] += amount;
-            if (total > max) revert OverFilled();
-            if (total < max) return;
-            delete partialFills[from][nonce]; // get some gas back 
+
+        uint256 alreadyFilled = partialFills[from][nonce];
+        if (alreadyFilled + amount > max) revert Overfilled();
+        if (alreadyFilled + amount < max){
+            partialFills[from][nonce] = alreadyFilled + amount;
+        } else {
+            if (alreadyFilled > 0) delete partialFills[from][nonce]; // get some gas back 
+            nonceBitmap[from][wordPos] |= bit; // flag done
         }
-        nonceBitmap[from][wordPos] ^= bit;
     }
 }
