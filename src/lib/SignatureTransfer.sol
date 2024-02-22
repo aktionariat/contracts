@@ -44,10 +44,14 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         _permitTransferFrom(permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature);
     }
 
+    function findFreeNonce(address owner, uint256 start) public view returns (uint256){
+        // TODO
+    }
+
     function isFreeNonce(address owner, uint256 nonce) public view returns (bool){
         (uint256 wordPos, uint256 bitPos) = bitmapPositions(nonce);
         uint256 bit = 1 << bitPos;
-        return nonceBitmap[owner][wordPos] & bit == 0; 
+        return nonceBitmap[owner][wordPos] & bit == 0 && partialFills[owner][nonce] == 0;
     }
 
     function getPermittedAmount(address owner, PermitTransferFrom calldata permit) public view returns (uint256) {

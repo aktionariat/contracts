@@ -14,22 +14,12 @@ contract TradeReactor {
 
     using IntentHash for Intent;
 
-    struct Permit {
-        address owner;
-        //address spender; must be the reactor
-        //uint256 value; must be uint256 max value
-        // uint80 deadline; must be uint256 max value
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-    }
-
     error OfferTooLow();
     error InvalidFiller();
     error TokenMismatch();
 
     // copied from brokerbot for compatibility
-    event Trade(address indexed token, address seller, address buyer, uint amount, address currency, uint price, uint fee);
+    event Trade(address seller, address buyer, address indexed token, uint amount, address currency, uint price, uint fee);
 
     event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint256 amountIn, uint48 exp, uint48 nonce, bytes data, bytes signature);
 
@@ -45,26 +35,6 @@ contract TradeReactor {
      */
     function signalIntent(Intent calldata intent, bytes calldata signature) public {
         emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
-    }
-
-    function process(address feeRecipient, Permit calldata sellerPermit, Intent calldata sellerIntent, bytes calldata sellerSig, Permit calldata buyerPermit, Intent calldata buyerIntent, bytes calldata buyerSig) public {
-        installAllowance(buyerIntent.tokenOut, buyerPermit);
-        installAllowance(sellerIntent.tokenOut, sellerPermit);
-        process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig);
-    }
-
-    function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Permit calldata buyerPermit, Intent calldata buyerIntent, bytes calldata buyerSig) public {
-        installAllowance(buyerIntent.tokenOut, buyerPermit);
-        process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig);
-    }
-    
-    function process(address feeRecipient, Permit calldata sellerPermit, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) public {
-        installAllowance(sellerIntent.tokenOut, sellerPermit);
-        process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig);
-    }
-
-    function installAllowance(address token, Permit calldata permit) internal {
-        IERC20Permit(token).permit(permit.owner, address(this), type(uint256).max, type(uint256).max, permit.v, permit.r, permit.s);
     }
 
     /**
@@ -117,12 +87,7 @@ contract TradeReactor {
         transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), sellerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
         IERC20(sellerIntent.tokenIn).transfer(sellerIntent.owner, ask);
         IERC20(sellerIntent.tokenIn).transfer(feeRecipient, bid - ask); // collect spread as fee
-        emit Trade(sellerIntent.tokenOut, sellerIntent.owner, buyerIntent.owner, amount, sellerIntent.tokenIn, ask, bid - ask);
-    }
-
-    function allowAndBuyFromBrokerbot(Permit calldata permit, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) public returns (uint256) {
-        installAllowance(intent.tokenOut, permit);
-        return buyFromBrokerbot(bot, intent, signature, amount);
+        emit Trade(sellerIntent.owner, buyerIntent.owner, sellerIntent.tokenOut, amount, sellerIntent.tokenIn, ask, bid - ask);
     }
 
     function buyFromBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) public returns (uint256) {
@@ -135,11 +100,6 @@ contract TradeReactor {
         uint256 received = hub.payAndNotify(bot, investAmount, intent.data);
         if (investAmount > getBid(intent, received)) revert OfferTooLow();
         return received;
-    }
-
-    function allowAndSellToBrokerbot(Permit calldata permit, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares) public returns (uint256) {
-        installAllowance(intent.tokenOut, permit);
-        return sellToBrokerbot(bot, intent, signature, soldShares);
     }
 
     function sellToBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares)public returns (uint256) {
