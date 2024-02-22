@@ -1,21 +1,18 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import {SignatureTransfer} from "../lib/SignatureTransfer.sol";
 import {ISignatureTransfer} from "../lib/ISignatureTransfer.sol";
 import {IERC20Permit} from "../ERC20/IERC20Permit.sol";
-import {IntentHash} from "../lib/IntentHash.sol";
+import {IERC20} from "../ERC20/IERC20.sol";
+import {Intent, IntentHash} from "../lib/IntentHash.sol";
+import {PaymentHub} from "./PaymentHub.sol";
+import {IBrokerbot} from "./IBrokerbot.sol";
 
 contract TradeReactor {
 
-    struct Intent  {
-        address owner;
-        address tokenOut; // The ERC20 token sent out
-        uint160 amountOut; // The maximum amount
-        address tokenIn; // The ERC20 token received
-        uint256 amountIn; // The amount received in exchange for the maximum of the sent token
-        uint48 expiration; // timestamp at which the intent expires
-        uint48 nonce; // a unique value indexed per owner,token,and spender for each signature
-    }
+    using IntentHash for Intent;
 
     struct Permit {
         address owner;
@@ -28,11 +25,13 @@ contract TradeReactor {
     }
 
     error OfferTooLow();
+    error InvalidFiller();
+    error TokenMismatch();
 
     // copied from brokerbot for compatibility
-    event Trade(IERC20Permit indexed token, address who, bytes ref, int amount, IERC20 base, uint totPrice, uint fee, uint newprice);
+    event Trade(address indexed token, address seller, address buyer, uint amount, address currency, uint price, uint fee);
 
-    event SellIntentSignal(address token, uint160 amount, uint48 exp, uint48 nonce, address currency, uint256 proceeds, bytes signature);
+    event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint256 amountIn, uint48 exp, uint48 nonce, bytes data, bytes signature);
 
     SignatureTransfer immutable public transfer;
 
@@ -40,45 +39,123 @@ contract TradeReactor {
         transfer = _transfer;
     }
 
-    function signalIntent(SellIntent intent, bytes signature) view public {
-        emit SellIntentSignal(intent.token, intent.amount, intent.expiration, intent.nonce, intent.currency, intent.proceeds, signature);
+    /**
+     * A function to publicly signal an intent to buy or sell a token so it can be picked up by the filler for processing.
+     * Alternaticely, the owner can directly communicate with the filler, without recording the intent on chain.
+     */
+    function signalIntent(Intent calldata intent, bytes calldata signature) public {
+        emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
     }
 
-    function process(Permit buyerPermit, Intent buyerIntent, bytes buyerSig, Permit sellerPermit, Intent sellerIntent, bytes sellerSig) public {
+    function process(address feeRecipient, Permit calldata sellerPermit, Intent calldata sellerIntent, bytes calldata sellerSig, Permit calldata buyerPermit, Intent calldata buyerIntent, bytes calldata buyerSig) public {
         installAllowance(buyerIntent.tokenOut, buyerPermit);
         installAllowance(sellerIntent.tokenOut, sellerPermit);
-        process(buyerIntent, sellerIntent);
+        process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig);
     }
 
-    function process(Permit buyerPermit, Intent buyerIntent, bytes buyerSig, Intent sellerIntent, bytes sellerSig) public {
+    function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Permit calldata buyerPermit, Intent calldata buyerIntent, bytes calldata buyerSig) public {
         installAllowance(buyerIntent.tokenOut, buyerPermit);
-        process(buyerIntent, sellerIntent);
+        process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig);
     }
     
-    function process(Intent calldata buyerIntent, bytes buyerSig, Permit calldata sellerPermit, Intent calldata sellerIntent, bytes sellerSig) public {
+    function process(address feeRecipient, Permit calldata sellerPermit, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) public {
         installAllowance(sellerIntent.tokenOut, sellerPermit);
-        process(buyerIntent, sellerIntent);
+        process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig);
     }
 
-    function installAllowance(address token, Permit permit) internal {
-        IERC20Permit(token).permit(permit.owner, address(this), type(uint256).maxValue, type(uint256).maxValue, permit.v, permit.r, permit.s);
+    function installAllowance(address token, Permit calldata permit) internal {
+        IERC20Permit(token).permit(permit.owner, address(this), type(uint256).max, type(uint256).max, permit.v, permit.r, permit.s);
     }
 
-    function process(Intent sellerIntent, bytes sellerSig, Intent buyerIntent, bytes buyerSig, uint256 validAmount) public {
+    /**
+     * Ideally called with an intent where tokenIn is a currency with many (e.g. 18) decimals.
+     * TokenOut can have very few decimals.
+     */
+    function getAsk(Intent calldata intent, uint256 amount) public pure returns (uint256) {
+        // We should make sure that the rounding is always for the benefit of the intent owner to prevent exploits
+        // Example: when the seller offers to sell 7 ABC for 10 CHF, the accurate price would be 4.2857....
+        // The naive approach to calculate the same price using integers would be 3 * 10 / 7 = 3
+        // But with the given approach, we get 10 - (7 - 3) * 10 / 7 = 5, which is higher than tha accurate price.
+        return intent.amountIn - intent.amountIn * (intent.amountOut - amount) / intent.amountOut;
+    }
+
+    /**
+     * Ideally called with an intent where tokenOut is a currency with many (e.g. 18) decimals.
+     * TokenIn can have very few decimals.
+     */
+    function getBid(Intent calldata intent, uint256 amount) public pure returns (uint256) {
+        // We should make sure that the rounding is always for the benefit of the intent owner to prevent exploits
+        // Example: when the buyer offers to buy 7 ABC for 10 CHF, but only 3 can be filled, the accurate price would be 4.2857....
+        // With this calculation, we get a rounded down bid of 10 * 3 / 7 = 4
+        return intent.amountOut * amount / intent.amountIn;
+    }
+
+    function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent) public view returns (uint256) {
+        uint256 sellerAvailable = transfer.getPermittedAmount(sellerIntent.owner, toPermit(sellerIntent));
+        uint256 buyerAvailable = transfer.getPermittedAmount(buyerIntent.owner, toPermit(buyerIntent));
+        uint256 biddingFor = buyerIntent.amountIn * buyerAvailable / buyerIntent.amountOut;
+        uint256 maxAmount = biddingFor > sellerAvailable ? sellerAvailable : biddingFor;
+        uint256 ask = getAsk(sellerIntent, maxAmount);
+        uint256 bid = getBid(buyerIntent, maxAmount);
+        if (bid < ask) revert OfferTooLow();
+        return maxAmount;
+    }
+
+    function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) public {
+        process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent));
+    }
+
+    function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) public {
         // signatures will be verified in SignatureTransfer
         if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
-        uint256 amountSold = transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(buyerIntent), sellerIntent.hash(), IntentHash.INTENT_TYPE_HASH, sellerSig);
-        uint256 price = amountSold * sellerIntent.amountIn / sellerIntent.amountOut;
-        if (buyerIntent.proceeds < price) revert OfferTooLow();
-        
+        if (sellerIntent.filler != address(0x0) && sellerIntent.filler != msg.sender) revert InvalidFiller();
+        if (buyerIntent.filler != address(0x0) && buyerIntent.filler != msg.sender) revert InvalidFiller();
+        uint256 ask = getAsk(sellerIntent, amount);
+        uint256 bid = getBid(buyerIntent, amount);
+        if (bid < ask) revert OfferTooLow();
+        transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(buyerIntent.owner, amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
+        transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), sellerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
+        IERC20(sellerIntent.tokenIn).transfer(sellerIntent.owner, ask);
+        IERC20(sellerIntent.tokenIn).transfer(feeRecipient, bid - ask); // collect spread as fee
+        emit Trade(sellerIntent.tokenOut, sellerIntent.owner, buyerIntent.owner, amount, sellerIntent.tokenIn, ask, bid - ask);
     }
 
-    function min(uint256 a, uint256 b) internal {
-        return a < b ? a : b;
+    function allowAndBuyFromBrokerbot(Permit calldata permit, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) public returns (uint256) {
+        installAllowance(intent.tokenOut, permit);
+        return buyFromBrokerbot(bot, intent, signature, amount);
     }
 
-    function toDetails(Intent recipient, uint256 amount) internal {
-        return ISignatureTransfer.SignatureTransferDetails(recipient.owner, amount);
+    function buyFromBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) public returns (uint256) {
+        return buyFromBrokerbot(PaymentHub(payable(bot.paymenthub())), bot, intent, signature, amount);
+    }
+
+    function buyFromBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 investAmount) public returns (uint256) {
+        transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), investAmount), intent.owner, signature);
+        IERC20(intent.tokenOut).approve(address(hub), investAmount);
+        uint256 received = hub.payAndNotify(bot, investAmount, intent.data);
+        if (investAmount > getBid(intent, received)) revert OfferTooLow();
+        return received;
+    }
+
+    function allowAndSellToBrokerbot(Permit calldata permit, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares) public returns (uint256) {
+        installAllowance(intent.tokenOut, permit);
+        return sellToBrokerbot(bot, intent, signature, soldShares);
+    }
+
+    function sellToBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares)public returns (uint256) {
+        return sellToBrokerbot(PaymentHub(payable(bot.paymenthub())), bot, intent, signature, soldShares);
+    }
+
+    function sellToBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares) public returns (uint256) {
+        transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, signature);
+        IERC20(intent.tokenOut).approve(address(hub), soldShares);
+        uint256 received = hub.payAndNotify(bot, soldShares, intent.data);
+        if (received < getAsk(intent, received)) revert OfferTooLow();
+        return received;
+    }
+
+    function toDetails(address recipient, uint256 amount) internal pure returns (ISignatureTransfer.SignatureTransferDetails memory){
+        return ISignatureTransfer.SignatureTransferDetails(recipient, amount);
     }
  
     function toPermit(Intent memory intent) internal pure returns (ISignatureTransfer.PermitTransferFrom memory) {
@@ -87,8 +164,8 @@ contract TradeReactor {
                 token: intent.tokenOut,
                 amount: intent.amountOut
             }),
-            nonce: order.info.nonce,
-            deadline: order.info.deadline
+            nonce: intent.nonce,
+            deadline: intent.expiration
         });
     }
 

@@ -13,7 +13,6 @@ import {EIP712} from "./EIP712.sol";
 contract SignatureTransfer is ISignatureTransfer, EIP712 {
 
     using SignatureVerification for bytes;
-    using SafeTransferLib for ERC20;
     using PermitHash for PermitTransferFrom;
 
     /// @inheritdoc ISignatureTransfer
@@ -29,12 +28,7 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
 
     error OverFilled();
 
-    function permitTransferFrom(
-        PermitTransferFrom memory permit,
-        SignatureTransferDetails calldata transferDetails,
-        address owner,
-        bytes calldata signature
-    ) external {
+    function permitTransferFrom(PermitTransferFrom memory permit, SignatureTransferDetails calldata transferDetails, address owner, bytes calldata signature) external {
         _permitTransferFrom(permit, transferDetails, owner, permit.hash(), signature);
     }
 
@@ -46,8 +40,22 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         bytes32 witness,
         string calldata witnessTypeString,
         bytes calldata signature
-    ) external returns (uint256){
-        permitTransferFrom(permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature);
+    ) external {
+        _permitTransferFrom(permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature);
+    }
+
+    function isFreeNonce(address owner, uint256 nonce) public view returns (bool){
+        (uint256 wordPos, uint256 bitPos) = bitmapPositions(nonce);
+        uint256 bit = 1 << bitPos;
+        return nonceBitmap[owner][wordPos] & bit == 0; 
+    }
+
+    function getPermittedAmount(address owner, PermitTransferFrom calldata permit) public view returns (uint256) {
+        if (isFreeNonce(owner, permit.nonce)){
+            return permit.permitted.amount - partialFills[owner][permit.nonce];
+        } else {
+            return 0;
+        }
     }
 
     /// @notice Transfers a token using a signed permit message.
@@ -56,13 +64,7 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
     /// @param owner The owner of the tokens to transfer
     /// @param transferDetails The spender's requested transfer details for the permitted token
     /// @param signature The signature to verify
-    function permitTransferFrom(
-        PermitTransferFrom memory permit,
-        SignatureTransferDetails calldata transferDetails,
-        address owner,
-        bytes32 dataHash,
-        bytes calldata signature
-    ) private returns (uint256){
+    function _permitTransferFrom(PermitTransferFrom memory permit, SignatureTransferDetails calldata transferDetails, address owner, bytes32 dataHash, bytes calldata signature) private {
         uint256 requestedAmount = transferDetails.requestedAmount;
 
         if (block.timestamp > permit.deadline) revert SignatureExpired(permit.deadline);
@@ -71,7 +73,7 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
 
         signature.verify(_hashTypedData(dataHash), owner);
 
-        ERC20(permit.permitted.token).transferFrom(owner, transferDetails.to, requestedAmount);
+        IERC20(permit.permitted.token).transferFrom(owner, transferDetails.to, requestedAmount);
     }
 
     /// @inheritdoc ISignatureTransfer
@@ -99,10 +101,10 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         (uint256 wordPos, uint256 bitPos) = bitmapPositions(nonce);
         uint256 bit = 1 << bitPos;
         uint256 state = nonceBitmap[from][wordPos];
-        if (state & bit == 1) revert InvalidNonce();
+        if (state & bit != 0) revert InvalidNonce();
 
         uint256 alreadyFilled = partialFills[from][nonce];
-        if (alreadyFilled + amount > max) revert Overfilled();
+        if (alreadyFilled + amount > max) revert OverFilled();
         if (alreadyFilled + amount < max){
             partialFills[from][nonce] = alreadyFilled + amount;
         } else {
