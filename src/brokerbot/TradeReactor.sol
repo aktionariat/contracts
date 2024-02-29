@@ -83,8 +83,11 @@ contract TradeReactor {
         uint256 ask = getAsk(sellerIntent, amount);
         uint256 bid = getBid(buyerIntent, amount);
         if (bid < ask) revert OfferTooLow();
-        transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(buyerIntent.owner, amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
+        // move tokens to reactor in order to implicitly allowlist target address in case reactor is powerlisted
+        transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(address(this), amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
         transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), sellerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
+        // move tokens to target addresses
+        IERC20(sellerIntent.tokenOut).transfer(buyerIntent.owner, amount);
         IERC20(sellerIntent.tokenIn).transfer(sellerIntent.owner, ask);
         IERC20(sellerIntent.tokenIn).transfer(feeRecipient, bid - ask); // collect spread as fee
         emit Trade(sellerIntent.owner, buyerIntent.owner, sellerIntent.tokenOut, amount, sellerIntent.tokenIn, ask, bid - ask);

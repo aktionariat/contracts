@@ -44,8 +44,15 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         _permitTransferFrom(permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature);
     }
 
+    /**
+     * Find a nonce that looks free given the data on the blockchain.
+     * Of course, this method cannot take into account nonces of valid but unused permits.
+     */
     function findFreeNonce(address owner, uint256 start) public view returns (uint256){
-        // TODO
+        while (!isFreeNonce(owner, start)){
+            start++;
+        }
+        return start;
     }
 
     function isFreeNonce(address owner, uint256 nonce) public view returns (bool){
