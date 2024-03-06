@@ -6,6 +6,24 @@ import "../ERC20/IERC20Permit.sol";
 
 interface IBrokerbot {
 
+	/*//////////////////////////////////////////////////////////////
+                            Custom errors
+  //////////////////////////////////////////////////////////////*/
+  error Brokerbot_BuyingDisabled();
+  error Brokerbot_SellingDisabled();
+  /// Sender(msg.sender) has to be incoming token or paymenthub.
+  /// @param sender The msg.sender.
+  error Brokerbot_InvalidSender(address sender);
+  /// target.call() wasn't successful.
+  /// @param target The receiver of the Eth.
+  /// @param amount The withdraw amount.
+  error Brokerbot_WithdrawFailed(address target, uint256 amount);
+  /// Sender(msg.sender) needs to be owner or paymenthub.
+  /// @param sender The msg.sender.
+  error Brokerbot_NotAuthorized(address sender);
+
+  function paymenthub() external view returns (address);
+
   function base() external view returns (IERC20);
 
   function token() external view returns (IERC20Permit);
@@ -14,5 +32,9 @@ interface IBrokerbot {
 
   // @return The amount of shares bought on buying or how much in the base currency is transfered on selling
   function processIncoming(IERC20 token_, address from, uint256 amount, bytes calldata ref) external payable returns (uint256);
+
+  function getBuyPrice(uint256 shares) external view returns (uint256);
+
+  function getSellPrice(uint256 shares) external view returns (uint256);
 
 }

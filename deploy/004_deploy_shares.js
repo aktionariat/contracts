@@ -1,4 +1,5 @@
 const Confirm = require('prompt-confirm');
+const config = require("../scripts/deploy_config.js");
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -6,11 +7,12 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deployer, owner } = await getNamedAccounts();
 
   const recoveryHub = await deployments.get("RecoveryHub");
+  const permit2Hub = await deployments.get("Permit2Hub");
 
   const symbol = "SHR";
   const name = "Test Shares";
-  const terms = "test.ch/terms";
-  const totalShares = 10000000;
+  const terms = config.terms
+  const totalShares = config.totalShares;
   
   if (network.name != "hardhat") {
     console.log("-----------------------")
@@ -19,6 +21,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("deployer: %s", deployer);
     console.log("recoveryHub: %s", recoveryHub.address);
     console.log("owner: %s", owner); // don't forget to set it in the hardhat config
+    console.log("permit2Hub: %s", permit2Hub.address); 
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -38,7 +41,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       totalShares,
       owner,
-      recoveryHub.address],
+      recoveryHub.address,
+      permit2Hub.address
+    ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
@@ -46,4 +51,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = ["Shares"];
-module.exports.dependencies = ["RecoveryHub"];
+module.exports.dependencies = ["RecoveryHub", "Permit2Hub"];

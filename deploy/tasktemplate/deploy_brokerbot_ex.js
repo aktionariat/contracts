@@ -64,8 +64,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   
   //set config
   nconf.set("address:brokerbot", address);
-  nconf.set("address:brokerbotRegistry", brokerbotRegistry.address);
-  nconf.set("version:brokerbot", version);
+  nconf.set("address:brokerbotRegistry", await brokerbotRegistry.getAddress());
+  nconf.set("version:brokerbot", version.toString());
 };
 
 

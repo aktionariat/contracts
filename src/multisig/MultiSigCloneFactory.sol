@@ -5,7 +5,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./MultiSigWallet.sol";
+import "./MultiSigWalletMaster.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract MultiSigCloneFactory {
@@ -22,10 +22,10 @@ contract MultiSigCloneFactory {
     return Clones.predictDeterministicAddress(multiSigImplementation, salt);
   }
 
-  function create(address owner, bytes32 salt) external returns (MultiSigWallet) {
+  function create(address owner, bytes32 salt) external returns (MultiSigWalletMaster) {
     address payable instance = payable(Clones.cloneDeterministic(multiSigImplementation, salt));
-    MultiSigWallet(instance).initialize(owner);
+    MultiSigWalletMaster(instance).initialize(owner);
     emit ContractCreated(instance, "MultiSigWallet");
-    return MultiSigWallet(instance);
+    return MultiSigWalletMaster(instance);
   }
 }

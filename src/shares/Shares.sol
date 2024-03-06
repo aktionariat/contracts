@@ -29,6 +29,7 @@ pragma solidity ^0.8.0;
 
 import "../ERC20/ERC20Named.sol";
 import "../ERC20/ERC20PermitLight.sol";
+import "../ERC20/ERC20Permit2.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "../recovery/ERC20Recoverable.sol";
 import "../shares/IShares.sol";
@@ -47,7 +48,7 @@ import "../shares/IShares.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
+contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2, IShares{
 
     // Version history:
     // 1: everything before 2022-07-19
@@ -71,11 +72,13 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
         string memory _terms,
         uint256 _totalShares,
         address _owner,
-        IRecoveryHub _recoveryHub
+        IRecoveryHub _recoveryHub,
+        Permit2Hub _permit2Hub
     )
         ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight()
+        ERC20Permit2(_permit2Hub)
     {
         totalShares = _totalShares;
         terms = _terms;
@@ -95,7 +98,11 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
      * tokens have become invalid.
      */
     function setTotalShares(uint256 _newTotalShares) external onlyOwner() {
-        require(_newTotalShares >= totalValidSupply(), "below supply");
+        uint256 _totalValidSupply = totalValidSupply();
+        if (_newTotalShares < _totalValidSupply) {
+            revert Shares_InvalidTotalShares(_totalValidSupply, _newTotalShares);
+            
+        }
         totalShares = _newTotalShares;
         emit ChangeTotalShares(_newTotalShares);
     }
@@ -128,7 +135,9 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
      */
     function declareInvalid(address holder, uint256 amount, string calldata message) external onlyOwner() {
         uint256 holderBalance = balanceOf(holder);
-        require(amount <= holderBalance, "amount too high");
+        if (amount > holderBalance) {
+            revert ERC20InsufficientBalance(holder, holderBalance, amount);
+        }
         invalidTokens += amount;
         emit TokensDeclaredInvalid(holder, amount, message);
     }
@@ -147,19 +156,25 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
      */
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
-        require(IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data));
+        if (!IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data)) {
+            revert IERC677Receiver.IERC677_OnTokenTransferFailed();
+        }
     }
 
     function mintManyAndCall(address[] calldata target, address callee, uint256[] calldata amount, bytes calldata data) external {
         uint256 len = target.length;
-        require(len == amount.length);
+        if (len != amount.length) {
+            revert Shares_UnequalLength(len, amount.length);
+        }
         uint256 total = 0;
         for (uint256 i = 0; i<len; i++){
             total += amount[i];
         }
         mint(callee, total);
         for (uint256 i = 0; i<len; i++){
-            require(IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data));
+            if(!IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data)){
+                revert IERC677Receiver.IERC677_OnTokenTransferFailed();
+            }
         }
     }
 
@@ -169,18 +184,23 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
 
     function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
         uint256 len = target.length;
-        require(len == amount.length);
+        if (len != amount.length) {
+            revert Shares_UnequalLength(len, amount.length);
+        }
         for (uint256 i = 0; i<len; i++){
             _mint(target[i], amount[i]);
         }
     }
 
     function _mint(address account, uint256 amount) internal virtual override {
-        require(totalValidSupply() + amount <= totalShares, "total");
+        uint256 newValidSupply = totalValidSupply() + amount;
+        if (newValidSupply > totalShares) {
+            revert Shares_InsufficientTotalShares(totalShares, newValidSupply);
+        }
         super._mint(account, amount);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(ERC20Recoverable, ERC20Flaggable, IERC20) public returns (bool) {
         return super.transfer(to, value);
     }
 
@@ -197,6 +217,10 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, IShares{
     function burn(uint256 _amount) override external {
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
+    }
+
+    function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
+        return super.allowance(owner, spender);
     }
 
 }

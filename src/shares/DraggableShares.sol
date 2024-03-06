@@ -30,6 +30,7 @@ pragma solidity ^0.8.0;
 import "../recovery/ERC20Recoverable.sol";
 import "../draggable/ERC20Draggable.sol";
 import "../ERC20/ERC20PermitLight.sol";
+import "../ERC20/ERC20Permit2.sol";
 
 /**
  * @title CompanyName AG Shares SHA
@@ -38,31 +39,32 @@ import "../ERC20/ERC20PermitLight.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
+contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, ERC20Permit2 {
 
     string public terms;
 
-    event ChangeTerms(string terms); 
+    /// Event when the terms are changed with setTerms().
+    event ChangeTerms(string terms);
 
     constructor(
         string memory _terms,
-        IERC20 _wrappedToken,
-        uint256 _quorumBps,
-        uint256 _quorumMigration,
-        uint256 _votePeriodSeconds,
+        DraggableParams memory _params,
         IRecoveryHub _recoveryHub,
         IOfferFactory _offerFactory,
-        address _oracle
+        address _oracle,
+        Permit2Hub _permit2Hub
     )
-        ERC20Draggable(_wrappedToken, _quorumBps, _quorumMigration, _votePeriodSeconds, _offerFactory, _oracle)
+        ERC20Draggable(_params, _offerFactory, _oracle)
         ERC20Recoverable(_recoveryHub)
         ERC20PermitLight() 
+        ERC20Permit2(_permit2Hub)
+
     {
         terms = _terms; // oracle can change the terms
         _recoveryHub.setRecoverable(false);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, ERC20Recoverable) public returns (bool) {
+    function transfer(address to, uint256 value) virtual override(IERC20, ERC20Flaggable, ERC20Recoverable) public returns (bool) {
         return super.transfer(to, value);
     }
 
@@ -93,14 +95,21 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight {
         }
     }
 
-    function setTerms(string calldata _terms) external override {
-        require(msg.sender == oracle, "not oracle");
+    /**
+     * @notice This function allows the oracle to set the terms.
+     * @param _terms The new terms.
+     */
+    function setTerms(string calldata _terms) external override onlyOracle {
         terms = _terms;
         emit ChangeTerms(terms);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Draggable) internal {
         super._beforeTokenTransfer(from, to, amount);
+    }
+
+    function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
+        return super.allowance(owner, spender);
     }
 
 }
