@@ -8,6 +8,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const shares = await deployments.get('DraggableShares');
   const paymentHub = await deployments.get('PaymentHub');
+  //const paymentHubAddress = "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C"
+  const paymentHubAddress = paymentHub.address;
   
   const price = config.sharePrice;
   const increment = 0;
@@ -20,7 +22,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("-----------------------");
     console.log("deployer: %s", deployer);
     console.log("shares: %s", shares.address);
-    console.log("paymentHub: %s", paymentHub.address);
+    console.log("paymentHub: %s", paymentHubAddress);
     console.log("base xchf: %s", baseCurrencyContract);
     console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
 
@@ -42,7 +44,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
       increment,
       baseCurrencyContract,
       owner,
-      paymentHub.address],
+      paymentHubAddress],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
