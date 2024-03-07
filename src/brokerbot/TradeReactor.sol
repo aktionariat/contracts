@@ -9,6 +9,7 @@ import {IERC20} from "../ERC20/IERC20.sol";
 import {Intent, IntentHash} from "../lib/IntentHash.sol";
 import {PaymentHub} from "./PaymentHub.sol";
 import {IBrokerbot} from "./IBrokerbot.sol";
+import {console} from "hardhat/console.sol";
 
 contract TradeReactor {
 
@@ -21,7 +22,8 @@ contract TradeReactor {
     // copied from brokerbot for compatibility
     event Trade(address seller, address buyer, address indexed token, uint amount, address currency, uint price, uint fee);
 
-    event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint256 amountIn, uint48 exp, uint48 nonce, bytes data, bytes signature);
+    // event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint48 exp, uint48 nonce, bytes signature);
+    event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint48 exp, uint48 nonce, bytes data, bytes signature);
 
     SignatureTransfer immutable public transfer;
 
@@ -34,6 +36,7 @@ contract TradeReactor {
      * Alternaticely, the owner can directly communicate with the filler, without recording the intent on chain.
      */
     function signalIntent(Intent calldata intent, bytes calldata signature) public {
+        // emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, signature);
         emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
     }
 
@@ -85,7 +88,7 @@ contract TradeReactor {
         if (bid < ask) revert OfferTooLow();
         // move tokens to reactor in order to implicitly allowlist target address in case reactor is powerlisted
         transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(address(this), amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
-        transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), sellerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
+        transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), buyerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
         // move tokens to target addresses
         IERC20(sellerIntent.tokenOut).transfer(buyerIntent.owner, amount);
         IERC20(sellerIntent.tokenIn).transfer(sellerIntent.owner, ask);
@@ -100,6 +103,7 @@ contract TradeReactor {
     function buyFromBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 investAmount) public returns (uint256) {
         transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), investAmount), intent.owner, signature);
         IERC20(intent.tokenOut).approve(address(hub), investAmount);
+        // uint256 received = hub.payAndNotify(bot, investAmount, "");
         uint256 received = hub.payAndNotify(bot, investAmount, intent.data);
         if (investAmount > getBid(intent, received)) revert OfferTooLow();
         return received;
@@ -112,19 +116,20 @@ contract TradeReactor {
     function sellToBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares) public returns (uint256) {
         transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, signature);
         IERC20(intent.tokenOut).approve(address(hub), soldShares);
+        // uint256 received = hub.payAndNotify(bot, soldShares, "");
         uint256 received = hub.payAndNotify(bot, soldShares, intent.data);
         if (received < getAsk(intent, received)) revert OfferTooLow();
         return received;
     }
 
     function toDetails(address recipient, uint256 amount) internal pure returns (ISignatureTransfer.SignatureTransferDetails memory){
-        return ISignatureTransfer.SignatureTransferDetails(recipient, amount);
+        return ISignatureTransfer.SignatureTransferDetails({to: recipient, requestedAmount: amount});
     }
  
     function toPermit(Intent memory intent) internal pure returns (ISignatureTransfer.PermitTransferFrom memory) {
         return ISignatureTransfer.PermitTransferFrom({
             permitted: ISignatureTransfer.TokenPermissions({
-                token: intent.tokenOut,
+                token: address(intent.tokenOut),
                 amount: intent.amountOut
             }),
             nonce: intent.nonce,

@@ -27,7 +27,7 @@ library IntentHash {
 			"address tokenOut,",
 			"uint160 amountOut,",
 			"address tokenIn,",
-            "uint160 amountIn,",
+			"uint160 amountIn,",
 			"uint48 expiration,",
 			"uint48 nonce",
 			"bytes data)"
@@ -49,12 +49,12 @@ library IntentHash {
 					intent.owner,
 					intent.filler,
 					intent.tokenOut,
-                    intent.amountOut,
-                    intent.tokenIn,
-                    intent.amountIn,
-                    intent.expiration,
-                    intent.nonce,
-					intent.data
+					intent.amountOut,
+					intent.tokenIn,
+					intent.amountIn,
+					intent.expiration,
+					intent.nonce,
+					keccak256(intent.data)
 				)
 			);
 	}
