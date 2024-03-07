@@ -69,7 +69,7 @@ class TradeIntent {
     this.amountIn = _amountIn;
     this.expiration = Math.floor(Date.now() /  1000) +  60 *  60;
     this.nonce = _nonce;
-    // this.data = _data;
+    this.data = _data;
   }
   
   async signIntent(signatureTransfer, sender, signer) {
@@ -85,7 +85,7 @@ class TradeIntent {
            { name: 'amountIn', type: 'uint160' },
            { name: 'expiration', type: 'uint48' },
            { name: 'nonce', type: 'uint48' },
-          //  { name: 'data', type: 'bytes' },
+           { name: 'data', type: 'bytes' },
          ],
       },
       witness: {
@@ -97,7 +97,7 @@ class TradeIntent {
          amountIn: this.amountIn,
          expiration: this.expiration,
          nonce: this.nonce,
-        //  data: this.data
+         data: this.data
       },
      };
     const permit = new SignatureTransferIntent(this.tokenOut, sender, this.amountOut).withNonce(this.nonce);
@@ -107,8 +107,6 @@ class TradeIntent {
       await ethers.provider.getNetwork().then((net) => net.chainId), 
       witness);
       // console.log(intent);
-    // const domain = signatureTransferDomain(signatureTransfer); 
-    // const intentTypes = permitTransferFromWithWitnessType();
     const signature  = await signer.signTypedData(intent.domain, intent.types, intent.values);
     const hash = SignatureTransfer.hash(permit, await signatureTransfer.getAddress(), await ethers.provider.getNetwork().then((net) => net.chainId), witness);
     return {intent, signature, hash};
