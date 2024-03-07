@@ -1,22 +1,16 @@
 const Confirm = require('prompt-confirm');
 const config = require("../scripts/deploy_config.js");
-const nconf = require('nconf');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, trustedForwarder } = await getNamedAccounts();
+  const { deployer } = await getNamedAccounts();
 
-  const permit2Address = config.permit2Address;
-  const owner =  trustedForwarder
-  
   if (network.name != "hardhat"&& !nconf.get("silent")) {
     console.log("-----------------------")
-    console.log("Deploy Permit2Hub")
+    console.log("Deploy SignatureTransfer")
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("owner: %s", owner);
-    console.log("permit2: %s", permit2Address);
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -27,17 +21,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("Permit2Hub", {
-    contract: "Permit2Hub",
+  const { address } = await deploy("SignatureTransfer", {
+    contract: "SignatureTransfer",
     from: deployer,
-    args: [
-      permit2Address,
-      trustedForwarder
-    ],
+    args: [],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas
   });
 };
 
-module.exports.tags = ["Permit2Hub"];
+module.exports.tags = ["SignatureTransfer"];

@@ -209,7 +209,41 @@ async function getImpersonatedSigner(impersonateAddress) {
 
 function randomBigInt(min, max) {
   return BigInt(new Chance().natural({ min: min, max: max }));
+}
 
+async function giveApproval(contract, signer, spender, amount) {
+  // direct approval
+  await contract.connect(signer).approve(spender, amount);
+  // via permit
+  /*
+    const shareDomain = {
+      chainId: chainid,
+      verifyingContract: await contract.getAddress(),
+    }
+    const sharesPermitType = {
+      Permit: [
+        { name: 'owner', type: 'address', },
+        { name: 'spender', type: 'address',},
+        { name: 'value', type: 'uint256',},
+        { name: 'nonce', type: 'uint256',},
+        { name: 'deadline', type: 'uint256',},
+      ],
+    }
+    const nonce = await shares.connect(signer).nonces(signer.address);
+    const deadline = ethers.MaxUint256;
+    const value = amount;
+    const spender = await spender.getAddress();
+    const owner = signer.address;
+    const permitValue =  {
+      owner,
+      spender,
+      value,
+      nonce,
+      deadline,
+    };
+    const { v, r, s } = ethers.Signature.from(await signer.signTypedData(shareDomain, sharesPermitType, permitValue)); 
+    await shares.connect(signer).permit(permitOwner, spender, value, deadline, v, r, s);
+    */
 }
 
 
@@ -227,5 +261,6 @@ module.exports = {
   getTX,
   getBlockTimeStamp,
   getImpersonatedSigner,
-  randomBigInt
+  randomBigInt,
+  giveApproval
 };
