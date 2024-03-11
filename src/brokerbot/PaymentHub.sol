@@ -54,20 +54,19 @@ contract PaymentHub {
     // Version 7: added sell against eth and erc20, version, add permitinfo/swapinfo struct
     // Version 8: use SafeERC20 for transfers
     // Version 9: change payFromEther to include a swap path
-    uint8 public constant VERSION = 9;
+    uint256 public constant VERSION = 9;
 
-    address public trustedForwarder;
+    uint256 private constant KEEP_ETHER = 0x4; // copied from brokerbot
 
-    uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
     address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
 
-    uint8 private constant KEEP_ETHER = 0x4; // copied from brokerbot
-    
     IQuoter private immutable uniswapQuoter;
     ISwapRouter private immutable uniswapRouter;
     AggregatorV3Interface internal immutable priceFeedCHFUSD;
     AggregatorV3Interface internal immutable priceFeedETHUSD;
+
+    address public trustedForwarder;
 
     struct PermitInfo {
         uint256 exFee;
