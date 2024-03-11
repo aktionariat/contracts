@@ -57,7 +57,7 @@ module.exports = {
       forking: {
         //enabled: process.env.FORKING === "true",
         url: getForkUrl(),
-        blockNumber: 17663503,
+        blockNumber: 19411207,
       },
       live: false,
       saveDeployments: true,

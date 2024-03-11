@@ -53,7 +53,8 @@ contract PaymentHub {
     // Version 6: added transferEther function
     // Version 7: added sell against eth and erc20, version, add permitinfo/swapinfo struct
     // Version 8: use SafeERC20 for transfers
-    uint8 public constant VERSION = 0x8;
+    // Version 9: change payFromEther to include a swap path
+    uint8 public constant VERSION = 9;
 
     address public trustedForwarder;
 
@@ -160,11 +161,12 @@ contract PaymentHub {
      * This is the method that the Brokerbot widget should use to quote the price to the user.
      * @return The price in wei.
      */
-    function getPriceInEther(uint256 amountInBase, IBrokerbot brokerBot) public returns (uint256) {
+    function getPriceInEther(uint256 amountInBase, IBrokerbot brokerBot, bytes calldata path) public returns (uint256) {
         if ((address(brokerBot) != address(0)) && hasSettingKeepEther(brokerBot)) {
             return getPriceInEtherFromOracle(amountInBase, IBrokerbot(brokerBot).base());
         } else {
-            return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), address(brokerBot.base()), DEFAULT_FEE, amountInBase, 0);
+            // return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), address(brokerBot.base()), DEFAULT_FEE, amountInBase, 0);
+            return getPriceERC20(amountInBase, path, true);
         }
     }
 
@@ -198,15 +200,21 @@ contract PaymentHub {
     /**
      * Convenience method to swap ether into base and pay a target address
      */
-    function payFromEther(address recipient, uint256 amountInBase, IERC20 base) public payable returns (uint256 amountIn) {
-        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(
-            // rely on time stamp is ok, no exact time stamp needed
-            // solhint-disable-next-line not-rely-on-time
-            uniswapQuoter.WETH9(), address(base), DEFAULT_FEE, recipient, block.timestamp, amountInBase, msg.value, 0);
-
+    function payFromEther(address recipient, uint256 amountInBase, bytes memory path) public payable returns (uint256 amountIn) {
         ISwapRouter swapRouter = uniswapRouter;
-        // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
-        amountIn = swapRouter.exactOutputSingle{value: msg.value}(params);
+        // The parameter path is encoded as (tokenOut, fee, tokenIn/tokenOut, fee, tokenIn)
+        ISwapRouter.ExactOutputParams memory params =
+            ISwapRouter.ExactOutputParams({
+                path: path,
+                recipient: recipient,
+                // solhint-disable-next-line not-rely-on-time
+                deadline: block.timestamp,
+                amountOut: amountInBase,
+                amountInMaximum: msg.value
+            });
+
+        // Executes the swap, returning the amountIn actually spent.
+        amountIn = swapRouter.exactOutput{value: msg.value}(params);
 
         // For exact output swaps, the amountInMaximum may not have all been spent.
         // If the actual amount spent (amountIn) is less than the specified maximum amount, we must refund the msg.sender and approve the swapRouter to spend 0.
@@ -294,17 +302,17 @@ contract PaymentHub {
     /**
      * @notice Pay with Ether to buy shares.
      * @param brokerbot The brokerbot to pay and receive the shares from.
-     * @param amountInBase The amount of base currency used to buy shares.
+     * @param amountBase The amount of base currency used to buy shares.
      * @param ref The reference data blob.
      * @return priceInEther The amount of Ether spent.
      * @return sharesOut The amount of shares bought.
      */
-    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountInBase, bytes calldata ref) external payable returns (uint256 priceInEther, uint256 sharesOut) {
+    function payFromEtherAndNotify(IBrokerbot brokerbot, uint256 amountBase, bytes calldata ref, bytes memory path) external payable returns (uint256 priceInEther, uint256 sharesOut) {
         IERC20 base = brokerbot.base();
         // Check if the brokerbot has setting to keep ETH
         if (hasSettingKeepEther(brokerbot)) {
-            priceInEther = getPriceInEtherFromOracle(amountInBase, base);
-            sharesOut = brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountInBase, ref);
+            priceInEther = getPriceInEtherFromOracle(amountBase, base);
+            sharesOut = brokerbot.processIncoming{value: priceInEther}(base, msg.sender, amountBase, ref);
 
             // Pay back ETH that was overpaid
             if (priceInEther < msg.value) {
@@ -315,8 +323,13 @@ contract PaymentHub {
             }
 
         } else {
-            priceInEther = payFromEther(address(brokerbot), amountInBase, base);
-            sharesOut = brokerbot.processIncoming(base, msg.sender, amountInBase, ref);
+            uint256 balanceBefore = IERC20(base).balanceOf(address(brokerbot));
+            priceInEther = payFromEther(address(brokerbot), amountBase, path);
+            uint256 balanceAfter = IERC20(base).balanceOf(address(brokerbot));
+            if (amountBase != (balanceAfter - balanceBefore)) { // check that the swap was successful with correct currency
+                revert PaymentHub_SwapError(amountBase, balanceAfter - balanceBefore);
+            }    
+            sharesOut = brokerbot.processIncoming(base, msg.sender, amountBase, ref);
         }
     }
 
