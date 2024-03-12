@@ -327,7 +327,7 @@ contract PaymentHub {
             if (amountBase != (balanceAfter - balanceBefore)) { // check that the swap was successful with correct currency
                 revert PaymentHub_SwapError(amountBase, balanceAfter - balanceBefore);
             }    
-            sharesOut = brokerbot.processIncoming(base, msg.sender, amountBase, ref);
+            sharesOut = brokerbot.processIncoming(base, msg.sender, amountBase, ref); // not sending msg.value as this is already done in payFromEther function
         }
     }
 

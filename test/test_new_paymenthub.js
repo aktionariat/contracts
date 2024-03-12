@@ -225,6 +225,19 @@ describe("New PaymentHub", () => {
       // expect(ethers.formatEther(priceInETH)).to.equal("0.602949565021144432") // at block 17663503
     });
 
+    it("Should revert if buy with ETH and send not path with XCHF", async () => {
+      // xchf -0.01- dchf -0.05- usdc -0.05- eth
+      const types = ["address","uint24","address","uint24","address"];
+      const values = [config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
+      const pathEthDCHF = ethers.solidityPacked(types,values);
+      const buyer = sig1;
+      const priceInETH = await paymentHub.getPriceInEther.staticCall(xchfamount, await brokerbot.getAddress(), pathEthXCHF);
+      await expect(paymentHub.connect(buyer).payFromEtherAndNotify(await brokerbot.getAddress(), xchfamount, "0x01", pathEthDCHF, {value: priceInETH}))
+        .to.be.revertedWithCustomError(paymentHub, "PaymentHub_SwapError")
+        .withArgs(xchfamount, 0);
+    });
+
+
     it("Should buy shares with ETH and trade it to XCHF", async () => {
       const buyer = sig1;
       const priceInETH = await paymentHub.getPriceInEther.staticCall(xchfamount, await brokerbot.getAddress(), pathEthXCHF);
