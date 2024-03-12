@@ -164,7 +164,6 @@ contract PaymentHub {
         if ((address(brokerBot) != address(0)) && hasSettingKeepEther(brokerBot)) {
             return getPriceInEtherFromOracle(amountInBase, IBrokerbot(brokerBot).base());
         } else {
-            // return uniswapQuoter.quoteExactOutputSingle(uniswapQuoter.WETH9(), address(brokerBot.base()), DEFAULT_FEE, amountInBase, 0);
             return getPriceERC20(amountInBase, path, true);
         }
     }
