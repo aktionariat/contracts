@@ -34,6 +34,7 @@ describe("Brokerbot Router", () => {
   let pathUsdc;
   let pathBaseUsdc;
   let pathDai;
+  let pathBaseWeth
   let pathWeth;
   let pathSingle;
   let blockTimestamp;
@@ -63,23 +64,27 @@ describe("Brokerbot Router", () => {
     brokerbotQuoter = await ethers.getContract("BrokerbotQuoter");
 
     // build paths
-    // shares - base - usdc - dai
-    let types = ["address", "uint24","address","uint24","address","uint24","address"];
-    let values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.daiAddress];
+    // shares - xchf - dchf - usdc - dai
+    let types = ["address", "uint24","address","uint24","address","uint24","address","uint24","address"];
+    let values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.daiAddress];
     pathDai = ethers.solidityPacked(types,values);
-    // shares - base - usdc
-    types = ["address","uint24","address","uint24","address"];
-    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress];
+    // shares - xchf - dchf - usdc
+    types = ["address","uint24","address","uint24","address","uint24","address"];
+    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress];
     pathUsdc = ethers.solidityPacked(types,values);
-    // base - usdc
-    types = ["address","uint24","address"];
-    values = [config.baseCurrencyAddress, 500, config.usdcAddress];
+    // xchf - dchf - usdc
+    types = ["address","uint24","address","uint24","address"];
+    values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress];
     pathBaseUsdc = ethers.solidityPacked(types,values);
-    // shares - base - usdc - weth
-    types = ["address", "uint24","address","uint24","address","uint24","address"];
-    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.wethAddress];
+    // shares - xchf - dchf - usdc - weth
+    types = ["address", "uint24","address","uint24","address","uint24","address","uint24","address"];
+    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
     pathWeth = ethers.solidityPacked(types,values);
-    // shares - base 
+    // xchf - dchf - usdc - weth
+    types = ["address","uint24","address","uint24","address","uint24","address"];
+    values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
+    pathBaseWeth = ethers.solidityPacked(types,values);
+    // shares - xchf 
     types = ["address", "uint24","address"];
     values = [await draggable.getAddress(), 0, config.baseCurrencyAddress];
     pathSingle = ethers.solidityPacked(types,values);
@@ -101,15 +106,15 @@ describe("Brokerbot Router", () => {
 
   describe("Price Quoting", () => {
     beforeEach(async () => {
-      randomShareAmount = randomBigInt(500, 50000);
+      randomShareAmount = randomBigInt(5, 500); // xchf liquidity is limited
       baseBuyPrice = await brokerbot.getBuyPrice(randomShareAmount);
       baseSellPrice = await brokerbot.getSellPrice(randomShareAmount);
     });
 
     describe("Quote for buying", () => {
       it("Should get buy price quote for given share amount and path", async () => {
-        const pricePaymentHub = await paymentHub.getPriceInERC20.staticCall(baseBuyPrice, pathBaseUsdc);
         const priceQuote = await brokerbotQuoter.quoteExactOutput.staticCall(pathUsdc, randomShareAmount);
+        const pricePaymentHub = await paymentHub.getPriceInERC20.staticCall(baseBuyPrice, pathBaseUsdc);
         expect(priceQuote).to.equal(pricePaymentHub);
       });
 
@@ -150,7 +155,7 @@ describe("Brokerbot Router", () => {
 
   describe("Swaps", () => {
     beforeEach(async () => {
-      randomShareAmount = randomBigInt(500, 5000);
+      randomShareAmount = randomBigInt(5, 500);
     });
 
     describe("Buy shares", () => {
@@ -185,32 +190,6 @@ describe("Brokerbot Router", () => {
           expect(buyerBalanceBefore + randomShareAmount).to.equal(buyerBalanceAfter);
         });
 
-        it("Should buy shares with ETH via router", async () => {
-          const priceInETH = await paymentHub.getPriceInEther.staticCall(baseAmount, await brokerbot.getAddress());
-          // send a little bit more for slippage 
-          const priceInETHWithSlippage = priceInETH * 101n / 100n;
-          const buyer = sig1;
-          const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
-          const brokerbotBalanceBefore = await baseCurrency.balanceOf(await brokerbot.getAddress());
-          const params = {
-            tokenIn: await baseCurrency.getAddress(),
-            tokenOut: await draggable.getAddress(),
-            fee: 0,
-            recipient: buyer.address,
-            deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
-            amountOut: randomShareAmount,
-            amountInMaximum: priceInETHWithSlippage,
-            sqrtPriceLimitX96: 0
-          }
-          await brokerbotRouter.connect(buyer).exactOutputSingle(params, {value: priceInETHWithSlippage});
-          const brokerbotBalanceAfter = await baseCurrency.balanceOf(await brokerbot.getAddress());
-          const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
-          expect(await baseCurrency.balanceOf(await brokerbotRouter.getAddress())).to.equal(0);
-          expect(await baseCurrency.balanceOf(await paymentHub.getAddress())).to.equal(0);
-          expect(brokerbotBalanceBefore + baseAmount).to.equal(brokerbotBalanceAfter);
-          expect(buyerBalanceBefore + randomShareAmount).to.equal(buyerBalanceAfter);
-        });
-
         it("Should revert buy shares via router if deadline reached", async () => {
           const buyer = sig1;
           const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
@@ -236,6 +215,7 @@ describe("Brokerbot Router", () => {
       });
 
       describe("Buy shares with path", () => {
+
         it("Should buy shares with DAI and swap path via router", async () => {
           const buyer = sig1;
           // get price in Dai from quoter
@@ -324,7 +304,7 @@ describe("Brokerbot Router", () => {
           const buyer = sig1;
           // get price in weth from quoter
           const amountWeth = await brokerbotQuoter.quoteExactOutput.staticCall(pathWeth, randomShareAmount);
-          const priceInETH = await paymentHub.getPriceInEther.staticCall(baseAmount, await brokerbot.getAddress());
+          const priceInETH = await paymentHub.getPriceInEther.staticCall(baseAmount, await brokerbot.getAddress(), pathBaseWeth);
           const priceInETHWithSlippage = amountWeth * 101n / 100n;
           // log balance
           const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
