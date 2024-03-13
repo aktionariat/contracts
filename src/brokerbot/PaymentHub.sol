@@ -59,7 +59,8 @@ contract PaymentHub {
 
     uint24 private constant DEFAULT_FEE = 3000;
     uint256 private constant DENOMINATOR = 1e8;
-    address private constant CHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
+    address private constant XCHF_TOKEN = 0xB4272071eCAdd69d933AdcD19cA99fe80664fc08;
+    address private constant ZCHF_TOKEN = 0xB58E61C3098d85632Df34EecfB899A1Ed80921cB;
 
     uint8 private constant KEEP_ETHER = 0x4; // copied from brokerbot
     
@@ -172,7 +173,7 @@ contract PaymentHub {
      * Price in ETH with 18 decimals
      */
     function getPriceInEtherFromOracle(uint256 amountInBase, IERC20 base) public view returns (uint256) {
-        if(address(base) == CHF_TOKEN) {
+        if(address(base) == XCHF_TOKEN || address(base) == ZCHF_TOKEN) {
             return getLatestPriceCHFUSD() * amountInBase / getLatestPriceETHUSD();
         } else {
             return amountInBase * DENOMINATOR / getLatestPriceETHUSD();
