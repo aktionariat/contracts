@@ -11,6 +11,11 @@ import {PaymentHub} from "./PaymentHub.sol";
 import {IBrokerbot} from "./IBrokerbot.sol";
 import {console} from "hardhat/console.sol";
 
+/**
+ * @title TradeReactor Contract
+ * @notice This contract handles the signaling and processing of trade intents between buyers and sellers.
+ * @dev This contract uses the SignatureTransfer contract for secure transfers with signatures.
+*/
 contract TradeReactor {
 
     using IntentHash for Intent;
@@ -22,7 +27,17 @@ contract TradeReactor {
     // copied from brokerbot for compatibility
     event Trade(address seller, address buyer, address indexed token, uint amount, address currency, uint price, uint fee);
 
-    // event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint48 exp, uint48 nonce, bytes signature);
+    /// @dev Emitted when an intent to trade is signaled.
+    /// @param owner The address of the intent owner.
+    /// @param filler The address of the filler, if any, that the intent is specifically directed to.
+    /// @param tokenOut The address of the token the owner wants to sell or exchange.
+    /// @param amountOut The amount of the tokenOut the owner wants to sell or exchange.
+    /// @param tokenIn The address of the token the owner wants to receive in exchange.
+    /// @param amountIn The amount of the tokenIn the owner wants to receive.
+    /// @param exp The expiration time of the intent.
+    /// @param nonce A nonce to ensure the uniqueness of the intent.
+    /// @param data Additional data that may be used in the trade execution.
+    /// @param signature The signature of the owner authorizing the intent.
     event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint48 exp, uint48 nonce, bytes data, bytes signature);
 
     SignatureTransfer immutable public transfer;
@@ -32,17 +47,22 @@ contract TradeReactor {
     }
 
     /**
-     * A function to publicly signal an intent to buy or sell a token so it can be picked up by the filler for processing.
+     * @notice A function to publicly signal an intent to buy or sell a token so it can be picked up by the filler for processing.
      * Alternaticely, the owner can directly communicate with the filler, without recording the intent on chain.
-     */
+     * @param intent The trade intent data structure. 
+     * @param signature The signature of the intent owner.
+    */
     function signalIntent(Intent calldata intent, bytes calldata signature) public {
-        // emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, signature);
         emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
     }
 
     /**
-     * Ideally called with an intent where tokenIn is a currency with many (e.g. 18) decimals.
-     * TokenOut can have very few decimals.
+     * @notice Calculates the asking price for a given amount of tokenOut.
+     * @dev Ideally called with an intent where tokenIn is a currency with many (e.g. 18) decimals.
+     * @dev TokenOut can have very few decimals.
+     * @param intent The trade intent data structure.
+     * @param amount The amount of tokenOut.
+     * @return The calculated asking price.
      */
     function getAsk(Intent calldata intent, uint256 amount) public pure returns (uint256) {
         // We should make sure that the rounding is always for the benefit of the intent owner to prevent exploits
@@ -53,8 +73,12 @@ contract TradeReactor {
     }
 
     /**
-     * Ideally called with an intent where tokenOut is a currency with many (e.g. 18) decimals.
-     * TokenIn can have very few decimals.
+     * @notice Calculates the bidding price for a given amount of tokenIn.
+     * @dev Ideally called with an intent where tokenOut is a currency with many (e.g. 18) decimals.
+     * @dev TokenIn can have very few decimals.
+     * @param intent The trade intent data structure.
+     * @param amount The amount of tokenIn.
+     * @return The calculated bidding price.
      */
     function getBid(Intent calldata intent, uint256 amount) public pure returns (uint256) {
         // We should make sure that the rounding is always for the benefit of the intent owner to prevent exploits
@@ -63,6 +87,12 @@ contract TradeReactor {
         return intent.amountOut * amount / intent.amountIn;
     }
 
+    /**
+     * @notice Determines the maximum valid amount that can be traded based on seller and buyer intents.
+     * @param sellerIntent The seller's trade intent.
+     * @param buyerIntent The buyer's trade intent.
+     * @return The maximum valid trade amount.
+     */
     function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent) public view returns (uint256) {
         uint256 sellerAvailable = transfer.getPermittedAmount(sellerIntent.owner, toPermit(sellerIntent));
         uint256 buyerAvailable = transfer.getPermittedAmount(buyerIntent.owner, toPermit(buyerIntent));
@@ -74,10 +104,27 @@ contract TradeReactor {
         return maxAmount;
     }
 
+    /**
+     * @notice Processes a trade between a seller and a buyer with the maximum valid amount.
+     * @param feeRecipient The address that will receive the fee.
+     * @param sellerIntent The seller's trade intent.
+     * @param sellerSig The seller's signature.
+     * @param buyerIntent The buyer's trade intent.
+     * @param buyerSig The buyer's signature.
+     */    
     function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) public {
         process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent));
     }
 
+    /**
+     * @notice Processes a trade between a seller and a buyer for a specified amount.
+     * @param feeRecipient The address that will receive the fee.
+     * @param sellerIntent The seller's trade intent.
+     * @param sellerSig The seller's signature.
+     * @param buyerIntent The buyer's trade intent.
+     * @param buyerSig The buyer's signature.
+     * @param amount The amount of the token to trade.
+     */
     function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) public {
         // signatures will be verified in SignatureTransfer
         if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
@@ -96,10 +143,29 @@ contract TradeReactor {
         emit Trade(sellerIntent.owner, buyerIntent.owner, sellerIntent.tokenOut, amount, sellerIntent.tokenIn, ask, bid - ask);
     }
 
+    /**
+     * @notice Buys tokens from a Brokerbot.
+     * @dev This function allows a user to buy tokens from a Brokerbot by transferring the specified amount of investment token to the Brokerbot and receiving the purchased tokens in return. The function ensures that the offer is not too low by comparing the invested amount to the bid price.
+     * @param bot The Brokerbot from which tokens are being bought.
+     * @param intent The trade intent data structure.
+     * @param signature The signature of the intent owner.
+     * @param amount The amount of tokens to invest in the purchase.
+     * @return The amount of tokens received from the Brokerbot.
+     */
     function buyFromBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) public returns (uint256) {
         return buyFromBrokerbot(PaymentHub(payable(bot.paymenthub())), bot, intent, signature, amount);
     }
 
+    /**
+     * @notice Buys tokens from a Brokerbot using a specific PaymentHub.
+     * @dev This function allows a user to buy tokens from a Brokerbot through a specified PaymentHub. It transfers the specified amount of investment token to the Brokerbot and receives the purchased tokens in return. The function ensures that the offer is not too low by comparing the invested amount to the bid price.
+     * @param hub The PaymentHub through which the transaction is processed.
+     * @param bot The Brokerbot from which tokens are being bought.
+     * @param intent The trade intent data structure.
+     * @param signature The signature of the intent owner.
+     * @param investAmount The amount of tokens to invest in the purchase.
+     * @return The amount of tokens received from the Brokerbot.
+     */
     function buyFromBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 investAmount) public returns (uint256) {
         transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), investAmount), intent.owner, signature);
         IERC20(intent.tokenOut).approve(address(hub), investAmount);
@@ -109,10 +175,29 @@ contract TradeReactor {
         return received;
     }
 
+    /**
+     * @notice Sells tokens to a Brokerbot.
+     * @dev This function allows a user to sell tokens to a Brokerbot by transferring the specified amount of tokens to the Brokerbot and receiving the payment in return. The function ensures that the received amount is not lower than the ask price.
+     * @param bot The Brokerbot to which tokens are being sold.
+     * @param intent The trade intent data structure.
+     * @param signature The signature of the intent owner.
+     * @param soldShares The amount of tokens being sold.
+     * @return The amount of payment received from the Brokerbot.
+     */
     function sellToBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares)public returns (uint256) {
         return sellToBrokerbot(PaymentHub(payable(bot.paymenthub())), bot, intent, signature, soldShares);
     }
 
+    /**
+     * @notice Sells tokens to a Brokerbot using a specific PaymentHub.
+     * @dev This function allows a user to sell tokens to a Brokerbot through a specified PaymentHub. It transfers the specified amount of tokens to the Brokerbot and receives the payment in return. The function ensures that the received amount is not lower than the ask price.
+     * @param hub The PaymentHub through which the transaction is processed.
+     * @param bot The Brokerbot to which tokens are being sold.
+     * @param intent The trade intent data structure.
+     * @param signature The signature of the intent owner.
+     * @param soldShares The amount of tokens being sold.
+     * @return The amount of payment received from the Brokerbot.
+     */
     function sellToBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares) public returns (uint256) {
         transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, signature);
         IERC20(intent.tokenOut).approve(address(hub), soldShares);
