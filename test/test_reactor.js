@@ -221,7 +221,7 @@ describe("Trade Reactor", () => {
         await baseCurrency.getAddress(), // tokenIn
         sellPrice, // amountIn
         1, // nonce
-        "0x01" // data
+        ethers.toUtf8Bytes("") // data
       );
       // buy intent
       const buyAmount = 100;
@@ -233,8 +233,8 @@ describe("Trade Reactor", () => {
         buyPrice, // amountOut
         await shares.getAddress(), // tokenIn
         buyAmount, // amountIn
-        1, // nonce
-        "0x01" // data
+        2, // nonce
+        ethers.toUtf8Bytes("") // data
       );
       // sign intents
       const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);

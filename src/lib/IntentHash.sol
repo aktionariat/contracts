@@ -29,7 +29,7 @@ library IntentHash {
 			"address tokenIn,",
 			"uint160 amountIn,",
 			"uint48 expiration,",
-			"uint48 nonce",
+			"uint48 nonce,",
 			"bytes data)"
 		);
 
