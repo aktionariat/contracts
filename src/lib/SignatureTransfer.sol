@@ -106,8 +106,11 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
     }
 
     /// @notice Checks whether a nonce is taken and sets the bit at the bit position in the bitmap at the word position
+    /// @dev This function is used to manage nonces for transactions, ensuring that each nonce is used only once and tracking partial fills of orders.
     /// @param from The address to use the nonce at
     /// @param nonce The nonce to spend
+    /// @param amount The amount being filled in the current transaction.
+    /// @param max The maximum allowable fill amount for the nonce.
     function _useUnorderedNonce(address from, uint256 nonce, uint256 amount, uint256 max) internal {
         (uint256 wordPos, uint256 bitPos) = bitmapPositions(nonce);
         uint256 bit = 1 << bitPos;
