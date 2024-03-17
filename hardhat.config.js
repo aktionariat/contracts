@@ -190,7 +190,7 @@ module.exports = {
       default: 1,
       //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
-      137: process.env.MULTISIG_DEPLOY, // polygon
+      // 137: process.env.MULTISIG_DEPLOY, // polygon
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli
@@ -251,7 +251,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.21",
+        version: "0.8.25",
         settings: {
           optimizer: {
             enabled: true,
