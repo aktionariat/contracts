@@ -12,6 +12,12 @@ const setStorageAt = async (address, index, value) => {
   await ethers.provider.send("hardhat_mine", []); // Just mines to the next block
 };
 
+const allowanceType = {
+  APPROVE: "APPROVE",
+  PERMIT: "PERMIT",
+  METATX: "METATX"
+}
+
 async function mintERC20(forceSend, erc20Contract, minterAddress, accounts){
   await network.provider.request({
     method: "hardhat_impersonateAccount",
@@ -74,7 +80,7 @@ async function sellingEnabled(brokerbot) {
 
 async function setBalances(accounts, baseCurrency, daiContract, wbtcContract) {
   // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
     // Set (manipulate local) DAI balance for first 5 accounts
     await setBalance(daiContract, config.daiBalanceSlot, accounts);
     // Set (manipulate local) WBTC balance for first 5 accounts
@@ -150,11 +156,11 @@ async function setup(setupBrokerbotEnabled) {
   await brokerbot.connect(owner).approve(await baseCurrency.getAddress(), await paymentHub.getAddress(), config.infiniteAllowance);
 
   // Mint baseCurrency Tokens (xchf) to first 5 accounts
-  await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+  await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
   // Set dai balance to frist 5 accounts
   await setBalance(daiContract, config.daiBalanceSlot, accounts);
   // set baseCurrency Token (xchf) at brokerbot to sell shares
-  await setBalance(baseCurrency, config.xchfBalanceSlot, [await brokerbot.getAddress()]);
+  await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, [await brokerbot.getAddress()]);
 
   //Mint shares to first 5 accounts
   for( let i = 0; i < accounts.length; i++) {
@@ -211,7 +217,74 @@ function randomBigInt(min, max) {
   return BigInt(new Chance().natural({ min: min, max: max }));
 }
 
-async function giveApproval(contract, signer, spender, amount) {
+// if this is done via a smart account (AA), the approval should be called throw the smart account
+async function giveApproval(contract, signer, spender, amount, type) {
+  switch (type) {
+    // via direct approval
+    case allowanceType.APPROVE:
+      await contract.connect(signer).approve(spender, amount);    
+      break;
+    // via permit (only supported by EOA)
+    case allowanceType.PERMIT:
+      const shareDomain = {
+        chainId: chainid,
+        verifyingContract: await contract.getAddress(),
+      }
+      const sharesPermitType = {
+        Permit: [
+          { name: 'owner', type: 'address', },
+          { name: 'spender', type: 'address',},
+          { name: 'value', type: 'uint256',},
+          { name: 'nonce', type: 'uint256',},
+          { name: 'deadline', type: 'uint256',},
+        ],
+      }
+      const nonce = await contract.connect(signer).nonces(signer.address);
+      const deadline = ethers.MaxUint256;
+      const value = amount;
+      const spender = await spender.getAddress();
+      const owner = signer.address;
+      const permitValue =  {
+        owner,
+        spender,
+        value,
+        nonce,
+        deadline,
+      };
+      {
+        const { v, r, s } = ethers.Signature.from(await signer.signTypedData(shareDomain, sharesPermitType, permitValue)); 
+        await contract.connect(signer).permit(permitOwner, spender, value, deadline, v, r, s);
+      }
+      break;
+    // via meta tx (only supported by EOA)
+    case allowanceType.METATX:
+      const metaTxDomain = {
+        name: contract.name(),
+        verifyingContrat: await contract.getAddress(),
+        version: "1",
+        salt: '0x' + chainId.toString(16).padStart(64, '0')
+      };
+      const metaTxType = { 
+        MetaTransaction: [
+          { name: 'nonce', type: 'uint256'}, 
+          { name: 'from', type: 'address' }, 
+          { name: 'functionSignature', type: 'bytes'}
+        ]
+      };
+      const functionSig = await contract.populateTransaction.approve(spender, amount);
+      const metaTxValue = {
+        nonce: await contract.getNonce(signer.address),
+        from: signer.address,
+        functionSignature: functionSig
+      }
+      {
+        const { v, r, s } = ethers.Signature.from(await signer.signTypedData(metaTxDomain, metaTxType, metaTxValue));
+        await contract.executeMetaTransaction(signer.address, r, s, v);
+      }  
+      break;
+    default:
+      break;
+  }
   // direct approval
   await contract.connect(signer).approve(spender, amount);
   // via permit
@@ -242,7 +315,7 @@ async function giveApproval(contract, signer, spender, amount) {
       deadline,
     };
     const { v, r, s } = ethers.Signature.from(await signer.signTypedData(shareDomain, sharesPermitType, permitValue)); 
-    await shares.connect(signer).permit(permitOwner, spender, value, deadline, v, r, s);
+    await shares.connect(backend).permit(permitOwner, spender, value, deadline, v, r, s);
     */
 }
 
@@ -262,5 +335,6 @@ module.exports = {
   getBlockTimeStamp,
   getImpersonatedSigner,
   randomBigInt,
-  giveApproval
+  giveApproval,
+  allowanceType
 };

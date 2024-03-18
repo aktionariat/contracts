@@ -9,7 +9,7 @@ module.exports = {
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
   baseCurrencyName: "CryptoFranc",
   baseCurrencySymbol: "XCHF",
-  xchfBalanceSlot: 2,
+  baseCurrencyBalanceSlot: 2,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",

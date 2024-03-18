@@ -88,7 +88,7 @@ describe("New Standard", () => {
 
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
 
     //Mint shares to accounts
     for( let i = 0; i < accounts.length; i++) {

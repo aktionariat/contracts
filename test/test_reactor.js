@@ -29,20 +29,22 @@ describe("Trade Reactor", () => {
   let seller;
   let buyer;
   let issuer;
-  let issuerSigner;
+  let offramper;
+  let offRampSeller;
   let backend;
 
 
   before(async() => {
     chainid = (await ethers.provider.getNetwork()).chainId;
     // get signers and accounts of them
-    [deployer,owner,sig1,sig2,sig3,sig4,sig5] = await ethers.getSigners();
+    [deployer,owner,sig1,sig2,sig3,sig4,sig5,sig6] = await ethers.getSigners();
     signers = [owner,sig1,sig2,sig3,sig4,sig5];
     accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address,sig5.address];
     seller = sig2;
     buyer = sig3;
     issuer = sig4;
-    issuerSigner = sig5;
+    offramper = sig5;
+    offRampSeller = sig6;
     backend = sig1;
   });
 
@@ -61,10 +63,11 @@ describe("Trade Reactor", () => {
     for( let i = 0; i < accounts.length; i++) {
       await shares.connect(owner).mint(accounts[i], 1000000);
     }
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
 
     // give max approval to signature transfer contract for shares
     await giveApproval(shares, seller, await signatureTransfer.getAddress(), ethers.MaxUint256);
+    await giveApproval(baseCurrency, seller, await signatureTransfer.getAddress(), ethers.MaxUint256);
     await giveApproval(baseCurrency, buyer, await signatureTransfer.getAddress(), ethers.MaxUint256);
   });
 
@@ -244,6 +247,19 @@ describe("Trade Reactor", () => {
       await tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent, signatureBuyer);
       const sellerBaseAfter = await baseCurrency.balanceOf(seller.address);
       expect(sellerBaseAfter - sellerBaseBefore).to.equal(sellPrice);
+      // move token base currency to offramp
+      // 1. sign signature transfer
+      const offrampIntent = new SignatureTransferIntent(await baseCurrency.getAddress(), offramper.address, sellPrice).withNonce(2);
+      const {permitData, signature} = await offrampIntent.signIntent(signatureTransfer, seller);
+      // 2. execute signature tranfer
+      const transferDetails = {
+        to: offRampSeller.address,
+        requestedAmount:  sellPrice,
+      };
+      const offrampSellerBalanceBefore = await baseCurrency.balanceOf(offRampSeller.address);
+      await signatureTransfer.connect(offramper).permitTransferFrom(permitData.values, transferDetails, seller.address, signature);
+      const offrampSellerBalanceAfter = await baseCurrency.balanceOf(offRampSeller.address);
+      expect(offrampSellerBalanceAfter - offrampSellerBalanceBefore).to.be.equal(sellPrice);
     })
   })
 });
