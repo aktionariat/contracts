@@ -8,8 +8,8 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
+const { baseCurrencyAddress } = require("../scripts/deploy_config_mainnet.js");
 const { Signature } = require("ethers");
 
 describe("Sell via PaymentHub", () => {

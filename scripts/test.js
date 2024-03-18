@@ -1,5 +1,5 @@
 const {network, ethers, deployments, } = require("hardhat");
-const config = require("../scripts/deploy_config.js");
+const config = require("./deploy_config_mainnet.js");
 
 
 async function main() {

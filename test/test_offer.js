@@ -4,7 +4,7 @@ const { setBalance, setBalanceWithAmount, randomBigInt } = require("./helper/ind
 const { expect } = require("chai");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Test offer", () => {
   let draggable

@@ -5,7 +5,7 @@ const { getBlockTimeStamp, giveApproval, setBalance } = require("./helper/index"
 const { SignatureTransferIntent, TradeIntent, MockIntent} = require("./helper/intent.js");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Trade Reactor", () => {
   let draggable;

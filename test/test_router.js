@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Brokerbot Router", () => {
   let draggable;

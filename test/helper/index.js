@@ -1,5 +1,5 @@
 const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
-const config = require("../../scripts/deploy_config.js")
+const config = require("../../scripts/deploy_config_mainnet.js")
 const Chance = require("chance");
 const { Transaction } = require("ethers");
 
