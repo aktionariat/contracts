@@ -1,11 +1,12 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { SignatureTransfer, permitTransferFromWithWitnessType } = require("@uniswap/permit2-sdk");
-const { getBlockTimeStamp, giveApproval, setBalance } = require("./helper/index");
+const { getBlockTimeStamp, giveApproval, setBalance, allowanceType, getConfigPath } = require("./helper/index");
 const { SignatureTransferIntent, TradeIntent, MockIntent} = require("./helper/intent.js");
 
 // Shared  Config
-const config = require("../scripts/deploy_config_mainnet.js");
+const config = require(`..${getConfigPath()}`);
+// const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Trade Reactor", () => {
   let draggable;
@@ -16,7 +17,7 @@ describe("Trade Reactor", () => {
   let allowlistDraggable;
   let signatureTransfer;
   let tradeReactor;
-  let baseCurrency;
+  let zchfContract;
 
   let deployer
   let owner;
@@ -56,19 +57,28 @@ describe("Trade Reactor", () => {
     tradeReactor = await ethers.getContract("TradeReactor");
     shares = await ethers.getContract("Shares");
     draggable = await ethers.getContract("DraggableShares");
-    baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+    if (config.chainId == 137) {
+      zchfContract = await ethers.getContractAt("IERC20MetaTx", config.zchfAddress);
+    } else {
+      zchfContract = await ethers.getContractAt("ERC20PermitLight", config.zchfAddress);
+    }
 
     // TODO: look to move the stuff in helper/index.js
     //Mint shares to first 5 accounts
     for( let i = 0; i < accounts.length; i++) {
       await shares.connect(owner).mint(accounts[i], 1000000);
     }
-    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
+    await setBalance(zchfContract, config.zchfBalanceSlot, accounts);
 
     // give max approval to signature transfer contract for shares
-    await giveApproval(shares, seller, await signatureTransfer.getAddress(), ethers.MaxUint256);
-    await giveApproval(baseCurrency, seller, await signatureTransfer.getAddress(), ethers.MaxUint256);
-    await giveApproval(baseCurrency, buyer, await signatureTransfer.getAddress(), ethers.MaxUint256);
+    await giveApproval(chainid, shares, seller, await signatureTransfer.getAddress(), ethers.MaxUint256, allowanceType.PERMIT);
+    if (config.chainId == 137) {
+      await giveApproval(chainid, zchfContract, seller, await signatureTransfer.getAddress(), ethers.MaxUint256, allowanceType.METATX);
+      await giveApproval(chainid, zchfContract, buyer, await signatureTransfer.getAddress(), ethers.MaxUint256, allowanceType.METATX);
+    } else {
+      await giveApproval(chainid, zchfContract, seller, await signatureTransfer.getAddress(), ethers.MaxUint256, allowanceType.PERMIT);
+      await giveApproval(chainid, zchfContract, buyer, await signatureTransfer.getAddress(), ethers.MaxUint256, allowanceType.PERMIT);
+    }
   });
 
   describe("Deployment", () => {
@@ -182,7 +192,7 @@ describe("Trade Reactor", () => {
         issuer.address, // filler
         await shares.getAddress(), // tokenOut
         sellAmount, // amountOut
-        await baseCurrency.getAddress(), // tokenIn
+        await zchfContract.getAddress(), // tokenIn
         sellPrice, // amountIn
         0, // nonce
         "0x01" // data
@@ -221,7 +231,7 @@ describe("Trade Reactor", () => {
         issuer.address, // filler
         await shares.getAddress(), // tokenOut
         sellAmount, // amountOut
-        await baseCurrency.getAddress(), // tokenIn
+        await zchfContract.getAddress(), // tokenIn
         sellPrice, // amountIn
         1, // nonce
         ethers.toUtf8Bytes("") // data
@@ -232,7 +242,7 @@ describe("Trade Reactor", () => {
       const buyIntent = new TradeIntent(
         buyer.address, // owner
         issuer.address, // filler
-        await baseCurrency.getAddress(), // tokenOut
+        await zchfContract.getAddress(), // tokenOut
         buyPrice, // amountOut
         await shares.getAddress(), // tokenIn
         buyAmount, // amountIn
@@ -243,22 +253,22 @@ describe("Trade Reactor", () => {
       const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
       const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
       // process intents by calling process in tradereactor.sol
-      const sellerBaseBefore = await baseCurrency.balanceOf(seller.address);
+      const sellerBaseBefore = await zchfContract.balanceOf(seller.address);
       await tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent, signatureBuyer);
-      const sellerBaseAfter = await baseCurrency.balanceOf(seller.address);
+      const sellerBaseAfter = await zchfContract.balanceOf(seller.address);
       expect(sellerBaseAfter - sellerBaseBefore).to.equal(sellPrice);
       // move token base currency to offramp
       // 1. sign signature transfer
-      const offrampIntent = new SignatureTransferIntent(await baseCurrency.getAddress(), offramper.address, sellPrice).withNonce(2);
+      const offrampIntent = new SignatureTransferIntent(await zchfContract.getAddress(), offramper.address, sellPrice).withNonce(2);
       const {permitData, signature} = await offrampIntent.signIntent(signatureTransfer, seller);
       // 2. execute signature tranfer
       const transferDetails = {
         to: offRampSeller.address,
         requestedAmount:  sellPrice,
       };
-      const offrampSellerBalanceBefore = await baseCurrency.balanceOf(offRampSeller.address);
+      const offrampSellerBalanceBefore = await zchfContract.balanceOf(offRampSeller.address);
       await signatureTransfer.connect(offramper).permitTransferFrom(permitData.values, transferDetails, seller.address, signature);
-      const offrampSellerBalanceAfter = await baseCurrency.balanceOf(offRampSeller.address);
+      const offrampSellerBalanceAfter = await zchfContract.balanceOf(offRampSeller.address);
       expect(offrampSellerBalanceAfter - offrampSellerBalanceBefore).to.be.equal(sellPrice);
     })
   })

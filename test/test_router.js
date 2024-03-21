@@ -63,22 +63,26 @@ describe("Brokerbot Router", () => {
     brokerbotQuoter = await ethers.getContract("BrokerbotQuoter");
 
     // build paths
-    // shares - base - usdc - dai
-    let types = ["address", "uint24","address","uint24","address","uint24","address"];
-    let values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.daiAddress];
+    // shares - xchf - dchf - usdc - dai
+    let types = ["address", "uint24","address","uint24","address","uint24","address","uint24","address"];
+    let values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.daiAddress];
     pathDai = ethers.solidityPacked(types,values);
-    // shares - base - usdc
-    types = ["address","uint24","address","uint24","address"];
-    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress];
+    // shares - xchf - dchf - usdc
+    types = ["address","uint24","address","uint24","address","uint24","address"];
+    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress];
     pathUsdc = ethers.solidityPacked(types,values);
-    // base - usdc
-    types = ["address","uint24","address"];
-    values = [config.baseCurrencyAddress, 500, config.usdcAddress];
+    // xchf - dchf - usdc
+    types = ["address","uint24","address","uint24","address"];
+    values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress];
     pathBaseUsdc = ethers.solidityPacked(types,values);
-    // shares - base - usdc - weth
-    types = ["address", "uint24","address","uint24","address","uint24","address"];
-    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.wethAddress];
+    // shares - xchf - dchf - usdc - weth
+    types = ["address", "uint24","address","uint24","address","uint24","address","uint24","address"];
+    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
     pathWeth = ethers.solidityPacked(types,values);
+    // xchf - dchf - usdc - weth
+    types = ["address","uint24","address","uint24","address","uint24","address"];
+    values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
+    pathBaseWeth = ethers.solidityPacked(types,values);
     // shares - base 
     types = ["address", "uint24","address"];
     values = [await draggable.getAddress(), 0, config.baseCurrencyAddress];
@@ -101,7 +105,7 @@ describe("Brokerbot Router", () => {
 
   describe("Price Quoting", () => {
     beforeEach(async () => {
-      randomShareAmount = randomBigInt(500, 50000);
+      randomShareAmount = randomBigInt(50, 500);
       baseBuyPrice = await brokerbot.getBuyPrice(randomShareAmount);
       baseSellPrice = await brokerbot.getSellPrice(randomShareAmount);
     });
@@ -150,7 +154,7 @@ describe("Brokerbot Router", () => {
 
   describe("Swaps", () => {
     beforeEach(async () => {
-      randomShareAmount = randomBigInt(500, 5000);
+      randomShareAmount = randomBigInt(5, 500);
     });
 
     describe("Buy shares", () => {

@@ -2,6 +2,18 @@ const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
 const config = require("../../scripts/deploy_config_mainnet.js")
 const Chance = require("chance");
 const { Transaction } = require("ethers");
+const { chain } = require("lodash");
+
+const getConfigPath = () => {
+  switch (network.config.chainId) {
+    case 1:
+      return "/scripts/deploy_config_mainnet.js";
+    case 137:
+      return "/scripts/deploy_config_polygon.js";
+    default:
+      return "/scripts/deploy_config_mainnet.js";
+  }
+}
 
 const toBytes32 = (bn) => {
   return ethers.hexlify(ethers.zeroPadValue('0x'+bn.toString(16), 32));
@@ -218,7 +230,8 @@ function randomBigInt(min, max) {
 }
 
 // if this is done via a smart account (AA), the approval should be called throw the smart account
-async function giveApproval(contract, signer, spender, amount, type) {
+async function giveApproval(chainid, contract, signer, spender, amount, type) {
+  // const spend = sp;
   switch (type) {
     // via direct approval
     case allowanceType.APPROVE:
@@ -232,37 +245,35 @@ async function giveApproval(contract, signer, spender, amount, type) {
       }
       const sharesPermitType = {
         Permit: [
-          { name: 'owner', type: 'address', },
-          { name: 'spender', type: 'address',},
-          { name: 'value', type: 'uint256',},
-          { name: 'nonce', type: 'uint256',},
-          { name: 'deadline', type: 'uint256',},
+          { name: 'owner', type: 'address' },
+          { name: 'spender', type: 'address'},
+          { name: 'value', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
         ],
       }
-      const nonce = await contract.connect(signer).nonces(signer.address);
-      const deadline = ethers.MaxUint256;
-      const value = amount;
-      const spender = await spender.getAddress();
-      const owner = signer.address;
       const permitValue =  {
-        owner,
-        spender,
-        value,
-        nonce,
-        deadline,
+        owner: signer.address,
+        spender: spender,
+        value: amount,
+        nonce: await contract.connect(signer).nonces(signer.address),
+        deadline: ethers.MaxUint256,
       };
+      // console.log(shareDomain);
+      // console.log(sharesPermitType);
+      // console.log(permitValue);
       {
         const { v, r, s } = ethers.Signature.from(await signer.signTypedData(shareDomain, sharesPermitType, permitValue)); 
-        await contract.connect(signer).permit(permitOwner, spender, value, deadline, v, r, s);
+        await contract.connect(signer).permit(signer.address, spender, amount, ethers.MaxUint256, v, r, s);
       }
       break;
     // via meta tx (only supported by EOA)
     case allowanceType.METATX:
       const metaTxDomain = {
-        name: contract.name(),
-        verifyingContrat: await contract.getAddress(),
+        name: await contract.name(),
         version: "1",
-        salt: '0x' + chainId.toString(16).padStart(64, '0')
+        verifyingContract: await contract.getAddress(),
+        salt: '0x' + chainid.toString(16).padStart(64, '0'),
       };
       const metaTxType = { 
         MetaTransaction: [
@@ -271,52 +282,26 @@ async function giveApproval(contract, signer, spender, amount, type) {
           { name: 'functionSignature', type: 'bytes'}
         ]
       };
-      const functionSig = await contract.populateTransaction.approve(spender, amount);
+      const functionSig = await contract.connect(signer).approve.populateTransaction(spender, amount);
+      const nonce = await contract.getNonce(signer.address);
       const metaTxValue = {
-        nonce: await contract.getNonce(signer.address),
+        nonce: nonce,
         from: signer.address,
-        functionSignature: functionSig
+        functionSignature: functionSig.data
       }
+      // console.log(metaTxDomain);
+      // console.log(metaTxType);
+      // console.log(metaTxValue);
       {
-        const { v, r, s } = ethers.Signature.from(await signer.signTypedData(metaTxDomain, metaTxType, metaTxValue));
-        await contract.executeMetaTransaction(signer.address, r, s, v);
+        const { r, s, v } = ethers.Signature.from(await signer.signTypedData(metaTxDomain, metaTxType, metaTxValue));
+        await contract.executeMetaTransaction(signer.address, functionSig.data, r, s, v);
       }  
       break;
     default:
+      // console.log(spender);
+      await contract.connect(signer).approve(spender, amount);
       break;
   }
-  // direct approval
-  await contract.connect(signer).approve(spender, amount);
-  // via permit
-  /*
-    const shareDomain = {
-      chainId: chainid,
-      verifyingContract: await contract.getAddress(),
-    }
-    const sharesPermitType = {
-      Permit: [
-        { name: 'owner', type: 'address', },
-        { name: 'spender', type: 'address',},
-        { name: 'value', type: 'uint256',},
-        { name: 'nonce', type: 'uint256',},
-        { name: 'deadline', type: 'uint256',},
-      ],
-    }
-    const nonce = await shares.connect(signer).nonces(signer.address);
-    const deadline = ethers.MaxUint256;
-    const value = amount;
-    const spender = await spender.getAddress();
-    const owner = signer.address;
-    const permitValue =  {
-      owner,
-      spender,
-      value,
-      nonce,
-      deadline,
-    };
-    const { v, r, s } = ethers.Signature.from(await signer.signTypedData(shareDomain, sharesPermitType, permitValue)); 
-    await shares.connect(backend).permit(permitOwner, spender, value, deadline, v, r, s);
-    */
 }
 
 
@@ -336,5 +321,6 @@ module.exports = {
   getImpersonatedSigner,
   randomBigInt,
   giveApproval,
-  allowanceType
+  allowanceType,
+  getConfigPath
 };
