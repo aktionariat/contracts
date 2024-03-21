@@ -8,8 +8,8 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
+const { baseCurrencyAddress } = require("../scripts/deploy_config_mainnet.js");
 const { Signature } = require("ethers");
 
 describe("Sell via PaymentHub", () => {
@@ -99,8 +99,11 @@ describe("Sell via PaymentHub", () => {
     })
     it("Should sell against USDC", async () => {
       // path: XCHF -> USDC
-      const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 500, config.usdcAddress];
+      // const types = ["address","uint24","address"];
+      // const values = [config.baseCurrencyAddress, 500, config.usdcAddress];
+      // xchf -0.01- dchf -0.05- usdc 
+      const types = ["address","uint24","address","uint24","address"];
+      const values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress];
       path = ethers.solidityPacked(types,values);
       const usdcAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
       //console.log(`xchfaumont: ${ethers.utils.formatUnits(baseAmount,18)}`);

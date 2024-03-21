@@ -5,18 +5,16 @@ const nconf = require('nconf');
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer, trustedForwarder } = await getNamedAccounts();
+  const { deployer } = await getNamedAccounts();
 
-  const permit2Address = config.permit2Address;
-  const owner =  trustedForwarder
+  const signatureTransfer = await deployments.get('SignatureTransfer');
   
   if (network.name != "hardhat"&& !nconf.get("silent")) {
     console.log("-----------------------")
-    console.log("Deploy Permit2Hub")
+    console.log("Deploy Trade Reactor")
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("owner: %s", owner);
-    console.log("permit2: %s", permit2Address);
+    console.log("signatureTransfer: %s", signatureTransfer.address);
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -27,12 +25,11 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const feeData = await ethers.provider.getFeeData();
 
-  const { address } = await deploy("Permit2Hub", {
-    contract: "Permit2Hub",
+  const { address } = await deploy("TradeReactor", {
+    contract: "TradeReactor",
     from: deployer,
     args: [
-      permit2Address,
-      trustedForwarder
+      signatureTransfer.address
     ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
@@ -40,4 +37,5 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   });
 };
 
-module.exports.tags = ["Permit2Hub"];
+module.exports.tags = ["TradeReactor"];
+module.exports.dependencies = ["SignatureTransfer"];

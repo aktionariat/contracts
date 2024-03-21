@@ -4,7 +4,7 @@ const { getImpersonatedSigner } = require("./helper/index");
 const { time }  = require("@nomicfoundation/hardhat-network-helpers");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Permit2", () => {
   let draggable;

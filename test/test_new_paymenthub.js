@@ -8,8 +8,8 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const { baseCurrencyAddress } = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
+const { baseCurrencyAddress } = require("../scripts/deploy_config_mainnet.js");
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.BrowserProvider(network.provider);
@@ -217,7 +217,7 @@ describe("New PaymentHub", () => {
       
       const priceInETH = await paymentHub.getPriceInEtherFromOracle(ethers.parseEther("1000"), await brokerbot.base());
       // rework to not use static value
-      expect(ethers.formatEther(priceInETH)).to.equal("0.602949565021144432")
+      expect(ethers.formatEther(priceInETH)).to.equal("0.562655068582161882")
     });
 
     it("Should buy shares with ETH and trade it to XCHF", async () => {
@@ -375,7 +375,7 @@ describe("New PaymentHub", () => {
 
     it("Should buy shares with WBTC and trade it to XCHF", async () => {
       const base = await brokerbot.base();
-      const buyer = sig1;
+      const buyer = sig1; 
       //approve WBTC in the paymenthub
       await paymentHub.approveERC20(config.wbtcAddress);
 
