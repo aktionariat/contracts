@@ -52,7 +52,7 @@ contract TradeReactor {
      * @param intent The trade intent data structure. 
      * @param signature The signature of the intent owner.
     */
-    function signalIntent(Intent calldata intent, bytes calldata signature) public {
+    function signalIntent(Intent calldata intent, bytes calldata signature) external {
         emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
     }
 
@@ -112,7 +112,7 @@ contract TradeReactor {
      * @param buyerIntent The buyer's trade intent.
      * @param buyerSig The buyer's signature.
      */    
-    function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) public {
+    function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) external {
         process(feeRecipient, sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent));
     }
 
@@ -152,7 +152,7 @@ contract TradeReactor {
      * @param amount The amount of tokens to invest in the purchase.
      * @return The amount of tokens received from the Brokerbot.
      */
-    function buyFromBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) public returns (uint256) {
+    function buyFromBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) external returns (uint256) {
         return buyFromBrokerbot(PaymentHub(payable(bot.paymenthub())), bot, intent, signature, amount);
     }
 
@@ -169,7 +169,6 @@ contract TradeReactor {
     function buyFromBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 investAmount) public returns (uint256) {
         transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), investAmount), intent.owner, signature);
         IERC20(intent.tokenOut).approve(address(hub), investAmount);
-        // uint256 received = hub.payAndNotify(bot, investAmount, "");
         uint256 received = hub.payAndNotify(bot, investAmount, intent.data);
         if (investAmount > getBid(intent, received)) revert OfferTooLow();
         return received;
@@ -201,7 +200,6 @@ contract TradeReactor {
     function sellToBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares) public returns (uint256) {
         transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, signature);
         IERC20(intent.tokenOut).approve(address(hub), soldShares);
-        // uint256 received = hub.payAndNotify(bot, soldShares, "");
         uint256 received = hub.payAndNotify(bot, soldShares, intent.data);
         if (received < getAsk(intent, received)) revert OfferTooLow();
         return received;
