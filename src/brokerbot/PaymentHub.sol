@@ -302,6 +302,7 @@ contract PaymentHub {
      * @param brokerbot The brokerbot to pay and receive the shares from.
      * @param amountBase The amount of base currency used to buy shares.
      * @param ref The reference data blob.
+     * @param path The Uniswap path from ETH to base currency (uses exactOuput => reverse order)
      * @return priceInEther The amount of Ether spent.
      * @return sharesOut The amount of shares bought.
      */
