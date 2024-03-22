@@ -25,8 +25,3 @@ The time based drift can be used to reflect expected organic growth or to have i
 
 The Brokerbot contract is the basis of the [Brokerbot widget](https://www.aktionariat.com/our-products/brokerbot#details), which can be seen in action on the [Aktionariat AG Investor Relations](https://www.aktionariat.com/investor-relations#brokerbot) page, for instance.
 
-## License Fee
-
-For this smart contract, we created a new type of software license, the “[MIT License with Automated License Fee Payments](https://github.com/aktionariat/contracts/blob/master/LICENSE)”. Anyone is free to use the code as long as the built-in license fee, paid to [Aktionariat AG](https://aktionariat.com/), is preserved. The license fee is collected on sale transactions only, paid by the seller whenever a share is sold.
-
-If you are interested in licensing the Brokerbot under different terms, get in touch with us.
