@@ -30,34 +30,6 @@ class SignatureTransferIntent {
     return {permitData, signature};
   }
 }
-/*
-class MockIntent {
-  constructor(token, amount) {
-    this.tokenOut = token;
-    this.amountOut = amount;
-  }
-
-  async signIntent(signatureTransfer, sender, signer) {
-    const mockWitness = {
-      witnessTypeName: 'MockWitness',
-      witnessType: { MockWitness: [{ name: 'mock', type: 'uint256' }] },
-      witness: { mock: '0x0000000000000000000000000000000000000000000000000000000000000000' },
-    }
-    const permit = new SignatureTransferIntent(this.tokenOut, sender, this.amountOut);
-    const intent = SignatureTransfer.getPermitData(
-      permit,
-      await signatureTransfer.getAddress(), 
-      await ethers.provider.getNetwork().then((net) => net.chainId), 
-      mockWitness);
-    const signature  = await signer.signTypedData(intent.domain, intent.types, intent.values);
-    // const hash = SignatureTransfer.hash(permit, await signatureTransfer.getAddress(), await ethers.provider.getNetwork().then((net) => net.chainId), mockWitness);
-    const TYPE_HASH = ethers.id("MockWitness(uint256 mock)");
-    const types = ["uint256"];
-    const values = ["0x0000000000000000000000000000000000000000000000000000000000000000"];
-    const hash = ethers.keccak256(ethers.solidityPacked(types,values));
-    return {intent, signature, hash};
-  }
-}*/
 
 class TradeIntent {
   constructor(_owner, _filler, _tokenOut, _amountOut, _tokenIn, _amountIn, _nonce, _data) {

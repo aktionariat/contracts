@@ -56,16 +56,20 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
     }
 
     function isFreeNonce(address owner, uint256 nonce) public view returns (bool){
+        return !isUsedNonce(owner, nonce) && partialFills[owner][nonce] == 0;
+    }
+
+    function isUsedNonce(address owner, uint256 nonce) public view returns (bool) {
         (uint256 wordPos, uint256 bitPos) = bitmapPositions(nonce);
         uint256 bit = 1 << bitPos;
-        return nonceBitmap[owner][wordPos] & bit == 0 && partialFills[owner][nonce] == 0;
+        return nonceBitmap[owner][wordPos] & bit != 0;
     }
 
     function getPermittedAmount(address owner, PermitTransferFrom calldata permit) public view returns (uint256) {
-        if (isFreeNonce(owner, permit.nonce)){
-            return permit.permitted.amount - partialFills[owner][permit.nonce];
-        } else {
+        if (isUsedNonce(owner, permit.nonce)) {
             return 0;
+        } else {
+            return permit.permitted.amount - partialFills[owner][permit.nonce];
         }
     }
 

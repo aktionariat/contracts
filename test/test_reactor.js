@@ -139,88 +139,9 @@ describe("Trade Reactor", () => {
       await expect(signatureTransfer.connect(backend).permitTransferFrom(permitData.values, transferDetails, seller.address, signature))
         .to.be.revertedWithCustomError(signatureTransfer, "InvalidNonce");
     });
-
-    it.skip("Should transfer with mock witness", async() => {
-      const transferDetails = {
-        to: backend.address,
-        requestedAmount:  permitAmount,
-      };
-      const permit = {
-        permitted: {
-          token: await shares.getAddress(),
-          amount: permitAmount,
-        },
-        nonce: 0,
-        deadline: Math.floor(Date.now() /  1000) +  60 *  60
-      };
-      const sellIntent = new MockIntent(await shares.getAddress(), permitAmount);
-      const {intent: signedSellIntent, signature: signatureSeller, hash: sellerHash} = await sellIntent.signIntent(signatureTransfer, backend.address, seller);
-      const witnessTypeString = "MockWitness witness)MockWitness(uint256 mock)TokenPermissions(address token,uint256 amount)";
-      const backendBalanceBefore = await shares.balanceOf(backend.address);
-      console.log(sellerHash);
-      await signatureTransfer.connect(backend).permitWitnessTransferFrom(
-        permit, // permit
-        transferDetails, // transferDetails
-        seller.address, // owner
-        sellerHash, // witness
-        witnessTypeString, // witnessTypeString
-        signatureSeller // signature
-        );
-      const backendBalanceAfter = await shares.balanceOf(backend.address);
-      expect(backendBalanceAfter - backendBalanceBefore).to.equal(permitAmount);
-    })
-
-    it.skip("Should transfer with witness", async() => {
-      const transferDetails = {
-        to: backend.address,
-        requestedAmount:  permitAmount,
-      };
-      const permit = {
-        permitted: {
-          token: await shares.getAddress(),
-          amount: permitAmount,
-        },
-        nonce: 0,
-        deadline: Math.floor(Date.now() /  1000) +  60 *  60
-      };
-
-      // sell intent
-      const sellAmount = 100;
-      const sellPrice = 1000;
-      const sellIntent = new TradeIntent(
-        seller.address, // owner
-        issuer.address, // filler
-        await shares.getAddress(), // tokenOut
-        sellAmount, // amountOut
-        await zchfContract.getAddress(), // tokenIn
-        sellPrice, // amountIn
-        0, // nonce
-        "0x01" // data
-      );
-      const {intent: signedSellIntent, signature: signatureSeller, hash: sellerHash} = await sellIntent.signIntent(signatureTransfer, issuer.address, seller);
-      console.log(signedSellIntent.types.IntentWitness);
-      console.log(signedSellIntent.values.witness);
-      console.log(signedSellIntent.types.TokenPermissions);
-      const witnessTypes = ["address", "address", "address", "uint160", "address", "uint160", "uint48", "uint48", "bytes"];
-      const witnessValues = [sellIntent.owner, sellIntent.filler, sellIntent.tokenOut, sellIntent.amountOut, sellIntent.tokenIn, sellIntent.amountIn, sellIntent.expiration, sellIntent.nonce, sellIntent.data];
-      const witnessPacked = ethers.solidityPacked(witnessTypes, witnessValues);
-      const witness = ethers.keccak256(witnessPacked);
-      const witnessTypeString = "Intent witness)Intent(address owner,address filler,address tokenOut,uint160 amountOut,address tokenIn,uint160 amountIn,uint48 expiration,uint48 noncebytes data)TokenPermissions(address token,uint256 amount)";
-      const backendBalanceBefore = await shares.balanceOf(backend.address);
-      await signatureTransfer.connect(issuer).permitWitnessTransferFrom(
-        permit, // permit
-        transferDetails, // transferDetails
-        seller.address, // owner
-        sellerHash, // witness
-        witnessTypeString, // witnessTypeString
-        signatureSeller // signature
-        );
-      const backendBalanceAfter = await shares.balanceOf(backend.address);
-      expect(backendBalanceAfter - backendBalanceBefore).to.equal(permitAmount);
-    });
   });
 
-  describe("Reactor", () => {
+  describe("Procces", () => {
     it("Should process intents", async() => {
       // create intents
       // sell intent
@@ -270,6 +191,66 @@ describe("Trade Reactor", () => {
       await signatureTransfer.connect(offramper).permitTransferFrom(permitData.values, transferDetails, seller.address, signature);
       const offrampSellerBalanceAfter = await zchfContract.balanceOf(offRampSeller.address);
       expect(offrampSellerBalanceAfter - offrampSellerBalanceBefore).to.be.equal(sellPrice);
+    })
+
+    it("Should process partiall filling", async() => {
+      // create intents
+      // sell intent
+      const sellAmount = 100;
+      const sellPrice = 1000;
+      const sellIntent = new TradeIntent(
+        seller.address, // owner
+        issuer.address, // filler
+        await shares.getAddress(), // tokenOut
+        sellAmount, // amountOut
+        await zchfContract.getAddress(), // tokenIn
+        sellPrice, // amountIn
+        2, // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      // buy intent
+      const buyAmount1 = 50;
+      const buyPrice1 = 500;
+      const buyIntent1 = new TradeIntent(
+        buyer.address, // owner
+        issuer.address, // filler
+        await zchfContract.getAddress(), // tokenOut
+        buyPrice1, // amountOut
+        await shares.getAddress(), // tokenIn
+        buyAmount1, // amountIn
+        3, // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      // buy intent 2
+      const buyAmount2 = 50;
+      const buyPrice2 = 500;
+      const buyIntent2 = new TradeIntent(
+        buyer.address, // owner
+        issuer.address, // filler
+        await zchfContract.getAddress(), // tokenOut
+        buyPrice2, // amountOut
+        await shares.getAddress(), // tokenIn
+        buyAmount2, // amountIn
+        4, // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      // sign intents
+      const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+      const {intent: signedBuyIntent1, signature: signatureBuyer1} = await buyIntent1.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+      const {intent: signedBuyIntent2, signature: signatureBuyer2} = await buyIntent2.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+      // process 1st filling
+      const sellerBaseBefore = await zchfContract.balanceOf(seller.address);
+      const tradeReactorIssuer = await tradeReactor.connect(issuer);
+      // await tradeReactorIssuer["process(address,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,uint256)"](backend.address, sellIntent, signatureSeller, buyIntent1, signatureBuyer1, buyAmount1);
+      await tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent1, signatureBuyer1);
+      const sellerBaseAfter = await zchfContract.balanceOf(seller.address);
+      expect(sellerBaseAfter - sellerBaseBefore).to.equal(buyPrice1);
+      // process 2nd filling
+      const sellerBaseBefore2 = await zchfContract.balanceOf(seller.address);
+      // await tradeReactorIssuer["process(address,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,uint256)"](backend.address, sellIntent, signatureSeller, buyIntent2, signatureBuyer2, buyAmount2);
+      await tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent2, signatureBuyer2);
+      const sellerBaseAfter2 = await zchfContract.balanceOf(seller.address);
+      expect(sellerBaseAfter2 - sellerBaseBefore2).to.equal(buyPrice2);
     })
   })
 });
