@@ -15,6 +15,7 @@ describe("Trade Reactor", () => {
   let offerFactory;
   let allowlistShares;
   let allowlistDraggable;
+  let brokerbot;
   let signatureTransfer;
   let tradeReactor;
   let zchfContract;
@@ -51,12 +52,13 @@ describe("Trade Reactor", () => {
 
   beforeEach(async() => {
     // get deployments
-    await deployments.fixture(["SignatureTransfer", "TradeReactor", "Shares", "DraggableShares"]);
+    await deployments.fixture(["SignatureTransfer", "TradeReactor", "Shares", "DraggableShares", "BrokerbotZCHF"]);
     signatureTransfer = await ethers.getContract("SignatureTransfer");
     // signatureTransfer = "0x46d4674578a2daBbD0CEAB0500c6c7867999db34";
     tradeReactor = await ethers.getContract("TradeReactor");
     shares = await ethers.getContract("Shares");
     draggable = await ethers.getContract("DraggableShares");
+    brokerbot = await ethers.getContract("BrokerbotZCHF");
     if (config.chainId == 137) {
       zchfContract = await ethers.getContractAt("IERC20MetaTx", config.zchfAddress);
     } else {
@@ -69,6 +71,10 @@ describe("Trade Reactor", () => {
       await shares.connect(owner).mint(accounts[i], 1000000);
     }
     await setBalance(zchfContract, config.zchfBalanceSlot, accounts);
+
+    // Deposit some shares/zchf to Brokerbot
+    await shares.connect(owner).transfer(await brokerbot.getAddress(), 500000);
+    await zchfContract.connect(owner).transfer(await brokerbot.getAddress(), ethers.parseEther("100000"));
 
     // give max approval to signature transfer contract for shares
     await giveApproval(chainid, shares, seller, await signatureTransfer.getAddress(), ethers.MaxUint256, allowanceType.PERMIT);
@@ -251,6 +257,88 @@ describe("Trade Reactor", () => {
       await tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent2, signatureBuyer2);
       const sellerBaseAfter2 = await zchfContract.balanceOf(seller.address);
       expect(sellerBaseAfter2 - sellerBaseBefore2).to.equal(buyPrice2);
+    })
+
+    it("Should process partiall filling with custom amount", async () => {
+       // create intents
+      // sell intent
+      const sellAmount = 100;
+      const sellPrice = 1000;
+      const sellIntent = new TradeIntent(
+        seller.address, // owner
+        issuer.address, // filler
+        await shares.getAddress(), // tokenOut
+        sellAmount, // amountOut
+        await zchfContract.getAddress(), // tokenIn
+        sellPrice, // amountIn
+        2, // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      // buy intent
+      const buyAmount1 = 50;
+      const buyPrice1 = 500;
+      const buyIntent1 = new TradeIntent(
+        buyer.address, // owner
+        issuer.address, // filler
+        await zchfContract.getAddress(), // tokenOut
+        buyPrice1, // amountOut
+        await shares.getAddress(), // tokenIn
+        buyAmount1, // amountIn
+        3, // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      // buy intent 2
+      const buyAmount2 = 50;
+      const buyPrice2 = 500;
+      const buyIntent2 = new TradeIntent(
+        buyer.address, // owner
+        issuer.address, // filler
+        await zchfContract.getAddress(), // tokenOut
+        buyPrice2, // amountOut
+        await shares.getAddress(), // tokenIn
+        buyAmount2, // amountIn
+        4, // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      // sign intents
+      const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+      const {intent: signedBuyIntent1, signature: signatureBuyer1} = await buyIntent1.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+      const {intent: signedBuyIntent2, signature: signatureBuyer2} = await buyIntent2.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+      // process 1st filling
+      const customAmount1 = 10;
+      const sellerBaseBefore = await zchfContract.balanceOf(seller.address);
+      const tradeReactorIssuer = await tradeReactor.connect(issuer);
+      await tradeReactorIssuer["process(address,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,uint256)"](backend.address, sellIntent, signatureSeller, buyIntent1, signatureBuyer1, customAmount1);
+      const sellerBaseAfter = await zchfContract.balanceOf(seller.address);
+      expect(sellerBaseAfter - sellerBaseBefore).to.equal(customAmount1*10);
+      // process 2nd filling
+      const customAmount2 = 20;
+      const sellerBaseBefore2 = await zchfContract.balanceOf(seller.address);
+      await tradeReactorIssuer["process(address,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,uint256)"](backend.address, sellIntent, signatureSeller, buyIntent2, signatureBuyer2, customAmount2);
+      const sellerBaseAfter2 = await zchfContract.balanceOf(seller.address);
+      expect(sellerBaseAfter2 - sellerBaseBefore2).to.equal(customAmount2*10);
+    })
+  })
+
+  describe("Buy from Brokerbot", () => {
+    it("Should use intent to buy from brokerbot", async() => {
+      // get prize at brokerbot
+      const buyAmount1 = 50;
+      const buyPrize1 = await brokerbot.getBuyPrize()
+      // buy intent
+      const buyIntent1 = new TradeIntent(
+        buyer.address, // owner
+        issuer.address, // filler
+        await zchfContract.getAddress(), // tokenOut
+        buyPrice1, // amountOut
+        await shares.getAddress(), // tokenIn
+        buyAmount1, // amountIn
+        5, // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      const {intent: signedBuyIntent1, signature: signatureBuyer1} = await buyIntent1.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+      const tradeReactorIssuer = await tradeReactor.connect(issuer);
+      tradeReactorIssuer.buyFromBrokerbot(await brokerbot.getAddress(), buyIntent1, signatureBuyer1, buyPrice1);
     })
   })
 });
