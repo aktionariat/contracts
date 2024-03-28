@@ -44,10 +44,10 @@ function getForkBlockNumber() {
     case "polygon":
       return 54509659;
     default:
-      return 18663503;
+      return 19419243;
   }
 }
-  
+
 function getForkChainId() {
   switch (process.env.FORK_NETWORK) {
     case "polygon":
@@ -87,7 +87,7 @@ module.exports = {
       saveDeployments: true,
       //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
       // chainId: 1, // 1 for forking mainnet test
-      chainId: getForkChainId(), // polygon 
+      chainId: getForkChainId(), // polygon
       tags: ["test", "local"],
     },
     ropsten: {

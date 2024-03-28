@@ -90,13 +90,15 @@ async function sellingEnabled(brokerbot) {
   return (settings & config.SELLING_ENABLED) == config.SELLING_ENABLED;
 }
 
-async function setBalances(accounts, baseCurrency, daiContract, wbtcContract) {
+async function setBalances(accounts, baseCurrency, daiContract, wbtcContract, zchfContract) {
   // Mint baseCurrency Tokens (xchf) to first 5 accounts
     await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
     // Set (manipulate local) DAI balance for first 5 accounts
     await setBalance(daiContract, config.daiBalanceSlot, accounts);
     // Set (manipulate local) WBTC balance for first 5 accounts
     await setBalance(wbtcContract, config.wbtcBalanceSlot, accounts);
+    // Set (manipulate local) ZCHF balance for first 5 accounts
+    await setBalance(zchfContract, config.zchfBalanceSlot, accounts);
 }
 
 async function setup(setupBrokerbotEnabled) {
