@@ -7,13 +7,6 @@ pragma solidity ^0.8.0;
 import {ISignatureTransfer} from "./ISignatureTransfer.sol";
 
 library PermitHash {
-    bytes32 public constant _PERMIT_DETAILS_TYPEHASH =
-        keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
-
-    bytes32 public constant _PERMIT_SINGLE_TYPEHASH = keccak256(
-        "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"
-    );
-
     bytes32 public constant _TOKEN_PERMISSIONS_TYPEHASH = keccak256("TokenPermissions(address token,uint256 amount)");
 
     bytes32 public constant _PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(

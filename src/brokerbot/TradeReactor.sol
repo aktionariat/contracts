@@ -9,7 +9,7 @@ import {IERC20} from "../ERC20/IERC20.sol";
 import {Intent, IntentHash} from "../lib/IntentHash.sol";
 import {PaymentHub} from "./PaymentHub.sol";
 import {IBrokerbot} from "./IBrokerbot.sol";
-import {console} from "hardhat/console.sol";
+import {SafeERC20} from "../utils/SafeERC20.sol";
 
 /**
  * @title TradeReactor Contract
@@ -19,6 +19,7 @@ import {console} from "hardhat/console.sol";
 contract TradeReactor {
 
     using IntentHash for Intent;
+    using SafeERC20 for IERC20;
 
     error OfferTooLow();
     error InvalidFiller();
@@ -137,9 +138,9 @@ contract TradeReactor {
         transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(address(this), amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
         transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), buyerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
         // move tokens to target addresses
-        IERC20(sellerIntent.tokenOut).transfer(buyerIntent.owner, amount);
-        IERC20(sellerIntent.tokenIn).transfer(sellerIntent.owner, ask);
-        IERC20(sellerIntent.tokenIn).transfer(feeRecipient, bid - ask); // collect spread as fee
+        IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, amount);
+        IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, ask);
+        IERC20(sellerIntent.tokenIn).safeTransfer(feeRecipient, bid - ask); // collect spread as fee
         emit Trade(sellerIntent.owner, buyerIntent.owner, sellerIntent.tokenOut, amount, sellerIntent.tokenIn, ask, bid - ask);
     }
 
@@ -153,24 +154,12 @@ contract TradeReactor {
      * @return The amount of tokens received from the Brokerbot.
      */
     function buyFromBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) external returns (uint256) {
-        return buyFromBrokerbot(PaymentHub(payable(bot.paymenthub())), bot, intent, signature, amount);
-    }
-
-    /**
-     * @notice Buys tokens from a Brokerbot using a specific PaymentHub.
-     * @dev This function allows a user to buy tokens from a Brokerbot through a specified PaymentHub. It transfers the specified amount of investment token to the Brokerbot and receives the purchased tokens in return. The function ensures that the offer is not too low by comparing the invested amount to the bid price.
-     * @param hub The PaymentHub through which the transaction is processed.
-     * @param bot The Brokerbot from which tokens are being bought.
-     * @param intent The trade intent data structure.
-     * @param signature The signature of the intent owner.
-     * @param investAmount The amount of tokens to invest in the purchase.
-     * @return The amount of tokens received from the Brokerbot.
-     */
-    function buyFromBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 investAmount) public returns (uint256) {
-        transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), investAmount), intent.owner, signature);
-        IERC20(intent.tokenOut).approve(address(hub), investAmount);
-        uint256 received = hub.payAndNotify(bot, investAmount, intent.data);
-        if (investAmount > getBid(intent, received)) revert OfferTooLow();
+        PaymentHub hub = PaymentHub(payable(bot.paymenthub()));
+        transfer.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), amount), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
+        IERC20(intent.tokenOut).approve(address(hub), amount);
+        uint256 received = hub.payAndNotify(bot, amount, intent.data);
+        if (amount > getBid(intent, received)) revert OfferTooLow();
+        IERC20(intent.tokenIn).safeTransfer(intent.owner, received);
         return received;
     }
 
@@ -184,24 +173,12 @@ contract TradeReactor {
      * @return The amount of payment received from the Brokerbot.
      */
     function sellToBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares)public returns (uint256) {
-        return sellToBrokerbot(PaymentHub(payable(bot.paymenthub())), bot, intent, signature, soldShares);
-    }
-
-    /**
-     * @notice Sells tokens to a Brokerbot using a specific PaymentHub.
-     * @dev This function allows a user to sell tokens to a Brokerbot through a specified PaymentHub. It transfers the specified amount of tokens to the Brokerbot and receives the payment in return. The function ensures that the received amount is not lower than the ask price.
-     * @param hub The PaymentHub through which the transaction is processed.
-     * @param bot The Brokerbot to which tokens are being sold.
-     * @param intent The trade intent data structure.
-     * @param signature The signature of the intent owner.
-     * @param soldShares The amount of tokens being sold.
-     * @return The amount of payment received from the Brokerbot.
-     */
-    function sellToBrokerbot(PaymentHub hub, IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares) public returns (uint256) {
-        transfer.permitTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, signature);
+        PaymentHub hub = PaymentHub(payable(bot.paymenthub()));
+        transfer.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
         IERC20(intent.tokenOut).approve(address(hub), soldShares);
-        uint256 received = hub.payAndNotify(bot, soldShares, intent.data);
-        if (received < getAsk(intent, received)) revert OfferTooLow();
+        uint256 received = hub.payAndNotify(IERC20(intent.tokenOut), bot, soldShares, intent.data);
+        if (received < getAsk(intent, soldShares)) revert OfferTooLow();
+        IERC20(intent.tokenIn).safeTransfer(intent.owner, received);
         return received;
     }
 
