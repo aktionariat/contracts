@@ -49,5 +49,7 @@ module.exports = {
   KEEP_ETHER: 4n,
   //permit2
   permit2Address: "0x000000000022d473030f116ddee9f6b43ac78ba3", // Mainnet, Goerli, Arbitrum, Optimism, Polygon 
-  permit2HubAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b"
+  permit2HubAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b",
+  // PaymentHub
+  paymentHubAddress: "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C"
 };
