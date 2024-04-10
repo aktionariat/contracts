@@ -160,6 +160,7 @@ contract TradeReactor {
         uint256 received = hub.payAndNotify(bot, amount, intent.data);
         if (amount > getBid(intent, received)) revert OfferTooLow();
         IERC20(intent.tokenIn).safeTransfer(intent.owner, received);
+        IERC20(intent.tokenOut).safeTransfer(intent.owner, IERC20(intent.tokenOut).balanceOf(address(this))); // refund over paid amount
         return received;
     }
 

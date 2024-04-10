@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { SignatureTransfer, permitTransferFromWithWitnessType } = require("@uniswap/permit2-sdk");
-const { getBlockTimeStamp, giveApproval, setBalance, allowanceType, getConfigPath } = require("./helper/index");
+const { randomBigInt, giveApproval, setBalance, allowanceType, getConfigPath } = require("./helper/index");
 const { SignatureTransferIntent, TradeIntent, MockIntent} = require("./helper/intent.js");
 
 // Shared  Config
@@ -328,35 +328,65 @@ describe("Trade Reactor", () => {
   describe("Buy from Brokerbot with Intent", () => {
     it("Should use intent to buy from brokerbot", async() => {
       // get price at brokerbot
-      const buyAmount1 = 50;
-      const buyPrice1 = await brokerbot.getBuyPrice(buyAmount1)
+      const buyAmount = randomBigInt(1, 500);;
+      const buyPrice = await brokerbot.getBuyPrice(buyAmount)
       // buy intent
-      const buyIntent1 = new TradeIntent(
+      const buyIntent = new TradeIntent(
         buyer.address, // owner
         issuer.address, // filler
         await zchfContract.getAddress(), // tokenOut
-        buyPrice1, // amountOut
+        buyPrice, // amountOut
         await shares.getAddress(), // tokenIn
-        buyAmount1, // amountIn
+        buyAmount, // amountIn
         await signatureTransfer.findFreeNonce(buyer.address,0), // nonce
         ethers.toUtf8Bytes("") // data
       );
-      const {intent: signedBuyIntent1, signature: signatureBuyer1} = await buyIntent1.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
-      const tradeReactorIssuer = await tradeReactor.connect(issuer);
+      const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+      const tradeReactorBackend = await tradeReactor.connect(backend);
       const buyerSharesBefore = await shares.balanceOf(buyer.address);
       const brokerbotBaseBefore = await zchfContract.balanceOf(brokerbotAddress);
-      await tradeReactorIssuer.buyFromBrokerbot(brokerbotAddress, buyIntent1, signatureBuyer1, buyPrice1);
+      await tradeReactorBackend.buyFromBrokerbot(brokerbotAddress, buyIntent, signatureBuyer, buyPrice);
       const brokerbotBaseAfter = await zchfContract.balanceOf(brokerbotAddress);
       const buyerSharesAfter = await shares.balanceOf(buyer.address);
-      expect(buyerSharesAfter - buyerSharesBefore).to.be.equal(buyAmount1);
-      expect(brokerbotBaseAfter - brokerbotBaseBefore).to.be.equal(buyPrice1);
+      expect(buyerSharesAfter - buyerSharesBefore).to.be.equal(buyAmount);
+      expect(brokerbotBaseAfter - brokerbotBaseBefore).to.be.equal(buyPrice);
+    })
+
+    it("Should use intent to buy from brokerbot with lower price", async() => {
+      // get price at brokerbot
+      const buyAmount = randomBigInt(1, 50);
+      const brokerbotPrice = await brokerbot.getBuyPrice(buyAmount);
+      const buyPrice = brokerbotPrice + 10n;
+      const sharesAmount = await brokerbot.getShares(buyPrice);
+      // buy intent
+      const buyIntent = new TradeIntent(
+        buyer.address, // owner
+        issuer.address, // filler
+        await zchfContract.getAddress(), // tokenOut
+        buyPrice, // amountOut
+        await shares.getAddress(), // tokenIn
+        buyAmount, // amountIn
+        await signatureTransfer.findFreeNonce(buyer.address,0), // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+      const buyerSharesBefore = await shares.balanceOf(buyer.address);
+      const brokerbotBaseBefore = await zchfContract.balanceOf(brokerbotAddress);
+      const buyerBaseBefore = await zchfContract.balanceOf(buyer.address);
+      await await tradeReactor.buyFromBrokerbot(brokerbotAddress, buyIntent, signatureBuyer, buyPrice);
+      const brokerbotBaseAfter = await zchfContract.balanceOf(brokerbotAddress);
+      const buyerBaseAfter = await zchfContract.balanceOf(buyer.address);
+      const buyerSharesAfter = await shares.balanceOf(buyer.address);
+      expect(buyerSharesAfter - buyerSharesBefore).to.be.equal(buyAmount);
+      expect(brokerbotBaseAfter - brokerbotBaseBefore).to.be.equal(brokerbotPrice);
+      expect(buyerBaseBefore - buyerBaseAfter).to.be.equal(brokerbotPrice);
     })
   })
 
   describe("Sell to Brokerbot with Intent", () => {
     it("Should use intent to sell to brokerbot", async() => {
       // sell intent
-      const sellAmount = 100;
+      const sellAmount = randomBigInt(1, 500);
       const sellPrice = await brokerbot.getSellPrice(sellAmount);
       const sellIntent = new TradeIntent(
         seller.address, // owner
@@ -369,7 +399,6 @@ describe("Trade Reactor", () => {
         ethers.toUtf8Bytes("") // data
       );
       const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
-      const tradeReactorIssuer = await tradeReactor.connect(issuer);
       const sellerBaseBefore = await zchfContract.balanceOf(seller.address);
       const brokerbotSharesBefore = await shares.balanceOf(brokerbotAddress);
       await tradeReactor.sellToBrokerbot(brokerbotAddress, sellIntent, signatureSeller, sellAmount);
@@ -377,6 +406,52 @@ describe("Trade Reactor", () => {
       const sellerBaseAfter = await zchfContract.balanceOf(seller.address);
       expect(sellerBaseAfter - sellerBaseBefore).to.be.equal(sellPrice);
       expect(brokerbotSharesAfter - brokerbotSharesBefore).to.be.equal(sellAmount);
+    })
+
+    it("Should use intent to sell to brokerbot with better price", async() => {
+      // sell intent
+      const sellAmount = randomBigInt(1, 500);
+      const sellPrice = await brokerbot.getSellPrice(sellAmount);
+      const sellPriceCheap = sellPrice - 100n;
+      const sellIntent = new TradeIntent(
+        seller.address, // owner
+        issuer.address, // filler
+        await shares.getAddress(), // tokenOut
+        sellAmount, // amountOut
+        await zchfContract.getAddress(), // tokenIn
+        sellPriceCheap, // amountIn
+        await signatureTransfer.findFreeNonce(buyer.address,0), // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+      const sellerBaseBefore = await zchfContract.balanceOf(seller.address);
+      const brokerbotSharesBefore = await shares.balanceOf(brokerbotAddress);
+      await tradeReactor.sellToBrokerbot(brokerbotAddress, sellIntent, signatureSeller, sellAmount);
+      const brokerbotSharesAfter = await shares.balanceOf(brokerbotAddress);
+      const sellerBaseAfter = await zchfContract.balanceOf(seller.address);
+      expect(sellerBaseAfter - sellerBaseBefore).to.be.equal(sellPrice);
+      expect(brokerbotSharesAfter - brokerbotSharesBefore).to.be.equal(sellAmount);
+    })
+  })
+  describe("Single intent", () => {
+    it("Should emit event with intent details", async() => {
+      // sell intent
+      const sellAmount = 100;
+      const sellPrice = 1000;
+      const intent = new TradeIntent(
+        seller.address, // owner
+        issuer.address, // filler
+        await shares.getAddress(), // tokenOut
+        sellAmount, // amountOut
+        await zchfContract.getAddress(), // tokenIn
+        sellPrice, // amountIn
+        await signatureTransfer.findFreeNonce(seller.address,0), // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      const {intent: signedSellIntent, signature: signature} = await intent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+      await expect(tradeReactor.signalIntent(intent, signature))
+        .to.emit(tradeReactor, "IntentSignal")
+        .withArgs(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
     })
   })
 });
