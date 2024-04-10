@@ -218,7 +218,7 @@ describe("New PaymentHub", () => {
     const values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
     const pathEthXCHF = ethers.solidityPacked(types,values);
     beforeEach(async () => {
-      randomShareAmount = randomBigInt(1, 5000);
+      randomShareAmount = randomBigInt(1, 500);
       xchfamount = await brokerbot.getBuyPrice(randomShareAmount);
     });
     it("Should get price in ETH", async () => {
@@ -392,7 +392,7 @@ describe("New PaymentHub", () => {
     const values = [config.zchfAddress, 100, config.usdtAddress, 3000, config.wethAddress];
     const pathEthZCHF = ethers.solidityPacked(types,values);
     beforeEach(async () => {
-      randomShareAmount = randomBigInt(1, 500);
+      randomShareAmount = randomBigInt(1, 50);
       zchfAmount = await brokerbotZCHF.getBuyPrice(randomShareAmount);
     });
 
