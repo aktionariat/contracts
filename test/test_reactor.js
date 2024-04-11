@@ -146,7 +146,30 @@ describe("Trade Reactor", () => {
       // revert if alrdeay was fully filled
       await expect(signatureTransfer.connect(backend).permitTransferFrom(permitData.values, transferDetails, seller.address, signature))
         .to.be.revertedWithCustomError(signatureTransfer, "InvalidNonce");
+      // check next free nonce
+      const newNonce = await signatureTransfer.findFreeNonce(seller.address, 0);
+      expect(newNonce).to.be.equal(1);
     });
+
+    it("Should revert if nonce got invalidated", async() => {
+      const nonce = await signatureTransfer.findFreeNonce(seller.address, 0);
+      const intent = new SignatureTransferIntent(await shares.getAddress(), backend.address, permitAmount).withNonce(nonce);
+      const {permitData: pd, signature: sig} = await intent.signIntent(signatureTransfer, seller);
+      const bitmap = await signatureTransfer.nonceBitmap(seller.address, 0);
+      expect(bitmap).to.be.equal(0);
+      await expect(signatureTransfer.connect(seller).invalidateUnorderedNonces(0,1))
+        .to.emit(signatureTransfer, "UnorderedNonceInvalidation")
+        .withArgs(seller.address, 0, 1);
+      const bitmapAfter = await signatureTransfer.nonceBitmap(seller.address, 0);
+      expect(bitmapAfter).to.be.equal(1);
+      const transferDetails = {
+        to: backend.address,
+        requestedAmount:  permitAmount,
+      };
+      await expect(signatureTransfer.connect(backend).permitTransferFrom(permitData.values, transferDetails, seller.address, signature))
+        .to.be.revertedWithCustomError(signatureTransfer, "InvalidNonce");
+
+    })
   });
 
   describe("Max Valid Amount", () => {
@@ -334,6 +357,9 @@ describe("Trade Reactor", () => {
       await signatureTransfer.connect(offramper).permitTransferFrom(permitData.values, transferDetails, seller.address, signature);
       const offrampSellerBalanceAfter = await zchfContract.balanceOf(offRampSeller.address);
       expect(offrampSellerBalanceAfter - offrampSellerBalanceBefore).to.be.equal(sellPrice);
+      // check nonce got invalidated and max amount is 0
+      const maxAmount = await tradeReactor.getMaxValidAmount(sellIntent, buyIntent);
+      expect(maxAmount).to.be.equal(0n);
     })
 
     it("Should process partiall filling", async() => {
@@ -384,13 +410,11 @@ describe("Trade Reactor", () => {
       // process 1st filling
       const sellerBaseBefore = await zchfContract.balanceOf(seller.address);
       const tradeReactorIssuer = await tradeReactor.connect(issuer);
-      // await tradeReactorIssuer["process(address,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,uint256)"](backend.address, sellIntent, signatureSeller, buyIntent1, signatureBuyer1, buyAmount1);
       await tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent1, signatureBuyer1);
       const sellerBaseAfter = await zchfContract.balanceOf(seller.address);
       expect(sellerBaseAfter - sellerBaseBefore).to.equal(buyPrice1);
       // process 2nd filling
       const sellerBaseBefore2 = await zchfContract.balanceOf(seller.address);
-      // await tradeReactorIssuer["process(address,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,(address,address,address,uint160,address,uint160,uint48,uint48,bytes),bytes,uint256)"](backend.address, sellIntent, signatureSeller, buyIntent2, signatureBuyer2, buyAmount2);
       await tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent2, signatureBuyer2);
       const sellerBaseAfter2 = await zchfContract.balanceOf(seller.address);
       expect(sellerBaseAfter2 - sellerBaseBefore2).to.equal(buyPrice2);
