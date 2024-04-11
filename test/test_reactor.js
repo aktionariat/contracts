@@ -149,7 +149,139 @@ describe("Trade Reactor", () => {
     });
   });
 
+  describe("Max Valid Amount", () => {
+    let sellIntent;
+    let buyIntent;
+    let sellAmount;
+    beforeEach(async() => {
+      // create intents
+      // sell intent
+      sellAmount = 100;
+      const sellPrice = 1000;
+      sellIntent = new TradeIntent(
+        seller.address, // owner
+        issuer.address, // filler
+        await shares.getAddress(), // tokenOut
+        sellAmount, // amountOut
+        await zchfContract.getAddress(), // tokenIn
+        sellPrice, // amountIn
+        await signatureTransfer.findFreeNonce(seller.address,0), // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      // buy intent
+      const buyAmount = 100;
+      const buyPrice = 1000;
+      buyIntent = new TradeIntent(
+        buyer.address, // owner
+        issuer.address, // filler
+        await zchfContract.getAddress(), // tokenOut
+        buyPrice, // amountOut
+        await shares.getAddress(), // tokenIn
+        buyAmount, // amountIn
+        await signatureTransfer.findFreeNonce(buyer.address,0), // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+    })
+    it("Should revert if bid price is below ask ", async() => {
+      buyIntent.amountOut = buyIntent.amountOut - 10;
+      await expect(tradeReactor.getMaxValidAmount(sellIntent, buyIntent))
+        .to.be.revertedWithCustomError(tradeReactor, "TradeReactor_OfferTooLow");
+    })
+
+    it("Should get correct max valid amount", async() => {
+      const maxAmount = await tradeReactor.getMaxValidAmount(sellIntent, buyIntent);
+      expect(maxAmount).to.be.equal(sellAmount);
+    })
+
+    it("Should get correct max amount if buyer isn't filling all", async() => {
+      buyIntent.amountOut = 500;
+      buyIntent.amountIn = 50;
+      const maxAmount = await tradeReactor.getMaxValidAmount(sellIntent, buyIntent);
+      expect(maxAmount).to.be.equal(buyIntent.amountIn);
+    })
+
+    it("Should get max valid amount if bid is higher", async() => {
+      buyIntent.amountOut = 1200;
+      buyIntent.amountIn = 110;
+      const maxAmount = await tradeReactor.getMaxValidAmount(sellIntent, buyIntent);
+      expect(maxAmount).to.be.equal(sellAmount);
+    })
+  })
+
   describe("Procces", () => {
+    describe("Check revert cases", () => {
+      let sellIntent;
+      let buyIntent;
+      beforeEach(async() => {
+        // create intents
+        // sell intent
+        const sellAmount = 100;
+        const sellPrice = 1000;
+        sellIntent = new TradeIntent(
+          seller.address, // owner
+          issuer.address, // filler
+          await shares.getAddress(), // tokenOut
+          sellAmount, // amountOut
+          await zchfContract.getAddress(), // tokenIn
+          sellPrice, // amountIn
+          await signatureTransfer.findFreeNonce(seller.address,0), // nonce
+          ethers.toUtf8Bytes("") // data
+        );
+        // buy intent
+        const buyAmount = 100;
+        const buyPrice = 1000;
+        buyIntent = new TradeIntent(
+          buyer.address, // owner
+          issuer.address, // filler
+          await zchfContract.getAddress(), // tokenOut
+          buyPrice, // amountOut
+          await shares.getAddress(), // tokenIn
+          buyAmount, // amountIn
+          await signatureTransfer.findFreeNonce(buyer.address,0), // nonce
+          ethers.toUtf8Bytes("") // data
+        );
+      })
+      it("Should revert on token missmatch", async() => {
+        buyIntent.tokenIn = await draggable.getAddress();
+        // sign intents
+        const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+        const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+        // process intents by calling process in tradereactor.sol
+        await expect(tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent, signatureBuyer))
+          .to.be.revertedWithCustomError(tradeReactor, "TradeReactor_TokenMismatch");
+      });
+
+      it("Should revert on invalid filler for seller", async() => {
+        sellIntent.filler = backend.address;
+        // sign intents
+        const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+        const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+        // process intents by calling process in tradereactor.sol
+        await expect(tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent, signatureBuyer))
+          .to.be.revertedWithCustomError(tradeReactor, "TradeReactor_InvalidFiller");
+      })
+
+      it("Should revert on invalid filler for buyer", async() => {
+        buyIntent.filler = backend.address;
+        // sign intents
+        const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+        const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+        // process intents by calling process in tradereactor.sol
+        await expect(tradeReactor.connect(issuer).process(backend.address, sellIntent, signatureSeller, buyIntent, signatureBuyer))
+          .to.be.revertedWithCustomError(tradeReactor, "TradeReactor_InvalidFiller");
+      })
+
+      it("Should revert if offer is too low", async() => {
+        buyIntent.amountOut = 1;
+        // sign intents
+        const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+        const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+        // process intents by calling process in tradereactor.sol
+        await expect(tradeReactor.connect(backend).process(backend.address, sellIntent, signatureSeller, buyIntent, signatureBuyer))
+          .to.be.revertedWithCustomError(tradeReactor, "TradeReactor_OfferTooLow");
+      })
+    });
+
     it("Should process intents", async() => {
       // create intents
       // sell intent
@@ -381,6 +513,28 @@ describe("Trade Reactor", () => {
       expect(brokerbotBaseAfter - brokerbotBaseBefore).to.be.equal(brokerbotPrice);
       expect(buyerBaseBefore - buyerBaseAfter).to.be.equal(brokerbotPrice);
     })
+
+    it("Should revert if brokerbot gives too low amount of shares", async() => {
+        // get price at brokerbot
+        const buyAmount = randomBigInt(1, 50);
+        const brokerbotPrice = await brokerbot.getBuyPrice(buyAmount);
+        const buyPrice = brokerbotPrice + 10n;
+        const sharesAmount = await brokerbot.getShares(buyPrice);
+        // buy intent
+        const buyIntent = new TradeIntent(
+          buyer.address, // owner
+          issuer.address, // filler
+          await zchfContract.getAddress(), // tokenOut
+          buyPrice, // amountOut
+          await shares.getAddress(), // tokenIn
+          buyAmount+10n, // amountIn
+          await signatureTransfer.findFreeNonce(buyer.address,0), // nonce
+          ethers.toUtf8Bytes("") // data
+        );
+        const {intent: signedBuyIntent, signature: signatureBuyer} = await buyIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), buyer);
+        await expect(tradeReactor.buyFromBrokerbot(brokerbotAddress, buyIntent, signatureBuyer, buyPrice))
+          .to.be.revertedWithCustomError(tradeReactor, "TradeReactor_OfferTooLow");
+    })
   })
 
   describe("Sell to Brokerbot with Intent", () => {
@@ -432,8 +586,28 @@ describe("Trade Reactor", () => {
       expect(sellerBaseAfter - sellerBaseBefore).to.be.equal(sellPrice);
       expect(brokerbotSharesAfter - brokerbotSharesBefore).to.be.equal(sellAmount);
     })
+
+    it("Should revert when brokerbot pays too less", async() => {
+      // sell intent
+      const sellAmount = randomBigInt(1, 500);
+      const sellPrice = await brokerbot.getSellPrice(sellAmount);
+      const sellPriceCheap = sellPrice - 100n;
+      const sellIntent = new TradeIntent(
+        seller.address, // owner
+        issuer.address, // filler
+        await shares.getAddress(), // tokenOut
+        sellAmount, // amountOut
+        await zchfContract.getAddress(), // tokenIn
+        sellPrice+100n, // amountIn
+        await signatureTransfer.findFreeNonce(buyer.address,0), // nonce
+        ethers.toUtf8Bytes("") // data
+      );
+      const {intent: signedSellIntent, signature: signatureSeller} = await sellIntent.signIntent(signatureTransfer, await tradeReactor.getAddress(), seller);
+      await expect(tradeReactor.sellToBrokerbot(brokerbotAddress, sellIntent, signatureSeller, sellAmount))
+        .to.be.revertedWithCustomError(tradeReactor, "TradeReactor_OfferTooLow");
+    })
   })
-  describe("Single intent", () => {
+  describe("Signal intent", () => {
     it("Should emit event with intent details", async() => {
       // sell intent
       const sellAmount = 100;
