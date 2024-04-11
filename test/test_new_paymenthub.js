@@ -424,7 +424,7 @@ describe("New PaymentHub", () => {
     it("Should buy shares and pay with ZCHF", async () => {
       const buyer = sig1;
       // allowance for zchf
-      await zchfContract.connect(buyer).approve(await paymentHub.getAddress(), daiAmount);
+      await zchfContract.connect(buyer).approve(await paymentHub.getAddress(), zchfAmount);
 
       const brokerbotBalanceBefore = await zchfContract.balanceOf(await brokerbotZCHF.getAddress());
       const paymentHubAdr1 = await paymentHub.connect(buyer);
