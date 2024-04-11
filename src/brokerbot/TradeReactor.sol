@@ -21,9 +21,9 @@ contract TradeReactor {
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
 
-    error OfferTooLow();
-    error InvalidFiller();
-    error TokenMismatch();
+    error TradeReactor_OfferTooLow();
+    error TradeReactor_InvalidFiller();
+    error TradeReactor_TokenMismatch();
 
     // copied from brokerbot for compatibility
     event Trade(address seller, address buyer, address indexed token, uint amount, address currency, uint price, uint fee);
@@ -101,7 +101,7 @@ contract TradeReactor {
         uint256 maxAmount = biddingFor > sellerAvailable ? sellerAvailable : biddingFor;
         uint256 ask = getAsk(sellerIntent, maxAmount);
         uint256 bid = getBid(buyerIntent, maxAmount);
-        if (bid < ask) revert OfferTooLow();
+        if (bid < ask) revert TradeReactor_OfferTooLow();
         return maxAmount;
     }
 
@@ -128,12 +128,12 @@ contract TradeReactor {
      */
     function process(address feeRecipient, Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) public {
         // signatures will be verified in SignatureTransfer
-        if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
-        if (sellerIntent.filler != address(0x0) && sellerIntent.filler != msg.sender) revert InvalidFiller();
-        if (buyerIntent.filler != address(0x0) && buyerIntent.filler != msg.sender) revert InvalidFiller();
+        if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TradeReactor_TokenMismatch();
+        if (sellerIntent.filler != address(0x0) && sellerIntent.filler != msg.sender) revert TradeReactor_InvalidFiller();
+        if (buyerIntent.filler != address(0x0) && buyerIntent.filler != msg.sender) revert TradeReactor_InvalidFiller();
         uint256 ask = getAsk(sellerIntent, amount);
         uint256 bid = getBid(buyerIntent, amount);
-        if (bid < ask) revert OfferTooLow();
+        if (bid < ask) revert TradeReactor_OfferTooLow();
         // move tokens to reactor in order to implicitly allowlist target address in case reactor is powerlisted
         transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(address(this), amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
         transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), buyerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
@@ -158,7 +158,7 @@ contract TradeReactor {
         transfer.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), amount), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
         IERC20(intent.tokenOut).approve(address(hub), amount);
         uint256 received = hub.payAndNotify(bot, amount, intent.data);
-        if (amount > getBid(intent, received)) revert OfferTooLow();
+        if (amount > getBid(intent, received)) revert TradeReactor_OfferTooLow();
         IERC20(intent.tokenIn).safeTransfer(intent.owner, received);
         IERC20(intent.tokenOut).safeTransfer(intent.owner, IERC20(intent.tokenOut).balanceOf(address(this))); // refund over paid amount
         return received;
@@ -178,7 +178,7 @@ contract TradeReactor {
         transfer.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
         IERC20(intent.tokenOut).approve(address(hub), soldShares);
         uint256 received = hub.payAndNotify(IERC20(intent.tokenOut), bot, soldShares, intent.data);
-        if (received < getAsk(intent, soldShares)) revert OfferTooLow();
+        if (received < getAsk(intent, soldShares)) revert TradeReactor_OfferTooLow();
         IERC20(intent.tokenIn).safeTransfer(intent.owner, received);
         return received;
     }
