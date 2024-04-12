@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Brokerbot Router", () => {
   let draggable;
@@ -84,7 +84,7 @@ describe("Brokerbot Router", () => {
     types = ["address","uint24","address","uint24","address","uint24","address"];
     values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
     pathBaseWeth = ethers.solidityPacked(types,values);
-    // shares - xchf 
+    // shares - xchf
     types = ["address", "uint24","address"];
     values = [await draggable.getAddress(), 0, config.baseCurrencyAddress];
     pathSingle = ethers.solidityPacked(types,values);
@@ -215,7 +215,6 @@ describe("Brokerbot Router", () => {
       });
 
       describe("Buy shares with path", () => {
-
         it("Should buy shares with DAI and swap path via router", async () => {
           const buyer = sig1;
           // get price in Dai from quoter

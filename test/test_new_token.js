@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const { PANIC_CODES } = require("@nomicfoundation/hardhat-chai-matchers/panic");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const config = require("../scripts/deploy_config_mainnet.js");
 const exp = require("constants");
 
 describe("New Standard", () => {
@@ -88,7 +88,7 @@ describe("New Standard", () => {
 
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
 
     //Mint shares to accounts
     for( let i = 0; i < accounts.length; i++) {

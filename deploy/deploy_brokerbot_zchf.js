@@ -1,5 +1,7 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config.js");
+const { getConfigPath } = require('../scripts/utils.js');
+// Shared  Config
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -9,8 +11,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const shares = await deployments.get('Shares');
   const paymentHub = await deployments.get('PaymentHub');
   
-  const price = "500000000000000000";
-  const increment = 10;
+  const price = ethers.parseUnits("100", 18);
+  const increment = 10000000000000000n;
   const baseCurrencyContract = config.zchfAddress; // ZCHF Contract
     
   if (network.name != "hardhat") {
