@@ -6,7 +6,6 @@ const { SignatureTransferIntent, TradeIntent, MockIntent} = require("./helper/in
 
 // Shared  Config
 const config = require(`..${getConfigPath()}`);
-// const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Trade Reactor", () => {
   let draggable;

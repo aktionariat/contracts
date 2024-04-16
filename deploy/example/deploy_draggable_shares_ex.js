@@ -34,7 +34,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("recoveryHub: %s", recoveryHub.address);
     console.log("offer factory: %s", offerFactory.address);
     console.log("permit2hub: %s", permit2Hub.address);
-    console.log("owner: %s", owner); // don't forget to set it in deploy_config_mainnet.js as the multsigadr
+    console.log("owner: %s", owner); // don't forget to set it in deploy_config.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {

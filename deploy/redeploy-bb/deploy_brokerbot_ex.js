@@ -24,7 +24,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("shares: %s", shares);
     console.log("paymentHub: %s", paymentHub);
     console.log("base xchf: %s", baseCurrencyContract);
-    console.log("owner: %s", owner);  // don't forget to set it in deploy_config_mainnet.js as the multsigadr
+    console.log("owner: %s", owner);  // don't forget to set it in deploy_config.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
