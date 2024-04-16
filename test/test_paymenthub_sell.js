@@ -17,6 +17,7 @@ describe("Sell via PaymentHub", () => {
   let wbtcContract;
   let usdcContract;
   let wethContract
+  let zchfContract;
 
   let deployer;
   let owner;
@@ -56,6 +57,7 @@ describe("Sell via PaymentHub", () => {
     wbtcContract = await ethers.getContractAt("ERC20Named", config.wbtcAddress)
     usdcContract = await ethers.getContractAt("ERC20Named", config.usdcAddress);
     wethContract = await ethers.getContractAt("ERC20Named", config.wethAddress);
+    zchfContract = await ethers.getContractAt("ERC20Named", config.zchfAddress);
 
     await deployments.fixture(["Shares", "DraggableShares", "PaymentHub", "Brokerbot", "MultiSigCloneFactory"]);
     paymentHub = await ethers.getContract("PaymentHub");
@@ -65,7 +67,7 @@ describe("Sell via PaymentHub", () => {
     multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
 
     // Set (manipulate local) balances (xchf,dai,wbtc) for first 5 accounts
-    await setBalances(accounts, baseCurrency, daiContract, wbtcContract);
+    await setBalances(accounts, baseCurrency, daiContract, wbtcContract, zchfContract);
 
     //Mint shares to first 5 accounts
     for( let i = 0; i < 5; i++) {
@@ -121,7 +123,7 @@ describe("Sell via PaymentHub", () => {
       const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
       path = ethers.solidityPacked(types,values);
       const ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
-      //console.log(`ethAmount: ${ethers.utils.formatEther(ethAmount)}`);
+      // console.log(`ethAmount: ${ethers.formatEther(ethAmount)}`);
       expect(await wethContract.balanceOf(seller.address)).to.equal(0);
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
       const params = {
@@ -138,14 +140,15 @@ describe("Sell via PaymentHub", () => {
 
   describe("Selling against ETH", () => {
     let ethAmount;
+    //  usdc - weth
+    const types = ["address","uint24","address"];
+    const values = [config.baseCurrencyAddress, 500, config.wethAddress];
+    const pathBaseWeth = ethers.solidityPacked(types,values);
+
     beforeEach(async () => {
       // set sig as seller
       seller = sig1;
-      // path: XCHF -> WETH
-      const types = ["address","uint24","address"];
-      const values = [config.baseCurrencyAddress, 3000, config.wethAddress];
-      path = ethers.solidityPacked(types,values);
-      ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, path, false);
+      ethAmount = await paymentHub.getPriceERC20.staticCall(baseAmount, pathBaseWeth, false);
     })
     it("Should sell against ETH", async () => {
       await draggable.connect(seller).approve(await paymentHub.getAddress(), config.infiniteAllowance);
@@ -154,7 +157,7 @@ describe("Sell via PaymentHub", () => {
       // in real use case slippage should be considerered for ethAmount (the miniminum out amount from the swap)
       const unwrapWeth = true;
       const params = {
-        path: path,
+        path: pathBaseWeth,
         recipient: seller.address,
         deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
         amountIn: baseAmount,

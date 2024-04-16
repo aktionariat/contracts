@@ -10,7 +10,7 @@ module.exports = {
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
   baseCurrencyName: "CryptoFranc",
   baseCurrencySymbol: "XCHF",
-  xchfBalanceSlot: 2,
+  baseCurrencyBalanceSlot: 2,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
@@ -40,11 +40,18 @@ module.exports = {
   usdtAddress: "0xdac17f958d2ee523a2206206994597c13d831ec7",
   // USDC
   usdcAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  // DCHF
+  dchfAddress: "0x045da4bfe02b320f4403674b3b7d121737727a36",
+  // ZCHF
+  zchfAddress: "0xB58E61C3098d85632Df34EecfB899A1Ed80921cB",
+  zchfBalanceSlot: 0,
   // brokerbot
   BUYING_ENABLED: 1n,
   SELLING_ENABLED: 2n,
   KEEP_ETHER: 4n,
   //permit2
   permit2Address: "0x000000000022d473030f116ddee9f6b43ac78ba3", // Mainnet, Goerli, Arbitrum, Optimism, Polygon
-  permit2HubAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b"
+  permit2HubAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b",
+  // PaymentHub
+  paymentHubAddress: "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C"
 };

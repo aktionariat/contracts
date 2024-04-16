@@ -13,7 +13,7 @@ There are five notable smart contracts in this repository:
 4. The [ERC20Allowlistable Contract](doc/allowlist.md), providing a highly efficient and elaborate way to enforce transfer restrictions.
 5. The [Brokerbot Contract](doc/market.md), providing mechanisms for the selling and repurchasing of shares with automated price adjustments.
 
-Futhermore, there is a [Shares Contract](doc/shares.md) that can contain all the functions to reploy a token that can represent shares under Swiss law. Also, we'd like to point to our elegant implementation of [infinite allowances](doc/infiniteallowance.md).
+Futhermore, there is a [Shares Contract](doc/shares.md) that can contain all the functions to deploy a token that can represent shares under Swiss law. Also, we'd like to point to our elegant implementation of [infinite allowances](doc/infiniteallowance.md).
 
 ## Full User Control
 

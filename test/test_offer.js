@@ -3,7 +3,6 @@ const Chance = require("chance");
 const { setBalance, setBalanceWithAmount, randomBigInt, setup } = require("./helper/index");
 const { expect } = require("chai");
 
-
 // Shared  Config
 const config = require("../scripts/deploy_config_polygon.js");
 

@@ -45,6 +45,9 @@ module.exports = {
   // USDC
   usdcAddress: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", // use usdt for tests
   //usdcAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+  // ZCHF
+  zchfAddress: "0x02567e4b14b25549331fCEe2B56c647A8bAB16FD",
+  zchfBalanceSlot: 0,
   // brokerbot
   BUYING_ENABLED: 1n,
   SELLING_ENABLED: 2n,

@@ -18,7 +18,13 @@ describe("PaymentHub", () => {
   let owner;
   let sig1;
   let sig2;
+  let sig3;
   let sig
+
+  //  usdc - weth
+  const types = ["address","uint24","address"];
+  const values = [config.baseCurrencyAddress, 500, config.wethAddress];
+  const pathBaseWeth = ethers.solidityPacked(types,values);
 
   before( async () => {
     [deployer,owner,sig1,sig2,sig3] = await ethers.getSigners();
@@ -37,8 +43,7 @@ describe("PaymentHub", () => {
   });
 
   it("should get price in ether", async () => {
-    //const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, await brokerbot.getAddress());
-    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress(), pathBaseWeth);
     expect(priceInETH).to.be.above(0n);
   });
 
@@ -51,11 +56,11 @@ describe("PaymentHub", () => {
 
     // Execute payment
     //const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, await brokerbot.getAddress());
-    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress(), pathBaseWeth);
     const txInfo = await paymentHub.connect(owner).payFromEther(
       accounts[1],
       paymentAmountInBase,
-      await brokerbot.base(),
+      pathBaseWeth,
       { value: priceInETH }
     );
     const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
@@ -67,7 +72,7 @@ describe("PaymentHub", () => {
 
     // Check result
     expect(ethBalanceSenderBefore - priceInETH - gasCost).to.equal(ethBalanceSenderAfter);
-    expect(baseBalanceRecipientBefore + paymentAmountInBase).to.equal(baseBalanceRecipientAfter);
+    expect(baseBalanceRecipientAfter - baseBalanceRecipientBefore ).to.equal(paymentAmountInBase);
   });
 
   it("should return unspent ETH to spender", async () => {
@@ -80,14 +85,14 @@ describe("PaymentHub", () => {
     const routerETH = await ethers.provider.getBalance(config.uniswapRouterAddress);
 
     // Calculate required ETH and set a slippage
-    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress(), pathBaseWeth);
     const priceInEthWithSlippage = priceInETH * 103n / 100n;
 
     // Execute transaction with increased ETH
     const txInfo = await paymentHub.connect(owner).payFromEther(
       accounts[1],
       paymentAmountInBase,
-      await brokerbot.base(),
+      pathBaseWeth,
       { value: priceInEthWithSlippage }
     );
     const { gasPrice, cumulativeGasUsed} = await txInfo.wait();

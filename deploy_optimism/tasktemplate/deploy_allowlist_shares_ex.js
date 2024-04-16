@@ -21,7 +21,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Deploy Allowlist Shares " + symbol)
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("owner: %s", owner)  // don't forget to set it in deploy_config.js as the multsigadr
+    console.log("owner: %s", owner);
     
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {

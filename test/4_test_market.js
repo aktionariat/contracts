@@ -24,6 +24,11 @@ describe("Brokerbot", () => {
   let owner;
   let sig1;
 
+  //  usdc - weth
+  const types = ["address","uint24","address"];
+  const values = [config.baseCurrencyAddress, 500, config.wethAddress];
+  const pathBaseWeth = ethers.solidityPacked(types,values);
+
   before(async () => {
     [deployer,owner,sig1] = await ethers.getSigners();
     accounts = [owner.address,sig1.address];
@@ -119,7 +124,6 @@ describe("Brokerbot", () => {
     it("should calculate buy price correctly - with increment - no drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random increment
-      //const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 1000 }).toString(),"finney");
       const increment = randomBigInt(1, 1000)
 
       await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
@@ -157,9 +161,6 @@ describe("Brokerbot", () => {
     it("should calculate sell price correctly - with increment - no drift", async () => {
       // Used Contract: Brokerbot
       // Initialize with random increment
-       /* const increment = ethers.parseUnits(new Chance().integer({ min: 1, max: 10000 }).toString(),
-        "gwei"
-        ); */
       const  increment = ethers.parseUnits(new Chance().floating({min: 0.000001, max: 0.0001, fixed: 6}).toString(), await baseCurrency.decimals());
       await brokerbot.connect(owner).setPrice(config.sharePrice, increment);
       
@@ -304,7 +305,7 @@ describe("Brokerbot", () => {
       // Random number of shares to buy
       const sharesToBuy = randomBigInt(1, 500);
       const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-      const buyPriceInETH = await paymentHub.getPriceInEther.staticCall(buyPrice, await brokerbot.getAddress());
+      const buyPriceInETH = await paymentHub.getPriceInEther.staticCall(buyPrice, await brokerbot.getAddress(), pathBaseWeth);
       
       // Base payment should fail
       await expect(paymentHub.connect(owner)["payAndNotify(address,uint256,bytes)"](
@@ -313,7 +314,7 @@ describe("Brokerbot", () => {
         
       // ETH payment should fail
       await expect(paymentHub.connect(owner).payFromEtherAndNotify(
-        await brokerbot.getAddress(), buyPrice, "0x20", { value: buyPriceInETH }))
+        await brokerbot.getAddress(), buyPrice, "0x20", pathBaseWeth, { value: buyPriceInETH }))
           .to.be.revertedWithCustomError(brokerbot, "Brokerbot_BuyingDisabled");
     });
         
