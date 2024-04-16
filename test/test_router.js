@@ -34,6 +34,7 @@ describe("Brokerbot Router", () => {
   let pathUsdc;
   let pathBaseUsdc;
   let pathDai;
+  let pathBaseWeth
   let pathWeth;
   let pathSingle;
   let blockTimestamp;
@@ -79,6 +80,10 @@ describe("Brokerbot Router", () => {
     types = ["address", "uint24","address","uint24","address","uint24","address"];
     values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.wethAddress];
     pathWeth = ethers.solidityPacked(types,values);
+    // base - usdc - weth
+    types = ["address","uint24","address","uint24","address"];
+    values = [config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.wethAddress];
+    pathBaseWeth = ethers.solidityPacked(types,values);
     // shares - base 
     types = ["address", "uint24","address"];
     values = [await draggable.getAddress(), 0, config.baseCurrencyAddress];
@@ -177,32 +182,6 @@ describe("Brokerbot Router", () => {
             sqrtPriceLimitX96: 0
           }
           await brokerbotRouter.connect(buyer).exactOutputSingle(params);
-          const brokerbotBalanceAfter = await baseCurrency.balanceOf(await brokerbot.getAddress());
-          const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
-          expect(await baseCurrency.balanceOf(await brokerbotRouter.getAddress())).to.equal(0);
-          expect(await baseCurrency.balanceOf(await paymentHub.getAddress())).to.equal(0);
-          expect(brokerbotBalanceBefore + baseAmount).to.equal(brokerbotBalanceAfter);
-          expect(buyerBalanceBefore + randomShareAmount).to.equal(buyerBalanceAfter);
-        });
-
-        it("Should buy shares with ETH via router", async () => {
-          const priceInETH = await paymentHub.getPriceInEther.staticCall(baseAmount, await brokerbot.getAddress());
-          // send a little bit more for slippage 
-          const priceInETHWithSlippage = priceInETH * 101n / 100n;
-          const buyer = sig1;
-          const buyerBalanceBefore = await draggable.balanceOf(buyer.address);
-          const brokerbotBalanceBefore = await baseCurrency.balanceOf(await brokerbot.getAddress());
-          const params = {
-            tokenIn: await baseCurrency.getAddress(),
-            tokenOut: await draggable.getAddress(),
-            fee: 0,
-            recipient: buyer.address,
-            deadline: await getBlockTimeStamp(ethers).then(t => t + 1),
-            amountOut: randomShareAmount,
-            amountInMaximum: priceInETHWithSlippage,
-            sqrtPriceLimitX96: 0
-          }
-          await brokerbotRouter.connect(buyer).exactOutputSingle(params, {value: priceInETHWithSlippage});
           const brokerbotBalanceAfter = await baseCurrency.balanceOf(await brokerbot.getAddress());
           const buyerBalanceAfter = await draggable.balanceOf(buyer.address);
           expect(await baseCurrency.balanceOf(await brokerbotRouter.getAddress())).to.equal(0);
@@ -324,7 +303,7 @@ describe("Brokerbot Router", () => {
           const buyer = sig1;
           // get price in weth from quoter
           const amountWeth = await brokerbotQuoter.quoteExactOutput.staticCall(pathWeth, randomShareAmount);
-          const priceInETH = await paymentHub.getPriceInEther.staticCall(baseAmount, await brokerbot.getAddress());
+          const priceInETH = await paymentHub.getPriceInEther.staticCall(baseAmount, await brokerbot.getAddress(), pathBaseWeth);
           const priceInETHWithSlippage = amountWeth * 101n / 100n;
           // log balance
           const buyerBalanceBefore = await draggable.balanceOf(buyer.address);

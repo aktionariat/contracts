@@ -52,7 +52,7 @@ describe("Brokerbot Registry", () => {
     await expect(brokerbotRegistry.connect(sig1).registerBrokerbot(await brokerbot.getAddress(), config.baseCurrencyAddress, await draggable.getAddress()))
       .to.be.revertedWithCustomError(brokerbotRegistry, "Ownable_NotOwner")
       .withArgs(sig1.address);
-    await expect(brokerbotRegistry.registerBrokerbot(await brokerbot.getAddress(), config.baseCurrencyAddress, await draggable.getAddress()))
+    await expect(brokerbotRegistry.connect(owner).registerBrokerbot(await brokerbot.getAddress(), config.baseCurrencyAddress, await draggable.getAddress()))
       .to.emit(brokerbotRegistry, "RegisterBrokerbot")
       .withArgs(await brokerbot.getAddress(), config.baseCurrencyAddress, await draggable.getAddress());
     const registry = await brokerbotRegistry.getBrokerbot(config.baseCurrencyAddress, await draggable.getAddress());

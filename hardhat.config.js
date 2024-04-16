@@ -39,6 +39,24 @@ function getForkUrl() {
   }
 }
 
+function getForkBlockNumber() {
+  switch (process.env.FORK_NETWORK) {
+    case "polygon":
+      return 54509659;
+    default:
+      return 19419243;
+  }
+}
+
+function getForkChainId() {
+  switch (process.env.FORK_NETWORK) {
+    case "polygon":
+      return 137;
+    default:
+      return 1;
+  }
+}
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -62,13 +80,14 @@ module.exports = {
       forking: {
         //enabled: process.env.FORKING === "true",
         url: getForkUrl(),
-        blockNumber: 52347676,
+        blockNumber: getForkBlockNumber(), //polygon
+        // blockNumber: 17663503,
       },
-      live: true,
+      live: false,
       saveDeployments: true,
       //chainId: 31337, // the default chain ID used by Hardhat Network's blockchain
-      //chainId: 1, // 1 for forking mainnet test
-      chainId: 137,
+      // chainId: 1, // 1 for forking mainnet test
+      chainId: getForkChainId(), // polygon
       tags: ["test", "local"],
     },
     ropsten: {
@@ -186,7 +205,7 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
-      137: 1, // polygon 
+      137: 1, // polygon
       3: 1,
       4: 1,
       5: 1,
@@ -198,7 +217,7 @@ module.exports = {
       default: 1,
       //1: process.env.MULTISIG_DEPLOY, // mainnet
       10: process.env.MULTISIG_DEPLOY, // optimism
-      //137: process.env.MULTISIG_DEPLOY, // polygon
+      // 137: process.env.MULTISIG_DEPLOY, // polygon
       3: process.env.MULTISIG_DEPLOY, // ropsten
       4: process.env.MULTISIG_DEPLOY, // rinkeby
       5: process.env.MULTISIG_DEPLOY, // goerli
@@ -261,7 +280,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.21",
+        version: "0.8.25",
         settings: {
           optimizer: {
             enabled: true,

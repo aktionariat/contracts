@@ -49,7 +49,7 @@ describe("Migration", () => {
     })
     it("Should revert if there is an open offer", async () => {
       const overrides = {
-        value: ethers.parseEther("5.0")
+        value: ethers.parseEther("6000.0")
       }
       pricePerShare = ethers.parseUnits("2", 18);
       salt = ethers.encodeBytes32String('1');

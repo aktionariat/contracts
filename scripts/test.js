@@ -19,7 +19,7 @@ accounts = [owner.address,sig1.address,sig2.address,sig3.address,sig4.address];
 
 const index = ethers.utils.solidityKeccak256(
   ["uint256", "uint256"],
-  [accounts[0], config.xchfBalanceSlot] // key, slot
+  [accounts[0], config.baseCurrencyBalanceSlot] // key, slot
 );
 
 }

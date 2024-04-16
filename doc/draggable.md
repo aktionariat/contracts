@@ -1,10 +1,14 @@
-# Drag-Along Mechanism 1.0
+# Drag-Along Mechanism 1.0.1
 
 ![drag-along](https://hub.aktionariat.com/images/contracts/draggable.jpg)
 
 ## Version History
 
-Versions prior to 1.0 are documented within the relevant Token Holder Agreements.
+Versions prior to 1.0.1 are found it the git history.
+| Version | Changes |
+|---|---|
+| [1.0](https://github.com/aktionariat/contracts/blob/916aaeef64f30d1c6536e5946fd24de3f9c9d178/doc/draggable.md) | Initial version |
+| 1.0.1 | Quorum is defined in the SHA, migration has own quorum |
 
 Internal note: this document is referred to from various places, including legal documents. In case of material changes, we need to bump the version number and provide a link to old version. Furthermore, the DNS entry of [dragdoc.aktionariat.com](http://dragdoc.aktionariat.com/) should always redirect to this document and needs to be updated in case this document is moved.
 
@@ -24,7 +28,7 @@ After the initiation of an offer, the Voting Period starts. During the Voting Pe
 ### Execution
 Anyone can trigger the 'execution' function on the Offer Contract to enforce the acquisition at any time during the Voting Period or the Execution Period, given that all necessary conditions are met, namely that the Acquisition Quorum is reached and the required funding is available. Executing the Acquisition Offer assigns all wrapped Base Tokens to the Offering Party and replaces them with the sales proceeds. At the same time, this Agreement ceases to be contractually binding, allowing the SHA Token Holders to unwrap the sales proceeds in proportion to their tokens.
 
-The Acquisition Quorum is reached if at least 75% of all shares approved the acquisition. Once the Voting Period ends, the shares for which no vote was cast are assumed to have voted yes and no in the same proportion as those shares that did vote. The votes of the shares not represented by SHA Tokens are reported through the Oracle.
+The Acquisition Quorum, as specified in the SHA and typically set at 75%, is achieved when more than this percentage of all shares approved the acquisition. Once the Voting Period ends, the shares for which no vote was cast are assumed to have voted yes and no in the same proportion as those shares that did vote. The votes of the shares not represented by SHA Tokens are reported through the Oracle.
 
 ### Cancellation
 The Offering Party can cancel the offer at any time, calling the respective function on the Offer Contract. Furthermore, anyone can contest the Acquisition Offer, calling the respective function on the Offer Contract. This results in the Acquisition Offer being cancelled if the Offering Party did not make enough funds available, if the Execution Period has passed, or if the Acquisition Quorum has become unreachable under the assumption that the number of "no" votes will not decrease.
@@ -33,7 +37,7 @@ Further, anyone can make a higher counteroffer using the same acquisition curren
 ## Further Notes
 
 - Anyone owning base tokens can wrap them at any time, thereby converting these base tokens into draggable tokens. The base tokens still exist, but are now under control of the draggable contract. Think of this process as taking a traditional paper certificate and putting it into a sealed envelope. For each outstanding draggable token, the draggable contract holds exactly one base token as backing. A draggable token legally represents a base token that is bound to a shareholder agreement.
-- A majority of shareholders holding 75% of the shares can update the shareholder agreement and migrate all the base tokens to a new contract that represents a different shareholder agreement or even end the shareholder agreement completely. Once the agreement has ended, token holders are free to unwrap their base tokens again – or to break the seal and open the envelope when thinking in terms of the paper analogy.
+- A majority of shareholders, holding at least the percentage of shares required for the migration quorum as outlined in SHA (e.g. 75%), have the authority to transfer all the base tokens to a new contract that represents a different shareholder agreement or even terminate the existing shareholder agreement entirely. Once the agreement has ended, token holders are free to unwrap their base tokens again – or to break the seal and open the envelope when thinking in terms of the paper analogy.
 - Anyone can make an acquisition offer at any time. When doing so, the full acquisition amount must be available in a currency of choice (for example 10 million DAI, if the company is valued that highly). If a given quorum (e.g. 75%) of all votes cast within a given timeframe (e.g. 60 days) approve the acquisition, all base tokens are sent to the acquirer and replaced with the according amount of money. From now on, the draggable tokens do not represent a share anymore, but the according amount of the acquisition currency (e.g. 100 DAI per token). Token holders are free to unwrap their DAI at any time. In the paper analogy, the shareholders can now open their sealed envelopes as the shareholder agreement has ended, but instead of finding a certificate inside, they magically find a bundle of bank notes.
 - In case not all shares are tokenized, an external oracle can report the votes of the other shareholders to the token contract
 - If the offer has expired or the offer is not well funded anymore, anyone can kill the current offer by calling `contest` on the offer contract.
