@@ -1,0 +1,36 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0x23a72dfa62cd95c08ee116a285ae4f05cbeccd18",
+  "address": {
+    "recoveryHub": "0xaea2886cb865bab01fc43f3c3f51b27b720ae185",
+    "offerFactory": "0x339891af65dfc0ca929e5521978e07d162514f92",
+    "permit2Hub": "0xF08c085748711078C32338e3356c0E533a4a22aC",
+    "paymentHub": "0x3eeffebd88a3b4bc1fe600bfcd1c0a8c8b813980",
+    "brokerbotRegistry": "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE",
+    "share": "0xad71b092284d8177a4a75b6e8a1caf14d4335e37",
+    "draggable": "0x0f824e8787c13829f09517175f2067863ed385f4",
+    "brokerbot": "0x0bb72158eDE382B7A42e874ac55E0EbD6C0f057A"
+  },
+  "companyName": "Operal AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "OPR",
+  "name": "Operal AG Shares",
+  "terms": "invest.operal.solutions",
+  "totalShares": "110000",
+  "sharePrice": "17000000000000000000",
+  "increment": "0",
+  "quorumBps": 6667,
+  "quorumMigration": 6667,
+  "votePeriodSeconds": 2592000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x90A203768AA3f6D06e7F02da47c9f6EC7E408636",
+  "brokerbot": {
+    "shares": "0x0f824e8787c13829f09517175f2067863ed385f4"
+  },
+  "blocknumber": "0x355e917",
+  "version": {
+    "shares": "4",
+    "brokerbot": "8"
+  }
+}
