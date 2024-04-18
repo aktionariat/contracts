@@ -509,7 +509,7 @@ function setBaseCurrency() {
             nconf.set("baseCurrencyAddress", config.xchf.sepolia);
             break;
         case "polygon":
-            nconf.set("baseCurrencyAddress", config.xchf.polygon);
+            nconf.set("baseCurrencyAddress", config.zchf.polygon);
             break;
         default:
             nconf.set("baseCurrencyAddress", config.xchf.mainnet);

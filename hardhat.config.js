@@ -190,16 +190,13 @@ module.exports = {
       saveDeployments: true,
       deploy: ['deploy_polygon']
     },
-    mumbai: {
-      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
-      accounts: accounts("mumbai"),
-      chainId: 80001,
+    amoy: {
+      url: `https://polygon-amoy.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: accounts("amoy"),
+      chainId: 80002,
       live: true,
       saveDeployments: true,
       tags: ["staging"],
-      gasPrice: 5000000000,
-      gasMultiplier: 2,
-      gas: 3000000,
       deploy: ['deploy_polygon']
     }
   },
@@ -212,7 +209,7 @@ module.exports = {
       5: 1,
       11155111: 1,
       69: 1,
-      80001: 1,
+      80002: 1,
     },
     owner: {
       default: 1,
@@ -225,7 +222,7 @@ module.exports = {
       11155111: process.env.MULTISIG_DEPLOY, // sepolia
       69: process.env.MULTISIG_DEPLOY, // optimism kovan
       42161: process.env.MULTISIG_DEPLOY, // arb1
-      80001: process.env.MULTISIG_DEPLOY  // mumbai
+      80002: process.env.MULTISIG_DEPLOY, // amoy
     },
     dev: {
       // Default to 1
@@ -243,7 +240,7 @@ module.exports = {
       11155111: process.env.MULTISIG_DEFAULT,
       69: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
-      80001: process.env.MULTISIG_DEFAULT,
+      80002: process.env.MULTISIG_DEFAULT,
       137: process.env.MULTISIG_DEFAULT
     },
     trustedForwarder: {
@@ -251,7 +248,7 @@ module.exports = {
       1: process.env.TRUSTED_FORWARDER, // mainnet
       10: process.env.TRUSTED_FORWARDER, // op mainnet
       137: process.env.TRUSTED_FORWARDER, // polygon
-      80001: 1,
+      80002: 1,
     }
   },
   gasReporter: {

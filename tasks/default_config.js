@@ -6,6 +6,9 @@ const config = {
     sepolia: "0x2181c6817Cc2429bbf5C50D532D18c7008E6863A", // sepolia usdc
     polygon: "0x23a72dfa62cd95c08ee116a285ae4f05cbeccd18", // ploygon xchf
   },
+  zchf: {
+    polygon: "0x02567e4b14b25549331fCEe2B56c647A8bAB16FD", // polygon zchf
+  },
   brokerbotRegistry: {
     mainnet: "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98",
     optimism: "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093",
