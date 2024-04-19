@@ -57,7 +57,7 @@
     "hardhat": "^2.18",
     "hardhat-change-network": "^0.0.7",
     "hardhat-dependency-compiler": "^1.1.2",
-    "hardhat-deploy": "^0.11.42",
+    "hardhat-deploy": "^0.12.2",
     "hardhat-deploy-ethers": "^0.4.1",
     "hardhat-gas-reporter": "^1.0.9",
     "inquirer": "^8.0.0",

@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
 const { getConfigPath } = require('../scripts/utils.js');
+const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 // Shared  Config
 const config = require(`..${getConfigPath()}`);
 
@@ -32,7 +33,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     }
   }
 
-  const feeData = await ethers.provider.getFeeData();
+  // const feeData = await ethers.provider.getFeeData();
+  const feeData = await getGasPrice();
 
   const { address } = await deploy("BrokerbotZCHF", {
     contract: "Brokerbot",

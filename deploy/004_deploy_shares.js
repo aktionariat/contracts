@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
 const config = require("../scripts/deploy_config_polygon.js");
+const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -10,7 +11,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const permit2Hub = await deployments.get("Permit2Hub");
 
   const symbol = "SHR";
-  const name = "Test Shares";
+  const name = "Test Deployment1 Shares";
   const terms = "test.ch/terms";
   const totalShares = 10000000;
   
@@ -30,7 +31,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     }
   }
 
-  const feeData = await ethers.provider.getFeeData();
+  // const feeData = await ethers.provider.getFeeData();
+  const feeData = await getGasPrice();
 
   const { address } = await deploy("Shares", {
     contract: "Shares",

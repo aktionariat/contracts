@@ -19,25 +19,25 @@ const config = {
   recoveryHub: {
     mainnet: "",
     optimism: "",
-    polygon: "0x0235FB5902b84885bA79BDbce417C49E3720eb2d",
+    polygon: "0xaea2886cb865bab01fc43f3c3f51b27b720ae185",
     mumbai: "0x1776C349696CccAE06541542C5ED954CDf9859cC"
   },
   offerFactory: {
     mainnet: "",
     optimism: "",
-    polygon: "0x425cE8A2d6A2fAF2506ce32437666d3156136a43",
+    polygon: "0x339891af65dfc0ca929e5521978e07d162514f92",
     mumbai: "0x4A9519256A707873a32d0e436182AeE2967694C4"
   },
   paymentHub: {
     mainnet: "",
     optimism: "",
-    polygon: "0x562Db37cc371765DfB7A66A9277f1786ECf1499f",
+    polygon: "0x3eeffebd88a3b4bc1fe600bfcd1c0a8c8b813980",
     mumbai: "0x6a972E875f4bB56b1e82027aEa3E58076d32119c"
   },
   permit2Hub: {
     mainnet: "",
     optimism: "",
-    polygon: "0xF08c085748711078C32338e3356c0E533a4a22aC",
+    polygon: "0xc5e049019fd4c21de3685f60993fd41d3098dca5",
     mumbai: "0xd6e98A2BDe37B7bCA4D265429D91af5c3CA3E74a"
   },
   deployLogDir: "./deploy_log"

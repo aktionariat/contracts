@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
+const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -22,7 +23,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     }
   }
 
-  const feeData = await ethers.provider.getFeeData();
+  // const feeData = await ethers.provider.getFeeData();
+  const feeData = await getGasPrice();
 
   const { address } = await deploy("TradeReactor", {
     contract: "TradeReactor",

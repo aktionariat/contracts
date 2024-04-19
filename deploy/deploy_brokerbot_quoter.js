@@ -1,6 +1,7 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
 const config = require("../scripts/deploy_config_polygon.js");
+const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -33,7 +34,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     }
   }
 
-  const feeData = await ethers.provider.getFeeData();
+  // const feeData = await ethers.provider.getFeeData();
+  const feeData = await getGasPrice();
 
   const { address } = await deploy("BrokerbotQuoter", {
     contract: "BrokerbotQuoter",
