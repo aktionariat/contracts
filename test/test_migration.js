@@ -2,7 +2,8 @@ const { ethers} = require("hardhat");
 const { expect } = require("chai");
 const { setup } = require("./helper/index");
 // Shared  Config
-const config = require("../scripts/deploy_config_mainnet.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("Migration", () => {
   let draggable;
