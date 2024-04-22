@@ -41,6 +41,12 @@ import "../ERC20/ERC20Permit2.sol";
  */
 contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, ERC20Permit2 {
 
+    // Version history:
+    // 1: pre permit
+    // 2: includes permit
+    // 3: added permit2 allowance, VERSION field
+    uint8 public constant VERSION = 3;
+
     string public terms;
 
     /// Event when the terms are changed with setTerms().
