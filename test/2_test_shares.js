@@ -1,6 +1,6 @@
 // Shared Config
-const config = require("../scripts/deploy_config_mainnet.js");
-
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 // Libraries
 const { getUnnamedAccounts } = require("hardhat");
 const { expect } = require("chai");

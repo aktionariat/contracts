@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config_mainnet.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -12,10 +13,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const offerFactory = await deployments.get("OfferFactory");
   const permit2Hub = await deployments.get("Permit2Hub");
   
-  const terms = "test.ch/terms";
-  const quorumBps = 7500;
-  const quorumMigration = 7500;
-  const votePeriodSeconds = 5184000;
+  const terms = config.terms;
+  const quorumBps = config.quorumBps;
+  const quorumMigration = config.quorumMigration;
+  const votePeriodSeconds = config.votePeriodSeconds;
 
   const params = {
     wrappedToken: shares.address,

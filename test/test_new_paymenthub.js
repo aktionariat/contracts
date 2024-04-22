@@ -8,8 +8,8 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config_mainnet.js");
-const { baseCurrencyAddress } = require("../scripts/deploy_config_mainnet.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.BrowserProvider(network.provider);

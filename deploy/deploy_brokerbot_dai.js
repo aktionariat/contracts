@@ -1,4 +1,6 @@
 const Confirm = require('prompt-confirm');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -10,7 +12,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   
   const price = "500000000000000000";
   const increment = 10;
-  const baseCurrencyContract = "0x6b175474e89094c44da98b954eedeac495271d0f"; // DAI Contract
+  const baseCurrencyContract = config.daiAddress; // DAI Contract
     
   if (network.name != "hardhat") {
     console.log("-----------------------")

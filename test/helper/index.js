@@ -2,18 +2,6 @@ const {network, ethers, deployments, getNamedAccounts} = require("hardhat");
 const config = require("../../scripts/deploy_config_mainnet.js")
 const Chance = require("chance");
 const { Transaction } = require("ethers");
-const { chain } = require("lodash");
-
-const getConfigPath = () => {
-  switch (network.config.chainId) {
-    case 1:
-      return "/scripts/deploy_config_mainnet.js";
-    case 137:
-      return "/scripts/deploy_config_polygon.js";
-    default:
-      return "/scripts/deploy_config_mainnet.js";
-  }
-}
 
 const toBytes32 = (bn) => {
   return ethers.hexlify(ethers.zeroPadValue('0x'+bn.toString(16), 32));
@@ -324,5 +312,4 @@ module.exports = {
   randomBigInt,
   giveApproval,
   allowanceType,
-  getConfigPath
 };

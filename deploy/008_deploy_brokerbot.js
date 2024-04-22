@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config_mainnet.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;
@@ -11,8 +12,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const paymentHub = await deployments.get('PaymentHub');
   
   const price = config.sharePrice;
-  const increment = 0;
-  const baseCurrencyContract = "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08";
+  const increment = config.increment;
+  const baseCurrencyContract = config.baseCurrencyAddress;
   
   
   if (network.name != "hardhat") {

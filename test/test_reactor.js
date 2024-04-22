@@ -1,12 +1,12 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { SignatureTransfer, permitTransferFromWithWitnessType } = require("@uniswap/permit2-sdk");
-const { randomBigInt, giveApproval, setBalance, allowanceType, getConfigPath } = require("./helper/index");
+const { randomBigInt, giveApproval, setBalance, allowanceType } = require("./helper/index");
 const { SignatureTransferIntent, TradeIntent, MockIntent} = require("./helper/intent.js");
 
 // Shared  Config
+const { getConfigPath } = require('../scripts/utils.js');
 const config = require(`..${getConfigPath()}`);
-// const config = require("../scripts/deploy_config_mainnet.js");
 
 describe("Trade Reactor", () => {
   let draggable;

@@ -1,6 +1,7 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config_mainnet.js");
 const nconf = require('nconf');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -10,8 +11,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   
   const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
   const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet
-  const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
-  const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+  const uniswapQuoter = config.uniswapQuoterAddress;
+  const uniswapRouter = config.uniswapRouterAddress;
 
   let prompt;
   if (network.name != "hardhat" && !nconf.get("silent")) {

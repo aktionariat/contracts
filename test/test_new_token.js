@@ -5,8 +5,8 @@ const { expect } = require("chai");
 const { PANIC_CODES } = require("@nomicfoundation/hardhat-chai-matchers/panic");
 
 // Shared  Config
-const config = require("../scripts/deploy_config_mainnet.js");
-const exp = require("constants");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("New Standard", () => {
   let draggable
