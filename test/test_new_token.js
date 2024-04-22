@@ -122,6 +122,10 @@ describe("New Standard", () => {
       it("Should get right claim deleter", async () => {
         expect(await shares.getClaimDeleter()).to.equal(owner.address);
       });
+
+      it("Should give back newest version", async () => {
+        expect(await shares.VERSION()).to.equal(4);
+      });
     });
 
     describe("Draggable Shares", () => {
@@ -136,6 +140,10 @@ describe("New Standard", () => {
 
       it("Should get right claim deleter", async () => {
         expect(await draggable.getClaimDeleter()).to.equal(oracle.address);
+      });
+
+      it("Should give back newest version", async () => {
+        expect(await draggable.VERSION()).to.equal(3);
       });
     });
 
