@@ -4,7 +4,8 @@ const { setBalance, setBalanceWithAmount, randomBigInt, setup } = require("./hel
 const { expect } = require("chai");
 
 // Shared  Config
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("Test offer", () => {
   let draggable

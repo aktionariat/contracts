@@ -1,6 +1,7 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config_polygon.js");
 const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
   const { deploy } = deployments;

@@ -1,10 +1,12 @@
+// Shared Config
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
+
 // Libraries
 const BN = require("bn.js");
 const { ethers, network } = require("hardhat");
 const { setup } = require("./helper/index");
 const { expect } = require("chai");
-// Shared Config
-const config = require("../scripts/deploy_config_polygon.js");
 
 describe("Set up", () => {
   let baseCurrency;

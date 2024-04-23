@@ -1,5 +1,7 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
@@ -9,7 +11,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   let brokerbotRegistry
   if (network.name != "hardhat") {
-    brokerbotRegistry = "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"; //for production deployment
+    brokerbotRegistry = config.brokerbotRegistry; //for production deployment
   } else {
     const brokerbotRegistryContract = await deployments.get('BrokerbotRegistry'); // for testing
     brokerbotRegistry = brokerbotRegistryContract.address;
@@ -20,7 +22,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("Deploy Brokerbot Router")
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("registry: %s", brokerbotRegistry);  // don't forget to set it in hardhat.config.js as the multsig account
+    console.log("registry: %s", brokerbotRegistry);
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {

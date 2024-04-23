@@ -54,7 +54,7 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
     // 3: added permit
-    // 4: permit2
+    // 4: refactor to custom errors, added allowance for permit2
     uint8 public constant VERSION = 4;
 
     string public terms;

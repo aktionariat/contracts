@@ -1,6 +1,7 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config_polygon.js");
 const nconf = require('nconf');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
@@ -8,8 +9,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, trustedForwarder } = await getNamedAccounts();
 
-  const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
-  const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+  const uniswapQuoter = config.uniswapQuoterAddress;
+  const uniswapRouter = config.uniswapRouterAddress;
 
   let prompt;
   if (network.name != "hardhat" && !nconf.get("silent")) {
@@ -29,7 +30,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   // const feeData = await ethers.provider.getFeeData();
   const feeData = await getGasPrice();
-  
+
   const { address } = await deploy("PaymentHub", {
     contract: "PaymentHub",
     from: deployer,
@@ -40,10 +41,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-    maxFeePerGas: feeData.maxFeePerGas,
-    gasLimit: 3000000
+    maxFeePerGas: feeData.maxFeePerGas
   });
 };
 
 module.exports.tags = ["PaymentHub"];
-

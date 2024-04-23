@@ -1,7 +1,8 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
-const config = require("../scripts/deploy_config_polygon.js");
 const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -11,7 +12,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const permit2Address = config.permit2Address;
   const owner =  trustedForwarder;
   // const owner =  deployer;
-  
+
   
   if (network.name != "hardhat"&& !nconf.get("silent")) {
     console.log("-----------------------")

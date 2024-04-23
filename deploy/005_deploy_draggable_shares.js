@@ -1,4 +1,6 @@
 const Confirm = require('prompt-confirm');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
@@ -12,10 +14,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const offerFactory = await deployments.get("OfferFactory");
   const permit2Hub = await deployments.get("Permit2Hub");
   
-  const terms = "test.ch/terms";
-  const quorumBps = 7500;
-  const quorumMigration = 7500;
-  const votePeriodSeconds = 5184000;
+  const terms = config.terms;
+  const quorumBps = config.quorumBps;
+  const quorumMigration = config.quorumMigration;
+  const votePeriodSeconds = config.votePeriodSeconds;
 
   const params = {
     wrappedToken: shares.address,
@@ -64,4 +66,3 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
 module.exports.tags = ["DraggableShares"];
 module.exports.dependencies = ["Shares", "RecoveryHub", "OfferFactory", "Permit2Hub"];
-

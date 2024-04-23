@@ -1,21 +1,20 @@
 module.exports = {
   // Parameters used during contract development and testing
-  chainId: 1,
-  symbol: "SHR",
-  name: "Test Shares",
+  symbol: "OES",
+  name: "Optimistic Example AG Shares",
   terms: "test.ch/terms",
   totalShares: 10000000,
   sharePrice: "1000000000000000000",
   increment: "0",
-  baseCurrencyAddress: "0xB4272071eCAdd69d933AdcD19cA99fe80664fc08",
-  baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
+  baseCurrencyAddress: "0xE4F27b04cC7729901876B44f4EAA5102EC150265", // optimism xchf
+  baseCurrencyMinterAddress: "0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7", //optimism
   baseCurrencyName: "CryptoFranc",
   baseCurrencySymbol: "XCHF",
-  baseCurrencyBalanceSlot: 2,
+  xchfBalanceSlot: 0,
   infiniteAllowance: "0x8000000000000000000000000000000000000000000000000000000000000000",
   brokerbotOwnerAddress: "",
   brokerbotCopyrightOwnerAddress: "0x29Fe8914e76da5cE2d90De98a64d0055f199d06D",
-  brokerbotRegistry: "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98",
+  brokerbotRegistry: "0x2C9b9b9143A9Ef5051A299EF3CC8039b06927093",
   quorumBps: 7500,
   quorumMigration: 7500,
   votePeriodSeconds: 5184000,
@@ -29,30 +28,28 @@ module.exports = {
   allowlist_quorumBps: 10,
   allowlist_votePeriodSeconds: 36000,
   // DAI
-  daiAddress: "0x6b175474e89094c44da98b954eedeac495271d0f",
+  daiAddress: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
   daiBalanceSlot: 2,
   // WBTC
-  wbtcAddress: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+  wbtcAddress: "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
   wbtcBalanceSlot: 0,
   wbtcMinterAddress: "0xca06411bd7a7296d7dbdd0050dfc846e95febeb7",
   // WETH
-  wethAddress: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  wethAddress: "0x4200000000000000000000000000000000000006",
   // USDT
-  usdtAddress: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  usdtAddress: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
   // USDC
-  usdcAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  // DCHF
-  dchfAddress: "0x045da4bfe02b320f4403674b3b7d121737727a36",
+  usdcAddress: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
   // ZCHF
-  zchfAddress: "0xB58E61C3098d85632Df34EecfB899A1Ed80921cB",
+  zchfAddress: "0x4F8a84C442F9675610c680990EdDb2CCDDB8aB6f",
   zchfBalanceSlot: 0,
   // brokerbot
   BUYING_ENABLED: 1n,
   SELLING_ENABLED: 2n,
   KEEP_ETHER: 4n,
   //permit2
-  permit2Address: "0x000000000022d473030f116ddee9f6b43ac78ba3", // Mainnet, Goerli, Arbitrum, Optimism, Polygon
+  permit2Address: "0x000000000022d473030f116ddee9f6b43ac78ba3", // Mainnet, Goerli, Arbitrum, Optimism, Polygon 
   permit2HubAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b",
   // PaymentHub
-  paymentHubAddress: "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C"
+  paymentHubAddress: "0x7e08078AdCcBFda94daf16184FBfa50acBdEb848"
 };
