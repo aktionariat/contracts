@@ -2,7 +2,8 @@
 /* eslint-disable no-undef */
 
 // Shared Config
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 const { setup, randomBigInt } = require("./helper/index");
 

@@ -5,7 +5,8 @@ const { expect } = require("chai");
 const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("Brokerbot Router", () => {
   let draggable;
@@ -84,7 +85,7 @@ describe("Brokerbot Router", () => {
     types = ["address","uint24","address","uint24","address"];
     values = [config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.wethAddress];
     pathBaseWeth = ethers.solidityPacked(types,values);
-    // shares - base 
+    // shares - base
     types = ["address", "uint24","address"];
     values = [await draggable.getAddress(), 0, config.baseCurrencyAddress];
     pathSingle = ethers.solidityPacked(types,values);

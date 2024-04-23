@@ -9,7 +9,8 @@ const { decodeError } = require('ethers-decode-error');
 const { setup } = require("./helper/index");
 
 // Shared  Config
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("New PaymentHub", () => {
   const ethersProvider = new ethers.BrowserProvider(network.provider);

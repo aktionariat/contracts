@@ -3,17 +3,6 @@ const config = require("../../scripts/deploy_config_polygon.js")
 const Chance = require("chance");
 const { Transaction } = require("ethers");
 
-const getConfigPath = () => {
-  switch (network.config.chainId) {
-    case 1:
-      return "/scripts/deploy_config_mainnet.js";
-    case 137:
-      return "/scripts/deploy_config_polygon.js";
-    default:
-      return "/scripts/deploy_config_mainnet.js";
-  }
-}
-
 const toBytes32 = (bn) => {
   return ethers.hexlify(ethers.zeroPadValue('0x'+bn.toString(16), 32));
 };
@@ -200,7 +189,7 @@ async function setup(setupBrokerbotEnabled) {
       await draggableShares.connect(owner).transfer(await brokerbot.getAddress(), 500000);
       await shares.connect(owner).transfer(await brokerbotDAI.getAddress(), 20000);
       await shares.connect(owner).transfer(await brokerbotZCHF.getAddress(), 20000);
-      
+
 
   }  
 }
@@ -335,5 +324,4 @@ module.exports = {
   randomBigInt,
   giveApproval,
   allowanceType,
-  getConfigPath
 };

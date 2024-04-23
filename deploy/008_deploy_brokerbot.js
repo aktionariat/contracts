@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
@@ -12,7 +13,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const paymentHub = await deployments.get('PaymentHub');
   
   const price = config.sharePrice;
-  const increment = 0;
+  const increment = config.increment;
   const baseCurrencyContract = config.baseCurrencyAddress;
   
   

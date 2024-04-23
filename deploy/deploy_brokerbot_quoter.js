@@ -1,6 +1,7 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts, network }) {
@@ -9,13 +10,13 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const { deployer, owner } = await getNamedAccounts();
 
   let brokerbotRegistry
-  /*if (network.name != "hardhat") {
-    brokerbotRegistry = "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"; //for production deployment
+  if (network.name != "hardhat") {
+    brokerbotRegistry = config.brokerbotRegistry; //for production deployment
   } else {
-    */const brokerbotRegistryContract = await deployments.get('BrokerbotRegistry'); // for testing
+    const brokerbotRegistryContract = await deployments.get('BrokerbotRegistry'); // for testing
     brokerbotRegistry = brokerbotRegistryContract.address;
-  //}
-  const uniswapQuoter = config.uniswapQuoterAddress; // ethereum mainnet
+  }
+  const uniswapQuoter = config.uniswapQuoterAddress;
   const wethAddress = config.wethAddress;
     
   if (network.name != "hardhat" && !nconf.get("silent")) {
@@ -25,7 +26,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("deployer: %s", deployer);
     console.log("weth: %s", wethAddress);
     console.log("uniswapQuoter: %s", uniswapQuoter);
-    console.log("registry: %s", brokerbotRegistry);  // don't forget to set it in hardhat.config.js as the multsig account
+    console.log("registry: %s", brokerbotRegistry);
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {

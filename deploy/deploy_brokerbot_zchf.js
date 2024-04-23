@@ -24,7 +24,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("shares: %s", shares.address);
     console.log("paymentHub: %s", paymentHub.address);
     console.log("base zchf: %s", baseCurrencyContract);
-    console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
+    console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {

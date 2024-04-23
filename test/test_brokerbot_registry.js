@@ -1,7 +1,8 @@
 const {network, ethers, getNamedAccounts, deployments} = require("hardhat");
 const { expect } = require("chai");
 // Shared  Config
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 
 describe("Brokerbot Registry", () => {

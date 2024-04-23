@@ -1,5 +1,6 @@
 // Shared Config
-const config = require("../scripts/deploy_config_polygon.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 // Libraries
 const { ethers} = require("hardhat");

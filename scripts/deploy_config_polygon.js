@@ -6,6 +6,7 @@ module.exports = {
   terms: "test.ch/terms",
   totalShares: 10000000,
   sharePrice: "1000000", // with usdc (decimals 6)
+  increment: "0",
   baseCurrencyAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",  // usdc polygon
   baseCurrencyMinterAddress: "0x1e24bf6f6cbafe8ffb7a1285d336a11ba12e0eb9",
   baseCurrencyName: "USD Coin (PoS)",
