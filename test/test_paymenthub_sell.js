@@ -7,7 +7,6 @@ const { decodeError } = require('ethers-decode-error');
 // Shared  Config
 const { getConfigPath } = require('../scripts/utils.js');
 const config = require(`..${getConfigPath()}`);
-const { Signature } = require("ethers");
 
 describe("Sell via PaymentHub", () => {
   let shares;
