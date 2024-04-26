@@ -8,7 +8,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const owner = config.multisigAddress;
   //const shares = await deployments.get('Shares');
-  const shares = "0x2e880962a9609aa3eab4def919fe9e917e99073b"
+  const shares = config.sharesAddress;
   const paymentHub = "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C";
   
   const price = config.sharePrice;
