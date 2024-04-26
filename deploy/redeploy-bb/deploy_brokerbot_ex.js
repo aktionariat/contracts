@@ -8,8 +8,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const owner = config.multisigAddress;
   //const shares = await deployments.get('Shares');
-  const shares = config.sharesAddress;
-  const paymentHub = "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C";
+  const shares = config.shareAddress;
+  const paymentHub = config.paymentHubAddress;
   
   const price = config.sharePrice;
   const increment = config.increment;
