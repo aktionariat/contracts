@@ -51,8 +51,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   });
 
   // register brokerbot at registry
-  //brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"); // is fixed address (change will mess up subgraph)
-  //brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shares.address);
+  brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"); // is fixed address (change will mess up subgraph)
+  brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shares);
 
   // auto verify on etherscan
   if (network.name != "hardhat") {
