@@ -1,0 +1,37 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0x02567e4b14b25549331fCEe2B56c647A8bAB16FD",
+  "address": {
+    "recoveryHub": "0xaea2886cb865bab01fc43f3c3f51b27b720ae185",
+    "offerFactory": "0x339891af65dfc0ca929e5521978e07d162514f92",
+    "permit2Hub": "0xc5e049019fd4c21de3685f60993fd41d3098dca5",
+    "paymentHub": "0x3eeffebd88a3b4bc1fe600bfcd1c0a8c8b813980",
+    "share": "0xa1CB133f32D054433E0BCC73234363adcfFee23d",
+    "draggable": "0x416076a1957b1b3b180269e10f64f9DFcE492551",
+    "brokerbotRegistry": "0x6548FAD069F2eDa512a658c17606Eed81095c93D"
+  },
+  "companyName": "photoINTERNATIONAL AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "PHTO",
+  "name": "photoINTERNATIONAL AG Shares",
+  "terms": "aktien.photointernational.com",
+  "totalShares": "10039405",
+  "sharePrice": "0",
+  "increment": "0",
+  "quorumBps": 6667,
+  "quorumMigration": 6667,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x161dffc7005Ef03B2e8C5fd390A6F5eCcc0F5F96",
+  "brokerbot": {
+    "shares": "polygon-0x416076a1957b1b3b180269e10f64f9DFcE492551"
+  },
+  "blocknumber": 57305081,
+  "version": {
+    "shares": "4",
+    "draggable": "3",
+    "brokerbot": "8",
+    "paymentHub": "9"
+  }
+}
