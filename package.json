@@ -15,7 +15,7 @@
   "homepage": "https://github.com/aktionariat/contracts#readme",
   "dependencies": {
     "@chainlink/contracts": "^0.2.2",
-    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
+    "@nomiclabs/hardhat-ethers": "^0.3.0-beta.13",
     "@nomiclabs/hardhat-solhint": "^2.0.1",
     "@openzeppelin/contracts": "4.3.3",
     "@uniswap/v3-periphery": "^1.4.0"

@@ -194,9 +194,10 @@ task("init-deploy", "creates files for client deployment")
 
     // register at the backend
     const doRegister = await askConfirmWithMsg("Do you want to register the contracts in the back-end?");
+    const choices = deployBrokerbot ? "MultiSig Token Brokerbot" : "MultiSig Token"
     if (network.name != "hardhat" && doRegister) {
         await hre.run("register", {
-            choices: "MultiSig Token Brokerbot",
+            choices: choices,
             name: nconf.get("companyName"),
             tokenAddress: nconf.get("brokerbot:shares"),
             multisigAddress: nconf.get("multisigAddress"),
