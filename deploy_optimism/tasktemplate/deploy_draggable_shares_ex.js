@@ -12,7 +12,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   //const recoveryHub = await deployments.get("RecoveryHub");
   const recoveryHub = await ethers.getContractAt("RecoveryHub", "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3");
   //const offerFactory = await deployments.get("OfferFactory");
-  const offerFactory = await ethers.getContractAt("OfferFactory", "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531");
+  // const offerFactory = await ethers.getContractAt("OfferFactory", "0x6c4028d7Fd82f29cD97A47E7342F02Ca529c5531");
+  const offerFactory = await ethers.getContractAt("OfferFactory", "0xc54eF2F60f3f7d88A3Fa0061f8915A97C54E682E");
   nconf.set("address:recoveryHub", recoveryHub.address);
   nconf.set("address:offerFactory", offerFactory.address)
   

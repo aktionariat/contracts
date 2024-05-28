@@ -583,11 +583,11 @@ describe("New Standard", () => {
     let salt;
     let offer;
     const overrides = {
-      value: ethers.utils.parseEther("5.0")
+      value: ethers.utils.parseEther("3.0")
     }
     beforeEach(async () => {
       pricePerShare = ethers.utils.parseEther("2");
-      salt = ethers.utils.formatBytes32String('1');
+      salt = ethers.utils.formatBytes32String(Date.now().toString());
       await draggable.connect(sig1).makeAcquisitionOffer(salt, pricePerShare, baseCurrency.address, overrides)
       const blockNum = await ethers.provider.getBlockNumber();
       const block= await ethers.provider.getBlock(blockNum);
@@ -656,18 +656,26 @@ describe("New Standard", () => {
       await ethers.provider.send("evm_increaseTime", [votePeriod]);
       await ethers.provider.send("evm_mine");
 
-      await expect(offer.connect(sig3).voteYes()).to.be.revertedWith("vote ended");
+      await expect(offer.connect(sig3).voteYes())
+        .to.be.revertedWithCustomError(offer, "Offer_VotingEnded");
     })
 
     it("Should revert if reportExternalVotes isn't called from oracle or to many votes are reported", async () => {
       const tooManyExternalTokens = ethers.BigNumber.from(300000000);
       const externalTokens = ethers.BigNumber.from(3000000);
-      await expect(offer.connect(sig1).reportExternalVotes(externalTokens, 0)).to.be.revertedWith("not oracle");
-      await expect(offer.connect(oracle).reportExternalVotes(tooManyExternalTokens, 0)).to.be.revertedWith("too many votes");
+      const totalVotingTokens = await draggable.totalVotingTokens();
+      const totalSupply = await draggable.totalSupply();
+      await expect(offer.connect(sig1).reportExternalVotes(externalTokens, 0))
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig1.address);
+      await expect(offer.connect(oracle).reportExternalVotes(tooManyExternalTokens, 0))
+        .to.be.revertedWithCustomError(offer, "Offer_TooManyVotes")
     })
 
     it("Should revert cancel if not called from the buyer", async () => {
-      await expect(offer.connect(sig2).cancel()).to.be.revertedWith("invalid caller");
+      await expect(offer.connect(sig2).cancel())
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
     })
 
     it("Should able to contest offer after expiry", async () => {
@@ -696,21 +704,30 @@ describe("New Standard", () => {
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
       await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
     });
+
+    it("Should revert competing offer if it isn't in same currency", async () => {
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('1'), ethers.utils.parseEther("3"), config.wbtcAddress, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_OfferInWrongCurrency")
+    });
     
     it("Should be able to make better offer", async () => {
       // offer from sig1
-      const offerBefore = await draggable.offer();
+      const offerBefore = await ethers.getContractAt("Offer", await draggable.offer());
       expect(offerBefore).to.exist;
       
       await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("1"), baseCurrency.address, overrides))
-        .to.revertedWith("old offer better");
-      await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides);
-      
+        .to.be.revertedWithCustomError(offer, "Offer_OldOfferBetter")
+        .withArgs(await offer.price(),ethers.utils.parseEther("1"));
+        expect(await draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+        .to.emit(offer, "OfferEnded")
+        .withArgs(sig1.address, false, "replaced");
+
       // new offer from sig1
-      const offerAfter = await draggable.offer();
+      const offerAfter = await ethers.getContractAt("Offer", await draggable.offer());
       expect(offerAfter).to.exist;
       expect(offerAfter).to.not.equal("0x0000000000000000000000000000000000000000");
       expect(offerAfter).to.not.equal(offerBefore);
+      expect(await offerBefore.isKilled()).to.be.true;
     });
 
     it("Should revert if competing offer isn't called from token", async () => {
@@ -719,11 +736,14 @@ describe("New Standard", () => {
       const { events } = await tx.wait();
       const { address } = events.find(Boolean);
       await expect(offer.connect(sig2).makeCompetingOffer(address))
-        .to.be.revertedWith("invalid caller");
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
     })
 
     it("Should revert if notifyMoved isn't called from token", async () => {
-      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1"))).to.be.revertedWith("invalid caller");
+      await expect(offer.connect(sig1).notifyMoved(sig1.address, sig2.address, ethers.utils.parseEther("1")))
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig1.address);
     })
 
     it("Should revert new offer if old offer is already accepted", async () => {
@@ -734,22 +754,31 @@ describe("New Standard", () => {
         await offer.connect(signers[i]).voteYes();
       }
 
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
-        .to.be.revertedWith("old already accepted");
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String(Date.now().toString()), ethers.utils.parseEther("2.3"), baseCurrency.address, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_AlreadyAccepted");
     })
 
     it("Should revert if user account isn't well funded", async () => {
-      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String('2'), ethers.utils.parseEther("100"), baseCurrency.address, overrides))
-        .to.be.revertedWith("not funded");
+      await expect(draggable.connect(sig1).makeAcquisitionOffer(ethers.utils.formatBytes32String(Date.now().toString()), ethers.utils.parseEther("100"), baseCurrency.address, overrides))
+        .to.be.revertedWithCustomError(offer, "Offer_NotWellFunded");
     })
 
     it("Should revert execution if sender isn't buyer", async () => {
-      await expect(offer.connect(sig2).execute()).to.be.revertedWith("not buyer");
+      await expect(offer.connect(sig2).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_InvalidSender")
+        .withArgs(sig2.address);
     })
 
     it("Should revert execution if offer isn't accepted", async () => {
-      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+      await expect(offer.connect(sig1).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_NotAccepted");
     })
+
+    it("Should revert execution if offer is already killed", async () => {
+      offer.connect(sig1).cancel();
+      await expect(offer.connect(sig1).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_IsKilled");
+    });
 
     it("Should revert if transfer of offer currency fails", async () => {
       // collect external vote (total is 10 mio, 6accounts have each 900k, to get over 75% 3mio external votes are good )
@@ -760,7 +789,7 @@ describe("New Standard", () => {
       }
       //set balance to low to transfer
       await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.utils.parseEther("1"));
-      await expect(offer.connect(sig1).execute()).to.be.reverted;
+      await expect(offer.connect(sig1).execute()).to.be.revertedWith("ERC20: transfer amount exceeds balance");
       //set balance back
       await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
     })
@@ -781,7 +810,8 @@ describe("New Standard", () => {
       await offer.connect(oracle).reportExternalVotes(externalTokens, 0);
 
       // execute revert as external+yes in not 75% of total shares
-      await expect(offer.connect(sig1).execute()).to.be.revertedWith("not accepted");
+      await expect(offer.connect(sig1).execute())
+        .to.be.revertedWithCustomError(offer, "Offer_NotAccepted");
 
       // move to after voting deadline (60days)
       const votePeriod = await draggable.votePeriod().then(p => p.toNumber());

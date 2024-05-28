@@ -30,12 +30,13 @@ pragma solidity ^0.8.0;
 import "../ERC20/IERC20.sol";
 import "./IDraggable.sol";
 import "./IOffer.sol";
+import "../utils/SafeERC20.sol";
 /**
  * @title A public offer to acquire all tokens
  * @author Luzius Meisser, luzius@aktionariat.com
  */
-
 contract Offer is IOffer {
+    using SafeERC20 for IERC20;
 
     address private constant LICENSE_FEE_ADDRESS = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
 
@@ -60,9 +61,11 @@ contract Offer is IOffer {
 
     uint256 public immutable voteEnd;                   // end of vote period in block time (seconds after 1.1.1970)
 
+    bool public isKilled;                                      // indicator that contract disabled (replaces selfdestruct)
+
     event VotesChanged(uint256 yesVotes, uint256 noVotes);
     event OfferCreated(address indexed buyer, IDraggable indexed token, uint256 pricePerShare, IERC20 indexed currency);
-    event OfferEnded(address indexed buyer, bool success, string message); // not sure if it makes sense to index success here
+    event OfferEnded(address indexed buyer, bool executed, string message);
 
     // Not checked here, but buyer should make sure it is well funded from the beginning
     constructor(
@@ -89,11 +92,42 @@ contract Offer is IOffer {
         payable(LICENSE_FEE_ADDRESS).transfer(3 ether);
     }
 
-    function makeCompetingOffer(IOffer betterOffer) external override {
-        require(msg.sender == address(token), "invalid caller");
-        require(!isAccepted(), "old already accepted");
-        require(currency == betterOffer.currency() && betterOffer.price() > price, "old offer better");
-        require(betterOffer.isWellFunded(), "not funded");
+    modifier onlyBuyer {
+        _checkSender(buyer);
+        _;
+    }
+
+    modifier onlyToken {
+        _checkSender(address(token));
+        _;
+    }
+
+    modifier onlyOracle {
+        _checkSender(token.oracle());
+        _;
+    }
+
+    modifier votingOpen {
+        if (!isVotingOpen()) {
+            revert Offer_VotingEnded();
+        }
+        _;
+    }
+
+    function makeCompetingOffer(IOffer betterOffer) external override onlyToken {
+        if (isAccepted()) {
+            revert Offer_AlreadyAccepted();
+        }
+        uint256 newPrice = betterOffer.price();
+        if (newPrice <= price) {
+            revert Offer_OldOfferBetter(price, newPrice);
+        }
+        if (currency != betterOffer.currency()) {
+            revert Offer_OfferInWrongCurrency();
+        }
+        if (!betterOffer.isWellFunded()) {
+            revert Offer_NotWellFunded();
+        }
         kill(false, "replaced");
     }
 
@@ -113,16 +147,15 @@ contract Offer is IOffer {
         }
     }
 
-    function cancel() external {
-        require(msg.sender == buyer, "invalid caller");
+    function cancel() external onlyBuyer {
         kill(false, "cancelled");
     }
 
-    function execute() external {
-        require(msg.sender == buyer, "not buyer");
-        require(isAccepted(), "not accepted");
+    function execute() external onlyBuyer {
+        if (isKilled) revert Offer_IsKilled();
+        if (!isAccepted()) revert Offer_NotAccepted();
         uint256 totalPrice = getTotalPrice();
-        require(currency.transferFrom(buyer, address(token), totalPrice), "transfer failed");
+        currency.safeTransferFrom(buyer, address(token), totalPrice);
         token.drag(buyer, currency);
         kill(true, "success");
     }
@@ -159,8 +192,7 @@ contract Offer is IOffer {
         }
     }
 
-    function notifyMoved(address from, address to, uint256 value) external override {
-        require(msg.sender == address(token), "invalid caller");
+    function notifyMoved(address from, address to, uint256 value) external override onlyToken {
         if (isVotingOpen()) {
             Vote fromVoting = votes[from];
             Vote toVoting = votes[to];
@@ -187,12 +219,7 @@ contract Offer is IOffer {
     function isVotingOpen() public view returns (bool) {
         // rely on time stamp is ok, no exact time stamp needed
         // solhint-disable-next-line not-rely-on-time
-        return block.timestamp <= voteEnd;
-    }
-
-    modifier votingOpen() {
-        require(isVotingOpen(), "vote ended");
-        _;
+        return block.timestamp <= voteEnd && !isKilled;
     }
 
     /**
@@ -200,9 +227,12 @@ contract Offer is IOffer {
      * This functions is idempotent and sets the number of external yes and no votes. So when more votes come in, the
      * oracle should always report the total number of yes and no votes. Abstentions are not counted.
      */
-    function reportExternalVotes(uint256 yes, uint256 no) external {
-        require(msg.sender == token.oracle(), "not oracle");
-        require(yes + no + IERC20(address(token)).totalSupply() <= token.totalVotingTokens(), "too many votes");
+    function reportExternalVotes(uint256 yes, uint256 no) external onlyOracle votingOpen {
+        uint256 maxVotes = token.totalVotingTokens();
+        uint256 reportingVotes = yes + no + IERC20(address(token)).totalSupply();
+        if (reportingVotes > maxVotes) {
+            revert Offer_TooManyVotes(maxVotes, reportingVotes);
+        }
         // adjust total votes taking into account that the oralce might have reported different counts before
         yesVotes = yesVotes - yesExternal + yes;
         noVotes = noVotes - noExternal + no;
@@ -219,7 +249,7 @@ contract Offer is IOffer {
         vote(Vote.NO);
     }
 
-    function vote(Vote newVote) internal votingOpen() {
+    function vote(Vote newVote) internal votingOpen {
         Vote previousVote = votes[msg.sender];
         votes[msg.sender] = newVote;
         if(previousVote == Vote.NONE){
@@ -236,10 +266,21 @@ contract Offer is IOffer {
         return votes[voter] == Vote.NO;
     }
 
-    function kill(bool success, string memory message) internal {
-        emit OfferEnded(buyer, success, message);
+    function kill(bool executed, string memory message) internal {
+        isKilled = true;
+        emit OfferEnded(buyer, executed, message);
         token.notifyOfferEnded();
-        selfdestruct(payable(buyer));
+        payable(buyer).call{value:address(this).balance}("");       // buyer is responsible to be able to receive Ether, else he can block cancellation
+    }
+
+    /**
+     * Checks if msg.sender is an authorized address.
+     * @param validSender The authorized address.
+     */
+    function _checkSender(address validSender) internal view {
+        if (msg.sender != validSender) {
+            revert Offer_InvalidSender(msg.sender);
+        }
     }
 
 }
