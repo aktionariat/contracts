@@ -1,0 +1,32 @@
+{
+  "network": "optimism",
+  "baseCurrencyAddress": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+  "companyName": "bakerybakery AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "BAKE",
+  "name": "bakerybakery AG Shares",
+  "terms": "gipfeligang.bakerybakery.ch",
+  "totalShares": "12670027",
+  "sharePrice": "0",
+  "increment": "0",
+  "quorumBps": 6667,
+  "quorumMigration": 6667,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x981c2C4722Fd9313aeb362DaFf6DF47089F73430",
+  "address": {
+    "recoveryHub": "0xf00B91839fF7A6AC6DddAC7e73D2F222C19A9Ec3",
+    "share": "0x6C1b174848570Efa6BB190343EF624402289DF27",
+    "offerFactory": "0xc54eF2F60f3f7d88A3Fa0061f8915A97C54E682E",
+    "draggable": "0x415bd762A88A5857b4D4552f2bCEF9e7ebdd05c3"
+  },
+  "brokerbot": {
+    "shares": "0x415bd762A88A5857b4D4552f2bCEF9e7ebdd05c3"
+  },
+  "blocknumber": "117754331",
+  "version": {
+    "shares": 3
+  },
+  "deployBrokerbot": false
+}
