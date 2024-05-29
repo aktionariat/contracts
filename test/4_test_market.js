@@ -24,6 +24,13 @@ describe("Brokerbot", () => {
   let owner;
   let sig1;
 
+  let brokerbotAddress;
+
+  //  xchf - dai - weth
+  const types = ["address","uint24","address","uint24","address"];
+  const values = [config.baseCurrencyAddress, 500, config.daiAddress, 3000, config.wethAddress];
+  const pathBaseWeth = ethers.utils.solidityPack(types,values);
+
   before(async () => {
     [deployer,owner,sig1] = await ethers.getSigners();
     accounts = [owner.address,sig1.address];
@@ -35,6 +42,8 @@ describe("Brokerbot", () => {
     draggableShares = await ethers.getContract("DraggableShares");
     brokerbot = await ethers.getContract("Brokerbot");
     baseCurrency = await ethers.getContractAt("ERC20Named",config.baseCurrencyAddress);
+
+    brokerbotAddress = brokerbot.address;
   });
 
   describe("init", () => {
@@ -307,7 +316,7 @@ describe("Brokerbot", () => {
       // Random number of shares to buy
       const sharesToBuy = new Chance().natural({ min: 1, max: 500 });
       const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-      const buyPriceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](buyPrice, brokerbot.address);
+      const buyPriceInETH = await paymentHub.callStatic.getPriceInEther(buyPrice, brokerbotAddress, pathBaseWeth);
       
       // Base payment should fail
       await expect(paymentHub.connect(owner)["payAndNotify(address,uint256,bytes)"](
@@ -316,7 +325,7 @@ describe("Brokerbot", () => {
         
       // ETH payment should fail
       await expect(paymentHub.connect(owner).payFromEtherAndNotify(
-        brokerbot.address, buyPrice, "0x20", { value: buyPriceInETH }))
+        brokerbot.address, buyPrice, "0x20", pathBaseWeth, { value: buyPriceInETH }))
         .to.be.revertedWith("buying disabled");
     });
         

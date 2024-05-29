@@ -6,7 +6,7 @@ const { network } = require('hardhat');
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
 
-  const { deployer } = await getNamedAccounts();
+  const { deployer, trustedForwarder } = await getNamedAccounts();
   
   const priceFeedCHFUSD = "0x449d117117838fFA61263B61dA6301AA2a88B13A";  // ethereum mainnet
   const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"; // ethereum mainnet

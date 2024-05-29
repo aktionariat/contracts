@@ -70,7 +70,8 @@ module.exports = {
       forking: {
         enabled: process.env.FORKING === "true",
         url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
-        blockNumber: 4180042, //optimism transaction index
+        // blockNumber: 4180042, //optimism transaction index
+        blockNumber: 120702328
       },
       live: false,
       saveDeployments: true,
@@ -228,6 +229,13 @@ module.exports = {
       11155111: process.env.MULTISIG_DEFAULT,
       420: process.env.MULTISIG_DEFAULT,
       42161: process.env.MULTISIG_DEFAULT,
+    },
+    trustedForwarder: {
+      default: process.env.TRUSTED_FORWARDER,
+      1: process.env.TRUSTED_FORWARDER, // mainnet
+      10: process.env.TRUSTED_FORWARDER, // op mainnet
+      137: process.env.TRUSTED_FORWARDER, // polygon
+      80002: 1,
     }
   },
   gasReporter: {

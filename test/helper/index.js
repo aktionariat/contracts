@@ -1,5 +1,6 @@
 const {network, ethers, deployments, } = require("hardhat");
-const config = require("../../scripts/deploy_config_optimism.js")
+const config = require("../../scripts/deploy_config_optimism.js");
+const Chance = require("chance");
 
 const toBytes32 = (bn) => {
   return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
@@ -152,7 +153,21 @@ async function setup() {
   await baseCurrency.connect(owner).transfer(brokerbot.address, ethers.utils.parseEther("100000"));
 }
 
+//get signer from address through impersonating account with hardhat
+async function getImpersonatedSigner(impersonateAddress) {
+  await network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [impersonateAddress],
+  });
+  const signer = ethers.provider.getSigner(impersonateAddress);
+  return signer;
+}
+
+function randomBigInt(min, max) {
+  return BigInt(new Chance().natural({ min: min, max: max }));
+}
+
 
 //export * from "./time"
 
-module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount};
+module.exports = { mintERC20, setBalance, sendEther, buyingEnabled, sellingEnabled, setBalances, setup, setBalanceWithAmount, getImpersonatedSigner, randomBigInt};

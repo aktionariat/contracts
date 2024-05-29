@@ -21,6 +21,12 @@ describe("Payment Integration", () => {
   let baseCurrency;
 
   let owner;
+
+  //  xchf - dai - weth
+  const types = ["address","uint24","address","uint24","address"];
+  const values = [config.baseCurrencyAddress, 500, config.daiAddress, 3000, config.wethAddress];
+  const pathBaseWeth = ethers.utils.solidityPack(types,values);
+
   before(async () => {
     await setup();
 
@@ -75,7 +81,7 @@ describe("Payment Integration", () => {
     // Random number of shares to buy
     const sharesToBuy = new Chance().natural({ min: 1, max: 500 });
     const buyPrice = await brokerbot.getBuyPrice(sharesToBuy);
-    const buyPriceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](buyPrice,  brokerbot.address);
+    const buyPriceInETH = await paymentHub.callStatic.getPriceInEther(buyPrice, brokerbot.address, pathBaseWeth);
 
     // Balance before
     const balanceSenderBefore = await ethers.provider.getBalance(accounts[0]);
@@ -90,6 +96,7 @@ describe("Payment Integration", () => {
       brokerbot.address,
       buyPrice,
       "0x20",
+      pathBaseWeth,
       { value: buyPriceInETH }
     );
     const { effectiveGasPrice, cumulativeGasUsed} = await txInfo.wait();
