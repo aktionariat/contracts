@@ -20,6 +20,7 @@ contract BrokerbotRouter is ISwapRouter {
 	BrokerbotRegistry public immutable brokerbotRegistry;
 
 	error Brokerbot_Deadline_Reached();
+	error ETH_Swap_Not_Supported();
 
 	constructor(BrokerbotRegistry _registry) {
 		brokerbotRegistry = _registry;
@@ -38,43 +39,37 @@ contract BrokerbotRouter is ISwapRouter {
 	/**
 	 * @notice Buy share tokens with base currency.
 	 * @dev not usable to sell shares for excact output, as shares is not divisible (decimals is 0).
-	 * @dev Single swap with ETH works, but base currency address has to be provided as tokenIn.
+	 * @dev Single swap with ETH doesn't work
 	 * @param params Params struct for swap. See @ISwapRouter for struct definition.
 	 */
 	function exactOutputSingle(
 		ExactOutputSingleParams calldata params
 	) external payable override checkDeadline(params.deadline) returns (uint256 amountIn) {
+		if (msg.value > 0) revert ETH_Swap_Not_Supported();
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = BrokerbotLib.getBrokerbotAndPaymentHub(brokerbotRegistry, IERC20(params.tokenIn), IERC20(params.tokenOut));
-		if (msg.value > 0) {
-			amountIn = _buyWithEther(brokerbot, paymentHub, params.amountOut, msg.value);
-			refundETH();
-		} else {
-			amountIn = _exactOutputInternalPrepare(brokerbot, paymentHub, params.amountOut, params.amountInMaximum, IERC20(params.tokenIn));
-			// call paymenthub to buy shares with base currency
-			paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
-			refundERC20(IERC20(params.tokenIn));
-		}
+		amountIn = _exactOutputInternalPrepare(brokerbot, paymentHub, params.amountOut, params.amountInMaximum, IERC20(params.tokenIn));
+		// call paymenthub to buy shares with base currency
+		paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
+		refundERC20(IERC20(params.tokenIn));
 		IERC20(params.tokenOut).safeTransfer(params.recipient, params.amountOut);
 	}
 
 	/**
 	 * @notice Buy share tokens with any erc20 by given a uniswap routing path
-	 * @dev If ETH is sent this function will try to swap ETH for share tokens directly and will ignore the path.
 	 * @param params Params struct for swap. See @ISwapRouter for struct definition.
 	 * @return amountIn The amountIn actually spent.
 	 */
 	function exactOutput(ExactOutputParams calldata params) external payable override checkDeadline(params.deadline) returns (uint256 amountIn) {
-		bytes memory modifiedPath = params.path;
 		(address shareToken, address baseToken, ) = params.path.decodeFirstPool();
 		(, address firstTokenIn, ) = params.path.getLastPool().decodeFirstPool();
 		(IBrokerbot brokerbot, PaymentHub paymentHub) = BrokerbotLib.getBrokerbotAndPaymentHub(brokerbotRegistry, IERC20(baseToken), IERC20(shareToken));
 		if (msg.value > 0) {
-			amountIn = _buyWithEther(brokerbot, paymentHub, params.amountOut, msg.value);
+			amountIn = _buyWithEther(brokerbot, paymentHub, params.amountOut, msg.value, params.path);
 			refundETH();
 		} else {
 			amountIn = _exactOutputInternalPrepare(brokerbot, paymentHub, params.amountOut, params.amountInMaximum, IERC20(firstTokenIn));
 			if (params.path.hasMultiplePools()) {
-				modifiedPath = params.path.skipToken();
+				bytes memory modifiedPath = params.path.skipToken();
 				(amountIn, ) = paymentHub.payFromERC20AndNotify(brokerbot, amountIn, firstTokenIn, params.amountInMaximum, modifiedPath, bytes("\x01"));
 			} else {
 				paymentHub.payAndNotify(brokerbot, amountIn,  bytes("\x01"));
@@ -145,9 +140,10 @@ contract BrokerbotRouter is ISwapRouter {
 		}
 	}
 
-	function _buyWithEther(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 shareAmount, uint256 ethAmount) internal returns (uint256 amountIn) {
+	function _buyWithEther(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 shareAmount, uint256 ethAmount, bytes memory path) internal returns (uint256 amountIn) {
 		uint256 baseAmount = brokerbot.getBuyPrice(shareAmount);
-		(amountIn,) = paymentHub.payFromEtherAndNotify{value: ethAmount}(brokerbot, baseAmount, bytes("\x01"));
+		bytes memory modifiedPath = path.skipToken();
+		(amountIn,) = paymentHub.payFromEtherAndNotify{value: ethAmount}(brokerbot, baseAmount, bytes("\x01"), modifiedPath);
 	}
 
 	function _exactOutputInternalPrepare(IBrokerbot brokerbot, PaymentHub paymentHub, uint256 amountShares, uint256 amountInMaximum, IERC20 tokenIn) internal  returns (uint256 amountIn) {

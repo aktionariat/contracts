@@ -4,7 +4,8 @@ const { setBalance, setBalanceWithAmount, randomBigInt } = require("./helper/ind
 const { expect } = require("chai");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("Test offer", () => {
   let draggable
@@ -48,7 +49,7 @@ describe("Test offer", () => {
 
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
 
     //Mint shares to accounts
     for( let i = 0; i < accounts.length; i++) {
@@ -182,12 +183,12 @@ describe("Test offer", () => {
     });
 
     it("Should able to contest offer if not well funded", async () => {
-      //await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseEther("1"));
-      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseEther("10"));;
+      //await setBalanceWithAmount(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address], ethers.parseEther("1"));
+      await setBalanceWithAmount(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address], ethers.parseEther("10"));;
       await offer.contest();
       const offerAfterContest = await draggable.offer();
       expect(offerAfterContest).to.equal("0x0000000000000000000000000000000000000000");
-      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+      await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address]);
     });
 
     it("Should revert competing offer if it isn't in same currency", async () => {
@@ -272,10 +273,10 @@ describe("Test offer", () => {
         await offer.connect(signers[i]).voteYes();
       }
       //set balance to low to transfer
-      await setBalanceWithAmount(baseCurrency, config.xchfBalanceSlot, [sig1.address], ethers.parseEther("10"));
+      await setBalanceWithAmount(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address], ethers.parseEther("10"));
       await expect(offer.connect(sig1).execute()).to.be.revertedWith("insufficient tokens");
       //set balance back
-      await setBalance(baseCurrency, config.xchfBalanceSlot, [sig1.address]);
+      await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, [sig1.address]);
     });
 
     it("Should be able to execute offer", async () => {

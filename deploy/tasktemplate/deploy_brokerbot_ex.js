@@ -27,7 +27,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("shares: %s", sharesAddress);
     console.log("paymentHub: %s (is fixed, check (template) deployment script if there are paymenthub changes", paymentHubAddress);
     console.log("base xchf: %s", baseCurrencyContract);
-    console.log("owner: %s", owner);  // don't forget to set it in deploy_config.js as the multsigadr
+    console.log("owner: %s", owner);  // don't forget to set it in deploy_config_mainnet.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -66,6 +66,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   nconf.set("address:brokerbot", address);
   nconf.set("address:brokerbotRegistry", await brokerbotRegistry.getAddress());
   nconf.set("version:brokerbot", version.toString());
+  nconf.set("version:paymentHub", paymentHubVersion.toString());
 };
 
 

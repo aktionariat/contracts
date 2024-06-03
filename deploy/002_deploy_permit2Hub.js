@@ -1,5 +1,7 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config.js");
+const nconf = require('nconf');
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;

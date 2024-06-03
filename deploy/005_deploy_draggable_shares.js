@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -12,7 +13,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const offerFactory = await deployments.get("OfferFactory");
   const permit2Hub = await deployments.get("Permit2Hub");
   
-  const terms = config.terms
+  const terms = config.terms;
   const quorumBps = config.quorumBps;
   const quorumMigration = config.quorumMigration;
   const votePeriodSeconds = config.votePeriodSeconds;

@@ -5,8 +5,8 @@ const { expect } = require("chai");
 const { PANIC_CODES } = require("@nomicfoundation/hardhat-chai-matchers/panic");
 
 // Shared  Config
-const config = require("../scripts/deploy_config.js");
-const exp = require("constants");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 describe("New Standard", () => {
   let draggable
@@ -88,7 +88,7 @@ describe("New Standard", () => {
 
     
     // Mint baseCurrency Tokens (xchf) to first 5 accounts
-    await setBalance(baseCurrency, config.xchfBalanceSlot, accounts);
+    await setBalance(baseCurrency, config.baseCurrencyBalanceSlot, accounts);
 
     //Mint shares to accounts
     for( let i = 0; i < accounts.length; i++) {
@@ -122,6 +122,10 @@ describe("New Standard", () => {
       it("Should get right claim deleter", async () => {
         expect(await shares.getClaimDeleter()).to.equal(owner.address);
       });
+
+      it("Should give back newest version", async () => {
+        expect(await shares.VERSION()).to.equal(4);
+      });
     });
 
     describe("Draggable Shares", () => {
@@ -136,6 +140,10 @@ describe("New Standard", () => {
 
       it("Should get right claim deleter", async () => {
         expect(await draggable.getClaimDeleter()).to.equal(oracle.address);
+      });
+
+      it("Should give back newest version", async () => {
+        expect(await draggable.VERSION()).to.equal(3);
       });
     });
 

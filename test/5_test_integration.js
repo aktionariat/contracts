@@ -2,7 +2,8 @@
 /* eslint-disable no-undef */
 
 // Shared Config
-const config = require("../scripts/deploy_config.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 const { setup, randomBigInt } = require("./helper/index");
 
@@ -22,6 +23,11 @@ describe("Payment Integration", () => {
 
   let sharesToBuy;
   let buyPrice;
+
+  // xchf - dchf - usdc - weth
+  const types = ["address","uint24","address","uint24","address","uint24","address"];
+  const values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
+  const pathBaseWeth = ethers.solidityPacked(types,values);
 
   let owner;
   before(async () => {
@@ -72,7 +78,7 @@ describe("Payment Integration", () => {
   it("should allow buying shares by sending ETH through PaymentHub", async () => {
     // Used contracts: Brokerbot, PaymentHub, ERC20 Base Currency, DraggableShares
     // Transfer is not processed if token sender is not a known currency contract or PaymentHub
-    const buyPriceInETH = await paymentHub.getPriceInEther.staticCall(buyPrice,  await brokerbot.getAddress());
+    const buyPriceInETH = await paymentHub.getPriceInEther.staticCall(buyPrice,  await brokerbot.getAddress(), pathBaseWeth);
 
     // Balance before
     const balanceSenderBefore = await ethers.provider.getBalance(accounts[0]);
@@ -85,6 +91,7 @@ describe("Payment Integration", () => {
       await brokerbot.getAddress(),
       buyPrice,
       "0x20",
+      pathBaseWeth,
       { value: buyPriceInETH }
     );
     const { gasPrice, cumulativeGasUsed} = await txInfo.wait();

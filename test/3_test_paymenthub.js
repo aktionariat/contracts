@@ -1,5 +1,6 @@
 // Shared Config
-const config = require("../scripts/deploy_config.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 // Libraries
 const { ethers} = require("hardhat");
@@ -19,6 +20,10 @@ describe("PaymentHub", () => {
   let sig1;
   let sig2;
   let sig
+  // xchf - dchf - usdc - weth
+  const types = ["address","uint24","address","uint24","address","uint24","address"];
+  const values = [config.baseCurrencyAddress, 100, config.dchfAddress, 500, config.usdcAddress, 500, config.wethAddress];
+  const pathBaseWeth = ethers.solidityPacked(types,values);
 
   before( async () => {
     [deployer,owner,sig1,sig2,sig3] = await ethers.getSigners();
@@ -36,8 +41,7 @@ describe("PaymentHub", () => {
   });
 
   it("should get price in ether", async () => {
-    //const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, await brokerbot.getAddress());
-    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress(), pathBaseWeth);
     expect(priceInETH).to.be.above(0n);
   });
 
@@ -50,11 +54,11 @@ describe("PaymentHub", () => {
 
     // Execute payment
     //const priceInETH = await paymentHub.callStatic["getPriceInEther(uint256,address)"](paymentAmountInBase, await brokerbot.getAddress());
-    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress(), pathBaseWeth);
     const txInfo = await paymentHub.connect(owner).payFromEther(
       accounts[1],
       paymentAmountInBase,
-      await brokerbot.base(),
+      pathBaseWeth,
       { value: priceInETH }
     );
     const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
@@ -76,14 +80,14 @@ describe("PaymentHub", () => {
     const baseBalanceRecipientBefore = await base.balanceOf(accounts[1]);
 
     // Calculate required ETH and set a slippage
-    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress());
+    const priceInETH = await paymentHub.getPriceInEther.staticCall(paymentAmountInBase, await brokerbot.getAddress(), pathBaseWeth);
     const priceInEthWithSlippage = priceInETH * 103n / 100n;
 
     // Execute transaction with increased ETH
     const txInfo = await paymentHub.connect(owner).payFromEther(
       accounts[1],
       paymentAmountInBase,
-      await brokerbot.base(),
+      pathBaseWeth,
       { value: priceInEthWithSlippage }
     );
     const { gasPrice, cumulativeGasUsed} = await txInfo.wait();
