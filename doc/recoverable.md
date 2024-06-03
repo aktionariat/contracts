@@ -22,7 +22,7 @@ Claims can also be deleted by a special role (in this case the collateral is ret
 
 ## Collateral
 
-As a collateral, the share tokens themselves can be used. E.g. if you lost your key, get a friend to stake their shares for you. A custom collateral (ERC‑20 token) can be set by the issuer. Using a stablecoin like XCHF has the advantage that during the waiting period the amount staked is not subject to the volatility of Ether. Ether is not supported as collateral, but the issuer could decide to accept wrapped ether.
+As a collateral, the share tokens themselves can be used. E.g. if you lost your key, get a friend to stake their shares for you. A custom collateral (ERC‑20 token) can be set by the issuer. Using a stablecoin like XCHF or ZCHF has the advantage that during the waiting period the amount staked is not subject to the volatility, like it would be with Ether. Ether is also not directly supported as collateral, but the issuer could decide to accept wrapped Ether (WETH).
 
 ## Example
 

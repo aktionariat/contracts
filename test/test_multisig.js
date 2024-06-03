@@ -1,5 +1,4 @@
 const {network, ethers, deployments } = require("hardhat");
-const config = require("../scripts/deploy_config.js");
 const { getTX } = require("./helper/index");
 const { expect } = require("chai");
 const { Transaction, Typed } = require("ethers");

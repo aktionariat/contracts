@@ -1,5 +1,6 @@
 const Confirm = require('prompt-confirm');
-const config = require("../scripts/deploy_config.js");
+const { getConfigPath } = require('../scripts/utils.js');
+const config = require(`..${getConfigPath()}`);
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -13,10 +14,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const permit2Hub = await deployments.get("Permit2Hub");
   const draggable = await deployments.get("DraggableShares");
   
-  const terms = "test.ch/terms";
-  const quorumBps = 7500;
-  const quorumMigration = 7500;
-  const votePeriodSeconds = 5184000;
+  const terms = config.terms;
+  const quorumBps = config.quorumBps;
+  const quorumMigration = config.quorumMigration;
+  const votePeriodSeconds = config.votePeriodSeconds;
 
   const params = {
     wrappedToken: draggable.address,
@@ -34,7 +35,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("recoveryHub: %s", recoveryHub.address);
     console.log("offer factory: %s", offerFactory.address);
     console.log("permit2hub: %s", permit2Hub.address);
-    console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
+    console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {

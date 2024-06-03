@@ -8,7 +8,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
 
   const owner = config.multisigAddress;
   //const shares = await deployments.get('Shares');
-  const shares = config.sharesAddress;
+  const shares = config.shareAddress;
   const paymentHub = config.paymentHubAddress;
   
   const price = config.sharePrice;
@@ -24,7 +24,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("shares: %s", shares);
     console.log("paymentHub: %s", paymentHub);
     console.log("base xchf: %s", baseCurrencyContract);
-    console.log("owner: %s", owner);  // don't forget to set it in deploy_config.js as the multsigadr
+    console.log("owner: %s", owner);  // don't forget to set it in deploy_config_mainnet.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
     if(!prompt) {
@@ -51,8 +51,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   });
 
   // register brokerbot at registry
-  //brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"); // is fixed address (change will mess up subgraph)
-  //brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shares.address);
+  brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"); // is fixed address (change will mess up subgraph)
+  brokerbotRegistry.registerBrokerbot(address, baseCurrencyContract, shares);
 
   // auto verify on etherscan
   if (network.name != "hardhat") {
