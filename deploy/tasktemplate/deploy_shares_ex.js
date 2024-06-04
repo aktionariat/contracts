@@ -8,9 +8,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const owner = nconf.get("multisigAddress");
   
-  const recoveryHub = await deployments.get("RecoveryHub");
-  nconf.set("address:recoveryHub", recoveryHub.address);
-  const permit2Hub = await deployments.get("Permit2Hub");
+  const recoveryHubAddress = nconf.get("address:recoveryHub");
+  const permit2HubAddress = nconf.get("address:permit2Hub");
+  
 
   const symbol = nconf.get("symbol");
   const name = nconf.get("name");
@@ -22,8 +22,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("Deploy Shares "+ symbol)
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("recoveryHub: %s", recoveryHub.address);
-    console.log("permit2hub: %s", permit2Hub.address);
+    console.log("recoveryHub: %s", recoveryHubAddress);
+    console.log("permit2hub: %s", permit2HubAddress);
     console.log("owner: %s", owner); // don't forget to set it in deploy_config_mainnet.js as the multsigadr
 
     const prompt = await new Confirm("Addresses correct?").run();
@@ -44,8 +44,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
       terms,
       totalShares,
       owner,
-      recoveryHub.address,
-      permit2Hub.address
+      recoveryHubAddress,
+      permit2HubAddress
     ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
@@ -62,4 +62,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = [nconf.get("symbol")+"Shares"];
-module.exports.dependencies = ["RecoveryHub"];
+// module.exports.dependencies = ["RecoveryHub"];

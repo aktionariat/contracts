@@ -24,7 +24,7 @@ const config = {
     mumbai: "0x1776C349696CccAE06541542C5ED954CDf9859cC"
   },
   offerFactory: {
-    mainnet: "",
+    mainnet: "0x9eA6427f76b27F939942941fFbA43667F4e2a45c",
     optimism: "",
     polygon: "0x339891af65dfc0ca929e5521978e07d162514f92",
     mumbai: "0x4A9519256A707873a32d0e436182AeE2967694C4"

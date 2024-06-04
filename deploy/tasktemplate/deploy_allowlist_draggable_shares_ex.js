@@ -10,11 +10,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const owner = nconf.get("multisigAddress");
   const symbol = nconf.get("symbol");
   const shares = await deployments.get(symbol+"AllowlistShares");
-  const recoveryHub = await deployments.get("RecoveryHub");
-  const offerFactory = await deployments.get("OfferFactory");
-  const permit2Hub = await deployments.get("Permit2Hub");
-  nconf.set("address:recoveryHub", recoveryHub.address);
-  nconf.set("address:offerFactory", offerFactory.address);
+  
+  const recoveryHubAddress = nconf.get("address:recoveryHub");
+  const offerFactoryAddress = nconf.get("address:offerFactory");
+  const permit2HubAddress = nconf.get("address:permit2Hub");
   
   const terms = nconf.get("terms");
   const quorumBps = nconf.get("quorumBps");
@@ -34,9 +33,9 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
     console.log("shares: %s", shares.address);
-    console.log("recoveryHub: %s", recoveryHub.address);
-    console.log("offer factory: %s", offerFactory.address);
-    console.log("permit2hub: %s", permit2Hub.address);
+    console.log("recoveryHub: %s", recoveryHubAddress);
+    console.log("offer factory: %s", offerFactoryAddress);
+    console.log("permit2hub: %s", permit2HubAddress);
     console.log("owner: %s", owner); // don't forget to set it in deploy_config_mainnet.js as the multsigadr
     
     const prompt = await new Confirm("Addresses correct?").run();
@@ -54,10 +53,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     args: [
       terms,
       params,
-      recoveryHub.address,
-      offerFactory.address,
+      recoveryHubAddress,
+      offerFactoryAddress,
       owner,
-      permit2Hub.address
+      permit2HubAddress
     ],
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
@@ -72,4 +71,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 };
 
 module.exports.tags = [nconf.get("symbol")+"AllowlistDraggableShares"];
-module.exports.dependencies = ["RecoveryHub", "OfferFactory", nconf.get("symbol")+"AllowlistShares"];
+module.exports.dependencies = [nconf.get("symbol")+"AllowlistShares"];

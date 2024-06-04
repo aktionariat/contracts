@@ -10,9 +10,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const owner = nconf.get("multisigAddress");
 
   const sharesAddress = nconf.get("brokerbot:shares")
-  //const paymentHub = await deployments.get("PaymentHub");
-  const paymentHubAddress = "0xaf1A5a633A31f8659F06e32da7b41E207AdAd43C";
-  nconf.set("address:paymentHub", paymentHubAddress);
+  const paymentHub = await ethers.getContractAt("PaymentHub", nconf.get("address:paymentHub"));
+  const paymentHubAddress = nconf.get("address::paymentHub");
   
   const price = nconf.get("sharePrice");
   const increment = nconf.get("increment");
@@ -54,6 +53,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   });
   const brokerbotContract = await ethers.getContract(nconf.get("symbol")+"Brokerbot");
   const version = await brokerbotContract.VERSION();
+  const paymentHubVersion = await paymentHub.VERSION();
   
   // register brokerbot at registry
   brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98"); // is fixed address (change will mess up subgraph)

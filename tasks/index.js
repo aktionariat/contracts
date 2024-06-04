@@ -6,7 +6,7 @@ const fs = require('fs-extra');
 const inquirer  = require('./lib/inquirer');
 const files = require('./lib/files');
 const { getCompanyId, registerMultiSignature, registerToken, registerBrokerbot } = require("../scripts/register-helper");
-const { ethers } = require("ethers");
+// const { ethers } = require("ethers");
 const {
     askReviewConfirm,
     askNetwork, 
@@ -585,22 +585,26 @@ async function switchToBranch(networkName) {
 
 async function readDeployValues() {
     const shares = await ethers.getContractAt("Shares", nconf.get("Allowlist") ? nconf.get("address:allowlist:shares") : nconf.get("address:share"));
-    const draggable = await ethers.getContractAt("DraggableShares", nconf.get("Allowlist") ? nconf.get("address:allowlist:draggable") : nconf.get("address:draggable"));
+    console.log("=============================================================")
+    console.log("===== Deployment Finished with following on-chain data ======")
+    console.log("=============================================================")
+    if (nconf.get("Draggable")) {
+        const draggable = await ethers.getContractAt("DraggableShares", nconf.get("Allowlist") ? nconf.get("address:allowlist:draggable") : nconf.get("address:draggable"));
+        console.log("Draggable named: %s", await draggable.name());
+        console.log("Draggable symbol: %s", await draggable.symbol());
+        console.log("draggable terms: %s", await draggable.terms());
+        console.log("draggable quorum: %s", await draggable.quorum());
+        console.log("Draggable oracle: %s", await draggable.oracle());
+    } else {
+        console.log("Draggable named: %s", await shares.name());
+        console.log("Draggable symbol: %s", await shares.symbol());
+        console.log("draggable terms: %s", await shares.terms());
+    }
+    console.log("Share version: %s", await shares.VERSION());
     const brokerbotAddress = nconf.get("address:brokerbot")
     let brokerbot;
     if (brokerbotAddress) {
         brokerbot = await ethers.getContractAt("Brokerbot", nconf.get("address:brokerbot"));        
-    }
-    console.log("=============================================================")
-    console.log("===== Deployment Finished with following on-chain data ======")
-    console.log("=============================================================")
-    console.log("Draggable named: %s", await draggable.name());
-    console.log("Draggable symbol: %s", await draggable.symbol());
-    console.log("draggable terms: %s", await draggable.terms());
-    console.log("draggable quorum: %s", await draggable.quorum());
-    console.log("Draggable oracle: %s", await draggable.oracle());
-    console.log("Share version: %s", await shares.VERSION());
-    if (brokerbotAddress) {
         console.log("Brokerbot version: %s", await brokerbot.VERSION());
         console.log("Brokerbot base: %s", await brokerbot.base());
         console.log("Brokerbot token: %s", await brokerbot.token());
