@@ -18,7 +18,7 @@ const config = {
     mumbai: "0x276f97Cc7C685fDA1B099723CeB87F65d2ec89bE"
   },
   recoveryHub: {
-    mainnet: "",
+    mainnet: "0x5e200B3C6e9ce8280dbB14A0E5486895456136EF",
     optimism: "",
     polygon: "0xaea2886cb865bab01fc43f3c3f51b27b720ae185",
     mumbai: "0x1776C349696CccAE06541542C5ED954CDf9859cC"
@@ -36,7 +36,7 @@ const config = {
     mumbai: "0x6a972E875f4bB56b1e82027aEa3E58076d32119c"
   },
   permit2Hub: {
-    mainnet: "",
+    mainnet: "0xd3DE54d9e424BF27b8259E69B205127722c771Cb",
     optimism: "",
     polygon: "0xc5e049019fd4c21de3685f60993fd41d3098dca5",
     mumbai: "0xd6e98A2BDe37B7bCA4D265429D91af5c3CA3E74a"

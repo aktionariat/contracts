@@ -259,11 +259,8 @@ module.exports = {
   verify: {
     etherscan: {
       apiKey: {
-        mainnet: process.env.ETHERSCAN_API_KEY,
-        ropsten: process.env.ETHERSCAN_API_KEY,
-        rinkeby: process.env.ETHERSCAN_API_KEY,
-        goerli: process.env.ETHERSCAN_API_KEY,
-        sepolia: process.env.ETHERSCAN_API_KEY,
+        mainnet: process.env.ETHERSCAN_API_KEY_MAINNET,
+        sepolia: process.env.ETHERSCAN_API_KEY_MAINNET,
         // optimism
         optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
         kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
