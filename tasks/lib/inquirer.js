@@ -190,7 +190,12 @@ module.exports = {
       type: 'confirm',
       message: 'Does the smartcontract needs to be draggable?'
     },
-    
+    {
+      name: 'deployBrokerbot',
+      type: 'confirm',
+      message: 'Does it need a Brokerbot contract?',
+      default: true,
+    },
     ]
     return inquirer.prompt(questions);
   },

@@ -12,7 +12,6 @@
 */
 pragma solidity ^0.8.0;
 
-import {console} from "hardhat/console.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IBrokerbot} from "./IBrokerbot.sol";
@@ -60,9 +59,9 @@ contract BrokerbotRegistry is Ownable {
       }
       _activeBrokerbotSet.add(address(_brokerbot));
       activeBrokerbots[token] = _brokerbot;
+      getBrokerbot[base][token] = _brokerbot;
       _tokenRegistry.addShareToken(address(token));
       emit RegisterBrokerbot(_brokerbot, base, token);
-      console.log("isnew");
     }
   }
 

@@ -12,8 +12,8 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   const shares = await deployments.get('Shares');
   const paymentHub = await deployments.get('PaymentHub');
   
-  const price = ethers.parseUnits("100", 18);
-  const increment = 10000000000000000n;
+  const price = ethers.parseUnits("1", 18);
+  const increment = 100000000000000n;
   const baseCurrencyContract = config.zchfAddress; // ZCHF Contract
     
   if (network.name != "hardhat") {

@@ -58,14 +58,14 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   if (network.name != "hardhat") {
     brokerbotRegistryAddress = config.brokerbotRegistry;
     tokenRegistryAddress = config.tokenRegistryAddress;
+    const brokerbotRegistryContract = await ethers.getContractAt("BrokerbotRegistry", brokerbotRegistryAddress);
+    await brokerbotRegistryContract.connect(deployerSigner).registerBrokerbot(address, tokenRegistryAddress)
   } else {
     brokerbotRegistry = await deployments.get('BrokerbotRegistry');
     brokerbotRegistryAddress = brokerbotRegistry.address;
     const tokenRegistry = await deployments.get("TokenRegistry");
     tokenRegistryAddress = tokenRegistry.address;
   }
-  const brokerbotRegistryContract = await ethers.getContractAt("BrokerbotRegistry", brokerbotRegistryAddress);
-  await brokerbotRegistryContract.connect(deployerSigner).registerBrokerbot(address, tokenRegistryAddress);
 };  
 
 module.exports.tags = ["Brokerbot"];
