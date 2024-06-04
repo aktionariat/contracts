@@ -14,7 +14,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     console.log("Deploy Token Registry")
     console.log("-----------------------")
     console.log("deployer: %s", deployer);
-    console.log("owner: %s", deployer);  // don't forget to set it in hardhat.config.js as the multsig account
+    console.log("owner: %s", owner);  // don't forget to set it in hardhat.config.js as the multsig account
     console.log("brokerbot registry: %s", brokerbotRegistry.address);
 
     const prompt = await new Confirm("Addresses correct?").run();
@@ -31,7 +31,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
     contract: "TokenRegistry",
     from: deployer,
     args: [
-      deployer,
+      owner,
       brokerbotRegistry.address
     ],
     log: true,

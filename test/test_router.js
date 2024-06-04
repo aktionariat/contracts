@@ -2,7 +2,6 @@ const {network, ethers, deployments, } = require("hardhat");
 const { setup, setBalances, getBlockTimeStamp, randomBigInt } = require("./helper/index");
 const Chance = require("chance");
 const { expect } = require("chai");
-const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
 const { getConfigPath } = require('../scripts/utils.js');
@@ -67,23 +66,23 @@ describe("Brokerbot Router", () => {
     // build paths
     // shares - base - usdc - dai
     let types = ["address", "uint24","address","uint24","address","uint24","address"];
-    let values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.daiAddress];
+    let values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.usdcAddress, 100, config.daiAddress];
     pathDai = ethers.solidityPacked(types,values);
     // shares - base - usdc
     types = ["address","uint24","address","uint24","address"];
-    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress];
+    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.usdcAddress];
     pathUsdc = ethers.solidityPacked(types,values);
     // base - usdc
     types = ["address","uint24","address"];
-    values = [config.baseCurrencyAddress, 500, config.usdcAddress];
+    values = [config.baseCurrencyAddress, 100, config.usdcAddress];
     pathBaseUsdc = ethers.solidityPacked(types,values);
     // shares - base - usdc - weth
     types = ["address", "uint24","address","uint24","address","uint24","address"];
-    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.wethAddress];
+    values = [await draggable.getAddress(), 0, config.baseCurrencyAddress, 100, config.usdcAddress, 500, config.wethAddress];
     pathWeth = ethers.solidityPacked(types,values);
     // base - usdc - weth
     types = ["address","uint24","address","uint24","address"];
-    values = [config.baseCurrencyAddress, 500, config.usdcAddress, 500, config.wethAddress];
+    values = [config.baseCurrencyAddress, 100, config.usdcAddress, 500, config.wethAddress];
     pathBaseWeth = ethers.solidityPacked(types,values);
     // shares - base
     types = ["address", "uint24","address"];

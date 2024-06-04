@@ -99,6 +99,8 @@ async function setup(setupBrokerbotEnabled) {
   let brokerbot;
   let brokerbotDAI;
   let brokerbotZCHF;
+  let brokerbotRegistry;
+  let tokenRegistry;
   let recoveryHub;
   let offerFactory;
   let draggableShares;
@@ -140,6 +142,7 @@ async function setup(setupBrokerbotEnabled) {
     "BrokerbotDAI",
     "BrokerbotZCHF",
     "BrokerbotRegistry",
+    "TokenRegistry",
     "BrokerbotRouter",
     "BrokerbotQuoter",
     "DraggableSharesWithPredecessor",
@@ -157,6 +160,8 @@ async function setup(setupBrokerbotEnabled) {
   brokerbot = await ethers.getContract("Brokerbot");
   brokerbotDAI = await ethers.getContract("BrokerbotDAI");
   brokerbotZCHF = await ethers.getContract("BrokerbotZCHF");
+  brokerbotRegistry = await ethers.getContract("BrokerbotRegistry");
+  tokenRegistry = await ethers.getContract("TokenRegistry");
 
   
   // Set Payment Hub for Brokerbot
@@ -185,12 +190,12 @@ async function setup(setupBrokerbotEnabled) {
   }
 
   if (setupBrokerbotEnabled) {
-      // Deposit some shares/basecurrency to Brokerbot
-      await draggableShares.connect(owner).transfer(await brokerbot.getAddress(), 500000);
-      await shares.connect(owner).transfer(await brokerbotDAI.getAddress(), 20000);
-      await shares.connect(owner).transfer(await brokerbotZCHF.getAddress(), 20000);
-
-
+    // Deposit some shares/basecurrency to Brokerbot
+    await draggableShares.connect(owner).transfer(await brokerbot.getAddress(), 500000);
+    await shares.connect(owner).transfer(await brokerbotDAI.getAddress(), 20000);
+    await shares.connect(owner).transfer(await brokerbotZCHF.getAddress(), 20000);
+    // register brokerbot
+    await brokerbotRegistry.connect(owner).registerBrokerbot(await brokerbot.getAddress(), await tokenRegistry.getAddress());
   }  
 }
 
