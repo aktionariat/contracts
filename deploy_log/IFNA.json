@@ -1,0 +1,33 @@
+{
+  "network": "mainnet",
+  "baseCurrencyAddress": "0xB58E61C3098d85632Df34EecfB899A1Ed80921cB",
+  "address": {
+    "recoveryHub": "0x5e200B3C6e9ce8280dbB14A0E5486895456136EF",
+    "offerFactory": "0x9eA6427f76b27F939942941fFbA43667F4e2a45c",
+    "permit2Hub": "0xd3DE54d9e424BF27b8259E69B205127722c771Cb",
+    "paymentHub": "0x4fA0C488F321A1D089f7E5f951fe8C43F2064709",
+    "brokerbotRegistry": "0xcB3e482df38d62E73A7aE0E15a2605caDcc5aE98",
+    "share": "0x366012e00ffcFD782bE19a9ea5b47AD640998895"
+  },
+  "companyName": "Innofactory AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "IFNA",
+  "name": "Innofactory AG Shares",
+  "terms": "aktienbuch.innofactory.ch",
+  "totalShares": "2000",
+  "sharePrice": "0",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": false,
+  "multisigAddress": "0xC0a1deaB3f49268b4Adb9c502559d1491b8Bf115",
+  "brokerbot": {
+    "shares": "0x366012e00ffcFD782bE19a9ea5b47AD640998895"
+  },
+  "blocknumber": "20018173",
+  "version": {
+    "shares": "4"
+  }
+}
