@@ -47,7 +47,7 @@ task("create-multisig-clone", "Creates a multisig clone from the factory")
         if (factory == undefined) {
             switch   (network.name) {
                 case "mainnet":
-                    factory = "0xC894ef112CC26741397053248F9f677398Eb56e2"; // mainnet factory
+                    factory = "0x9C6471DC5B5BC216a74fC37056042256fd5E95B3"; // mainnet factory V4
                     break;
                 case "kovan":
                     factory = "0xAF21E166ADc362465A27AeDc15315DcFc0c51624"; // kovan factory
@@ -173,9 +173,13 @@ task("init-deploy", "creates files for client deployment")
     }
 
     // deploy brokerbot
-    await hre.run("deploy", {
-        tags: deployConfig.symbol+"Brokerbot",
-    });
+    // const deployBrokerbot = await askConfirmWithMsg("Do you want to deploy the brokerbot?");
+    // nconf.set("deployBrokerbot", deployBrokerbot);
+    if (deployConfig.deployBrokerbot) {
+        await hre.run("deploy", {
+            tags: deployConfig.symbol+"Brokerbot",
+        });
+    }I
 
     // write deploy log
     nconf.save();
@@ -191,8 +195,9 @@ task("init-deploy", "creates files for client deployment")
     // register at the backend
     const doRegister = await askConfirmWithMsg("Do you want to register the contracts in the back-end?");
     if (network.name != "hardhat" && doRegister) {
+        const registerChoices = deployConfig.deployBrokerbot ? "MultiSig Token Brokerbot" : "MultiSig Token";
         await hre.run("register", {
-            choices: "MultiSig Token Brokerbot",
+            choices: registerChoices,
             name: nconf.get("companyName"),
             tokenAddress: nconf.get("brokerbot:shares"),
             multisigAddress: nconf.get("multisigAddress"),
