@@ -1,0 +1,38 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0x02567e4b14b25549331fCEe2B56c647A8bAB16FD",
+  "address": {
+    "recoveryHub": "0xaea2886cb865bab01fc43f3c3f51b27b720ae185",
+    "offerFactory": "0x339891af65dfc0ca929e5521978e07d162514f92",
+    "permit2Hub": "0xc5e049019fd4c21de3685f60993fd41d3098dca5",
+    "paymentHub": "0x3eeffebd88a3b4bc1fe600bfcd1c0a8c8b813980",
+    "brokerbotRegistry": "0x6548FAD069F2eDa512a658c17606Eed81095c93D",
+    "share": "0x26D338cd7B46fF191721c12f6F70887F3B9EcED2",
+    "draggable": "0x3436d25350d63963BB5c07AB9209d210dfE83eB9",
+    "brokerbot": "0xAa5189c2E09f278805C96ca0407B87f971BE78F9"
+  },
+  "companyName": "Nest Temporary AG",
+  "multisigSigner": "0x4651E7D54bD93B6ACEe700d9Ec1E7dc382CF0772",
+  "symbol": "NEST",
+  "name": "Nest Temporary AG Shares",
+  "terms": "invest.mynest.ch",
+  "totalShares": "2750000",
+  "sharePrice": "100000000000000000",
+  "increment": "0",
+  "quorumBps": 6667,
+  "quorumMigration": 6667,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x9273c04f503aa03fc3924dEcEab1d33060212f12",
+  "brokerbot": {
+    "shares": "0x3436d25350d63963BB5c07AB9209d210dfE83eB9"
+  },
+  "blocknumber": "57763324",
+  "version": {
+    "shares": "4",
+    "draggable": "3",
+    "brokerbot": "8",
+    "paymentHub": "9"
+  }
+}
