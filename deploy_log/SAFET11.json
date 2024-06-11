@@ -1,0 +1,24 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0x02567e4b14b25549331fCEe2B56c647A8bAB16FD",
+  "address": {
+    "recoveryHub": "0xaea2886cb865bab01fc43f3c3f51b27b720ae185",
+    "offerFactory": "0x339891af65dfc0ca929e5521978e07d162514f92",
+    "permit2Hub": "0xc5e049019fd4c21de3685f60993fd41d3098dca5",
+    "paymentHub": "0x3eeffebd88a3b4bc1fe600bfcd1c0a8c8b813980",
+    "brokerbotRegistry": "0x6548FAD069F2eDa512a658c17606Eed81095c93D"
+  },
+  "companyName": "SAFE Test Company AG",
+  "multisigSigner": "0x4e02228946e3047034B8cE87F5320085226e4A31",
+  "symbol": "SAFET11",
+  "name": "SAFE TEST Share 11",
+  "terms": "invest.safe.ch",
+  "totalShares": "10000000",
+  "sharePrice": "1000000000000000",
+  "increment": "0",
+  "quorumBps": 7500,
+  "quorumMigration": 7500,
+  "votePeriodSeconds": 5184000,
+  "Allowlist": false,
+  "Draggable": true
+}
