@@ -179,7 +179,7 @@ task("init-deploy", "creates files for client deployment")
         await hre.run("deploy", {
             tags: deployConfig.symbol+"Brokerbot",
         });
-    }I
+    }
 
     // write deploy log
     nconf.save();
