@@ -5,7 +5,6 @@ const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
 const { expect } = require("chai");
-const { decodeError } = require('ethers-decode-error');
 const { setup } = require("./helper/index");
 
 // Shared  Config
