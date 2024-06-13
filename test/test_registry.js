@@ -80,26 +80,26 @@ describe("Registry", () => {
         .to.be.revertedWithCustomError(brokerbotRegistry, "Ownable_NotOwner")
         .withArgs(sig1.address);
       await expect(brokerbotRegistry.connect(owner).registerBrokerbot(brokerbotAdr, tokenRegistryAdr))
-        .to.emit(brokerbotRegistry, "RegisterBrokerbot")
+        .to.emit(brokerbotRegistry, "BrokerbotRegistered")
         .withArgs(brokerbotAdr, config.baseCurrencyAddress, draggableAdr)
         .to.emit(tokenRegistry, "ShareTokenAdded")
         .withArgs(draggableAdr);
       const registeredBrokerbot = await brokerbotRegistry.getBrokerbot(config.baseCurrencyAddress, draggableAdr);
       expect(registeredBrokerbot).to.be.equal(brokerbotAdr);
-      expect(await brokerbotRegistry.getActiveBrokerbot(draggableAdr)).to.be.equal(brokerbotAdr);
+      expect(await brokerbotRegistry.getBrokerbot(config.baseCurrencyAddress, draggableAdr)).to.be.equal(brokerbotAdr);
       expect(await tokenRegistry.cointainsShareToken(draggableAdr)).to.be.true;
       expect(await tokenRegistry.amountOfShareToken()).to.be.equal(1n);
     });
 
     it("Should register new active brokerbot", async() =>{
       await brokerbotRegistry.connect(owner).registerBrokerbot(brokerbotDAIAdr, tokenRegistryAdr);
-      const activeBrokerbotBefore = await brokerbotRegistry.getActiveBrokerbot(sharesAdr)
       await expect(brokerbotRegistry.connect(owner).registerBrokerbot(brokerbotZCHFAdr, tokenRegistryAdr))
-        .to.emit(brokerbotRegistry, "RegisterBrokerbot")
+        .to.emit(brokerbotRegistry, "BrokerbotRegistered")
         .withArgs(brokerbotZCHFAdr, config.zchfAddress, sharesAdr);
-      const activeBrokerbotAfter = await brokerbotRegistry.getActiveBrokerbot(sharesAdr);
-      expect(activeBrokerbotAfter).to.be.not.equal(activeBrokerbotBefore);
-      expect(activeBrokerbotAfter).to.be.equal(brokerbotZCHFAdr);
+      await expect(brokerbotRegistry.connect(sig2).deactivateBrokerbot(brokerbotDAIAdr))
+        .to.be.revertedWithCustomError(brokerbotRegistry, "Ownable_NotOwner");
+      const tx = await brokerbotRegistry.connect(owner).deactivateBrokerbot(brokerbotDAIAdr);
+      expect(tx).to.emit(brokerbotRegistry, "BrokerbotDeactivated").withArgs(brokerbotDAIAdr);
       const activeBrokerbots = await brokerbotRegistry.getAllActiveBrokerbots();
       expect(activeBrokerbots.length).to.be.equal(1);
       const allBrokerbots = await brokerbotRegistry.getAllBrokerbots();
@@ -108,13 +108,13 @@ describe("Registry", () => {
   
     it("Should emit event on sync", async () => {
       await expect(brokerbotRegistry.syncBrokerbot(brokerbotAdr))
-        .to.emit(brokerbotRegistry, "SyncBrokerbot")
+        .to.emit(brokerbotRegistry, "BrokerbotSync")
         .withArgs(brokerbotAdr);
     });
 
     it("Should get active brokerbot", async() => {
       await brokerbotRegistry.connect(owner).registerBrokerbot(brokerbotAdr, tokenRegistryAdr);
-      expect(await brokerbotRegistry.getActiveBrokerbot(draggableAdr)).to.be.equal(brokerbotAdr);
+      expect(await brokerbotRegistry.getBrokerbot(config.baseCurrencyAddress, draggableAdr)).to.be.equal(brokerbotAdr);
       const activeBrokerbots = await brokerbotRegistry.getAllActiveBrokerbots();
       expect(activeBrokerbots.length).to.be.equal(1);
       expect(activeBrokerbots[0]).to.be.equal(brokerbotAdr);
@@ -127,9 +127,15 @@ describe("Registry", () => {
       expect(brokerbots[0]).to.be.equal(brokerbotAdr);
     })
 
-    afterEach(async() => {
-
+    it("Should not add same brokerbot twice in set", async() => {
+      await brokerbotRegistry.connect(owner).registerBrokerbot(brokerbotAdr, tokenRegistryAdr);
+      await brokerbotRegistry.connect(owner).registerBrokerbot(brokerbotAdr, tokenRegistryAdr);
+      const brokerbots = await brokerbotRegistry.getAllBrokerbots();
+      const activeBrokerbots = await brokerbotRegistry.getAllActiveBrokerbots();
+      expect(activeBrokerbots.length).to.be.equal(1);
+      expect(brokerbots.length).to.be.equal(1);
     })
+
   });
 
   describe("Token Registry", () => {
