@@ -578,3 +578,4 @@ async function switchToBranch(networkName) {
             break;
     }
 }
+
