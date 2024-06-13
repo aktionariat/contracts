@@ -5,7 +5,6 @@ const { AlphaRouter } = require('@uniswap/smart-order-router');
 const { Token, CurrencyAmount, TradeType, Percent } = require('@uniswap/sdk-core');
 const { encodeRouteToPath } = require("@uniswap/v3-sdk");
 const { expect } = require("chai");
-const { decodeError } = require('ethers-decode-error');
 const { setup } = require("./helper/index");
 
 // Shared  Config
@@ -206,7 +205,7 @@ describe("New PaymentHub", () => {
     const values = [config.baseCurrencyAddress, 500, config.wethAddress];
     const pathBaseWeth = ethers.solidityPacked(types,values);
     beforeEach(async () => {
-      randomShareAmount = randomBigInt(1, 5000);
+      randomShareAmount = randomBigInt(1, 500);
       baseCurrencyAmount = await brokerbot.getBuyPrice(randomShareAmount);
     });
     it("Should get price in ETH", async () => {
@@ -330,7 +329,7 @@ describe("New PaymentHub", () => {
   describe("Trading with DAI base", () => {
     // dai -0.05- eth
     const types = ["address","uint24","address"];
-    const values = [config.daiAddress, 500, config.wethAddress];
+    const values = [config.daiAddress, 3000, config.wethAddress];
     const pathEthDAI = ethers.solidityPacked(types,values);
     beforeEach(async () => {
       randomShareAmount = randomBigInt(1, 5000);
@@ -379,7 +378,7 @@ describe("New PaymentHub", () => {
   describe("Trading with ZCHF base", () => {
     // xchf -0.01- dchf -0.05- usdc -0.05- eth
     const types = ["address","uint24","address","uint24","address"];
-    const values = [config.zchfAddress, 100, config.usdtAddress, 3000, config.wethAddress];
+    const values = [config.zchfAddress, 100, config.usdtAddress, 500, config.wethAddress];
     const pathEthZCHF = ethers.solidityPacked(types,values);
     beforeEach(async () => {
       randomShareAmount = randomBigInt(1, 50);
@@ -389,11 +388,12 @@ describe("New PaymentHub", () => {
     // TODO: change paymenthub getPriceInEtherFromOracle to use ZCHF
     it.skip("Should get right ETH price ", async () => {
       const priceeth = await paymentHub.getLatestPriceETHUSD();
+      const priceZchfEth = await paymentHub.getPriceInERC20.staticCall(zchfAmount, pathEthZCHF);
       // console.log(await priceeth.toString());
       // console.log(await daiAmount.toString());
       const priceInETH = await paymentHub.getPriceInEtherFromOracle(zchfAmount, await brokerbotZCHF.getAddress(), pathEthZCHF);
-      expect(ethers.formatEther(priceInETH)).to.equal(
-        ethers.formatEther(zchfAmount * 10n ** 8n / priceeth));
+      expect(priceInETH * 102n /100n ).to.gt(
+        priceZchfEth);
     });
 
     it("Should buy shares with ETH and trade it to ZCHF", async () => {

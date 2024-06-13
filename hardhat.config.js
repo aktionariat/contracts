@@ -42,7 +42,7 @@ function getForkUrl() {
 function getForkBlockNumber() {
   switch (process.env.FORK_NETWORK) {
     case "polygon":
-      return 54509659;
+      return 57761805;
     default:
       return 19419243;
   }

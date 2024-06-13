@@ -54,16 +54,20 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts, networ
   // only for for local testing !! production deployments need fixed address => see template folder
   //brokerbotRegistry = await ethers.getContractAt("BrokerbotRegistry", config.brokerbotRegistry); // is fixed address (change will mess up subgraph)
   let brokerbotRegistryAddress;
+  let tokenRegistryAddress;
   if (network.name != "hardhat") {
     brokerbotRegistryAddress = config.brokerbotRegistry;
+    tokenRegistryAddress = config.tokenRegistryAddress;
+    const brokerbotRegistryContract = await ethers.getContractAt("BrokerbotRegistry", brokerbotRegistryAddress);
+    await brokerbotRegistryContract.connect(deployerSigner).registerBrokerbot(address, tokenRegistryAddress)
   } else {
     brokerbotRegistry = await deployments.get('BrokerbotRegistry');
     brokerbotRegistryAddress = brokerbotRegistry.address;
+    const tokenRegistry = await deployments.get("TokenRegistry");
+    tokenRegistryAddress = tokenRegistry.address;
   }
-  const brokerbotRegistryContract = await ethers.getContractAt("BrokerbotRegistry", brokerbotRegistryAddress);
-  await brokerbotRegistryContract.connect(deployerSigner).registerBrokerbot(address, baseCurrencyContract, shares.address, { gasLimit: 90000});
 };  
 
 module.exports.tags = ["Brokerbot"];
 //module.exports.dependencies = ["DraggableShares", "PaymentHub"]; 
-module.exports.dependencies = ["DraggableShares", "PaymentHub", "BrokerbotRegistry"];
+module.exports.dependencies = ["DraggableShares", "PaymentHub", "BrokerbotRegistry", "TokenRegistry"];

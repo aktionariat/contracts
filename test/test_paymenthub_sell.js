@@ -2,7 +2,6 @@ const {network, ethers, deployments, } = require("hardhat");
 const { setBalances, getTX, getBlockTimeStamp } = require("./helper/index");
 const Chance = require("chance");
 const { expect } = require("chai");
-const { decodeError } = require('ethers-decode-error');
 
 // Shared  Config
 const { getConfigPath } = require('../scripts/utils.js');
