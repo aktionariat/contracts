@@ -1,0 +1,38 @@
+{
+  "network": "polygon",
+  "baseCurrencyAddress": "0x02567e4b14b25549331fCEe2B56c647A8bAB16FD",
+  "address": {
+    "recoveryHub": "0xaea2886cb865bab01fc43f3c3f51b27b720ae185",
+    "offerFactory": "0x339891af65dfc0ca929e5521978e07d162514f92",
+    "permit2Hub": "0xc5e049019fd4c21de3685f60993fd41d3098dca5",
+    "paymentHub": "0x3eeffebd88a3b4bc1fe600bfcd1c0a8c8b813980",
+    "brokerbotRegistry": "0x6548FAD069F2eDa512a658c17606Eed81095c93D",
+    "share": "0x11984207dD0Cfd0ABC60e2e849bD6AB98F08d056",
+    "draggable": "0x56AEbc727D1Ff9baaecC970202aF1A32C0EE632b",
+    "brokerbot": "0x7843c4d9f5166b41C92d5EC55FfA189c7c1BC1E2"
+  },
+  "companyName": "CAS AG",
+  "multisigSigner": "0xbFE09bd590cCb62EE3EE49940520E597602D8Cce",
+  "symbol": "CASAG",
+  "name": "CAS AG",
+  "terms": "test.aktionariat.com",
+  "totalShares": "10000000",
+  "sharePrice": "110000000000000000",
+  "increment": "1000000000000000",
+  "quorumBps": 5100,
+  "quorumMigration": 5100,
+  "votePeriodSeconds": 2592000,
+  "Allowlist": false,
+  "Draggable": true,
+  "multisigAddress": "0x0f9b22aFB0C2279fB03d80f237d4aFE2C4c2761D",
+  "brokerbot": {
+    "shares": "0x56AEbc727D1Ff9baaecC970202aF1A32C0EE632b"
+  },
+  "blocknumber": "58307470",
+  "version": {
+    "shares": "4",
+    "draggable": "3",
+    "brokerbot": "8",
+    "paymentHub": "9"
+  }
+}

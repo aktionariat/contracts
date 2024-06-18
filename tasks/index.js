@@ -299,7 +299,7 @@ task("register", "Register contracts in the backend")
     }
     let registerChoices;
     if (taskArgs.choices) {
-        registerChoices = choices.split(" ");
+        registerChoices = taskArgs.choices.split(" ");
     } else {
         registerChoices = await askWhatToRegister();
     }
