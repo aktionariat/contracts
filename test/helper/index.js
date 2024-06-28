@@ -99,6 +99,11 @@ async function setup(setupBrokerbotEnabled) {
   let paymentHub;
   let successor;
   let successorExternal;
+  let factory;
+  let tokenFactory;
+  let brokerbotFactory;
+  let factoryManager;
+  let multiSigCloneFactory
 
   let deployer
   let owner;
@@ -135,7 +140,12 @@ async function setup(setupBrokerbotEnabled) {
     "BrokerbotQuoter",
     "DraggableSharesWithPredecessor",
     "DraggableSharesWithPredecessorExternal",
-    "Permit2Hub"
+    "Permit2Hub",
+    "AktionariatFactory",
+    "TokenFactory",
+    "BrokerbotFactory",
+    "FactoryManager",
+    "MultiSigCloneFactory"
   ]);
   
   paymentHub = await ethers.getContract("PaymentHub");
@@ -146,6 +156,11 @@ async function setup(setupBrokerbotEnabled) {
   successor = await ethers.getContract("DraggableSharesWithPredecessor");
   successorExternal = await ethers.getContract("DraggableSharesWithPredecessorExternal");
   brokerbot = await ethers.getContract("Brokerbot");
+  factory = await ethers.getContract("AktionariatFactory");
+  tokenFactory = await ethers.getContract("TokenFactory");
+  brokerbotFactory = await ethers.getContract("BrokerbotFactory");
+  factoryManager = await ethers.getContract("FactoryManager");
+  multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
   
   
   // Set Payment Hub for Brokerbot

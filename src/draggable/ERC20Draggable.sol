@@ -50,6 +50,13 @@ import "./IOfferFactory.sol";
 import "../shares/IShares.sol";
 import "../utils/SafeERC20.sol";
 
+struct DraggableParams {
+	IERC20 wrappedToken;
+	uint256 quorumDrag;
+	uint256 quorumMigration;
+	uint256 votePeriod;
+}
+
 abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable {
 
 	using SafeERC20 for IERC20;
@@ -75,13 +82,6 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	uint256 public immutable votePeriod; // In seconds
 
 	address public override oracle;
-
-	struct DraggableParams {
-		IERC20 wrappedToken;
-		uint256 quorumDrag;
-		uint256 quorumMigration;
-		uint256 votePeriod;
-	}
 
 	event MigrationSucceeded(address newContractAddress, uint256 yesVotes, uint256 oracleVotes, uint256 totalVotingPower);
 	event ChangeOracle(address oracle);
