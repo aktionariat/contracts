@@ -23,8 +23,8 @@ contract TokenFactory is Ownable {
   DraggableTokenFactory public draggableFactory;
   AllowlistDraggableFactory public allowlistDraggableFactory;
 
-  event BaseTokenCreated(address indexed token, address indexed owner, bool allowlist);
-  event FactoryManagerUpdated(FactoryManager manager);
+  event BaseTokenCreated(IERC20Permit indexed token, address indexed owner, bool allowlist);
+  event FactoryManagerUpdated(address manager);
 
   error InvalidOwner();
 
@@ -42,12 +42,15 @@ contract TokenFactory is Ownable {
     } else {
       token = new Shares(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, tokenOwner, manager.recoveryHub(), manager.permit2Hub());
     }
-    emit BaseTokenCreated(address(token), tokenOwner, tokenConfig.allowlist);
+    emit BaseTokenCreated(token, tokenOwner, tokenConfig.allowlist);
     if (tokenConfig.draggable) {
+      IERC20Permit draggable;
       if (tokenConfig.allowlist) {
-        return allowlistDraggableFactory.createAllowlistDraggable(tokenConfig, tokenOwner, token);
+        draggable = allowlistDraggableFactory.createAllowlistDraggable(tokenConfig, tokenOwner, token);
+      } else {
+        draggable = draggableFactory.createDraggable(tokenConfig, tokenOwner, token);
       }
-      return draggableFactory.createDraggable(tokenConfig, tokenOwner, token);
+      return draggable;
     } else {
       return token;
     }
@@ -55,7 +58,7 @@ contract TokenFactory is Ownable {
 
   function setManager(FactoryManager _manager) external onlyOwner() {
     manager = _manager;
-    emit FactoryManagerUpdated(manager);
+    emit FactoryManagerUpdated(address(manager));
   }
 
 }

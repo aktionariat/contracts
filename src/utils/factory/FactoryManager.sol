@@ -31,14 +31,12 @@ contract FactoryManager is Ownable {
   MultiSigCloneFactory public multisigFactory;
   PaymentHub public paymentHub;
   RecoveryHub public recoveryHub;
-  BrokerbotRegistry public registry;
   Permit2Hub public permit2Hub;
 
   event PaymentHubUpdated(PaymentHub indexed paymentHub);
   event OfferFactoryUpdated(IOfferFactory indexed offerFactory);
   event RecoveryHubUpdated(RecoveryHub indexed recoveryHub);
   event Permit2HubUpdated(Permit2Hub indexed permit2Hub);
-  event BrokerbotRegistryUpdated(BrokerbotRegistry indexed BrokerbotRegistry);
   event MultiSigCloneFactoryUpdated(MultiSigCloneFactory indexed MultiSigCloneFactory);
 
   constructor(address _owner) Ownable(_owner) {}
@@ -67,10 +65,5 @@ contract FactoryManager is Ownable {
   function setPermit2Hub(Permit2Hub _permit2Hub) external onlyOwner() {
     permit2Hub = _permit2Hub;
     emit Permit2HubUpdated(permit2Hub);
-  }
-
-  function setBrokerbotRegistry(BrokerbotRegistry _brokerbotRegistry) external onlyOwner() {
-    registry = _brokerbotRegistry;
-    emit BrokerbotRegistryUpdated(registry);
   }
 }
