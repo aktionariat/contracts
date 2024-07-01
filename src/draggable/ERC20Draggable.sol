@@ -51,7 +51,7 @@ import "../shares/IShares.sol";
 import "../utils/SafeERC20.sol";
 
 struct DraggableParams {
-	IERC20 wrappedToken;
+	IERC20Permit wrappedToken;
 	uint256 quorumDrag;
 	uint256 quorumMigration;
 	uint256 votePeriod;
