@@ -31,25 +31,32 @@ async function main() {
   draggableFactory = await ethers.getContract("DraggableTokenFactory");
   alowlistDraggableFactory = await ethers.getContract("AllowlistDraggableFactory");
 
+  const factoryManagerAddress = await factoryManager.getAddress();
+  const paymentHubAddress = await paymentHub.getAddress();
+  const offerFactoryAddress = await offerFactory.getAddress();
+  const recoveryHubAddress = await recoveryHub.getAddress();
+  const tokenFactoryAddress = await tokenFactory.getAddress();
+  const brokerbotFactoryAddress = await brokerbotFactory.getAddress();
+  const multiSigCloneFactoryAddress = await multiSigCloneFactory.getAddress();
+  const permit2HubAddress = await permit2Hub.getAddress();
+
   console.log("Setting up Factory Manager...");
-  factoryManager.connect(owner).setPaymentHub(paymentHub);
-  factoryManager.connect(owner).setOfferFactory(offerFactory);
-  factoryManager.connect(owner).setRecoveryHub(recoveryHub);
-  factoryManager.connect(owner).setMultiSigCloneFactory(multiSigCloneFactory);
-  factoryManager.connect(owner).setPermit2Hub(permit2Hub);
+  await factoryManager.connect(owner).setPaymentHub(paymentHubAddress);
+  await factoryManager.connect(owner).setOfferFactory(offerFactoryAddress);
+  await factoryManager.connect(owner).setRecoveryHub(recoveryHubAddress);
+  await factoryManager.connect(owner).setMultiSigCloneFactory(multiSigCloneFactoryAddress);
+  await factoryManager.connect(owner).setPermit2Hub(permit2HubAddress);
 
   console.log("Setting manager in Factories...");
-  tokenFactory.connect(owner).setManager(factoryManager);
-  draggableFactory.connect(owner).setManager(factoryManager);
-  alowlistDraggableFactory.connect(owner).setManager(factoryManager);
-  brokerbotFactory.connect(owner).setManager(factoryManager);
-  factory.connect(owner).setManager(factoryManager);
+  await tokenFactory.connect(owner).setManager(factoryManagerAddress);
+  await draggableFactory.connect(owner).setManager(factoryManagerAddress);
+  await alowlistDraggableFactory.connect(owner).setManager(factoryManagerAddress);
+  await brokerbotFactory.connect(owner).setManager(factoryManagerAddress);
+  await factory.connect(owner).setManager(factoryManagerAddress);
 
   console.log("Setting up aktionariat factory...");
-  factory.connect(owner).setBrokerbotFactory(brokerbotFactory);
-  factory.connect(owner).setTokenFactory(tokenFactory);
-
-
+  await factory.connect(owner).setBrokerbotFactory(brokerbotFactoryAddress);
+  await factory.connect(owner).setTokenFactory(tokenFactoryAddress);
 }
 
 

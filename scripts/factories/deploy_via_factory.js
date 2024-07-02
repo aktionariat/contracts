@@ -1,5 +1,9 @@
 const {network, ethers, deployments } = require("hardhat");
+const { Interface } = require("ethers");
 const Confirm = require('prompt-confirm');
+
+const {config} = require('./factory_config.js');
+// const config = require("../deploy_config_mainnet.js");
 
 async function main() {
   let registry;
@@ -18,38 +22,30 @@ async function main() {
   let sig1;
 
   [deployer,owner,sig1,sig2,sig3,sig4,sig5,sig6] = await ethers.getSigners();
+
+  const companyEventABI = ["event CompanyCreated(address indexed multisig, address indexed token, address indexed brokerbot)"];
+  const ifaceCompany = new Interface(companyEventABI);
   
-  paymentHub = await ethers.getContract("PaymentHub");
-  recoveryHub = await ethers.getContract("RecoveryHub");
-  offerFactory = await ethers.getContract("OfferFactory");
   factory = await ethers.getContract("AktionariatFactory");
   tokenFactory = await ethers.getContract("TokenFactory");
-  brokerbotFactory = await ethers.getContract("BrokerbotFactory");
-  factoryManager = await ethers.getContract("FactoryManager");
-  multiSigCloneFactory = await ethers.getContract("MultiSigCloneFactory");
-  permit2Hub = await ethers.getContract("Permit2Hub");
-  draggableFactory = await ethers.getContract("DraggableTokenFactory");
-  alowlistDraggableFactory = await ethers.getContract("AllowlistDraggableFactory");
+  
+  const tokenConfig = config.token;
+  const brokerbotConfig = {
+    price: ethers.parseUnits(config.brokerbot.price, 18),
+    increment: ethers.parseUnits(config.brokerbot.increment, 18),
+    baseCurrency: config.brokerbot.baseCurrency
+  }
 
-  console.log("Setting up Factory Manager...");
-  factoryManager.connect(owner).setPaymentHub(paymentHub);
-  factoryManager.connect(owner).setOfferFactory(offerFactory);
-  factoryManager.connect(owner).setRecoveryHub(recoveryHub);
-  factoryManager.connect(owner).setMultiSigCloneFactory(multiSigCloneFactory);
-  factoryManager.connect(owner).setPermit2Hub(permit2Hub);
-
-  console.log("Setting manager in Factories...");
-  tokenFactory.connect(owner).setManager(factoryManager);
-  draggableFactory.connect(owner).setManager(factoryManager);
-  alowlistDraggableFactory.connect(owner).setManager(factoryManager);
-  brokerbotFactory.connect(owner).setManager(factoryManager);
-  factory.connect(owner).setManager(factoryManager);
-
-  console.log("Setting up aktionariat factory...");
-  factory.connect(owner).setBrokerbotFactory(brokerbotFactory);
-  factory.connect(owner).setTokenFactory(tokenFactory);
-
-
+  const newCompany = await factory.createCompany(tokenConfig, brokerbotConfig, owner);
+  const receipt = await newCompany.wait();
+  receipt.logs.forEach((log) => {
+    const parsedLog = ifaceCompany.parseLog(log);
+    if (parsedLog) {
+      console.log(`deployed company owner: ${parsedLog.args.multisig}`);
+      console.log(`deployed company token: ${parsedLog.args.token}`);
+      console.log(`deployed company brokerbot: ${parsedLog.args.brokerbot}`);
+    }
+  });
 }
 
 
