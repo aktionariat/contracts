@@ -29,7 +29,15 @@ contract BrokerbotFactory is Ownable {
   constructor(address _owner) Ownable(_owner){}
 
   function createBrokerbot(BrokerbotConfig memory brokerbotConfig, IERC20Permit token, address multisig) public returns(Brokerbot) {
-    Brokerbot brokerbot = new Brokerbot(token, brokerbotConfig.price, brokerbotConfig.increment, brokerbotConfig.baseToken, multisig, address(manager.paymentHub()));
+    Brokerbot brokerbot = new Brokerbot(
+      token, 
+      brokerbotConfig.price, 
+      brokerbotConfig.increment, 
+      brokerbotConfig.baseCurrency,
+      multisig,
+      address(manager.paymentHub())
+    );
+    
     _brokerbotSet.add(address(brokerbot));
     emit BrokerbotCreated(brokerbot, token, multisig);
     return brokerbot;

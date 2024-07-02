@@ -19,5 +19,5 @@ struct TokenConfig{
 struct BrokerbotConfig {
   uint256 price;
   uint256 increment;
-  IERC20 baseToken;
+  IERC20 baseCurrency;
 }

@@ -207,6 +207,7 @@ describe("Factories", () => {
       const draggableEventABI = ["event DraggableTokenCreated(address indexed draggable, address indexed baseToken, address indexed owner, bool allowlist)"]
       const ifaceDraggable = new Interface(draggableEventABI);
 
+      console.log(tokenConfig);
       const createToken = await tokenFactory.createToken(tokenConfig, tokenOwner);
       const receipt = await createToken.wait();
       receipt.logs.forEach((log) => {
@@ -237,7 +238,7 @@ describe("Factories", () => {
       const brokerbotConfig = {
         price: config.sharePrice,
         increment: config.increment,
-        baseToken: config.baseCurrencyAddress
+        baseCurrency: config.baseCurrencyAddress
       }
 
       const brokerbotEventABI = ["event BrokerbotCreated(address indexed brokerbot, address indexed token, address indexed owner)"];
@@ -257,7 +258,7 @@ describe("Factories", () => {
 
       expect(await newBrokerbot.getPrice()).to.be.equal(brokerbotConfig.price);
       expect(await newBrokerbot.increment()).to.be.equal(brokerbotConfig.increment);
-      expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseToken);
+      expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseCurrency);
     })
   });
 
@@ -281,7 +282,7 @@ describe("Factories", () => {
       const brokerbotConfig = {
         price: config.sharePrice,
         increment: config.increment,
-        baseToken: config.baseCurrencyAddress
+        baseCurrency: config.baseCurrencyAddress
       };
       const companyEventABI = ["event CompanyCreated(address indexed multisig, address indexed token, address indexed brokerbot)"];
       const ifaceCompany = new Interface(companyEventABI);
@@ -307,7 +308,7 @@ describe("Factories", () => {
       expect(await newShares.symbol()).to.be.equal(tokenConfig.symbol);
       expect(await newBrokerbot.getPrice()).to.be.equal(brokerbotConfig.price);
       expect(await newBrokerbot.increment()).to.be.equal(brokerbotConfig.increment);
-      expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseToken);
+      expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseCurrency);
       expect(await newMultisig.signers(multisigSigner.address)).to.be.equal(1n);
     })
   });
