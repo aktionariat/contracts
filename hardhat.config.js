@@ -52,8 +52,10 @@ function getForkChainId() {
   switch (process.env.FORK_NETWORK) {
     case "polygon":
       return 137;
-    default:
+    case "mainnet":
       return 1;
+    default:
+      return 31337;
   }
 }
 

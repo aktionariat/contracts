@@ -79,7 +79,7 @@ describe("Factories", () => {
     factoryManager.connect(owner).setOfferFactory(offerFactory);
     factoryManager.connect(owner).setRecoveryHub(recoveryHub);
     factoryManager.connect(owner).setMultiSigCloneFactory(multiSigCloneFactory);
-    factoryManager.connect(owner).setPermit2Hub(multiSigCloneFactory);
+    factoryManager.connect(owner).setPermit2Hub(permit2Hub);
 
     tokenFactory.connect(owner).setManager(factoryManager);
     draggableFactory.connect(owner).setManager(factoryManager);

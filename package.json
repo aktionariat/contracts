@@ -83,6 +83,7 @@
     "test": "hardhat test",
     "coverage": "hardhat coverage",
     "solhint": "./node_modules/.bin/solhint -f table src/**/*.sol",
-    "prettier:solidity": "./node_modules/.bin/prettier --write src/**/*.sol"
+    "prettier:solidity": "./node_modules/.bin/prettier --write src/**/*.sol",
+    "node-factories": "hardhat node --tags AktionariatFactory,TokenFactory,BrokerbotFactory,FactoryManager,OfferFactory,RecoveryHub,PaymentHub,Permit2Hub,MultiSigCloneFactory"
   }
 }
