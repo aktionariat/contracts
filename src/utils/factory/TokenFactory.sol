@@ -25,6 +25,8 @@ contract TokenFactory is Ownable {
 
   event BaseTokenCreated(IERC20Permit indexed token, address indexed owner, bool allowlist);
   event FactoryManagerUpdated(address manager);
+  event DraggableTokenFactoryUpdated(DraggableTokenFactory factory);
+  event AllowlistDraggableFactoryUpdated(AllowlistDraggableFactory factory);
 
   error InvalidOwner();
 
@@ -59,6 +61,16 @@ contract TokenFactory is Ownable {
   function setManager(FactoryManager _manager) external onlyOwner() {
     manager = _manager;
     emit FactoryManagerUpdated(address(manager));
+  }
+
+  function setDraggableTokenFactory(DraggableTokenFactory _draggableFactory) external onlyOwner() {
+    draggableFactory = _draggableFactory;
+    emit DraggableTokenFactoryUpdated(draggableFactory);
+  }
+
+  function setAllowlistDraggableFactory(AllowlistDraggableFactory _allowlistDraggableFactory) external onlyOwner() {
+    allowlistDraggableFactory = _allowlistDraggableFactory;
+    emit AllowlistDraggableFactoryUpdated(allowlistDraggableFactory);
   }
 
 }
