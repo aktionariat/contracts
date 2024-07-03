@@ -12,33 +12,57 @@ import { Ownable } from "../Ownable.sol";
  * @title Allowlist draggable factory
  * @author rube
  * 
+ * @notice This contract is responsible for creating new AllowlistDraggableShares tokens
+ * @dev Inherits from Ownable for access control
  */
 contract AllowlistDraggableFactory is Ownable {
 
-  FactoryManager public manager;
+    /// @notice The factory manager contract
+    FactoryManager public manager;
 
-  event DraggableTokenCreated(address indexed draggable, address indexed baseToken, address indexed owner, bool allowlist);
-  event FactoryManagerUpdated(FactoryManager manager);
+    /// @notice Emitted when the factory manager is updated
+    /// @param manager The new factory manager address
+    event FactoryManagerUpdated(FactoryManager manager);
 
-  error InvalidOwner();
+    /**
+     * @notice Constructs a new AllowlistDraggableFactory
+     * @param _owner The address that will be set as the owner of the contract
+     */
+    constructor(address _owner) Ownable(_owner){}
 
-  constructor(address _owner) Ownable(_owner){}
+    /**
+     * @notice Creates a new AllowlistDraggableShares token
+     * @param tokenConfig The configuration for the new token
+     * @param tokenOwner The address that will own the new token
+     * @param token The address of the ERC20Permit token to be used
+     * @return IERC20Permit The address of the newly created AllowlistDraggableShares token
+     */
+    function createAllowlistDraggable(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit token) external returns (IERC20Permit) {
+        DraggableParams memory params = DraggableParams(
+            token,
+            tokenConfig.quorumDrag,
+            tokenConfig.quorumMigration,
+            tokenConfig.votePeriod
+        );
 
-  function createAllowlistDraggable(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit token) external returns (IERC20Permit) {
-    if (tokenOwner == address(0)) revert InvalidOwner();
+        return new AllowlistDraggableShares(
+            tokenConfig.terms,
+            params, 
+            manager.recoveryHub(),
+            manager.offerFactory(),
+            tokenOwner,
+            manager.permit2Hub()
+        );
+    }
 
-    DraggableParams memory params = DraggableParams(token, tokenConfig.quorumDrag, tokenConfig.quorumMigration, tokenConfig.votePeriod);
-
-    IERC20Permit draggable = new AllowlistDraggableShares(tokenConfig.terms, params, manager.recoveryHub(), manager.offerFactory(), tokenOwner, manager.permit2Hub());
-    
-    emit DraggableTokenCreated(address(draggable), address(token), tokenOwner, tokenConfig.allowlist);
-    return draggable;
-    
-  }
-
-  function setManager(FactoryManager _manager) external onlyOwner {
-    manager = _manager;
-    emit FactoryManagerUpdated(manager);
-  }
+    /**
+     * @notice Sets a new factory manager
+     * @dev Can only be called by the contract owner
+     * @param _manager The address of the new factory manager
+     */
+    function setManager(FactoryManager _manager) external onlyOwner {
+        manager = _manager;
+        emit FactoryManagerUpdated(manager);
+    }
 
 }

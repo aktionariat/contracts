@@ -12,21 +12,35 @@ import { Ownable } from "../Ownable.sol";
  * @title Draggable token factory
  * @author rube
  * 
+ * @notice This contract is responsible for creating new Draggable tokens
+ * @dev Inherits from Ownable for access control
  */
 contract DraggableTokenFactory is Ownable {
 
+  /// @notice The factory manager contract
   FactoryManager public manager;
 
-  event DraggableTokenCreated(IERC20Permit indexed draggable, IERC20Permit indexed baseToken, address indexed owner, bool allowlist);
+  /**
+   * @notice Emitted when the factory manager is updated
+   * @param manager The address of the new factory manager
+   */
   event FactoryManagerUpdated(FactoryManager manager);
 
-  error InvalidOwner();
-
+  /**
+   * @notice Constructs the DraggableTokenFactory contract
+   * @param _owner The address that will be set as the owner of this contract
+   */
   constructor(address _owner) Ownable(_owner){}
 
+  /**
+   * @notice Creates a new Draggable token
+   * @dev This function deploys a new DraggableShares contract
+   * @param tokenConfig The configuration for the new token
+   * @param tokenOwner The address that will own the new token
+   * @param token The ERC20Permit token to be wrapped
+   * @return IERC20Permit The address of the newly created Draggable token
+   */
   function createDraggable(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit token) external returns (IERC20Permit) {
-    if (tokenOwner == address(0)) revert InvalidOwner();
-
     DraggableParams memory params = DraggableParams(
       token, 
       tokenConfig.quorumDrag, 
@@ -34,7 +48,7 @@ contract DraggableTokenFactory is Ownable {
       tokenConfig.votePeriod
     );
 
-    IERC20Permit draggable = new DraggableShares(
+    return new DraggableShares(
       tokenConfig.terms, 
       params, 
       manager.recoveryHub(), 
@@ -42,11 +56,13 @@ contract DraggableTokenFactory is Ownable {
       tokenOwner, 
       manager.permit2Hub()
     );
-
-    emit DraggableTokenCreated(draggable, token, tokenOwner, tokenConfig.allowlist);
-    return draggable;
   }
 
+  /**
+   * @notice Sets a new factory manager
+   * @dev Can only be called by the contract owner
+   * @param _manager The address of the new factory manager
+   */
   function setManager(FactoryManager _manager) external onlyOwner {
     manager = _manager;
     emit FactoryManagerUpdated(manager);
