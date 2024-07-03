@@ -205,26 +205,26 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0,
-      137: 1,
+      137: 0,
       3: 1,
       4: 1,
       5: 1,
-      11155111: 1,
+      11155111: 0,
       69: 1,
       80001: 1,
     },
     owner: {
-      default: 1,
+      default: 1, // switch to 0 for factory deployment
       //1: process.env.MULTISIG_DEPLOY, // mainnet
-      10: process.env.MULTISIG_DEPLOY, // optimism
+      // 10: process.env.MULTISIG_DEPLOY, // optimism
       // 137: process.env.MULTISIG_DEPLOY, // polygon
-      3: process.env.MULTISIG_DEPLOY, // ropsten
-      4: process.env.MULTISIG_DEPLOY, // rinkeby
-      5: process.env.MULTISIG_DEPLOY, // goerli
-      11155111: process.env.MULTISIG_DEPLOY, // sepolia
-      69: process.env.MULTISIG_DEPLOY, // optimism kovan
-      42161: process.env.MULTISIG_DEPLOY, // arb1
-      8001: process.env.MULTISIG_DEPLOY  // mumbai
+      // 3: process.env.MULTISIG_DEPLOY, // ropsten
+      // 4: process.env.MULTISIG_DEPLOY, // rinkeby
+      // 5: process.env.MULTISIG_DEPLOY, // goerli
+      // 11155111: process.env.MULTISIG_DEPLOY, // sepolia
+      // 69: process.env.MULTISIG_DEPLOY, // optimism kovan
+      // 42161: process.env.MULTISIG_DEPLOY, // arb1
+      // 8001: process.env.MULTISIG_DEPLOY  // mumbai
     },
     dev: {
       // Default to 1
@@ -258,7 +258,6 @@ module.exports = {
     // url: "http://192.168.0.100:8546",
     // excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
-  verify: {
     etherscan: {
       apiKey: {
         mainnet: process.env.ETHERSCAN_API_KEY,
@@ -274,7 +273,6 @@ module.exports = {
         polygonMumbai: process.env.POLYGONSCAN_API_KEY,
       }
     },
-  },
   solidity: {
     compilers: [
       {
