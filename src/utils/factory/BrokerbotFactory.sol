@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 
-
 pragma solidity ^0.8.0;
-
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-
+import { Brokerbot } from "../../brokerbot/Brokerbot.sol";
+import { BrokerbotRegistry } from "../../brokerbot/BrokerbotRegistry.sol";
+import { BrokerbotConfig } from "./FactoryStructs.sol";
+import { FactoryManager } from "./FactoryManager.sol";
+import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
 import { Ownable } from "../Ownable.sol";
 import { PaymentHub } from "../../brokerbot/PaymentHub.sol";
-import { Brokerbot } from "../../brokerbot/Brokerbot.sol";
-import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
-import { IERC20 } from "../../ERC20/IERC20.sol";
-import { BrokerbotRegistry } from "../../brokerbot/BrokerbotRegistry.sol";
-import { FactoryManager } from "./FactoryManager.sol";
-import { BrokerbotConfig } from "./FactoryStructs.sol";
 
-
+/**
+ * @title Brokerbot factory
+ * @author rube
+ * 
+ */
 contract BrokerbotFactory is Ownable {
   using EnumerableSet for EnumerableSet.AddressSet;
 

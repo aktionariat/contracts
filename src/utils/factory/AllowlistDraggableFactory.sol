@@ -2,15 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-import { Ownable } from "../Ownable.sol";
-import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
 import { AllowlistDraggableShares, DraggableParams } from "../../shares/AllowlistDraggableShares.sol";
+import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
 import { FactoryManager } from "./FactoryManager.sol";
 import { TokenConfig } from "./FactoryStructs.sol";
-
+import { Ownable } from "../Ownable.sol";
 
 /**
- * @title Factory to deploy shares contracts and brokerbot
+ * @title Allowlist draggable factory
  * @author rube
  * 
  */

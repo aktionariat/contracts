@@ -3,19 +3,18 @@
 
 pragma solidity ^0.8.0;
 
-
-import { Ownable } from "../Ownable.sol";
 import { Brokerbot } from "../../brokerbot/Brokerbot.sol";
-import { MultiSigCloneFactory } from "../../multisig/MultiSigCloneFactory.sol";
-import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
 import { BrokerbotFactory } from "./BrokerbotFactory.sol";
-import { TokenFactory } from "./TokenFactory.sol";
 import { FactoryManager } from "./FactoryManager.sol";
 import { TokenConfig, BrokerbotConfig } from "./FactoryStructs.sol";
+import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
+import { MultiSigCloneFactory } from "../../multisig/MultiSigCloneFactory.sol";
+import { Ownable } from "../Ownable.sol";
+import { TokenFactory } from "./TokenFactory.sol";
 
 
 /**
- * @title Factory to deploy shares contracts and brokerbot
+ * @title Aktionariat factory to deploy all contracts
  * @author rube
  * 
  */

@@ -1,27 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-
 pragma solidity ^0.8.0;
 
-
-import { Ownable } from "../Ownable.sol";
 import { IOfferFactory } from "../../draggable/IOfferFactory.sol";
-import { PaymentHub } from "../../brokerbot/PaymentHub.sol";
-import { Brokerbot } from "../../brokerbot/Brokerbot.sol";
-import { RecoveryHub } from "../../recovery/RecoveryHub.sol";
 import { MultiSigCloneFactory } from "../../multisig/MultiSigCloneFactory.sol";
-import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
-import { IERC20 } from "../../ERC20/IERC20.sol";
-import { BrokerbotRegistry } from "../../brokerbot/BrokerbotRegistry.sol";
-import { AllowlistShares } from "../../shares/AllowlistShares.sol";
-import { AllowlistDraggableShares } from "../../shares/AllowlistDraggableShares.sol";
-import { Shares } from "../../shares/Shares.sol";
-import { DraggableShares } from "../../shares/DraggableShares.sol";
+import { Ownable } from "../Ownable.sol";
+import { PaymentHub } from "../../brokerbot/PaymentHub.sol";
 import { Permit2Hub } from "../Permit2Hub.sol";
-import { DraggableParams } from "../../draggable/ERC20Draggable.sol";
+import { RecoveryHub } from "../../recovery/RecoveryHub.sol";
 
 /**
- * @title Factory to deploy shares contracts and brokerbot
+ * @title Factory Mangager for common contracts
  * @author rube
  * 
  */

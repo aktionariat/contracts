@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-
 pragma solidity ^0.8.0;
 
-
-import { Ownable } from "../Ownable.sol";
-import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
-import { AllowlistShares, Shares } from "../../shares/AllowlistShares.sol";
-import { FactoryManager } from "./FactoryManager.sol";
-import { DraggableTokenFactory } from "./DraggableTokenFactory.sol";
 import { AllowlistDraggableFactory } from "./AllowlistDraggableFactory.sol";
+import { AllowlistShares, Shares } from "../../shares/AllowlistShares.sol";
+import { DraggableTokenFactory } from "./DraggableTokenFactory.sol";
+import { FactoryManager } from "./FactoryManager.sol";
 import { TokenConfig } from "./FactoryStructs.sol";
+import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
+import { Ownable } from "../Ownable.sol";
 
 /**
- * @title Factory to deploy shares contracts and brokerbot
+ * @title Factory to deploy shares contracts
  * @author rube
  * 
  */
