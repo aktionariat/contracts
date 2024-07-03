@@ -62,11 +62,22 @@ contract AktionariatFactory is Ownable {
    * @param brokerbotConfig The configuration for the brokerbot.
    * @param signer The address of the signer for the multisig wallet.
    */
-  function createCompany(TokenConfig memory tokenConfig, BrokerbotConfig memory brokerbotConfig, address signer) public {
+  function createCompany(TokenConfig calldata tokenConfig, BrokerbotConfig calldata brokerbotConfig, address signer) public {
     address multisig = createMultisig(signer, tokenConfig.symbol);
     IERC20Permit token = tokenFactory.createToken(tokenConfig, multisig);
     Brokerbot brokerbot = brokerbotFactory.createBrokerbot(brokerbotConfig, token, multisig);
     emit CompanyCreated(multisig, token, brokerbot);
+  }
+
+  /**
+   * @notice Creates a new company including a multisig wallet and ERC20 token (no brokerbot).
+   * @param tokenConfig The configuration for the ERC20 token.
+   * @param signer The address of the signer for the multisig wallet.
+   */
+  function createCompanyWithoutBrokerbot(TokenConfig calldata tokenConfig, address signer) public {
+    address multisig = createMultisig(signer, tokenConfig.symbol);
+    IERC20Permit token = tokenFactory.createToken(tokenConfig, multisig);
+    emit CompanyCreated(multisig, token, Brokerbot(address(0)));
   }
 
   /**
@@ -75,7 +86,7 @@ contract AktionariatFactory is Ownable {
    * @param salt A unique salt used to create the multisig wallet.
    * @return The address of the created multisig wallet.
    */
-  function createMultisig(address signer, string memory salt) public returns (address) {
+  function createMultisig(address signer, string calldata salt) public returns (address) {
     return address(manager.multisigFactory().create(signer, keccak256(abi.encodePacked(salt))));
   }
 
