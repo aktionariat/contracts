@@ -32,7 +32,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     log: true,
     maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     maxFeePerGas: feeData.maxFeePerGas,
-    deterministicDeployment: false
+    deterministicDeployment: true
   });
 };
 
