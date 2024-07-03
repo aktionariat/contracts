@@ -1,5 +1,7 @@
 const Confirm = require('prompt-confirm');
 const nconf = require('nconf');
+const { getGasPrice } = require('../scripts/helper/polygongasstation.js');
+const { network } = require('hardhat');
 
 module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
   const { deploy } = deployments;
@@ -21,7 +23,10 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
     }
   }
 
-  const feeData = await ethers.provider.getFeeData();
+  let feeData = await ethers.provider.getFeeData();
+  if (network.name == "polygon") {
+    feeData = await getGasPrice();
+  }
 
   const { address } = await deploy("AktionariatFactory", {
     contract: "AktionariatFactory",
