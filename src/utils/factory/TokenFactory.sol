@@ -137,10 +137,11 @@ contract TokenFactory is Ownable {
   }
 
   function _createBaseToken(TokenConfig calldata tokenConfig, address tokenOwner) internal returns (IERC20Permit token) {
+    bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol))));
     if (tokenConfig.allowlist) {
-      token = new AllowlistShares(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub());
+      token = new AllowlistShares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub());
     } else {
-      token = new Shares(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, tokenOwner, manager.recoveryHub(), manager.permit2Hub());
+      token = new Shares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, tokenOwner, manager.recoveryHub(), manager.permit2Hub());
     }
     _sharesSet.add(address(token));
     emit BaseTokenCreated(token, tokenOwner, tokenConfig.allowlist);

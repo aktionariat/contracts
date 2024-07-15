@@ -38,6 +38,7 @@ contract AllowlistDraggableFactory is Ownable {
      * @return IERC20Permit The address of the newly created AllowlistDraggableShares token
      */
     function createAllowlistDraggable(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit token) external returns (IERC20Permit) {
+        bytes32 salt = bytes32(keccak256(abi.encodePacked(tokenConfig.symbol)));
         DraggableParams memory params = DraggableParams(
             token,
             tokenConfig.quorumDrag,
@@ -45,7 +46,7 @@ contract AllowlistDraggableFactory is Ownable {
             tokenConfig.votePeriod
         );
 
-        return new AllowlistDraggableShares(
+        return new AllowlistDraggableShares{salt: salt}(
             tokenConfig.terms,
             params, 
             manager.recoveryHub(),

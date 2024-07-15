@@ -58,7 +58,8 @@ contract BrokerbotFactory is Ownable {
     returns (Brokerbot) 
   {
     if (multisig == address(0)) revert InvalidOwner();
-    Brokerbot brokerbot = new Brokerbot(
+    bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(token, brokerbotConfig.price, brokerbotConfig.baseCurrency))));
+    Brokerbot brokerbot = new Brokerbot{salt:salt}(
       token, 
       brokerbotConfig.price, 
       brokerbotConfig.increment, 
