@@ -241,6 +241,8 @@ describe("Factories", () => {
   });
 
   describe("Brokerbot deployment", () => {
+    let brokerbotOne;
+    let brokerbotTwo;
     it("Should deploy brokerbot", async() => {
       let brokerbotAddress;
       const brokerbotOwner = sig3;
@@ -260,6 +262,7 @@ describe("Factories", () => {
         if (parsedLog) {
           console.log(`deployed brokerbot: ${parsedLog.args.brokerbot}`);
           brokerbotAddress = parsedLog.args.brokerbot;
+          brokerbotOne = brokerbotAddress;
           expect(parsedLog.args.owner).to.be.equal(brokerbotOwner.address);
         }
       });
@@ -268,6 +271,36 @@ describe("Factories", () => {
       expect(await newBrokerbot.getPrice()).to.be.equal(brokerbotConfig.price);
       expect(await newBrokerbot.increment()).to.be.equal(brokerbotConfig.increment);
       expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseCurrency);
+    })
+    it("Should deploy another brokerbot at new address", async() => {
+      let brokerbotAddress;
+      const brokerbotOwner = sig3;
+      const brokerbotConfig = {
+        price: config.sharePrice+10n,
+        increment: config.increment,
+        baseCurrency: config.baseCurrencyAddress
+      }
+
+      const brokerbotEventABI = ["event BrokerbotCreated(address indexed brokerbot, address indexed token, address indexed owner)"];
+      const ifaceBrokerbot = new Interface(brokerbotEventABI);
+
+      const createBrokerbot = await brokerbotFactory.createBrokerbot(brokerbotConfig, await shares.getAddress(), brokerbotOwner.address);
+      const receipt = await createBrokerbot.wait();
+      receipt.logs.forEach((log) => {
+        const parsedLog = ifaceBrokerbot.parseLog(log);
+        if (parsedLog) {
+          console.log(`deployed brokerbot two: ${parsedLog.args.brokerbot}`);
+          brokerbotAddress = parsedLog.args.brokerbot;
+          brokerbotTwo = brokerbotAddress;
+          expect(parsedLog.args.owner).to.be.equal(brokerbotOwner.address);
+        }
+      });
+      const newBrokerbot = await ethers.getContractAt("Brokerbot", brokerbotAddress);
+
+      expect(await newBrokerbot.getPrice()).to.be.equal(brokerbotConfig.price);
+      expect(await newBrokerbot.increment()).to.be.equal(brokerbotConfig.increment);
+      expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseCurrency);
+      expect(brokerbotOne).to.not.equal(brokerbotTwo);
     })
   });
 
