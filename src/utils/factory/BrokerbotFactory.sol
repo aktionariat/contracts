@@ -53,12 +53,12 @@ contract BrokerbotFactory is Ownable {
    * @param multisig The address of the multisig wallet for the Brokerbot
    * @return brokerbot The address of the created Brokerbot
    */
-  function createBrokerbot(BrokerbotConfig memory brokerbotConfig, IERC20Permit token, address multisig) 
+  function createBrokerbot(BrokerbotConfig memory brokerbotConfig, IERC20Permit token, address multisig, string calldata _salt) 
     public 
     returns (Brokerbot) 
   {
     if (multisig == address(0)) revert InvalidOwner();
-    bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(token, brokerbotConfig.price, brokerbotConfig.baseCurrency))));
+    bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(token, brokerbotConfig.baseCurrency, _salt))));
     Brokerbot brokerbot = new Brokerbot{salt:salt}(
       token, 
       brokerbotConfig.price, 

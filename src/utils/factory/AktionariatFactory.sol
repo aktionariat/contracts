@@ -62,10 +62,10 @@ contract AktionariatFactory is Ownable {
    * @param brokerbotConfig The configuration for the brokerbot.
    * @param signer The address of the signer for the multisig wallet.
    */
-  function createCompany(TokenConfig calldata tokenConfig, BrokerbotConfig calldata brokerbotConfig, address signer) public {
-    address multisig = createMultisig(signer, tokenConfig.symbol);
-    IERC20Permit token = tokenFactory.createToken(tokenConfig, multisig);
-    Brokerbot brokerbot = brokerbotFactory.createBrokerbot(brokerbotConfig, token, multisig);
+  function createCompany(TokenConfig calldata tokenConfig, BrokerbotConfig calldata brokerbotConfig, address signer, string calldata salt) public {
+    address multisig = createMultisig(signer, tokenConfig.symbol, salt);
+    IERC20Permit token = tokenFactory.createToken(tokenConfig, multisig, salt);
+    Brokerbot brokerbot = brokerbotFactory.createBrokerbot(brokerbotConfig, token, multisig, salt);
     emit CompanyCreated(multisig, token, brokerbot);
   }
 
@@ -74,9 +74,9 @@ contract AktionariatFactory is Ownable {
    * @param tokenConfig The configuration for the ERC20 token.
    * @param signer The address of the signer for the multisig wallet.
    */
-  function createCompanyWithoutBrokerbot(TokenConfig calldata tokenConfig, address signer) public {
-    address multisig = createMultisig(signer, tokenConfig.symbol);
-    IERC20Permit token = tokenFactory.createToken(tokenConfig, multisig);
+  function createCompanyWithoutBrokerbot(TokenConfig calldata tokenConfig, address signer, string calldata salt) public {
+    address multisig = createMultisig(signer, tokenConfig.symbol, salt);
+    IERC20Permit token = tokenFactory.createToken(tokenConfig, multisig, salt);
     emit CompanyCreated(multisig, token, Brokerbot(address(0)));
   }
 
@@ -86,8 +86,8 @@ contract AktionariatFactory is Ownable {
    * @param salt A unique salt used to create the multisig wallet.
    * @return The address of the created multisig wallet.
    */
-  function createMultisig(address signer, string calldata salt) public returns (address) {
-    return address(manager.multisigFactory().create(signer, keccak256(abi.encodePacked(salt))));
+  function createMultisig(address signer, string calldata symbol, string calldata salt) public returns (address) {
+    return address(manager.multisigFactory().create(signer, keccak256(abi.encodePacked(symbol,salt))));
   }
 
   /**

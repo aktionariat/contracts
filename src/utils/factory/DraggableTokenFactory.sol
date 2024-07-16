@@ -40,8 +40,8 @@ contract DraggableTokenFactory is Ownable {
    * @param token The ERC20Permit token to be wrapped
    * @return IERC20Permit The address of the newly created Draggable token
    */
-  function createDraggable(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit token) external returns (IERC20Permit) {
-    bytes32 salt = bytes32(keccak256(abi.encodePacked(tokenConfig.symbol)));
+  function createDraggable(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit token, string calldata _salt) external returns (IERC20Permit) {
+    bytes32 salt = bytes32(keccak256(abi.encodePacked(tokenConfig.symbol, token, _salt)));
     DraggableParams memory params = DraggableParams(
       token, 
       tokenConfig.quorumDrag, 

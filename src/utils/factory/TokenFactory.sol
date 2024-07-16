@@ -82,11 +82,11 @@ contract TokenFactory is Ownable {
    * @param tokenOwner The owner of the new token
    * @return The address of the created token
    */
-  function createToken(TokenConfig calldata tokenConfig, address tokenOwner) external returns (IERC20Permit) {
+  function createToken(TokenConfig calldata tokenConfig, address tokenOwner, string calldata salt) external returns (IERC20Permit) {
     if (tokenOwner == address(0)) revert InvalidOwner();
-    IERC20Permit token = _createBaseToken(tokenConfig, tokenOwner);
+    IERC20Permit token = _createBaseToken(tokenConfig, tokenOwner, salt);
     if (tokenConfig.draggable) {
-      IERC20Permit draggable = _createDraggableToken(tokenConfig, tokenOwner, token);
+      IERC20Permit draggable = _createDraggableToken(tokenConfig, tokenOwner, token, salt);
       return draggable;
     } else {
       return token;
@@ -136,8 +136,8 @@ contract TokenFactory is Ownable {
     return _draggableSet.values();
   }
 
-  function _createBaseToken(TokenConfig calldata tokenConfig, address tokenOwner) internal returns (IERC20Permit token) {
-    bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol))));
+  function _createBaseToken(TokenConfig calldata tokenConfig, address tokenOwner, string calldata _salt) internal returns (IERC20Permit token) {
+    bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol, _salt))));
     if (tokenConfig.allowlist) {
       token = new AllowlistShares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub());
     } else {
@@ -148,11 +148,11 @@ contract TokenFactory is Ownable {
     return token;
   }
 
-  function _createDraggableToken(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit baseToken) internal returns (IERC20Permit draggable) {
+  function _createDraggableToken(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit baseToken, string calldata _salt) internal returns (IERC20Permit draggable) {
     if (tokenConfig.allowlist) {
-      draggable = allowlistDraggableFactory.createAllowlistDraggable(tokenConfig, tokenOwner, baseToken);
+      draggable = allowlistDraggableFactory.createAllowlistDraggable(tokenConfig, tokenOwner, baseToken, _salt);
     } else {
-      draggable = draggableFactory.createDraggable(tokenConfig, tokenOwner, baseToken);
+      draggable = draggableFactory.createDraggable(tokenConfig, tokenOwner, baseToken, _salt);
     }
     _draggableSet.add(address(draggable));
     emit DraggableTokenCreated(draggable, baseToken, tokenOwner, tokenConfig.allowlist);
