@@ -36,7 +36,7 @@ async function main() {
     baseCurrency: config.brokerbot.baseCurrency
   }
 
-  const newCompany = await factory.createCompany(tokenConfig, brokerbotConfig, owner);
+  const newCompany = await factory.createCompany(tokenConfig, brokerbotConfig, owner, "1");
   const receipt = await newCompany.wait();
   receipt.logs.forEach((log) => {
     const parsedLog = ifaceCompany.parseLog(log);
