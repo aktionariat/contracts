@@ -68,7 +68,6 @@ module.exports = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: accounts("mainnet"),
-      gasPrice: 120 * 1000000000,
       chainId: 1,
     },
     localhost: {
