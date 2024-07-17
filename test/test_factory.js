@@ -109,7 +109,7 @@ describe("Factories", () => {
   describe("Multisig deployment", () => {
     it("Should deploy a multisig", async() => {
       const salt = ethers.encodeBytes32String('1');
-      const newMultisig = await factory.createMultisig(sig1.address, salt);
+      const newMultisig = await factory.createMultisig(sig1.address, "symbol", "extrasalt");
 
       const eventABI = ["event ContractCreated(address indexed contractAddress, string indexed typeName)"]
       const iface = new Interface(eventABI);
@@ -140,7 +140,7 @@ describe("Factories", () => {
       const tokenEventABI = ["event BaseTokenCreated(address indexed token, address indexed owner, bool allowlist)"]
       const ifaceToken = new Interface(tokenEventABI);
 
-      const createToken = await tokenFactory.createToken(tokenConfig, tokenOwner);
+      const createToken = await tokenFactory.createToken(tokenConfig, tokenOwner, "");
       const receipt = await createToken.wait();
       receipt.logs.forEach((log) => {
         const parsedLog = ifaceToken.parseLog(log);
@@ -177,7 +177,7 @@ describe("Factories", () => {
       const draggableEventABI = ["event DraggableTokenCreated(address indexed draggable, address indexed baseToken, address indexed owner, bool allowlist)"]
       const ifaceDraggable = new Interface(draggableEventABI);
 
-      const createToken = await tokenFactory.createToken(tokenConfig, tokenOwner);
+      const createToken = await tokenFactory.createToken(tokenConfig, tokenOwner, "");
       const receipt = await createToken.wait();
       receipt.logs.forEach((log) => {
         const parsedLog = ifaceDraggable.parseLog(log);
@@ -217,7 +217,7 @@ describe("Factories", () => {
       const draggableEventABI = ["event DraggableTokenCreated(address indexed draggable, address indexed baseToken, address indexed owner, bool allowlist)"]
       const ifaceDraggable = new Interface(draggableEventABI);
 
-      const createToken = await tokenFactory.createToken(tokenConfig, tokenOwner);
+      const createToken = await tokenFactory.createToken(tokenConfig, tokenOwner, "");
       const receipt = await createToken.wait();
       receipt.logs.forEach((log) => {
         const parsedLog = ifaceDraggable.parseLog(log);
@@ -255,7 +255,7 @@ describe("Factories", () => {
       const brokerbotEventABI = ["event BrokerbotCreated(address indexed brokerbot, address indexed token, address indexed owner)"];
       const ifaceBrokerbot = new Interface(brokerbotEventABI);
 
-      const createBrokerbot = await brokerbotFactory.createBrokerbot(brokerbotConfig, await shares.getAddress(), brokerbotOwner.address);
+      const createBrokerbot = await brokerbotFactory.createBrokerbot(brokerbotConfig, await shares.getAddress(), brokerbotOwner.address, "");
       const receipt = await createBrokerbot.wait();
       receipt.logs.forEach((log) => {
         const parsedLog = ifaceBrokerbot.parseLog(log);
@@ -284,7 +284,7 @@ describe("Factories", () => {
       const brokerbotEventABI = ["event BrokerbotCreated(address indexed brokerbot, address indexed token, address indexed owner)"];
       const ifaceBrokerbot = new Interface(brokerbotEventABI);
 
-      const createBrokerbot = await brokerbotFactory.createBrokerbot(brokerbotConfig, await shares.getAddress(), brokerbotOwner.address);
+      const createBrokerbot = await brokerbotFactory.createBrokerbot(brokerbotConfig, await shares.getAddress(), brokerbotOwner.address, "two");
       const receipt = await createBrokerbot.wait();
       receipt.logs.forEach((log) => {
         const parsedLog = ifaceBrokerbot.parseLog(log);
@@ -329,7 +329,7 @@ describe("Factories", () => {
       const companyEventABI = ["event CompanyCreated(address indexed multisig, address indexed token, address indexed brokerbot)"];
       const ifaceCompany = new Interface(companyEventABI);
 
-      const newCompany = await factory.createCompany(tokenConfig, brokerbotConfig, multisigSigner);
+      const newCompany = await factory.createCompany(tokenConfig, brokerbotConfig, multisigSigner, "");
       const receipt = await newCompany.wait();
       receipt.logs.forEach((log) => {
         const parsedLog = ifaceCompany.parseLog(log);
