@@ -6,16 +6,10 @@ const {config} = require('./factory_config.js');
 // const config = require("../deploy_config_mainnet.js");
 
 async function main() {
-  let registry;
-  let permit2Hub;
-  let offerFactory;
   let factory;
   let tokenFactory;
-  let draggableFactory;
-  let alowlistDraggableFactory;
-  let brokerbotFactory;
-  let factoryManager;
-  let multiSigCloneFactory
+  let brokerbotAddr;
+  let sharesAddress;
 
   let deployer
   let owner;
@@ -44,8 +38,17 @@ async function main() {
       console.log(`deployed company owner: ${parsedLog.args.multisig}`);
       console.log(`deployed company token: ${parsedLog.args.token}`);
       console.log(`deployed company brokerbot: ${parsedLog.args.brokerbot}`);
+      brokerbotAddr = parsedLog.args.brokerbot;
+      sharesAddress = parsedLog.args.token;
     }
   });
+
+  // register brokerbot at registry
+  const brokerbotRegistry =  await ethers.getContractAt("BrokerbotRegistry", config.registry.mainnet); // is fixed address (change will mess up subgraph)
+  const prompt = await new Confirm("Register brokerbot?").run();
+  if(prompt) {
+    await brokerbotRegistry.connect(deployer).registerBrokerbot(brokerbotAddr, brokerbotConfig.baseCurrency, sharesAddress, { gasLimit: 50000});
+  }
 }
 
 
