@@ -353,5 +353,55 @@ describe("Factories", () => {
       expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseCurrency);
       expect(await newMultisig.signers(multisigSigner.address)).to.be.equal(1n);
     })
+    it("Should deploy draggable company", async() => {
+      let newSharesAddress;
+      let newBrokerbotAddress;
+      let newMultisigAddress;
+      const multisigSigner = sig1;
+      const tokenConfig = {
+        name: config.name,
+        symbol: config.symbol,
+        terms: config.terms,
+        allowlist: false,
+        draggable: true,
+        numberOfShares: config.totalShares,
+        quorumDrag: config.quorumBps,
+        quorumMigration: config.quorumMigration,
+        votePeriod: config.votePeriodSeconds
+      };
+      const brokerbotConfig = {
+        price: config.sharePrice,
+        increment: config.increment,
+        baseCurrency: config.baseCurrencyAddress
+      };
+      const companyEventABI = ["event CompanyCreated(address indexed multisig, address indexed token, address indexed brokerbot)"];
+      const ifaceCompany = new Interface(companyEventABI);
+
+      console.log(tokenConfig);
+      console.log(brokerbotConfig);
+      const newCompany = await factory.createCompany(tokenConfig, brokerbotConfig, multisigSigner, "");
+      const receipt = await newCompany.wait();
+      receipt.logs.forEach((log) => {
+        const parsedLog = ifaceCompany.parseLog(log);
+        if (parsedLog) {
+          console.log(`deployed company owner: ${parsedLog.args.multisig}`);
+          console.log(`deployed company token: ${parsedLog.args.token}`);
+          console.log(`deployed company brokerbot: ${parsedLog.args.brokerbot}`);
+          newSharesAddress = parsedLog.args.token;
+          newBrokerbotAddress = parsedLog.args.brokerbot;
+          newMultisigAddress = parsedLog.args.multisig;
+        }
+      });
+      const newShares = await ethers.getContractAt("Shares", newSharesAddress);
+      const newBrokerbot = await ethers.getContractAt("Brokerbot", newBrokerbotAddress);
+      const newMultisig = await ethers.getContractAt("MultiSigWalletMaster", newMultisigAddress);
+
+      expect(await newShares.name()).to.be.equal(tokenConfig.name+" SHA");
+      expect(await newShares.symbol()).to.be.equal(tokenConfig.symbol+"S");
+      expect(await newBrokerbot.getPrice()).to.be.equal(brokerbotConfig.price);
+      expect(await newBrokerbot.increment()).to.be.equal(brokerbotConfig.increment);
+      expect(await newBrokerbot.base()).to.be.equal(brokerbotConfig.baseCurrency);
+      expect(await newMultisig.signers(multisigSigner.address)).to.be.equal(1n);
+    })
   });
 });
