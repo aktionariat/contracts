@@ -13,3 +13,5 @@ artifacts/*
 # Unit test / coverage reports
 coverage
 coverage.*
+
+deployments/localhost/*
