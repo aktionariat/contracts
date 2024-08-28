@@ -30,6 +30,8 @@ function getForkUrl() {
   switch (process.env.FORK_NETWORK) {
     case "polygon":
       return `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`;
+    case "optimism":
+      return `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`;
     default:
       if (process.env.LOCAL) {
         return `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`;
@@ -43,6 +45,8 @@ function getForkBlockNumber() {
   switch (process.env.FORK_NETWORK) {
     case "polygon":
       return 54509659;
+    case "optimism":
+      return 124622445;
     default:
       return 19419243;
   }
@@ -52,6 +56,8 @@ function getForkChainId() {
   switch (process.env.FORK_NETWORK) {
     case "polygon":
       return 137;
+    case "optimism":
+      return 10;
     case "local":
       return 31337;
     default:
@@ -177,10 +183,10 @@ module.exports = {
         //url: `https://opt-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_OPTIMISM}`,
         url: "https://mainnet.optimism.io",
         accounts: accounts("optimism"),
-        //chainId: 10,
+        chainId: 10,
         live: true,
         saveDeployments: true,
-        deploy: ['deploy_optimism']
+        // deploy: ['deploy_optimism']
     },
     polygon: {
       url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
@@ -265,7 +271,7 @@ module.exports = {
         goerli: process.env.ETHERSCAN_API_KEY,
         sepolia: process.env.ETHERSCAN_API_KEY,
         // optimism
-        optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+        optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY,
         kovanOptimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
         // polygon
         polygon: process.env.POLYGONSCAN_API_KEY,

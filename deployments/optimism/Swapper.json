@@ -1,0 +1,195 @@
+{
+  "address": "0x8e5bCEB487ded5544aa0DBD1bE7572C47Ad0a9cB",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract ISwapRouter",
+          "name": "_uniswapRouter",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_swapFrom",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_swapTo",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        }
+      ],
+      "name": "Address_NotTransferNorContract",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "SafeERC20FailedOperation",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "FEE",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SLIPPAGE",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "swap",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "swapFrom",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "swapTo",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "uniswapRouter",
+      "outputs": [
+        {
+          "internalType": "contract ISwapRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x044dfb734038de79275c7b1fbc2cd74c7515a06925654e88d2d8019c0fb22ce5",
+  "receipt": {
+    "to": null,
+    "from": "0xCc59c42d05bd66fe22FBA27016f783af43f68fa7",
+    "contractAddress": "0x8e5bCEB487ded5544aa0DBD1bE7572C47Ad0a9cB",
+    "transactionIndex": 1,
+    "gasUsed": "407387",
+    "logsBloom": "0x00000002000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000020000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000020000000000000000000000000000000000000000000000000000000000000000000002000000000000000000020000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000008000000001000000000000000000000010000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x3318c02fe4506eeff958933ae3704d9e994511908de257cbfaa0c3262529cefe",
+    "transactionHash": "0x044dfb734038de79275c7b1fbc2cd74c7515a06925654e88d2d8019c0fb22ce5",
+    "logs": [
+      {
+        "transactionIndex": 1,
+        "blockNumber": 124625347,
+        "transactionHash": "0x044dfb734038de79275c7b1fbc2cd74c7515a06925654e88d2d8019c0fb22ce5",
+        "address": "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+        "topics": [
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0x0000000000000000000000008e5bceb487ded5544aa0dbd1be7572c47ad0a9cb",
+          "0x000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564"
+        ],
+        "data": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "logIndex": 0,
+        "blockHash": "0x3318c02fe4506eeff958933ae3704d9e994511908de257cbfaa0c3262529cefe"
+      }
+    ],
+    "blockNumber": 124625347,
+    "cumulativeGasUsed": "462414",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+    "0xE4F27b04cC7729901876B44f4EAA5102EC150265",
+    "0x4F8a84C442F9675610c680990EdDb2CCDDB8aB6f"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "66bd56699d2eacbf1c63acdb304f0e92",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.25+commit.b61c2a91\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract ISwapRouter\",\"name\":\"_uniswapRouter\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"_swapFrom\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"_swapTo\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"}],\"name\":\"Address_NotTransferNorContract\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"SafeERC20FailedOperation\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"FEE\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SLIPPAGE\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"swap\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"swapFrom\",\"outputs\":[{\"internalType\":\"contract IERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"swapTo\",\"outputs\":[{\"internalType\":\"contract IERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"uniswapRouter\",\"outputs\":[{\"internalType\":\"contract ISwapRouter\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"errors\":{\"Address_NotTransferNorContract(address)\":[{\"params\":{\"target\":\"Target address to call the function on.\"}}],\"SafeERC20FailedOperation(address)\":[{\"details\":\"An operation with an ERC20 token failed.\"}]},\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/utils/Swapper.sol\":\"Swapper\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/ERC20/IERC20.sol\":{\"content\":\"/**\\n* SPDX-License-Identifier: MIT\\n*\\n* Copyright (c) 2016-2019 zOS Global Limited\\n*\\n*/\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP. Does not include\\n * the optional functions; to access them see `ERC20Detailed`.\\n */\\n\\ninterface IERC20 {\\n\\n    // Optional functions\\n    function name() external view returns (string memory);\\n\\n    function symbol() external view returns (string memory);\\n\\n    function decimals() external view returns (uint8);\\n\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `recipient`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a `Transfer` event.\\n     */\\n    function transfer(address recipient, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through `transferFrom`. This is\\n     * zero by default.\\n     *\\n     * This value changes when `approve` or `transferFrom` are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * > Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an `Approval` event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `sender` to `recipient` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a `Transfer` event.\\n     */\\n    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to `approve`. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n\\n}\",\"keccak256\":\"0x2224189bcdeb28cbadfdb8d126c278df60ec39875c7929e7ffa9e2055cded960\",\"license\":\"MIT\"},\"src/ERC20/IERC20Permit.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/draft-IERC20Permit.sol)\\n// Copied from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/draft-IERC20Permit.sol\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IERC20.sol\\\";\\n\\n/**\\n * @dev Interface of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in\\n * https://eips.ethereum.org/EIPS/eip-2612[EIP-2612].\\n *\\n * Adds the {permit} method, which can be used to change an account's ERC20 allowance (see {IERC20-allowance}) by\\n * presenting a message signed by the account. By not relying on {IERC20-approve}, the token holder account doesn't\\n * need to send a transaction, and thus is not required to hold Ether at all.\\n */\\ninterface IERC20Permit is IERC20 {\\n\\n    /*//////////////////////////////////////////////////////////////\\n                            Custom errors\\n\\t//////////////////////////////////////////////////////////////*/\\n    /// Block timestamp must to be before deadline.\\n    /// @param deadline The deadline of the permit.\\n    /// @param blockTimestamp The timestamp of the execution block.\\n    error Permit_DeadlineExpired(uint256 deadline, uint256 blockTimestamp);\\n    /// Recovered address must be owner and not zero address.\\n    /// @param signerAddress The recovered signer address.\\n    error Permit_InvalidSigner(address signerAddress);\\n\\n    /**\\n     * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,\\n     * given ``owner``'s signed approval.\\n     *\\n     * IMPORTANT: The same issues {IERC20-approve} has related to transaction\\n     * ordering also apply here.\\n     *\\n     * Emits an {Approval} event.\\n     *\\n     * Requirements:\\n     *\\n     * - `spender` cannot be the zero address.\\n     * - `deadline` must be a timestamp in the future.\\n     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`\\n     * over the EIP712-formatted function arguments.\\n     * - the signature must use ``owner``'s current nonce (see {nonces}).\\n     *\\n     * For more information on the signature format, see the\\n     * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP\\n     * section].\\n     */\\n    function permit(\\n        address owner,\\n        address spender,\\n        uint256 value,\\n        uint256 deadline,\\n        uint8 v,\\n        bytes32 r,\\n        bytes32 s\\n    ) external;\\n\\n    /**\\n     * @dev Returns the current nonce for `owner`. This value must be\\n     * included whenever a signature is generated for {permit}.\\n     *\\n     * Every successful call to {permit} increases ``owner``'s nonce by one. This\\n     * prevents a signature from being used multiple times.\\n     */\\n    function nonces(address owner) external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the domain separator used in the encoding of the signature for {permit}, as defined by {EIP712}.\\n     */\\n    // solhint-disable-next-line func-name-mixedcase\\n    function DOMAIN_SEPARATOR() external view returns (bytes32);\\n}\",\"keccak256\":\"0x9c6c4c49deffc8176f13b34150dd580526b45dd85ce1b71fe2ed340ff0489ebd\",\"license\":\"MIT\"},\"src/brokerbot/IUniswapV3.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// Copied from \\n// https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/IQuoter.sol\\n// https://github.com/Uniswap/v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol\\npragma solidity ^0.8.0;\\n\\nimport \\\"../ERC20/IERC20.sol\\\";\\n\\ninterface IQuoter {\\n\\n    /// @notice Returns the amount in required to receive the given exact output amount but for a swap of a single pool\\n    /// @param tokenIn The token being swapped in\\n    /// @param tokenOut The token being swapped out\\n    /// @param fee The fee of the token pool to consider for the pair\\n    /// @param amountOut The desired output amount\\n    /// @param sqrtPriceLimitX96 The price limit of the pool that cannot be exceeded by the swap\\n    /// @return amountIn The amount required as the input for the swap in order to receive `amountOut`\\n    function quoteExactOutputSingle(\\n        address tokenIn,\\n        address tokenOut,\\n        uint24 fee,\\n        uint256 amountOut,\\n        uint160 sqrtPriceLimitX96\\n    ) external returns (uint256 amountIn);\\n\\n    /// @notice Returns the amount in required for a given exact output swap without executing the swap\\n    /// @param path The path of the swap, i.e. each token pair and the pool fee. Path must be provided in reverse order\\n    /// @param amountOut The amount of the last token to receive\\n    /// @return amountIn The amount of first token required to be paid\\n    function quoteExactOutput(bytes memory path, uint256 amountOut) external returns (uint256 amountIn);\\n\\n    /// @notice Returns the amount out received for a given exact input swap without executing the swap\\n    /// @param path The path of the swap, i.e. each token pair and the pool fee\\n    /// @param amountIn The amount of the first token to swap\\n    /// @return amountOut The amount of the last token that would be received\\n    function quoteExactInput(bytes memory path, uint256 amountIn) external returns (uint256 amountOut);\\n\\n    /// @notice Returns the amount out received for a given exact input but for a swap of a single pool\\n    /// @param tokenIn The token being swapped in\\n    /// @param tokenOut The token being swapped out\\n    /// @param fee The fee of the token pool to consider for the pair\\n    /// @param amountIn The desired input amount\\n    /// @param sqrtPriceLimitX96 The price limit of the pool that cannot be exceeded by the swap\\n    /// @return amountOut The amount of `tokenOut` that would be received\\n    function quoteExactInputSingle(\\n        address tokenIn,\\n        address tokenOut,\\n        uint24 fee,\\n        uint256 amountIn,\\n        uint160 sqrtPriceLimitX96\\n    ) external returns (uint256 amountOut);\\n    \\n    // solhint-disable-next-line func-name-mixedcase\\n    function WETH9() external view returns (address);\\n}\\n\\ninterface ISwapRouter {\\n    struct ExactOutputSingleParams {\\n        address tokenIn;\\n        address tokenOut;\\n        uint24 fee;\\n        address recipient;\\n        uint256 deadline;\\n        uint256 amountOut;\\n        uint256 amountInMaximum;\\n        uint160 sqrtPriceLimitX96;\\n    }\\n\\n    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);\\n\\n    struct ExactOutputParams {\\n        bytes path;\\n        address recipient;\\n        uint256 deadline;\\n        uint256 amountOut;\\n        uint256 amountInMaximum;\\n    }\\n\\n    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)\\n    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata\\n    /// @return amountIn The amount of the input token\\n    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);\\n\\n    struct ExactInputSingleParams {\\n        address tokenIn;\\n        address tokenOut;\\n        uint24 fee;\\n        address recipient;\\n        uint256 deadline;\\n        uint256 amountIn;\\n        uint256 amountOutMinimum;\\n        uint160 sqrtPriceLimitX96;\\n    }\\n\\n    /// @notice Swaps `amountIn` of one token for as much as possible of another token\\n    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata\\n    /// @return amountOut The amount of the received token\\n    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);\\n\\n    struct ExactInputParams {\\n        bytes path;\\n        address recipient;\\n        uint256 deadline;\\n        uint256 amountIn;\\n        uint256 amountOutMinimum;\\n    }\\n\\n    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path\\n    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata\\n    /// @return amountOut The amount of the received token\\n    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);\\n    \\n    function refundETH() external payable;\\n}\\n\\n/// @title Interface for WETH9\\ninterface IWETH9 is IERC20 {\\n    /// @notice Deposit ether to get wrapped ether\\n    function deposit() external payable;\\n\\n    /// @notice Withdraw wrapped ether to get ether\\n    function withdraw(uint256) external;\\n}\\n\",\"keccak256\":\"0xd1fe06efa70710c24624abbfe0ed5ab69a47e9d3ec70734ea6e813711ff69784\",\"license\":\"MIT\"},\"src/utils/Address.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// Copied from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol\\n// and modified it.\\n\\npragma solidity ^0.8.0;\\n\\nlibrary Address {\\n\\n    /// @param target Target address to call the function on.\\n    error Address_NotTransferNorContract(address target);\\n\\n    /**\\n     * @dev Returns true if `account` is a contract.\\n     *\\n     * [IMPORTANT]\\n     * ====\\n     * It is unsafe to assume that an address for which this function returns\\n     * false is an externally-owned account (EOA) and not a contract.\\n     *\\n     * Among others, `isContract` will return false for the following\\n     * types of addresses:\\n     *\\n     *  - an externally-owned account\\n     *  - a contract in construction\\n     *  - an address where a contract will be created\\n     *  - an address where a contract lived, but was destroyed\\n     * ====\\n     */\\n    function isContract(address account) internal view returns (bool) {\\n        // This method relies on extcodesize/address.code.length, which returns 0\\n        // for contracts in construction, since the code is only stored at the end\\n        // of the constructor execution.\\n        return account.code.length > 0;\\n    }\\n    \\n    /**\\n     * @dev Performs a Solidity function call using a low level `call`. A\\n     * plain `call` is an unsafe replacement for a function call: use this\\n     * function instead.\\n     *\\n     * If `target` reverts with a revert reason or custom error, it is bubbled\\n     * up by this function (like regular Solidity function calls). However, if\\n     * the call reverted with no returned reason, this function reverts with a\\n     * {FailedInnerCall} error.\\n     *\\n     * Returns the raw returned data. To convert to the expected return value,\\n     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].\\n     *\\n     * Requirements:\\n     *\\n     * - `target` must be a contract.\\n     * - calling `target` with `data` must not revert.\\n     */\\n    function functionCall(address target, bytes memory data) internal returns (bytes memory) {\\n        return functionCallWithValue(target, data, 0);\\n    }\\n\\n    function functionCallWithValue(address target, bytes memory data, uint256 weiValue) internal returns (bytes memory) {\\n        if (data.length != 0 && !isContract(target)) {\\n            revert Address_NotTransferNorContract(target);\\n        }\\n        // solhint-disable-next-line avoid-low-level-calls\\n        (bool success, bytes memory returndata) = target.call{ value: weiValue }(data);\\n        if (success) {\\n            return returndata;\\n        } else if (returndata.length > 0) {\\n            assembly{\\n                revert (add (returndata, 0x20), mload (returndata))\\n            }\\n        } else {\\n           revert(\\\"failed\\\");\\n        }\\n    }\\n}\",\"keccak256\":\"0xb95d45875550203c1afb7dfc9c99ce62c77496c36e96f3adfaad2d42cb3380a2\",\"license\":\"MIT\"},\"src/utils/SafeERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// coppied and adjusted from OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/utils/SafeERC20.sol)\\n\\npragma solidity ^0.8.20;\\n\\nimport {IERC20} from \\\"../ERC20/IERC20.sol\\\";\\nimport {IERC20Permit} from \\\"../ERC20/IERC20Permit.sol\\\";\\nimport {Address} from \\\"./Address.sol\\\";\\n\\n/**\\n * @title SafeERC20\\n * @dev Wrappers around ERC20 operations that throw on failure (when the token\\n * contract returns false). Tokens that return no value (and instead revert or\\n * throw on failure) are also supported, non-reverting calls are assumed to be\\n * successful.\\n * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,\\n * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.\\n */\\nlibrary SafeERC20 {\\n    using Address for address;\\n\\n    /**\\n     * @dev An operation with an ERC20 token failed.\\n     */\\n    error SafeERC20FailedOperation(address token);\\n\\n    /**\\n     * @dev Transfer `value` amount of `token` from the calling contract to `to`. If `token` returns no value,\\n     * non-reverting calls are assumed to be successful.\\n     */\\n    function safeTransfer(IERC20 token, address to, uint256 value) internal {\\n        _callOptionalReturn(token, abi.encodeCall(token.transfer, (to, value)));\\n    }\\n\\n    /**\\n     * @dev Transfer `value` amount of `token` from `from` to `to`, spending the approval given by `from` to the\\n     * calling contract. If `token` returns no value, non-reverting calls are assumed to be successful.\\n     */\\n    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {\\n        _callOptionalReturn(token, abi.encodeCall(token.transferFrom, (from, to, value)));\\n    }\\n\\n    /**\\n     * @dev Use a ERC-2612 signature to set the `owner` approval toward `spender` on `token`.\\n     * Revert on invalid signature.\\n     */\\n    function safePermit(\\n        IERC20Permit token,\\n        address owner,\\n        address spender,\\n        uint256 value,\\n        uint256 deadline,\\n        uint8 v,\\n        bytes32 r,\\n        bytes32 s\\n    ) internal {\\n        uint256 nonceBefore = token.nonces(owner);\\n        token.permit(owner, spender, value, deadline, v, r, s);\\n        uint256 nonceAfter = token.nonces(owner);\\n        if (nonceAfter != nonceBefore + 1) {\\n            revert SafeERC20FailedOperation(address(token));\\n        }\\n    }\\n\\n    /**\\n     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement\\n     * on the return value: the return value is optional (but if data is returned, it must not be false).\\n     * @param token The token targeted by the call.\\n     * @param data The call data (encoded using abi.encode or one of its variants).\\n     */\\n    function _callOptionalReturn(IERC20 token, bytes memory data) private {\\n        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since\\n        // we're implementing it ourselves. We use {Address-functionCall} to perform this call, which verifies that\\n        // the target address contains contract code and also asserts for success in the low-level call.\\n\\n        bytes memory returndata = address(token).functionCall(data);\\n        if (returndata.length != 0 && !abi.decode(returndata, (bool))) {\\n            revert SafeERC20FailedOperation(address(token));\\n        }\\n    }\\n\\n    /**\\n     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement\\n     * on the return value: the return value is optional (but if data is returned, it must not be false).\\n     * @param token The token targeted by the call.\\n     * @param data The call data (encoded using abi.encode or one of its variants).\\n     *\\n     * This is a variant of {_callOptionalReturn} that silents catches all reverts and returns a bool instead.\\n     */\\n    function _callOptionalReturnBool(IERC20 token, bytes memory data) private returns (bool) {\\n        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since\\n        // we're implementing it ourselves. We cannot use {Address-functionCall} here since this should return false\\n        // and not revert is the subcall reverts.\\n\\n        (bool success, bytes memory returndata) = address(token).call(data);\\n        return success && (returndata.length == 0 || abi.decode(returndata, (bool))) && address(token).code.length > 0;\\n    }\\n}\",\"keccak256\":\"0xa162e550fe203915126fddc231c55d28dd3f16d39be22dd48c5fc7f5ccd6fd93\",\"license\":\"MIT\"},\"src/utils/Swapper.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../brokerbot/IUniswapV3.sol\\\";\\nimport \\\"./SafeERC20.sol\\\";\\ncontract Swapper {\\n  using SafeERC20 for IERC20;\\n\\n  uint256 public constant SLIPPAGE = 300;\\n  uint256 public constant FEE = 100;\\n  ISwapRouter public immutable uniswapRouter;\\n  IERC20 public immutable swapFrom;\\n  IERC20 public immutable swapTo;\\n\\n  constructor(ISwapRouter _uniswapRouter, IERC20 _swapFrom, IERC20 _swapTo) {\\n    uniswapRouter = _uniswapRouter;\\n    swapFrom = _swapFrom;\\n    swapTo = _swapTo;\\n    IERC20(swapFrom).approve(address(uniswapRouter), type(uint256).max);\\n  }\\n\\n  function swap(uint256 amount) external {\\n     swapFrom.safeTransferFrom(msg.sender, address(this), amount);\\n     uint256 amountOutMinimum = amount * (10000 - SLIPPAGE) / 10000;\\n\\n     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({\\n       tokenIn: address(swapFrom),\\n       tokenOut: address(swapTo),\\n       fee: 100,\\n       recipient: msg.sender,\\n       deadline: block.timestamp,\\n       amountIn: amount,\\n       amountOutMinimum: amountOutMinimum,\\n       sqrtPriceLimitX96: 0\\n     });\\n     uniswapRouter.exactInputSingle(params);\\n\\n  }\\n}\\n\",\"keccak256\":\"0x4c63f544d0afd12577ea50eaa41fff86fc84ca3496ce46cfd2eb15331d7e5216\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60e060405234801561001057600080fd5b5060405161076838038061076883398101604081905261002f916100d7565b6001600160a01b03838116608081905283821660a081905291831660c05260405163095ea7b360e01b81526004810191909152600019602482015263095ea7b3906044016020604051808303816000875af1158015610092573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906100b69190610124565b5050505061014d565b6001600160a01b03811681146100d457600080fd5b50565b6000806000606084860312156100ec57600080fd5b83516100f7816100bf565b6020850151909350610108816100bf565b6040850151909250610119816100bf565b809150509250925092565b60006020828403121561013657600080fd5b8151801515811461014657600080fd5b9392505050565b60805160a05160c0516105d26101966000396000818161010301526101c101526000818160c70152818161013a015261019c0152600081816088015261027001526105d26000f3fe608060405234801561001057600080fd5b50600436106100625760003560e01c806336b4134a14610067578063735de9f714610083578063911ea40a146100c257806394b918de146100e95780639fc8c851146100fe578063c57981b514610125575b600080fd5b61007061012c81565b6040519081526020015b60405180910390f35b6100aa7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200161007a565b6100aa7f000000000000000000000000000000000000000000000000000000000000000081565b6100fc6100f73660046104b7565b61012d565b005b6100aa7f000000000000000000000000000000000000000000000000000000000000000081565b610070606481565b6101626001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000163330846102e4565b600061271061017361012c826104e6565b61017d90846104f9565b6101879190610510565b60408051610100810182526001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000811682527f000000000000000000000000000000000000000000000000000000000000000081166020830190815260648385018181523360608601908152426080870190815260a087018b815260c088018a8152600060e08a01908152995163414bf38960e01b8152895189166004820152965188166024880152935162ffffff166044870152915186169385019390935291516084840152905160a48301525160c48201529251811660e4840152929350917f0000000000000000000000000000000000000000000000000000000000000000169063414bf38990610104016020604051808303816000875af11580156102ba573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102de9190610532565b50505050565b604080516001600160a01b038581166024830152848116604483015260648083018590528351808403909101815260849092019092526020810180516001600160e01b03166323b872dd60e01b1790526102de9186919060009061034a908416836103a2565b9050805160001415801561036f57508080602001905181019061036d919061054b565b155b1561039d57604051635274afe760e01b81526001600160a01b03841660048201526024015b60405180910390fd5b505050565b60606103b0838360006103b9565b90505b92915050565b606082516000141580156103d557506001600160a01b0384163b155b156103fe57604051639eb1341360e01b81526001600160a01b0385166004820152602401610394565b600080856001600160a01b0316848660405161041a919061056d565b60006040518083038185875af1925050503d8060008114610457576040519150601f19603f3d011682016040523d82523d6000602084013e61045c565b606091505b509150915081156104705791506104b09050565b80511561047f57805160208201fd5b60405162461bcd60e51b815260206004820152600660248201526519985a5b195960d21b6044820152606401610394565b9392505050565b6000602082840312156104c957600080fd5b5035919050565b634e487b7160e01b600052601160045260246000fd5b818103818111156103b3576103b36104d0565b80820281158282048414176103b3576103b36104d0565b60008261052d57634e487b7160e01b600052601260045260246000fd5b500490565b60006020828403121561054457600080fd5b5051919050565b60006020828403121561055d57600080fd5b815180151581146104b057600080fd5b6000825160005b8181101561058e5760208186018101518583015201610574565b50600092019182525091905056fea2646970667358221220fcde5e812ea77fb6cd65804c7f4151fa7b4da3f01b20fd25647ad909219469f064736f6c63430008190033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100625760003560e01c806336b4134a14610067578063735de9f714610083578063911ea40a146100c257806394b918de146100e95780639fc8c851146100fe578063c57981b514610125575b600080fd5b61007061012c81565b6040519081526020015b60405180910390f35b6100aa7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200161007a565b6100aa7f000000000000000000000000000000000000000000000000000000000000000081565b6100fc6100f73660046104b7565b61012d565b005b6100aa7f000000000000000000000000000000000000000000000000000000000000000081565b610070606481565b6101626001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000163330846102e4565b600061271061017361012c826104e6565b61017d90846104f9565b6101879190610510565b60408051610100810182526001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000811682527f000000000000000000000000000000000000000000000000000000000000000081166020830190815260648385018181523360608601908152426080870190815260a087018b815260c088018a8152600060e08a01908152995163414bf38960e01b8152895189166004820152965188166024880152935162ffffff166044870152915186169385019390935291516084840152905160a48301525160c48201529251811660e4840152929350917f0000000000000000000000000000000000000000000000000000000000000000169063414bf38990610104016020604051808303816000875af11580156102ba573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102de9190610532565b50505050565b604080516001600160a01b038581166024830152848116604483015260648083018590528351808403909101815260849092019092526020810180516001600160e01b03166323b872dd60e01b1790526102de9186919060009061034a908416836103a2565b9050805160001415801561036f57508080602001905181019061036d919061054b565b155b1561039d57604051635274afe760e01b81526001600160a01b03841660048201526024015b60405180910390fd5b505050565b60606103b0838360006103b9565b90505b92915050565b606082516000141580156103d557506001600160a01b0384163b155b156103fe57604051639eb1341360e01b81526001600160a01b0385166004820152602401610394565b600080856001600160a01b0316848660405161041a919061056d565b60006040518083038185875af1925050503d8060008114610457576040519150601f19603f3d011682016040523d82523d6000602084013e61045c565b606091505b509150915081156104705791506104b09050565b80511561047f57805160208201fd5b60405162461bcd60e51b815260206004820152600660248201526519985a5b195960d21b6044820152606401610394565b9392505050565b6000602082840312156104c957600080fd5b5035919050565b634e487b7160e01b600052601160045260246000fd5b818103818111156103b3576103b36104d0565b80820281158282048414176103b3576103b36104d0565b60008261052d57634e487b7160e01b600052601260045260246000fd5b500490565b60006020828403121561054457600080fd5b5051919050565b60006020828403121561055d57600080fd5b815180151581146104b057600080fd5b6000825160005b8181101561058e5760208186018101518583015201610574565b50600092019182525091905056fea2646970667358221220fcde5e812ea77fb6cd65804c7f4151fa7b4da3f01b20fd25647ad909219469f064736f6c63430008190033",
+  "devdoc": {
+    "errors": {
+      "Address_NotTransferNorContract(address)": [
+        {
+          "params": {
+            "target": "Target address to call the function on."
+          }
+        }
+      ],
+      "SafeERC20FailedOperation(address)": [
+        {
+          "details": "An operation with an ERC20 token failed."
+        }
+      ]
+    },
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
