@@ -50,7 +50,7 @@ contract ERC20Cancelled is ERC20Flaggable {
     }
 
     function symbol() external view returns (string memory) {
-        return string(abi.encodePacked("C ", BASE.symbol()));
+        return string(abi.encodePacked("C", BASE.symbol()));
     }
 
     function burnThemAll() external {
