@@ -2,8 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
+import { EnumerableSet } from "../../lib/openzeppelin/EnumerableSet.sol";
 import { AllowlistDraggableFactory } from "./AllowlistDraggableFactory.sol";
 import { AllowlistShares, Shares } from "../../shares/AllowlistShares.sol";
 import { DraggableTokenFactory } from "./DraggableTokenFactory.sol";

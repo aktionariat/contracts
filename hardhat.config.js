@@ -1,8 +1,6 @@
 require("dotenv").config();
 
 require("@nomicfoundation/hardhat-toolbox");
-require("hardhat-deploy");
-require("hardhat-deploy-ethers");
 require("hardhat-change-network");
 
 require("./tasks");

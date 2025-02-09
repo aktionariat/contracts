@@ -33,7 +33,7 @@ import "../ERC20/IERC20Permit.sol";
 import "./IUniswapV3.sol";
 import "../utils/Ownable.sol";
 import "./IBrokerbot.sol";
-import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import "../lib/chainlink/AggregatorV3Interface.sol";
 import "../utils/SafeERC20.sol";
 
 /**

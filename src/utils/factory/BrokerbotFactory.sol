@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import { EnumerableSet } from "../../lib/openzeppelin/EnumerableSet.sol";
 import { Brokerbot } from "../../brokerbot/Brokerbot.sol";
 import { BrokerbotRegistry } from "../../brokerbot/BrokerbotRegistry.sol";
 import { BrokerbotConfig } from "./FactoryStructs.sol";
