@@ -6,7 +6,7 @@
 pragma solidity ^0.8.0;
 
 import "./MultiSigWalletMaster.sol";
-import "../lib/openzeppelin/Clones.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract MultiSigCloneFactory {
 
