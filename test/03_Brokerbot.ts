@@ -7,13 +7,13 @@ async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
 }
 
-describe("Brokerbot", function () {
-  it("Brokerbot - Should init with PaymentHub correctly", async function () {
+describe("Test Brokerbot", function () {
+  it("Should init with PaymentHub correctly", async function () {
     const { brokerbot, paymentHub } = await loadFixture(deployTestModuleFixture);
     expect(await brokerbot.paymenthub()).to.be.equal(paymentHub);
   });
 
-  it("Brokerbot - Should be able to change PaymentHub", async function () {
+  it("Should be able to change PaymentHub", async function () {
     const { brokerbot } = await loadFixture(deployTestModuleFixture);
     let owner = await brokerbot.owner()
     let ownerSigner = await ethers.getSigner(owner);
@@ -22,7 +22,7 @@ describe("Brokerbot", function () {
     expect(await brokerbot.paymenthub()).to.be.equal(dummyAddress);
   });
 
-  it("Brokerbot - Should not be able to change PaymentHub from non-owner", async function () {
+  it("Should not be able to change PaymentHub from non-owner", async function () {
     const { brokerbot } = await loadFixture(deployTestModuleFixture);
     let dummyAddress = "0x0000000000000000000000000000000000012345"
     expect(brokerbot.setPaymentHub(dummyAddress)).to.be.reverted

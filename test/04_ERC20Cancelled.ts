@@ -10,14 +10,16 @@ async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
 }
 
-describe("ERC20Cancelled", function () {
-  let signers: HardhatEthersSigner[];
+describe("Test ERC20Cancelled", function () {
+  let deployer: HardhatEthersSigner;
+  let owner: HardhatEthersSigner;
+  let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner, signer3: HardhatEthersSigner, signer4: HardhatEthersSigner, signer5: HardhatEthersSigner;
   let shares: Contract;
   let draggableShares: Contract;
   let erc20Cancelled: Contract;
   
   before(async function() {
-    signers = await ethers.getSigners();
+    [deployer, owner, signer1, signer2, signer3, signer4, signer5] = await ethers.getSigners();
   });
 
   beforeEach(async function() {
@@ -30,39 +32,44 @@ describe("ERC20Cancelled", function () {
     expect(await erc20Cancelled.SHA()).to.be.equal(draggableShares);
   });
 
-  it("Should burn all", async function () {    
+  it("Should replace Wrapped with ERC20Cancelled and burn all Shares", async function () {    
     // Distribute 1000 draggable shares
-    await mintAndWrapByCall(shares, draggableShares, signers[0].address, 400n);    
-    await mintAndWrapByCall(shares, draggableShares, signers[1].address, 400n);    
-    await mintAndWrapByCall(shares, draggableShares, signers[2].address, 100n); 
-    await mintAndWrapByCall(shares, draggableShares, signers[3].address, 60n);
-    await mintAndWrapByCall(shares, draggableShares, signers[4].address, 20n);
-    await mintAndWrapByCall(shares, draggableShares, signers[5].address, 10n);
-    await mintAndWrapByCall(shares, draggableShares, signers[6].address, 10n);
+    await mintAndWrapByCall(shares, draggableShares, signer1.address, 400n);    
+    await mintAndWrapByCall(shares, draggableShares, signer2.address, 400n); 
+    await mintAndWrapByCall(shares, draggableShares, signer3.address, 100n);
+    await mintAndWrapByCall(shares, draggableShares, signer4.address, 80n);
+    await mintAndWrapByCall(shares, draggableShares, signer5.address, 20n);
 
-    // Check All Distributed
-    expect(mintAndWrapByCall(shares, draggableShares, signers[7].address, 1n)).to.be.reverted
+    // Check All Distributed - Should not be able to mint more
+    expect(mintAndWrapByCall(shares, draggableShares, signer1.address, 1n)).to.be.reverted
 
     // Quorum sends draggableShares to erc20Cancelled
-    await draggableShares.connect(signers[0]).transfer(await erc20Cancelled.getAddress(), await draggableShares.balanceOf(signers[0]));
-    await draggableShares.connect(signers[1]).transfer(await erc20Cancelled.getAddress(), await draggableShares.balanceOf(signers[1]));
+    await draggableShares.connect(signer1).transfer(await erc20Cancelled.getAddress(), await draggableShares.balanceOf(signer1));
+    await draggableShares.connect(signer2).transfer(await erc20Cancelled.getAddress(), await draggableShares.balanceOf(signer2));
     expect(await draggableShares.balanceOf(await erc20Cancelled.getAddress())).to.be.equal(800n);
 
     // Anyone can call burnThemAll now
     await erc20Cancelled.burnThemAll()
 
-    // Check balances. Everyone should have been dragged.
+    // Draggable must now wrap the "Cancelled" token
     const newWrapped = await ethers.getContractAt("ERC20Cancelled", await draggableShares.wrapped());
-    console.log(await newWrapped.name())
+    expect(newWrapped).to.equal(erc20Cancelled);
 
-    /*
-    expect(await draggableShares.balanceOf(signers[0])).to.be.equal(0)
-    expect(await draggableShares.balanceOf(signers[1])).to.be.equal(0)
-    expect(await draggableShares.balanceOf(signers[2])).to.be.equal(0)
-    expect(await draggableShares.balanceOf(signers[3])).to.be.equal(0)
-    expect(await draggableShares.balanceOf(signers[4])).to.be.equal(0)
-    expect(await draggableShares.balanceOf(signers[5])).to.be.equal(0)
-    expect(await draggableShares.balanceOf(signers[6])).to.be.equal(0)
-    */
+    // Everybody should still have the draggable, but wrapping the new token. First users were the initiators.
+    expect(await draggableShares.balanceOf(signer1)).to.equal(0);
+    expect(await draggableShares.balanceOf(signer2)).to.equal(0);
+    expect(await draggableShares.balanceOf(signer3)).to.equal(100n);
+    expect(await draggableShares.balanceOf(signer4)).to.equal(80n);
+    expect(await draggableShares.balanceOf(signer5)).to.equal(20n);
+
+    // All Shares should be burned. There should be no shares left locked in the DraggableShares contract. Also noone should have base shares anymore.
+    expect(await shares.balanceOf(draggableShares)).to.be.equal(0);
+    expect(await shares.balanceOf(signer1)).to.equal(0);
+    expect(await shares.balanceOf(signer2)).to.equal(0);
+    expect(await shares.balanceOf(signer3)).to.equal(0);
+    expect(await shares.balanceOf(signer4)).to.equal(0);
+    expect(await shares.balanceOf(signer5)).to.equal(0);
+    expect(await shares.totalSupply()).to.equal(0);
+
   });
 });

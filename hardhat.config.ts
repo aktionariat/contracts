@@ -16,9 +16,9 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      chainId: 1,
+      chainId: 10,
       forking: {
-        url: KEYS.alchemy.mainnet
+        url: KEYS.alchemy.optimism
       }
     },
     mainnet: {
@@ -27,7 +27,10 @@ const config: HardhatUserConfig = {
     },
     optimism: {
       chainId: 10,
-      url: KEYS.alchemy.optimism
+      url: KEYS.alchemy.optimism,
+      accounts: {
+        mnemonic: KEYS.mnemonics.optimism
+      }
     },
     polygon: {
       chainId: 137,
@@ -36,6 +39,14 @@ const config: HardhatUserConfig = {
     base: {
       chainId: 8453,
       url: KEYS.alchemy.base
+    },
+  },
+  etherscan: {
+    apiKey: {
+      mainnet: KEYS.etherscan.mainnet,
+      optimisticEthereum: KEYS.etherscan.optimism,
+      polygon: KEYS.etherscan.polygon,
+      base: KEYS.etherscan.base
     },
   },
 };

@@ -7,7 +7,7 @@ async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
 }
 
-describe("Deploy Contracts", function () {
+describe("Test Contract Deployment", function () {
   it("Should deploy RecoveryHub", async function () {
     const { recoveryHub } = await loadFixture(deployTestModuleFixture);
     expect(await recoveryHub.getAddress()).to.not.be.null

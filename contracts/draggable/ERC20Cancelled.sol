@@ -62,11 +62,4 @@ contract ERC20Cancelled is ERC20Flaggable {
         // assert(predecessorSupply == totalSupply());
         BASE.burn(BASE.balanceOf(address(this)));
     }
-
-/*
-    function getCollateralRate(IERC20 collateralType) public view override returns (uint256) {
-        return ERC20Cancelled(BASE).getCollateralRate(collateralType);
-    }
-    */
-
 }
