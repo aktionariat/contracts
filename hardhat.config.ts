@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-ignition-ethers";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-verify";
 import KEYS from "./KEYS";
 
 const config: HardhatUserConfig = {
@@ -16,9 +17,9 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      chainId: 10,
+      chainId: 1,
       forking: {
-        url: KEYS.alchemy.optimism
+        url: KEYS.alchemy.mainnet
       }
     },
     mainnet: {
@@ -49,6 +50,9 @@ const config: HardhatUserConfig = {
       base: KEYS.etherscan.base
     },
   },
+  sourcify: {
+    enabled: true
+  }
 };
 
 export default config;

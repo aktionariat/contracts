@@ -1,9 +1,10 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { getImpersonatedSigner } from "../scripts/helpers/getImpersonatedSigner";
-import { DraggableShares, ERC20Cancelled, Shares } from "../typechain-types";
+import { getImpersonatedSigner } from "../helpers/getImpersonatedSigner";
+import { DraggableShares, ERC20Cancelled, Shares } from "../../typechain-types";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { switchForkedNetwork } from "../helpers/switchNetwork";
 
 
 describe("Test AXRAS", function () {
@@ -15,6 +16,9 @@ describe("Test AXRAS", function () {
   let erc20Cancelled: ERC20Cancelled;
   
   before(async function() {
+    // This all need to be done on Optimism
+    await switchForkedNetwork("optimism");
+    
     axra = await ethers.getContractAt("Shares", "0x0Bba384812a64164FEd62c6C40d399C0ac5d99bd");
     axras = await ethers.getContractAt("DraggableShares", "0xc02b55bB2Fe3643E1955b13515396cE23B110f80");
     erc20Cancelled = await hre.ethers.deployContract("ERC20Cancelled", [await axras.getAddress()]);
