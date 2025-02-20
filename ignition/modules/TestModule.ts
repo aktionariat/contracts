@@ -9,27 +9,27 @@ const priceFeedETHUSD = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";
 const uniswapQuoter = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
 const uniswapRouter = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
-const infiniteAllowance = "0x8000000000000000000000000000000000000000000000000000000000000000";
+export const infiniteAllowance = "0x8000000000000000000000000000000000000000000000000000000000000000";
 const zchfAddress = "0xB58E61C3098d85632Df34EecfB899A1Ed80921cB"
 const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f"
 const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 
-const shareConfig = {
+export const shareConfig = {
   symbol: "TEST",
   name: "Test Company Shares",
   terms: "https://test.com",
   totalShares: 1000,
 }
 
-const draggableShareConfig = {
+export const draggableShareConfig = {
   terms: "https://testdraggable.com",
   quorumDrag: 7500,
   quorumMigration: 7500,
   votePeriod: 5184000  
 }
 
-const brokerbotConfig = {
+export const brokerbotConfig = {
   price: "1000000000000000000",
   increment: "0",
 }

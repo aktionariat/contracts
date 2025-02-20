@@ -6,6 +6,7 @@ import { DraggableShares, ERC20Cancelled, Shares } from "../../typechain-types";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { switchForkedNetwork } from "../helpers/switchNetwork";
 
+// Test detokenzation of Axelra shares
 
 describe("Test AXRAS", function () {
   let axelra1: HardhatEthersSigner, axelra2: HardhatEthersSigner, axelra3: HardhatEthersSigner;
