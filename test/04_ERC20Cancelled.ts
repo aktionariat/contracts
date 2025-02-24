@@ -10,7 +10,7 @@ async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
 }
 
-describe("Test ERC20Cancelled", function () {
+describe("ERC20Cancelled", function () {
   let deployer: HardhatEthersSigner;
   let owner: HardhatEthersSigner;
   let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner, signer3: HardhatEthersSigner, signer4: HardhatEthersSigner, signer5: HardhatEthersSigner;

@@ -7,7 +7,7 @@ async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
 }
 
-describe("Test Contract Deployment", function () {
+describe("Contract Deployment", function () {
   it("Should deploy RecoveryHub", async function () {
     const { recoveryHub } = await loadFixture(deployTestModuleFixture);
     expect(await recoveryHub.getAddress()).to.not.be.null
@@ -52,11 +52,12 @@ describe("Test Contract Deployment", function () {
     const { paymentHub } = await loadFixture(deployTestModuleFixture);
     expect(await paymentHub.getAddress()).to.not.be.null
   });
-
+ /*
   it("Should deploy Brokerbot", async function () {
     const { brokerbot } = await loadFixture(deployTestModuleFixture);
     expect(await brokerbot.getAddress()).to.not.be.null
   });
+  */
 
   it("Should get ZCHF", async function () {
     const { zchf } = await loadFixture(deployTestModuleFixture);

@@ -1,9 +1,9 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture, setBalance } from "@nomicfoundation/hardhat-network-helpers";
-import TestModule, { infiniteAllowance, shareConfig } from "../ignition/modules/TestModule";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { Contract } from "ethers";
+import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule";
 
 async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
@@ -30,10 +30,10 @@ describe("Test Shares", function () {
   });
 
   it("should get constructor params correctly", async () => {
-    expect(await shares.symbol()).to.equal(shareConfig.symbol);
-    expect(await shares.name()).to.equal(shareConfig.name);
-    expect(await shares.terms()).to.equal(shareConfig.terms);
-    expect(await shares.totalShares()).to.equal(shareConfig.totalShares);
+    expect(await shares.symbol()).to.equal(TestModuleConfig.shareConfig.symbol);
+    expect(await shares.name()).to.equal(TestModuleConfig.shareConfig.name);
+    expect(await shares.terms()).to.equal(TestModuleConfig.shareConfig.terms);
+    expect(await shares.totalShares()).to.equal(TestModuleConfig.shareConfig.totalShares);
   });
 
   it("should be mintable", async () => {
@@ -46,7 +46,7 @@ describe("Test Shares", function () {
 
   it("should allow infinite allowance", async () => {
     // Allow PaymentHub to spend infinite shares from accounts[0]
-    await shares.connect(signer1).approve(await paymentHub.getAddress(), infiniteAllowance);
+    await shares.connect(signer1).approve(await paymentHub.getAddress(), TestModuleConfig.infiniteAllowance);
 
     // Get allowance before transaction
     const allowanceBefore = await shares.allowance(signer1, await paymentHub.getAddress());

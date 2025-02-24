@@ -11,7 +11,7 @@ async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
 }
 
-describe("Test Scripts", function () {
+describe("Scripts", function () {
   let deployer: HardhatEthersSigner;
   let owner: HardhatEthersSigner;
   let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner, signer3: HardhatEthersSigner, signer4: HardhatEthersSigner, signer5: HardhatEthersSigner;
