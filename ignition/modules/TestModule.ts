@@ -19,7 +19,7 @@ export const TestModuleConfig = {
     symbol: "TEST",
     name: "Test Company Shares",
     terms: "https://test.com",
-    totalShares: 1000,
+    totalShares: 1000000,
   },
 
   draggableShareConfig: {
@@ -30,12 +30,14 @@ export const TestModuleConfig = {
   },
 
   brokerbotConfig: {
-    price: "1000000000000000000",
-    increment: "0",
+    price: 1000000000000000000n,
+    increment: 0n,
     version: 8n,
     buyingEnabled: 1n,
     sellingEnabled: 2n,
-    keepEther: 4n
+    keepEther: 4n,
+    testIncrement: 1000000000000000n,
+    testAmount: 10n
   }
 }
 

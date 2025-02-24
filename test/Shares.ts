@@ -13,6 +13,7 @@ describe("Test Shares", function () {
   let deployer: HardhatEthersSigner;
   let owner: HardhatEthersSigner;
   let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner;
+  
   let shares: Contract;
   let paymentHub: Contract;
   
