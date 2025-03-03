@@ -24,8 +24,8 @@ export const TestModuleConfig = {
 
   draggableShareConfig: {
     terms: "https://testdraggable.com",
-    quorumDrag: 7500,
-    quorumMigration: 7500,
+    quorumDrag: 6600,
+    quorumMigration: 6600,
     votePeriod: 5184000  
   },
 

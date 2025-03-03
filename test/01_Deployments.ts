@@ -52,12 +52,6 @@ describe("Contract Deployment", function () {
     const { paymentHub } = await loadFixture(deployTestModuleFixture);
     expect(await paymentHub.getAddress()).to.not.be.null
   });
- /*
-  it("Should deploy Brokerbot", async function () {
-    const { brokerbot } = await loadFixture(deployTestModuleFixture);
-    expect(await brokerbot.getAddress()).to.not.be.null
-  });
-  */
 
   it("Should get ZCHF", async function () {
     const { zchf } = await loadFixture(deployTestModuleFixture);

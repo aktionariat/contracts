@@ -34,19 +34,21 @@ describe("ERC20Cancelled", function () {
 
   it("Should replace Wrapped with ERC20Cancelled and burn all Shares", async function () {    
     // Distribute 1000 draggable shares
-    await mintAndWrapByCall(shares, draggableShares, signer1.address, 400n);    
-    await mintAndWrapByCall(shares, draggableShares, signer2.address, 400n); 
-    await mintAndWrapByCall(shares, draggableShares, signer3.address, 100n);
-    await mintAndWrapByCall(shares, draggableShares, signer4.address, 80n);
-    await mintAndWrapByCall(shares, draggableShares, signer5.address, 20n);
-
-    // Check All Distributed - Should not be able to mint more
-    expect(mintAndWrapByCall(shares, draggableShares, signer1.address, 1n)).to.be.reverted
+    const totalShares = await shares.totalShares();
+    await mintAndWrapByCall(shares, draggableShares, signer1.address, totalShares / 4n);    
+    await mintAndWrapByCall(shares, draggableShares, signer2.address, totalShares / 4n); 
+    await mintAndWrapByCall(shares, draggableShares, signer3.address, totalShares / 4n);
+    await mintAndWrapByCall(shares, draggableShares, signer4.address, totalShares / 10n);
+    await mintAndWrapByCall(shares, draggableShares, signer5.address, totalShares / 20n);
 
     // Quorum sends draggableShares to erc20Cancelled
     await draggableShares.connect(signer1).transfer(await erc20Cancelled.getAddress(), await draggableShares.balanceOf(signer1));
     await draggableShares.connect(signer2).transfer(await erc20Cancelled.getAddress(), await draggableShares.balanceOf(signer2));
-    expect(await draggableShares.balanceOf(await erc20Cancelled.getAddress())).to.be.equal(800n);
+    await draggableShares.connect(signer3).transfer(await erc20Cancelled.getAddress(), await draggableShares.balanceOf(signer3));
+
+    // ERC20Cancelled should have enough shares to pass the quorum now
+    const quorumMigration = await draggableShares.quorumMigration();
+    expect(await draggableShares.balanceOf(await erc20Cancelled.getAddress())).to.be.greaterThanOrEqual(totalShares / 10000n * quorumMigration)
 
     // Anyone can call burnThemAll now
     await erc20Cancelled.burnThemAll()
@@ -58,9 +60,9 @@ describe("ERC20Cancelled", function () {
     // Everybody should still have the draggable, but wrapping the new token. First users were the initiators.
     expect(await draggableShares.balanceOf(signer1)).to.equal(0);
     expect(await draggableShares.balanceOf(signer2)).to.equal(0);
-    expect(await draggableShares.balanceOf(signer3)).to.equal(100n);
-    expect(await draggableShares.balanceOf(signer4)).to.equal(80n);
-    expect(await draggableShares.balanceOf(signer5)).to.equal(20n);
+    expect(await draggableShares.balanceOf(signer3)).to.equal(0);
+    expect(await draggableShares.balanceOf(signer4)).to.equal(totalShares / 10n);
+    expect(await draggableShares.balanceOf(signer5)).to.equal(totalShares / 20n);
 
     // All Shares should be burned. There should be no shares left locked in the DraggableShares contract. Also noone should have base shares anymore.
     expect(await shares.balanceOf(draggableShares)).to.be.equal(0);

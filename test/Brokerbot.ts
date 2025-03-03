@@ -213,12 +213,9 @@ describe("Brokerbot", function () {
       const shareBalanceBefore = await draggableShares.balanceOf(signer1.address);
       const baseCurrencyBalanceBefore = await zchf.balanceOf(signer1.address);
   
-
       expect(await paymentHub.connect(signer1).payAndNotify(await brokerbot.getAddress(), buyPrice, "0x"))
         .to.emit(brokerbot, "Trade")
         .withArgs(await draggableShares.getAddress(), signer1, TestModuleConfig.brokerbotConfig.testAmount, await zchf.getAddress(), buyPrice, 0, TestModuleConfig.brokerbotConfig.price);
-
-      // await paymentHub.connect(signer1).payAndNotify(await brokerbot.getAddress(), buyPrice, "0x")
   
       const shareBalanceAfter = await draggableShares.balanceOf(signer1);
       const baseCurrencyBalanceAfter = await zchf.balanceOf(signer1);
