@@ -9,7 +9,7 @@ async function deployTestModuleFixture() {
   return hre.ignition.deploy(TestModule);
 }
 
-describe("Test Shares", function () {
+describe("Shares", function () {
   let deployer: HardhatEthersSigner;
   let owner: HardhatEthersSigner;
   let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner;
@@ -30,14 +30,14 @@ describe("Test Shares", function () {
     expect(await shares.getAddress()).to.exist;
   });
 
-  it("should get constructor params correctly", async () => {
+  it("Should get constructor params correctly", async () => {
     expect(await shares.symbol()).to.equal(TestModuleConfig.shareConfig.symbol);
     expect(await shares.name()).to.equal(TestModuleConfig.shareConfig.name);
     expect(await shares.terms()).to.equal(TestModuleConfig.shareConfig.terms);
     expect(await shares.totalShares()).to.equal(TestModuleConfig.shareConfig.totalShares);
   });
 
-  it("should be mintable", async () => {
+  it("Should be mintable", async () => {
     const sharesToMint = 100n;
     const oldBalance = await shares.balanceOf(signer1);
     await shares.connect(owner).mint(signer1, sharesToMint);
@@ -45,7 +45,7 @@ describe("Test Shares", function () {
     expect(oldBalance + sharesToMint).to.equal(newBalance);
   });
 
-  it("should allow infinite allowance", async () => {
+  it("Should allow infinite allowance", async () => {
     // Allow PaymentHub to spend infinite shares from accounts[0]
     await shares.connect(signer1).approve(await paymentHub.getAddress(), TestModuleConfig.infiniteAllowance);
 

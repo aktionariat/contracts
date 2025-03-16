@@ -5,7 +5,7 @@ import { getImpersonatedSigner } from "../helpers/getImpersonatedSigner";
 import { Brokerbot, DraggableShares, IERC20, PaymentHub } from "../../typechain-types";
 import { switchForkedNetwork } from "../helpers/switchNetwork";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
-import { infiniteAllowance } from "../../ignition/modules/TestModule";
+import { TestModuleConfig } from "../../ignition/modules/TestModule";
 
 // Test DAKS purchase with USDC
 
@@ -75,7 +75,7 @@ describe("Test Equanimity", function () {
 
   it("Should allow UniswapRouterV3 to spend USDC of signer", async function () {
     const [priceZCHF, priceUSDC] = await getBuyPrices();
-    await usdc.connect(buyerSigner).approve(uniswapRouterV3Address, infiniteAllowance);
+    await usdc.connect(buyerSigner).approve(uniswapRouterV3Address, TestModuleConfig.infiniteAllowance);
     const allowance = await usdc.allowance(buyerSigner, uniswapRouterV3Address);
     expect(allowance).to.greaterThanOrEqual(priceUSDC);    
   });
