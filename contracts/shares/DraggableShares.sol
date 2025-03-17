@@ -62,9 +62,7 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, 
     )
         ERC20Draggable(_params, _offerFactory, _oracle)
         ERC20Recoverable(_recoveryHub)
-        ERC20PermitLight() 
         ERC20Permit2(_permit2Hub)
-
     {
         terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
         _recoveryHub.setRecoverable(false);
