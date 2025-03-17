@@ -4,7 +4,7 @@
 * Copyright (c) 2016-2019 zOS Global Limited
 *
 */
-pragma solidity ^0.8.0;
+pragma solidity 0.8.29;
 
 import "./IERC20.sol";
 /**

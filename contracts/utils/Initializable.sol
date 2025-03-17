@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.5.0) (proxy/utils/Initializable.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.29;
 
 /**
  * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed
