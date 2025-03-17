@@ -1,17 +1,20 @@
-.vscode
-.VSCodeCounter
-.idea
-soljson-v0.8.4+commit.c7e474f2.js
-
 node_modules
 .env
 
-#Hardhat files
-cache
-artifacts/*
+# Hardhat files
+/cache
+/artifacts
 
-# Unit test / coverage reports
-coverage
-coverage.*
+# TypeChain files
+/typechain
+/typechain-types
 
-deployments/localhost/*
+# solidity-coverage files
+/coverage
+/coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+ignition/deployments/chain-31337
+
+# Sensitive Files
+KEYS.ts

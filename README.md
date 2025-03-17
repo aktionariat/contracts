@@ -41,7 +41,7 @@ You'll need the following:
 
 * [Git](https://git-scm.com/downloads)
 * [NodeJS](https://nodejs.org/en/download/)
-* [Yarn](https://classic.yarnpkg.com/en/docs/install)
+* [NPM](https://www.npmjs.com/)
 
 ### Setup
 
@@ -50,60 +50,20 @@ Clone the repository, open it, and install nodejs packages with `yarn`:
 ```bash
 git clone git@github.com:aktionariat/contracts.git
 cd contracts
-yarn install
+npm install
 ```
-
-#### Local node
-to run a local node use
-```bash
-yarn hardhat node
-```
-(it will use on your default network, to use on a different network use --network <name>)
 
 #### Compile
 
 ```bash
-yarn compile
+npx hardhat compile
 ```
 
 #### Running unit tests
 
 ```bash
-yarn test
+npx hardhat test
 ```
-
-### Deploy Contract
-
-```bash
-yarn hardhat deploy --network ropsten
-```
-This will run all deployment scripts in the deploy folder. To specify seperate deployments use tags.
-
-#### Verify Contract on Etherscn
-
-```bash
-yarn hardhat --network ropsten etherscan-verify
-```
-
-(don't forget to set ETHERSCAN_API_KEY in .env)
-
-#### Multisig deploy hardhat tasks
-task to create a multisig clone from the clonefactory: create-multisig-clone
-
-```bash
-yarn hardhat create-multisig-clone --factory <multisigCloneFactory_Address> --owner <address> --salt <string_which_gets_formated_in_byte32>
-```
-(it will run on your default network, to run on a different network use --network <name>)
-
-#### Guided deployment of contracts
-(.env configuration is needed as seen in .env.template, at minimum the mnemonic of the network you deploy to and Infura/Alchemy ApiKey)
-To be guided through the contract deployment use
-```bash
-yarn deploy
-```
-this script also includes:
-(optional) verification of contracts (.env needs ETHERSCAN_API_KEY)
-(optional) registration in the aktionariat back-end (.env needs AKTIONARIAT_API_KEY and AKTIONARIAT_API_URL)
 
 ## License
 
