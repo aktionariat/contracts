@@ -37,7 +37,7 @@ import "../utils/Ownable.sol";
  */
 abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
 
-  uint8 private constant TYPE_DEFAULT = 0x0;
+  uint8 private constant TYPE_FREE = 0x0;
   uint8 private constant TYPE_ALLOWED = 0x1;
   uint8 private constant TYPE_RESTRICTED = 0x2;
   uint8 private constant TYPE_ADMIN = 0x4;
@@ -81,7 +81,7 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
     if (transferRestrictionsApplicable){
       setTypeInternal(address(0x0), TYPE_ADMIN);
     } else {
-      setTypeInternal(address(0x0), TYPE_DEFAULT);
+      setTypeInternal(address(0x0), TYPE_FREE);
     }
   }
 
@@ -132,9 +132,9 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
    * except that it is allowed to send from "Restricted" to "Admin" addresses
    * 
    * +------------+-----+-----+-----+-----+
-   * |            | Def | Alw | Res | Adm |
+   * |            | Fre | Alw | Res | Adm |
    * +------------+-----+-----+-----+-----+
-   * | Default    |  Y  |  Y  |  N  |  Y  |
+   * | Free       |  Y  |  Y  |  N  |  Y  |
    * | Allowed    |  N  |  Y  |  N  |  Y  |
    * | Restricted |  N  |  N  |  N  |  Y  |
    * | Admin      |  Y  |  Y  |  N  |  Y  |
@@ -152,8 +152,8 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
         revert Allowlist_SenderIsForbidden(from);
       }
     }
-    else if (!isAdmin(to) && !isAllowed(to)) {
-      if (isAllowed(from) && restrictTransfers) {
+    else if (!isAdmin(to) && !isAllowed(to) && restrictTransfers) {
+      if (isAllowed(from)) {
         revert Allowlist_ReceiverNotAllowlisted(to);
       }
       if (isAdmin(from)) {
