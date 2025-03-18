@@ -35,7 +35,7 @@ import "../utils/Ownable.sol";
  * A very flexible and efficient form to subject ERC-20 tokens to an allowlisting.
  * See ../../doc/allowlist.md for more information.
  */
-abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
+abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
 
   uint8 private constant TYPE_DEFAULT = 0x0;
   uint8 private constant TYPE_ALLOWED = 0x1;
@@ -100,7 +100,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   }
 
   function setType(address[] calldata addressesToAdd, uint8 value) public onlyOwner {
-    for (uint i=0; i<addressesToAdd.length; i++){
+    for (uint i = 0 ; i < addressesToAdd.length ; i++){
       setType(addressesToAdd[i], value);
     }
   }
@@ -108,55 +108,57 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   /**
    * If true, this address is allowlisted and can only transfer tokens to other allowlisted addresses.
    */
-  function canReceiveFromAnyone(address account) public view returns (bool) {
-    return hasFlagInternal(account, FLAG_INDEX_ALLOWED) || hasFlagInternal(account, FLAG_INDEX_ADMIN);
+  function isAllowed(address account) public view returns (bool) {
+    return hasFlagInternal(account, FLAG_INDEX_ALLOWED);
   }
 
   /**
    * If true, this address can only transfer tokens to allowlisted addresses and not receive from anyone.
    */
-  function isForbidden(address account) public view returns (bool){
+  function isRestricted(address account) public view returns (bool){
     return hasFlagInternal(account, FLAG_INDEX_RESTRICTED);
   }
 
   /**
    * If true, this address can automatically allowlist target addresses if necessary.
    */
-  function isPowerlisted(address account) public view returns (bool) {
+  function isAdmin(address account) public view returns (bool) {
     return hasFlagInternal(account, FLAG_INDEX_ADMIN);
   }
 
+  /**
+   * Implements the following ruleset, if transfer restrictions are enabled.
+   * "Restricted" addresses cannot send or receive shares, even if restrictions are disabled,
+   * except that it is allowed to send from "Restricted" to "Admin" addresses
+   * 
+   * +------------+-----+-----+-----+-----+
+   * |            | Def | Alw | Res | Adm |
+   * +------------+-----+-----+-----+-----+
+   * | Default    |  Y  |  Y  |  N  |  Y  |
+   * | Allowed    |  N  |  Y  |  N  |  Y  |
+   * | Restricted |  N  |  N  |  N  |  Y  |
+   * | Admin      |  Y  |  Y  |  N  |  Y  |
+   * +------------+-----+-----+-----+-----+
+   */
+
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
     super._beforeTokenTransfer(from, to, amount);
-    // empty block for gas saving fall through
-    // solhint-disable-next-line no-empty-blocks
-    if (canReceiveFromAnyone(to)){
-      // ok, transfers to allowlisted addresses are always allowed
-    } else if (isForbidden(to)){
-      // Target is forbidden, but maybe restrictions have been removed and we can clean the flag
-      if (restrictTransfers) {
+
+    if (isRestricted(to)) {
         revert Allowlist_ReceiverIsForbidden(to);
+    }
+    else if (isRestricted(from)) {
+      if (!isAdmin(to)) {
+        revert Allowlist_SenderIsForbidden(from);
       }
-      setFlag(to, FLAG_INDEX_RESTRICTED, false);
-    } else {
-      if (isPowerlisted(from)){
-        // it is not allowlisted, but we can make it so
-        // we know the recipient is neither forbidden, allowlisted or powerlisted, so we can set flag directly
+    }
+    else if (!isAdmin(to) && !isAllowed(to)) {
+      if (isAllowed(from)) {
+        revert Allowlist_ReceiverNotAllowlisted(to);
+      }
+      if (isAdmin(from)) {
         setFlag(to, FLAG_INDEX_ALLOWED, true);
         emit AddressTypeUpdate(to, TYPE_ALLOWED);
-      }
-      // if we made it to here, the target must be a free address and we are not powerlisted
-      else if (hasFlagInternal(from, FLAG_INDEX_ALLOWED)){
-        // We cannot send to free addresses, but maybe the restrictions have been removed and we can clean the flag?
-        if (restrictTransfers) {
-          revert Allowlist_ReceiverNotAllowlisted(to);
-        }
-        setFlag(from, FLAG_INDEX_ALLOWED, false);
-      } else if (isForbidden(from)){
-        if (restrictTransfers) {
-          revert Allowlist_SenderIsForbidden(from);
-        }
-        setFlag(from, FLAG_INDEX_RESTRICTED, false);
       }
     }
   }
