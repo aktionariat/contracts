@@ -153,7 +153,7 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
       }
     }
     else if (!isAdmin(to) && !isAllowed(to)) {
-      if (isAllowed(from)) {
+      if (isAllowed(from) && restrictTransfers) {
         revert Allowlist_ReceiverNotAllowlisted(to);
       }
       if (isAdmin(from)) {
