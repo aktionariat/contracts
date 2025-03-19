@@ -28,10 +28,10 @@
 pragma solidity ^0.8.0;
 
 import "../recovery/ERC20Recoverable.sol";
-import "../ERC20/ERC20Allowlistable.sol";
+import "../ERC20/ERC20AllowlistableV2.sol";
 import "./Shares.sol";
 
-contract AllowlistShares is Shares, ERC20Allowlistable {
+contract AllowlistSharesV2 is Shares, ERC20AllowlistableV2 {
 
   constructor(
     string memory _symbol,
@@ -43,7 +43,7 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
     Permit2Hub _permit2Hub
   )
     Shares(_symbol, _name, _terms, _totalShares, _owner, _recoveryHub, _permit2Hub)
-    ERC20Allowlistable()
+    ERC20AllowlistableV2()
   {
     // initialization in shares
   }
@@ -56,7 +56,7 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
       super._mint(account, amount);
   }
 
-  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Allowlistable) internal {
+  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20AllowlistableV2) internal {
     super._beforeTokenTransfer(from, to, amount);
   }
 
