@@ -41,7 +41,6 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
   uint8 private constant TYPE_ALLOWED = 0x1;
   uint8 private constant TYPE_RESTRICTED = 0x2;
   uint8 private constant TYPE_ADMIN = 0x4;
-  // I think TYPE_POWERLISTED should have been 0x3. :) But MOP was deployed like this so we keep it. Does not hurt.
 
   uint8 private constant FLAG_INDEX_ALLOWED = 20;
   uint8 private constant FLAG_INDEX_RESTRICTED = 21;
@@ -59,12 +58,6 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
   /// @param receiver the address which isn't allowlisted.
   error Allowlist_ReceiverNotAllowlisted(address receiver);
 
-  bool public restrictTransfers;
-
-  constructor(){
-    setApplicableInternal(true);
-  }
-
   /**
    * Configures whether the allowlisting is applied.
    * Also sets the powerlist and allowlist flags on the null address accordingly.
@@ -74,10 +67,12 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
     setApplicableInternal(transferRestrictionsApplicable);
   }
 
+  /**
+   * Sets the 0x0 address to ADMIN, to apply restrictions to newly minted tokens.
+   * The issuer should decide if existing holders should be restricted.
+   * If so, they need to be converted to ALLOWED by calling setType
+   */
   function setApplicableInternal(bool transferRestrictionsApplicable) internal {
-    restrictTransfers = transferRestrictionsApplicable;
-    // if transfer restrictions are applied, we guess that should also be the case for newly minted tokens
-    // if the admin disagrees, it is still possible to change the type of the null address
     if (transferRestrictionsApplicable){
       setTypeInternal(address(0x0), TYPE_ADMIN);
     } else {
@@ -89,20 +84,20 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
     setTypeInternal(account, typeNumber);
   }
 
+  function setType(address[] calldata addressesToAdd, uint8 typeNumber) public onlyOwner {
+    for (uint i = 0 ; i < addressesToAdd.length ; i++){
+      setType(addressesToAdd[i], typeNumber);
+    }
+  }
+
   /**
-   * If TYPE_DEFAULT all flags are set to 0
+   * If TYPE_FREE all flags are set to 0
    */
   function setTypeInternal(address account, uint8 typeNumber) internal {
     setFlag(account, FLAG_INDEX_ALLOWED, typeNumber == TYPE_ALLOWED);
     setFlag(account, FLAG_INDEX_RESTRICTED, typeNumber == TYPE_RESTRICTED);
     setFlag(account, FLAG_INDEX_ADMIN, typeNumber == TYPE_ADMIN);
     emit AddressTypeUpdate(account, typeNumber);
-  }
-
-  function setType(address[] calldata addressesToAdd, uint8 value) public onlyOwner {
-    for (uint i = 0 ; i < addressesToAdd.length ; i++){
-      setType(addressesToAdd[i], value);
-    }
   }
 
   /**
@@ -113,23 +108,25 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
   }
 
   /**
-   * If true, this address can only transfer tokens to allowlisted addresses and not receive from anyone.
+   * If true, this address can only transfer tokens to admin addresses and not receive from anyone.
    */
   function isRestricted(address account) public view returns (bool){
     return hasFlagInternal(account, FLAG_INDEX_RESTRICTED);
   }
 
   /**
-   * If true, this address can automatically allowlist target addresses if necessary.
+   * If true, this address can send to any address, except restricted
+   * It also automatically allowlists target addresses
    */
   function isAdmin(address account) public view returns (bool) {
     return hasFlagInternal(account, FLAG_INDEX_ADMIN);
   }
 
   /**
-   * Implements the following ruleset, if transfer restrictions are enabled.
-   * "Restricted" addresses cannot send or receive shares, even if restrictions are disabled,
-   * except that it is allowed to send from "Restricted" to "Admin" addresses
+   * Implements the following ruleset.
+   * 1. "Restricted" addresses cannot send or receive shares, except sending to an admin address
+   * 2. Shares on "Free" addresses are freely transferable
+   * 3. "Allowed" addresses can only send to "Allowed" or "Admin" addresses   * 
    * 
    * +------------+-----+-----+-----+-----+
    * |            | Fre | Alw | Res | Adm |
@@ -152,10 +149,13 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
         revert Allowlist_SenderIsForbidden(from);
       }
     }
-    else if (!isAdmin(to) && !isAllowed(to) && restrictTransfers) {
+    else if (!isAdmin(to) && !isAllowed(to)) {
       if (isAllowed(from)) {
         revert Allowlist_ReceiverNotAllowlisted(to);
       }
+
+      // Admin adddress always sets the recipient to ALLOWED
+      // If this behaviour is not desires, set issuer addresses to FREE instead
       if (isAdmin(from)) {
         setFlag(to, FLAG_INDEX_ALLOWED, true);
         emit AddressTypeUpdate(to, TYPE_ALLOWED);
