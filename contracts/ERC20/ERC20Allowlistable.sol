@@ -35,7 +35,7 @@ import "../utils/Ownable.sol";
  * A very flexible and efficient form to subject ERC-20 tokens to an allowlisting.
  * See ../../doc/allowlist.md for more information.
  */
-abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
+abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
 
   uint8 private constant TYPE_FREE = 0x0;
   uint8 private constant TYPE_ALLOWED = 0x1;
