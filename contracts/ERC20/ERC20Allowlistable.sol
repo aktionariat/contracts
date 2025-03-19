@@ -68,9 +68,9 @@ abstract contract ERC20AllowlistableV2 is ERC20Flaggable, Ownable {
   }
 
   /**
-   * Sets the 0x0 address to ADMIN, to apply restrictions to newly minted tokens.
-   * The issuer should decide if existing holders should be restricted.
-   * If so, they need to be converted to ALLOWED by calling setType
+   * Sets the 0x0 address to ADMIN, to apply restrictions to newly minted shares.
+   * The issuer should decide if existing shares are freely transferable or not.
+   * If not, existing holders need to be converted to ALLOWED as well
    */
   function setApplicableInternal(bool transferRestrictionsApplicable) internal {
     if (transferRestrictionsApplicable){
