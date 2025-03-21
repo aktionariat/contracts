@@ -37,15 +37,14 @@ import "../utils/Ownable.sol";
  */
 abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
 
-  uint8 private constant TYPE_DEFAULT = 0x0;
-  uint8 private constant TYPE_ALLOWLISTED = 0x1;
-  uint8 private constant TYPE_FORBIDDEN = 0x2;
-  uint8 private constant TYPE_POWERLISTED = 0x4;
-  // I think TYPE_POWERLISTED should have been 0x3. :) But MOP was deployed like this so we keep it. Does not hurt.
+  uint8 private constant TYPE_FREE = 0x0;
+  uint8 private constant TYPE_ALLOWED = 0x1;
+  uint8 private constant TYPE_RESTRICTED = 0x2;
+  uint8 private constant TYPE_ADMIN = 0x4;
 
-  uint8 private constant FLAG_INDEX_ALLOWLIST = 20;
-  uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
-  uint8 private constant FLAG_INDEX_POWERLIST = 22;
+  uint8 private constant FLAG_INDEX_ALLOWED = 20;
+  uint8 private constant FLAG_INDEX_RESTRICTED = 21;
+  uint8 private constant FLAG_INDEX_ADMIN = 22;
 
   event AddressTypeUpdate(address indexed account, uint8 addressType);
 
@@ -59,12 +58,6 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
   /// @param receiver the address which isn't allowlisted.
   error Allowlist_ReceiverNotAllowlisted(address receiver);
 
-  bool public restrictTransfers;
-
-  constructor(){
-    setApplicableInternal(true);
-  }
-
   /**
    * Configures whether the allowlisting is applied.
    * Also sets the powerlist and allowlist flags on the null address accordingly.
@@ -74,14 +67,16 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     setApplicableInternal(transferRestrictionsApplicable);
   }
 
+  /**
+   * Sets the 0x0 address to ADMIN, to apply restrictions to newly minted shares.
+   * The issuer should decide if existing shares are freely transferable or not.
+   * If not, existing holders need to be converted to ALLOWED as well
+   */
   function setApplicableInternal(bool transferRestrictionsApplicable) internal {
-    restrictTransfers = transferRestrictionsApplicable;
-    // if transfer restrictions are applied, we guess that should also be the case for newly minted tokens
-    // if the admin disagrees, it is still possible to change the type of the null address
     if (transferRestrictionsApplicable){
-      setTypeInternal(address(0x0), TYPE_POWERLISTED);
+      setTypeInternal(address(0x0), TYPE_ADMIN);
     } else {
-      setTypeInternal(address(0x0), TYPE_DEFAULT);
+      setTypeInternal(address(0x0), TYPE_FREE);
     }
   }
 
@@ -89,74 +84,81 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     setTypeInternal(account, typeNumber);
   }
 
-  /**
-   * If TYPE_DEFAULT all flags are set to 0
-   */
-  function setTypeInternal(address account, uint8 typeNumber) internal {
-    setFlag(account, FLAG_INDEX_ALLOWLIST, typeNumber == TYPE_ALLOWLISTED);
-    setFlag(account, FLAG_INDEX_FORBIDDEN, typeNumber == TYPE_FORBIDDEN);
-    setFlag(account, FLAG_INDEX_POWERLIST, typeNumber == TYPE_POWERLISTED);
-    emit AddressTypeUpdate(account, typeNumber);
+  function setType(address[] calldata addressesToAdd, uint8 typeNumber) public onlyOwner {
+    for (uint i = 0 ; i < addressesToAdd.length ; i++){
+      setType(addressesToAdd[i], typeNumber);
+    }
   }
 
-  function setType(address[] calldata addressesToAdd, uint8 value) public onlyOwner {
-    for (uint i=0; i<addressesToAdd.length; i++){
-      setType(addressesToAdd[i], value);
-    }
+  /**
+   * If TYPE_FREE all flags are set to 0
+   */
+  function setTypeInternal(address account, uint8 typeNumber) internal {
+    setFlag(account, FLAG_INDEX_ALLOWED, typeNumber == TYPE_ALLOWED);
+    setFlag(account, FLAG_INDEX_RESTRICTED, typeNumber == TYPE_RESTRICTED);
+    setFlag(account, FLAG_INDEX_ADMIN, typeNumber == TYPE_ADMIN);
+    emit AddressTypeUpdate(account, typeNumber);
   }
 
   /**
    * If true, this address is allowlisted and can only transfer tokens to other allowlisted addresses.
    */
-  function canReceiveFromAnyone(address account) public view returns (bool) {
-    return hasFlagInternal(account, FLAG_INDEX_ALLOWLIST) || hasFlagInternal(account, FLAG_INDEX_POWERLIST);
+  function isAllowed(address account) public view returns (bool) {
+    return hasFlagInternal(account, FLAG_INDEX_ALLOWED);
   }
 
   /**
-   * If true, this address can only transfer tokens to allowlisted addresses and not receive from anyone.
+   * If true, this address can only transfer tokens to admin addresses and not receive from anyone.
    */
-  function isForbidden(address account) public view returns (bool){
-    return hasFlagInternal(account, FLAG_INDEX_FORBIDDEN);
+  function isRestricted(address account) public view returns (bool){
+    return hasFlagInternal(account, FLAG_INDEX_RESTRICTED);
   }
 
   /**
-   * If true, this address can automatically allowlist target addresses if necessary.
+   * If true, this address can send to any address, except restricted
+   * It also automatically allowlists target addresses
    */
-  function isPowerlisted(address account) public view returns (bool) {
-    return hasFlagInternal(account, FLAG_INDEX_POWERLIST);
+  function isAdmin(address account) public view returns (bool) {
+    return hasFlagInternal(account, FLAG_INDEX_ADMIN);
   }
+
+  /**
+   * Implements the following ruleset.
+   * 1. "Restricted" addresses cannot send or receive shares, except sending to an admin address
+   * 2. Shares on "Free" addresses are freely transferable
+   * 3. "Allowed" addresses can only send to "Allowed" or "Admin" addresses   * 
+   * 
+   * +------------+-----+-----+-----+-----+
+   * |            | Fre | Alw | Res | Adm |
+   * +------------+-----+-----+-----+-----+
+   * | Free       |  Y  |  Y  |  N  |  Y  |
+   * | Allowed    |  N  |  Y  |  N  |  Y  |
+   * | Restricted |  N  |  N  |  N  |  Y  |
+   * | Admin      |  Y  |  Y  |  N  |  Y  |
+   * +------------+-----+-----+-----+-----+
+   */
 
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
     super._beforeTokenTransfer(from, to, amount);
-    // empty block for gas saving fall through
-    // solhint-disable-next-line no-empty-blocks
-    if (canReceiveFromAnyone(to)){
-      // ok, transfers to allowlisted addresses are always allowed
-    } else if (isForbidden(to)){
-      // Target is forbidden, but maybe restrictions have been removed and we can clean the flag
-      if (restrictTransfers) {
+
+    if (isRestricted(to)) {
         revert Allowlist_ReceiverIsForbidden(to);
+    }
+    else if (isRestricted(from)) {
+      if (!isAdmin(to)) {
+        revert Allowlist_SenderIsForbidden(from);
       }
-      setFlag(to, FLAG_INDEX_FORBIDDEN, false);
-    } else {
-      if (isPowerlisted(from)){
-        // it is not allowlisted, but we can make it so
-        // we know the recipient is neither forbidden, allowlisted or powerlisted, so we can set flag directly
-        setFlag(to, FLAG_INDEX_ALLOWLIST, true);
-        emit AddressTypeUpdate(to, TYPE_ALLOWLISTED);
+    }
+    else if (!isAdmin(to) && !isAllowed(to)) {
+      if (isAllowed(from)) {
+        revert Allowlist_ReceiverNotAllowlisted(to);
       }
-      // if we made it to here, the target must be a free address and we are not powerlisted
-      else if (hasFlagInternal(from, FLAG_INDEX_ALLOWLIST)){
-        // We cannot send to free addresses, but maybe the restrictions have been removed and we can clean the flag?
-        if (restrictTransfers) {
-          revert Allowlist_ReceiverNotAllowlisted(to);
-        }
-        setFlag(from, FLAG_INDEX_ALLOWLIST, false);
-      } else if (isForbidden(from)){
-        if (restrictTransfers) {
-          revert Allowlist_SenderIsForbidden(from);
-        }
-        setFlag(from, FLAG_INDEX_FORBIDDEN, false);
+
+      // Admin address always sets the recipient to ALLOWED
+      // If this behaviour is not desired, set admin addresses to FREE instead
+      if (isAdmin(from)) {
+        setFlag(to, FLAG_INDEX_ALLOWED, true);
+        emit AddressTypeUpdate(to, TYPE_ALLOWED);
       }
     }
   }
