@@ -120,5 +120,24 @@ describe("AllowlistShares", function () {
     await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.be.reverted
   });
 
+  it("Should let ADMIN convert FREE to ALLOWED upon transfer", async () => {
+    ({ allowlistShares } = await loadFixture(deployTestModuleFixture));
+    await allowlistShares.connect(owner).mint(signer1, 100n);
 
+    await allowlistShares.connect(owner)["setType(address,uint8)"](signer1, 4)
+    await allowlistShares.connect(owner)["setType(address,uint8)"](signer2, 0)
+    await allowlistShares.connect(owner)["setType(address,uint8)"](signer3, 1)
+    await allowlistShares.connect(owner)["setType(address,uint8)"](signer4, 2)
+    await allowlistShares.connect(owner)["setType(address,uint8)"](signer5, 4)
+
+    await allowlistShares.connect(signer1).transfer(signer2, 1)
+    expect(await allowlistShares.isAllowed(signer2)).to.equal(true)
+
+    await allowlistShares.connect(signer1).transfer(signer3, 1)
+    expect(await allowlistShares.isAllowed(signer3)).to.equal(true)
+
+    await allowlistShares.connect(signer1).transfer(signer5, 1)
+    expect(await allowlistShares.isAllowed(signer5)).to.equal(false)
+    expect(await allowlistShares.isAdmin(signer5)).to.equal(true)
+  });
 });
