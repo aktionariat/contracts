@@ -70,7 +70,7 @@ describe("Test Farmy", function () {
 
   it("Multisig can migrate to cancelled with additional votes", async function () {
     expect(await eggs.connect(farmyMultisig).migrateWithExternalApproval(eggsCancelled, 5000000n)).to.not.reverted;     
-    expect(await eggfs.connect(farmyMultisig).migrateWithExternalApproval(eggsCancelled, 150000n)).to.not.reverted;     
+    expect(await eggfs.connect(farmyMultisig).migrateWithExternalApproval(eggfsCancelled, 150000n)).to.not.reverted;     
   });
 
   it("Should have replaced wrapped with ERC20Cancelled", async function () {
