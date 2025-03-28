@@ -31,16 +31,12 @@ import "../ERC20/ERC20Flaggable.sol";
 import "../ERC20/IERC20.sol";
 import "./ERC20Draggable.sol";
 
-/**
- * 
- */
-
 contract ERC20Cancelled is ERC20Flaggable {
 
     ERC20Draggable public immutable SHA;
     IShares public immutable BASE;
 
-    constructor(address shaToken, address _owner) ERC20Flaggable(0) Ownable(_owner) {
+    constructor(address shaToken) ERC20Flaggable(0) {
         SHA = ERC20Draggable(shaToken);
         BASE = IShares(address(SHA.wrapped()));
     }

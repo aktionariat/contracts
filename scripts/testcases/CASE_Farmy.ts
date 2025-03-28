@@ -5,97 +5,91 @@ import { getImpersonatedSigner } from "../helpers/getImpersonatedSigner";
 import { DraggableShares, ERC20Cancelled, Shares } from "../../typechain-types";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { switchForkedNetwork } from "../helpers/switchNetwork";
+import { multisig } from "../../typechain-types/contracts";
 
 // Test detokenzation of Axelra shares
 
 describe("Test Farmy", function () {
-  let axelra1: HardhatEthersSigner, axelra2: HardhatEthersSigner, axelra3: HardhatEthersSigner;
-  let shareholder1: HardhatEthersSigner, shareholder2: HardhatEthersSigner, shareholder3: HardhatEthersSigner, shareholder4: HardhatEthersSigner;
+  let deployer: HardhatEthersSigner, signer1: HardhatEthersSigner;
 
-  let eggf: Shares;
-  let eggfs: DraggableShares;
-  let eggfsCancelled: ERC20Cancelled;
+  let farmyMultisig: HardhatEthersSigner;
+  let eggsShareholder1: HardhatEthersSigner, eggsShareholder2: HardhatEthersSigner, eggsMarket: HardhatEthersSigner;
+  let eggfsShareholder1: HardhatEthersSigner, eggfsShareholder2: HardhatEthersSigner, eggfsShareholder3: HardhatEthersSigner;
 
   let egg: Shares;
   let eggs: DraggableShares;
   let eggsCancelled: ERC20Cancelled;
+
+  let eggf: Shares;
+  let eggfs: DraggableShares;
+  let eggfsCancelled: ERC20Cancelled;
   
   before(async function() {
     // This all need to be done on Optimism
     await switchForkedNetwork("mainnet");
-    
-    eggf = await ethers.getContractAt("Shares", "0x2f4722F3b37A17E23a6e3Ab90Ab6Ff4aAEFE99d0");
-    eggfs = await ethers.getContractAt("DraggableShares", "0x1f6Db77Bf48CB29F30b84eA2AE9ffD4b07C4571e");
-    eggfsCancelled = await hre.ethers.deployContract("ERC20Cancelled", [await eggfs.getAddress(), await eggf.owner()]);
+
+    [deployer, signer1] = await ethers.getSigners();
+
+    farmyMultisig = await getImpersonatedSigner("0x67C5770202aa3E2b0DB2e5342d97c191a0E46303");
     
     egg = await ethers.getContractAt("Shares", "0xcC3193E98DBff48ae5D460052dfbf3355afEC432");
     eggs = await ethers.getContractAt("DraggableShares", "0x1f6Db77Bf48CB29F30b84eA2AE9ffD4b07C4571e");
-    eggsCancelled = await hre.ethers.deployContract("ERC20Cancelled", [await eggs.getAddress(), await egg.owner()]);
-
-    axelra1 = await getImpersonatedSigner("0x829BBBf674dbD7B8d9c8D19E8c50d219a4909D90");
-    axelra2 = await getImpersonatedSigner("0x5D0F02f9D255C051f3236824dB7BdC1aE48Aad8D");
-    axelra3 = await getImpersonatedSigner("0xf0a68722E3ab5124979020331B51431030708844");
-    shareholder1 = await getImpersonatedSigner("0xFBCF194F2E332eb67136bE6Eb223E7386Ab5f35B");
-    shareholder2 = await getImpersonatedSigner("0xbBe304607d6089ca3f987B3c42B86F07679ac5fB");
-    shareholder3 = await getImpersonatedSigner("0x4BD839d4384E43b37783a9A8387645E4cF95A7fE");
-    shareholder4 = await getImpersonatedSigner("0x43EaBeB1C0173294E870fa1b047db7e9afcBA35F");
+    eggsCancelled = await hre.ethers.deployContract("ERC20Cancelled", [await eggs.getAddress()]);
     
-    // Also give them some ETH
-    setBalance(await axelra1.getAddress(), ethers.parseEther("1"));
-    setBalance(await axelra2.getAddress(), ethers.parseEther("1"));
-    setBalance(await axelra3.getAddress(), ethers.parseEther("1"));
+    eggf = await ethers.getContractAt("Shares", "0x2f4722F3b37A17E23a6e3Ab90Ab6Ff4aAEFE99d0");
+    eggfs = await ethers.getContractAt("DraggableShares", "0x620BF52Fa5E97fbFb3992cab478e3272285ADfD1");
+    eggfsCancelled = await hre.ethers.deployContract("ERC20Cancelled", [await eggfs.getAddress()]);
+
+    eggsMarket = await getImpersonatedSigner("0xC41575D0CF4A630B7992c675D760939E1402151C");
+    eggsShareholder1 = await getImpersonatedSigner("0x45d4261D0CBcCE68A3921f8CC43015A977A56f00");
+    eggsShareholder2 = await getImpersonatedSigner("0x181EF4139b51726f76cE45a81B9F92434F2d18a8");
+
+    eggfsShareholder1 = await getImpersonatedSigner("0x5a57dD9C623e1403AF1D810673183D89724a4e0c");
+    eggfsShareholder2 = await getImpersonatedSigner("0xDb3Ff1A291bA147d254AD1CF2047947a9D5C512b");
+    eggfsShareholder3 = await getImpersonatedSigner("0xD4Bec19F95a4f8ADa5dDF10f3cF9D1455F848B54");
+    
+    setBalance(await farmyMultisig.getAddress(), ethers.parseEther("1"));
   });
 
-  it("Replicate start state", async function () {
-    expect(await axras.balanceOf(axelra1)).to.equal(908544n);
-    expect(await axras.balanceOf(axelra2)).to.equal(41418n);
-    expect(await axras.balanceOf(axelra3)).to.equal(49990n);
-    expect(await axras.balanceOf(shareholder1)).to.equal(40);
-    expect(await axras.balanceOf(shareholder2)).to.equal(4n);
-    expect(await axras.balanceOf(shareholder3)).to.equal(2n);
-    expect(await axras.balanceOf(shareholder4)).to.equal(2n);
+  it("Check start state", async function () {
+    expect(await eggs.balanceOf(eggsMarket)).to.equal(17364n);
+    expect(await eggs.balanceOf(eggsShareholder1)).to.equal(10000n);
+    expect(await eggs.balanceOf(eggsShareholder2)).to.equal(10000n);
+    expect(await eggfs.balanceOf(eggfsShareholder1)).to.equal(7512n);
+    expect(await eggfs.balanceOf(eggfsShareholder2)).to.equal(4553n);
+    expect(await eggfs.balanceOf(eggfsShareholder3)).to.equal(3787);
   });
 
-  it("Send shares to ERC20Cancelled", async function () {
-    await axras.connect(axelra1).transfer(await erc20Cancelled.getAddress(), await axras.balanceOf(axelra1));
-    await axras.connect(axelra2).transfer(await erc20Cancelled.getAddress(), await axras.balanceOf(axelra2)); 
-    await axras.connect(axelra3).transfer(await erc20Cancelled.getAddress(), await axras.balanceOf(axelra3));
-    expect(await axras.balanceOf(axelra1)).to.equal(0);
-    expect(await axras.balanceOf(axelra2)).to.equal(0);
-    expect(await axras.balanceOf(axelra3)).to.equal(0);
-    expect(await axras.balanceOf(shareholder1)).to.equal(40);
-    expect(await axras.balanceOf(shareholder2)).to.equal(4);
-    expect(await axras.balanceOf(shareholder3)).to.equal(2);
-    expect(await axras.balanceOf(shareholder4)).to.equal(2);
+  it("Anyone can call mintToSHA()", async function () {
+    await expect(eggsCancelled.connect(signer1).mintToSHA()).to.not.reverted;
+    await expect(eggfsCancelled.connect(signer1).mintToSHA()).to.not.reverted;
+
+    expect (await eggsCancelled.balanceOf(eggs)).to.equal(await eggs.totalSupply());
+    expect (await eggfsCancelled.balanceOf(eggfs)).to.equal(await eggfs.totalSupply());
   });
 
-  it("Call burnThemAll", async function () {
-    expect(await erc20Cancelled.burnThemAll()).to.not.reverted;     
+  it("Multisig can migrate to cancelled with additional votes", async function () {
+    expect(await eggs.connect(farmyMultisig).migrateWithExternalApproval(eggsCancelled, 5000000n)).to.not.reverted;     
+    expect(await eggfs.connect(farmyMultisig).migrateWithExternalApproval(eggsCancelled, 150000n)).to.not.reverted;     
   });
 
   it("Should have replaced wrapped with ERC20Cancelled", async function () {
-    const newWrapped = await ethers.getContractAt("ERC20Cancelled", await axras.wrapped());
-    expect(newWrapped).to.equal(erc20Cancelled);
+    const newWrappedEggs = await ethers.getContractAt("ERC20Cancelled", await eggs.wrapped());
+    expect(newWrappedEggs).to.equal(eggsCancelled);
+    const newWrappedEggfs = await ethers.getContractAt("ERC20Cancelled", await eggfs.wrapped());
+    expect(newWrappedEggfs).to.equal(eggfsCancelled);
+  });
+
+  it("Anyone can call burnBaseToken()", async function () {
+    await expect(eggsCancelled.connect(signer1).burnBaseToken()).to.not.reverted;
+    await expect(eggfsCancelled.connect(signer1).burnBaseToken()).to.not.reverted;
   });
 
   it("Check balances afterwards", async function () {
-    expect(await axras.balanceOf(axelra1)).to.equal(0);
-    expect(await axras.balanceOf(axelra2)).to.equal(0);
-    expect(await axras.balanceOf(axelra3)).to.equal(0);
-    expect(await axras.balanceOf(shareholder1)).to.equal(40);
-    expect(await axras.balanceOf(shareholder2)).to.equal(4);
-    expect(await axras.balanceOf(shareholder3)).to.equal(2);
-    expect(await axras.balanceOf(shareholder4)).to.equal(2);
+
   });
 
   it("Should have burned all shares", async function () {    
-    expect(await axra.balanceOf(axelra1)).to.equal(0);
-    expect(await axra.balanceOf(axelra2)).to.equal(0);
-    expect(await axra.balanceOf(axelra3)).to.equal(0);
-    expect(await axra.balanceOf(shareholder1)).to.equal(0);
-    expect(await axra.balanceOf(shareholder2)).to.equal(0);
-    expect(await axra.balanceOf(shareholder3)).to.equal(0);
-    expect(await axra.balanceOf(shareholder4)).to.equal(0);
-    expect(await axra.totalSupply()).to.equal(0);
+    
   });
 });
