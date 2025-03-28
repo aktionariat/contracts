@@ -85,11 +85,8 @@ describe("Test Farmy", function () {
     await expect(eggfsCancelled.connect(signer1).burnBaseToken()).to.not.reverted;
   });
 
-  it("Check balances afterwards", async function () {
-
-  });
-
-  it("Should have burned all shares", async function () {    
-    
+  it("Should have burned all shares", async function () {        
+    expect(await egg.totalSupply()).to.equal(0);
+    expect(await eggf.totalSupply()).to.equal(0);
   });
 });
