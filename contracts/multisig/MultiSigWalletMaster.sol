@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.29;
 
 import "../utils/Address.sol";
 import "../utils/Initializable.sol";
@@ -98,10 +98,10 @@ contract MultiSigWalletMaster is Nonce, Initializable {
   }
 
   function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external returns (bytes memory) {
+    flagUsed(nonce);
     bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     address[] memory found = verifySignatures(transactionHash, v, r, s);
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
-    flagUsed(nonce);
     emit Transacted(to, extractSelector(data), found);
     if (value > 0) {emit SentEth(to, value);}
     return returndata;

@@ -59,6 +59,14 @@ npm install
 npx hardhat compile
 ```
 
+#### Deployment
+
+```bash
+npx hardhat ignition deploy <DEPLOYMENT_SCRIPT> --network <NETWORK_NAME> --deployment-id <UNIQUE_ID>
+npx hardhat ignition verify <UNIQUE_ID>
+```
+
+
 #### Running unit tests
 
 ```bash

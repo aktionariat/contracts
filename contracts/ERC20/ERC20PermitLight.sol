@@ -2,7 +2,7 @@
 // Copied from https://github.com/transmissions11/solmate/blob/main/src/tokens/ERC20.sol
 // and modified it.
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.29;
 
 import "./ERC20Flaggable.sol";
 import "./IERC20Permit.sol";

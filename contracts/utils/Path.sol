@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // copied and modified from https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/Path.sol
-pragma solidity >=0.6.0;
+pragma solidity 0.8.29;
 
 import './BytesLib.sol';
 /// @title Functions for manipulating path data for multihop swaps

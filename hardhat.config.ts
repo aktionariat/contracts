@@ -7,7 +7,7 @@ import KEYS from "./KEYS";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.28",
+    version: "0.8.29",
     settings: {
       optimizer: {
         enabled: true,
@@ -25,7 +25,10 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       chainId: 1,
-      url: KEYS.alchemy.mainnet
+      url: KEYS.alchemy.mainnet,
+      accounts: {
+        mnemonic: KEYS.mnemonics.mainnet
+      }
     },
     optimism: {
       chainId: 10,

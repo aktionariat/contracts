@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.29;
 
 /**
  * Copied from github.com/Uniswap/permit2/blob/main/src/SignatureTransfer.sol and modified.

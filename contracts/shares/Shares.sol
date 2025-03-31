@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity ^0.8.0;
+pragma solidity 0.8.29;
 
 import "../ERC20/ERC20Named.sol";
 import "../ERC20/ERC20PermitLight.sol";
@@ -78,7 +78,6 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
     )
         ERC20Named(_symbol, _name, 0, _owner) 
         ERC20Recoverable(_recoveryHub)
-        ERC20PermitLight()
         ERC20Permit2(_permit2Hub)
     {
         totalShares = _totalShares;
