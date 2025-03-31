@@ -31,10 +31,6 @@ import "../ERC20/ERC20Flaggable.sol";
 import "../ERC20/IERC20.sol";
 import "./ERC20Draggable.sol";
 
-/**
- * 
- */
-
 contract ERC20Cancelled is ERC20Flaggable {
 
     ERC20Draggable public immutable SHA;
@@ -53,13 +49,47 @@ contract ERC20Cancelled is ERC20Flaggable {
         return string(abi.encodePacked("C", BASE.symbol()));
     }
 
-    function burnThemAll() external {
-        _mint(address(SHA), SHA.totalSupply());
+    /**
+     * Ensures that the draggable contract owns one cancelled token per share.
+     */
+    function mintToSHA() public {
+        _mint(address(SHA), SHA.totalSupply() - balanceOf(address(SHA)));
+    }
+
+    /**
+     * Burns all share tokens on this address.
+     * Share tokens implementation ensures that tokens are collected in
+     * the share contract owned by the issuer before being actually burned.
+     */
+    function burnBaseToken() public {
+        BASE.burn(BASE.balanceOf(address(this)));
+    }
+
+    /**
+     * Assumes a large amount of draggable shares have been sent to this contract.
+     * The function uses its majority to migrate the draggable shares and then burns
+     * the ones it has, leaving the minority with draggable shares that wrap
+     * cancelled tokens.
+     */
+    function migrateWithQuorum() public {
         SHA.migrate();
         uint256 predecessorBalance = SHA.balanceOf(address(this));
         SHA.unwrap(predecessorBalance);
         _burn(address(this), predecessorBalance);
-        // assert(predecessorSupply == totalSupply());
-        BASE.burn(BASE.balanceOf(address(this)));
+    }
+        
+    /**
+     * Convenience function for burning WITH quorum.
+     * 
+     * For burning WITHOUT the quorum:
+     * 1. Call mintToSHA() from any address
+     * 2. Call migrateWithAdditionalVotes on the SHA from multisig
+     * 3. Call burnBaseToken from any address.
+     * 
+     */
+    function burnThemAll() external {
+        mintToSHA();
+        migrateWithQuorum();
+        burnBaseToken();
     }
 }
