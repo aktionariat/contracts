@@ -1,5 +1,4 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { version } from "hardhat";
 
 // Test Config
 export const TestModuleConfig = {
@@ -27,6 +26,13 @@ export const TestModuleConfig = {
     quorumDrag: 6600,
     quorumMigration: 6600,
     votePeriod: 5184000  
+  },
+
+  allowlistShareConfig: {
+    symbol: "ATES",
+    name: "Allowlist Test Company Shares",
+    terms: "https://atest.com",
+    totalShares: 1000000,
   },
 
   brokerbotConfig: {
@@ -57,7 +63,9 @@ const TestModule = buildModule("TestModule", (m) => {
   const draggableShares = m.contract("DraggableShares", [TestModuleConfig.draggableShareConfig.terms, [shares, TestModuleConfig.draggableShareConfig.quorumDrag, TestModuleConfig.draggableShareConfig.quorumMigration, TestModuleConfig.draggableShareConfig.votePeriod], recoveryHub, offerFactory, owner, permit2Hub]);
   const draggableSharesWithPredecessor = m.contract("DraggableSharesWithPredecessor", [draggableShares, TestModuleConfig.draggableShareConfig.terms, [shares, TestModuleConfig.draggableShareConfig.quorumDrag, TestModuleConfig.draggableShareConfig.quorumMigration, TestModuleConfig.draggableShareConfig.votePeriod], recoveryHub, offerFactory, owner, permit2Hub]);
   const draggableSharesWithPredecessorExternal = m.contract("DraggableSharesWithPredecessorExternal", [draggableShares, TestModuleConfig.draggableShareConfig.terms, [shares, TestModuleConfig.draggableShareConfig.quorumDrag, TestModuleConfig.draggableShareConfig.quorumMigration, TestModuleConfig.draggableShareConfig.votePeriod], recoveryHub, offerFactory, owner, permit2Hub]);
-  const erc20Cancelled = m.contract("ERC20Cancelled", [draggableShares])
+  const allowlistShares = m.contract("AllowlistShares", [TestModuleConfig.allowlistShareConfig.symbol, TestModuleConfig.allowlistShareConfig.name, TestModuleConfig.allowlistShareConfig.terms, TestModuleConfig.allowlistShareConfig.totalShares, recoveryHub, owner, permit2Hub]);
+  const allowlistDraggableShares = m.contract("AllowlistDraggableShares", [TestModuleConfig.draggableShareConfig.terms, [allowlistShares, TestModuleConfig.draggableShareConfig.quorumDrag, TestModuleConfig.draggableShareConfig.quorumMigration, TestModuleConfig.draggableShareConfig.votePeriod], recoveryHub, offerFactory, owner, permit2Hub]);
+  const erc20Cancelled = m.contract("ERC20Cancelled", [draggableShares]);
   const paymentHub = m.contract("PaymentHub", [TestModuleConfig.trustedForwarder, TestModuleConfig.uniswapQuoter, TestModuleConfig.uniswapRouter, TestModuleConfig.priceFeedCHFUSD, TestModuleConfig.priceFeedETHUSD]);
   const brokerbot = m.contract("Brokerbot", [draggableShares, TestModuleConfig.brokerbotConfig.price, TestModuleConfig.brokerbotConfig.increment, TestModuleConfig.frankencoinAddress, owner, paymentHub]);
   const zchf = m.contractAt("ERC20Named", TestModuleConfig.zchfAddress, { id: "ZCHF"});
@@ -77,6 +85,8 @@ const TestModule = buildModule("TestModule", (m) => {
     draggableShares,
     draggableSharesWithPredecessor,
     draggableSharesWithPredecessorExternal,
+    allowlistShares,
+    allowlistDraggableShares,
     erc20Cancelled,
     paymentHub, 
     brokerbot,
