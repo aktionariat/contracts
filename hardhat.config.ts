@@ -25,7 +25,10 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       chainId: 1,
-      url: KEYS.alchemy.mainnet
+      url: KEYS.alchemy.mainnet,
+      accounts: {
+        mnemonic: KEYS.mnemonics.mainnet
+      }
     },
     optimism: {
       chainId: 10,
