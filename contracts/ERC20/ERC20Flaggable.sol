@@ -61,7 +61,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     uint256 private _totalSupply;
 
-    uint8 public override decimals;
+    uint8 public immutable override decimals;
 
     event NameChanged(string name, string symbol);
 
