@@ -2,7 +2,7 @@
 // Copied from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol
 // and modified it.
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.29;
 
 library Address {
 
