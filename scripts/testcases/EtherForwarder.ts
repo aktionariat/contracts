@@ -20,11 +20,11 @@ describe("EtherForwarder", function () {
     exploiterReceiver = await hre.ethers.deployContract("EtherTransferReentrancyExploiter", []);
   });
 
-  it("Should be able to call transfer to send ETH", async function () {
-    const value = ethers.parseEther("0.1")
+  it("Should be able to call forward to send ETH", async function () {
+    const value = ethers.parseEther("0.01")
     const balanceBeforeSender = await ethers.provider.getBalance(exploitableMultisig);
     const balanceBeforeReceiver = await ethers.provider.getBalance(receiver);
-    const transactionReceipt = await (await exploitableMultisig.sendTransaction({to: receiver, value: value})).wait();
+    const transactionReceipt = await (await etherForwarder.connect(exploitableMultisig).forward(receiver, {value: value})).wait();
     const gasSpent = transactionReceipt!.gasUsed * transactionReceipt!.gasPrice
     const balanceAfterSender = await ethers.provider.getBalance(exploitableMultisig);
     const balanceAfterReceiver = await ethers.provider.getBalance(receiver);
@@ -34,7 +34,7 @@ describe("EtherForwarder", function () {
   });
 
   it("Should protect against malicious contracts calling back", async function () {    
-    const value = ethers.parseEther("0.1")
-    await expect(exploitableMultisig.sendTransaction({to: exploiterReceiver, value: value})).to.be.reverted;
+    const value = ethers.parseEther("0.01")
+    await expect(etherForwarder.connect(exploitableMultisig).forward(exploiterReceiver, {value: value})).to.be.reverted;
   });
 });
