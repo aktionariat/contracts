@@ -29,7 +29,7 @@ describe("EtherForwarder", function () {
     const balanceAfterSender = await ethers.provider.getBalance(exploitableMultisig);
     const balanceAfterReceiver = await ethers.provider.getBalance(receiver);
     
-    expect(balanceAfterSender).to.lessThanOrEqual(balanceBeforeSender - value - gasSpent);
+    expect(balanceAfterSender).to.equal(balanceBeforeSender - value - gasSpent);
     expect(balanceAfterReceiver).to.equal(balanceBeforeReceiver + value);
   });
 
