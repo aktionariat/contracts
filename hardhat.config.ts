@@ -40,7 +40,10 @@ const config: HardhatUserConfig = {
     },
     polygon: {
       chainId: 137,
-      url: KEYS.alchemy.polygon
+      url: KEYS.alchemy.polygon,
+      accounts: {
+        mnemonic: KEYS.mnemonics.polygon
+      }
     },
     base: {
       chainId: 8453,
