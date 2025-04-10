@@ -9,10 +9,6 @@ import "../utils/Initializable.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
-/**
- * Documented in ../../doc/multisig.md
- * Version 4: include SentEth event
- */
 contract MultiSigWalletMaster is Nonce, Initializable {
 
   // Version history
