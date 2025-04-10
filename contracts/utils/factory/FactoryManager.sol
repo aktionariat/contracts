@@ -46,8 +46,8 @@ contract FactoryManager is Ownable {
     emit RecoveryHubUpdated(recoveryHub);
   }
   
-  function setMultiSigCloneFactory(MultiSigCloneFactory _multsigFactory) external onlyOwner() {
-    multisigFactory = _multsigFactory;
+  function setMultiSigCloneFactory(MultiSigCloneFactory _multisigFactory) external onlyOwner() {
+    multisigFactory = _multisigFactory;
     emit MultiSigCloneFactoryUpdated(multisigFactory);
   }
 
