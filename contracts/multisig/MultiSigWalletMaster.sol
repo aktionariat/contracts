@@ -9,16 +9,13 @@ import "../utils/Initializable.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
-/**
- * Documented in ../../doc/multisig.md
- * Version 4: include SentEth event
- */
 contract MultiSigWalletMaster is Nonce, Initializable {
 
   // Version history
   // Version 4: added event for send value
   // Version 5: added version field and changed chain id
-  uint8 public constant VERSION = 0x5;
+  // Version 6: fixed potential reentrancy in execute
+  uint8 public constant VERSION = 0x6;
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
@@ -98,9 +95,9 @@ contract MultiSigWalletMaster is Nonce, Initializable {
   }
 
   function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external returns (bytes memory) {
-    flagUsed(nonce);
     bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
     address[] memory found = verifySignatures(transactionHash, v, r, s);
+    flagUsed(nonce);
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
     emit Transacted(to, extractSelector(data), found);
     if (value > 0) {emit SentEth(to, value);}
