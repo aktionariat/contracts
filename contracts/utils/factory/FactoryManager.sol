@@ -11,7 +11,7 @@ import { RecoveryHub } from "../../recovery/RecoveryHub.sol";
 
 /**
  * @title Factory Mangager for common contracts
- * @author rube
+ * @author muratogat
  * 
  */
 contract FactoryManager is Ownable {
