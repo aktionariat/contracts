@@ -19,12 +19,12 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      chainId: 1,
+      chainId: 137,
       forking: {
-        url: KEYS.alchemy.mainnet
+        url: KEYS.alchemy.polygon
       },
       accounts: {
-        mnemonic: KEYS.mnemonics.mainnet
+        mnemonic: KEYS.mnemonics.polygon
       }
     },
     mainnet: {
