@@ -22,6 +22,9 @@ const config: HardhatUserConfig = {
       chainId: 1,
       forking: {
         url: KEYS.alchemy.mainnet
+      },
+      accounts: {
+        mnemonic: KEYS.mnemonics.mainnet
       }
     },
     mainnet: {
@@ -48,6 +51,13 @@ const config: HardhatUserConfig = {
     base: {
       chainId: 8453,
       url: KEYS.alchemy.base
+    },
+  },
+  ignition: {
+    strategyConfig: {
+      create2: {
+        salt: "0x39E5351E6CE3c4B19B8b0a2F5C82c511782457BE000000000000000000000dae"
+      },
     },
   },
   etherscan: {

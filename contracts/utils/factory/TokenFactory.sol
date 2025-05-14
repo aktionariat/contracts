@@ -21,12 +21,14 @@ import { Ownable } from "../Ownable.sol";
  */
 contract TokenFactory is Ownable {
   using EnumerableSet for EnumerableSet.AddressSet;
+  
+  // Version history
+  // 1: Initial version
+  // 2: Allowlisting functionality always available
+  uint8 public constant VERSION = 2;
 
   /// @notice Factory manager contract
   FactoryManager public manager;
-
-  /// @notice Draggable token factory contract
-  DraggableTokenFactory public draggableFactory;
 
   /// @notice Allowlist draggable token factory contract
   AllowlistDraggableFactory public allowlistDraggableFactory;
@@ -68,11 +70,9 @@ contract TokenFactory is Ownable {
   /**
    * @notice Constructor for TokenFactory
    * @param _owner The address of the contract owner
-   * @param _draggableFactory The address of the draggable token factory
    * @param _allowlistDraggableFactory The address of the allowlist draggable token factory
    */
-  constructor(address _owner, DraggableTokenFactory _draggableFactory, AllowlistDraggableFactory _allowlistDraggableFactory) Ownable(_owner) {
-    draggableFactory = _draggableFactory;
+  constructor(address _owner, AllowlistDraggableFactory _allowlistDraggableFactory) Ownable(_owner) {
     allowlistDraggableFactory = _allowlistDraggableFactory;
   }
 
@@ -103,15 +103,6 @@ contract TokenFactory is Ownable {
   }
 
   /**
-   * @notice Sets the draggable token factory
-   * @param _draggableFactory The new draggable token factory
-   */
-  function setDraggableTokenFactory(DraggableTokenFactory _draggableFactory) external onlyOwner() {
-    draggableFactory = _draggableFactory;
-    emit DraggableTokenFactoryUpdated(draggableFactory);
-  }
-
-  /**
    * @notice Sets the allowlist draggable token factory
    * @param _allowlistDraggableFactory The new allowlist draggable token factory
    */
@@ -138,24 +129,16 @@ contract TokenFactory is Ownable {
 
   function _createBaseToken(TokenConfig calldata tokenConfig, address tokenOwner, string calldata _salt) internal returns (IERC20Permit token) {
     bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol, _salt))));
-    if (tokenConfig.allowlist) {
-      token = new AllowlistShares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub());
-    } else {
-      token = new Shares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, tokenOwner, manager.recoveryHub(), manager.permit2Hub());
-    }
+    token = new AllowlistShares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub());
     _sharesSet.add(address(token));
-    emit BaseTokenCreated(token, tokenOwner, tokenConfig.allowlist);
+    emit BaseTokenCreated(token, tokenOwner, true);
     return token;
   }
 
   function _createDraggableToken(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit baseToken, string calldata _salt) internal returns (IERC20Permit draggable) {
-    if (tokenConfig.allowlist) {
-      draggable = allowlistDraggableFactory.createAllowlistDraggable(tokenConfig, tokenOwner, baseToken, _salt);
-    } else {
-      draggable = draggableFactory.createDraggable(tokenConfig, tokenOwner, baseToken, _salt);
-    }
+    draggable = allowlistDraggableFactory.createAllowlistDraggable(tokenConfig, tokenOwner, baseToken, _salt);
     _draggableSet.add(address(draggable));
-    emit DraggableTokenCreated(draggable, baseToken, tokenOwner, tokenConfig.allowlist);
+    emit DraggableTokenCreated(draggable, baseToken, tokenOwner, true);
     return draggable;
   }
 }
