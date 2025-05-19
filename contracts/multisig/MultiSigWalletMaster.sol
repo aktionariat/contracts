@@ -5,22 +5,21 @@
 pragma solidity 0.8.29;
 
 import "../utils/Address.sol";
-import "../utils/Initializable.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
-contract MultiSigWalletMaster is Nonce, Initializable {
+contract MultiSigWalletMaster is Nonce {
 
   // Version history
   // Version 4: added event for send value
   // Version 5: added version field and changed chain id
   // Version 6: fixed potential reentrancy in execute
-  uint8 public constant VERSION = 0x6;
+  // Version 7: support authorizations, moved initialization to subclass, enable itself as signer
+  uint8 public constant VERSION = 0x7;
 
   mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
 
   uint16 public signerCount;
-  bytes public contractId; // most likely unique id of this contract
 
   event SignerChange(
     address indexed signer,
@@ -59,15 +58,13 @@ contract MultiSigWalletMaster is Nonce, Initializable {
   /// param destination The address to which the signer rights should be migrated. 
   error Multisig_InvalidDestination(address destination);
 
-  function initialize(address owner) external initializer {
-    // We use the gas price field to get a unique id into our transactions.
-    // Note that 32 bits do not guarantee that no one can generate a contract with the
-    // same id, but it practically rules out that someone accidentally creates two
-    // two multisig contracts with the same id, and that's all we need to prevent
-    // replay-attacks.
-    contractId = toBytes(uint32(uint160(address(this))));
-    signerCount = 0;
-    _setSigner(owner, 1); // set initial owner
+  // We use the gas price field to get a unique id into our transactions.
+  // Note that 32 bits do not guarantee that no one can generate a contract with the
+  // same id, but it practically rules out that someone accidentally creates two
+  // two multisig contracts with the same id, and that's all we need to prevent
+  // replay-attacks.
+  function contractId() public view returns (bytes memory) {
+    return toBytes(uint32(uint160(address(this))));
   }
 
   /**
@@ -82,7 +79,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
    */
   function checkSignatures(uint128 nonce, address to, uint value, bytes calldata data,
     uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external view returns (address[] memory) {
-    bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
+    bytes32 transactionHash = calculateTransactionHash(nonce, contractId(), to, value, data);
     return verifySignatures(transactionHash, v, r, s);
   }
 
@@ -95,7 +92,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
   }
 
   function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external returns (bytes memory) {
-    bytes32 transactionHash = calculateTransactionHash(nonce, contractId, to, value, data);
+    bytes32 transactionHash = calculateTransactionHash(nonce, contractId(), to, value, data);
     address[] memory found = verifySignatures(transactionHash, v, r, s);
     flagUsed(nonce);
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
@@ -196,7 +193,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
     _migrate(source, destination);
   }
 
-  function _migrate(address source, address destination) private {
+  function _migrate(address source, address destination) internal {
     // do not overwrite existing signer!
     if (signers[destination] > 0 ) {
       revert Multisig_InvalidDestination(destination);
@@ -205,7 +202,7 @@ contract MultiSigWalletMaster is Nonce, Initializable {
     _setSigner(source, 0);
   }
 
-  function _setSigner(address signer, uint8 signaturesNeeded) private {
+  function _setSigner(address signer, uint8 signaturesNeeded) internal {
     if (Address.isContract(signer) || signer == address(0x0)) {
       revert Multisig_InvalidSigner(signer);
     }
