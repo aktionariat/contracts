@@ -8,7 +8,7 @@ import "../utils/Address.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
-contract MultiSigWalletMaster is Nonce {
+contract MultiSigWallet is Nonce {
 
   // Version history
   // Version 4: added event for send value
@@ -17,7 +17,7 @@ contract MultiSigWalletMaster is Nonce {
   // Version 7: support authorizations, moved initialization to subclass, enable itself as signer
   uint8 public constant VERSION = 0x7;
 
-  mapping (address => uint8) public signers; // The addresses that can co-sign transactions and the number of signatures needed
+  mapping (address signer => uint8 power) internal power; // The addresses that can co-sign transactions and the number of signatures needed
 
   uint16 public signerCount;
 
@@ -155,7 +155,7 @@ contract MultiSigWalletMaster is Nonce {
     }
     for (uint i = 0; i < r.length; i++) {
       address signer = ecrecover(transactionHash, v[i], r[i], s[i]);
-      uint8 signaturesNeeded = signers[signer];
+      uint8 signaturesNeeded = signers(signer);
       if (signaturesNeeded == 0 || signaturesNeeded > r.length) {
         revert Multisig_InvalidSignDataOrInsufficientCosigner(signer);
       }
@@ -163,6 +163,20 @@ contract MultiSigWalletMaster is Nonce {
     }
     requireNoDuplicates(found);
     return found;
+  }
+
+  /**
+   * Returns the signatory power of the signer.
+   * Function name is 'signers' to keep back-wards compatilibity with anyone that
+   * previously accessed the previously public array 'signers' (now 'power') using the automatically generated
+   * getter function.
+   */
+  function signers(address signer) public view returns (uint8) {
+    if (signer == address(this)){
+      return 1;
+    } else {
+      return power[signer];
+    }
   }
 
   function requireNoDuplicates(address[] memory found) private pure {
@@ -195,19 +209,19 @@ contract MultiSigWalletMaster is Nonce {
 
   function _migrate(address source, address destination) internal {
     // do not overwrite existing signer!
-    if (signers[destination] > 0 ) {
+    if (power[destination] > 0 ) {
       revert Multisig_InvalidDestination(destination);
     }
-    _setSigner(destination, signers[source]);
+    _setSigner(destination, power[source]);
     _setSigner(source, 0);
   }
 
   function _setSigner(address signer, uint8 signaturesNeeded) internal {
-    if (Address.isContract(signer) || signer == address(0x0)) {
+    if (Address.isContract(signer) || signer == address(0x0) || signer == address(this)) {
       revert Multisig_InvalidSigner(signer);
     }
-    uint8 prevValue = signers[signer];
-    signers[signer] = signaturesNeeded;
+    uint8 prevValue = power[signer];
+    power[signer] = signaturesNeeded;
     if (prevValue > 0 && signaturesNeeded == 0){
       signerCount--;
     } else if (prevValue == 0 && signaturesNeeded > 0){
@@ -217,9 +231,7 @@ contract MultiSigWalletMaster is Nonce {
   }
 
   modifier authorized() {
-    if (address(this) != msg.sender && signers[msg.sender] != 1) {
-      revert Multisig_UnauthorizedSender(msg.sender);
-    }
+    if (signers(msg.sender) != 1) revert Multisig_UnauthorizedSender(msg.sender);
     _;
   }
 
