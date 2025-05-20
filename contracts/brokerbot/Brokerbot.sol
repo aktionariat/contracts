@@ -10,7 +10,7 @@
 *
 * Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
 */
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";

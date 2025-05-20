@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 import { Brokerbot } from "../../brokerbot/Brokerbot.sol";
 import { BrokerbotFactory } from "./BrokerbotFactory.sol";

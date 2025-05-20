@@ -2,7 +2,7 @@
 // OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/draft-IERC20Permit.sol)
 // Copied from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/draft-IERC20Permit.sol
 
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 import "./IERC20.sol";
 

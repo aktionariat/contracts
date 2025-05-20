@@ -7,13 +7,13 @@ import KEYS from "./KEYS";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.29",
+    version: "0.8.30",
     settings: {
       optimizer: {
         enabled: true,
         runs: 200
       },
-      evmVersion: `cancun`,
+      evmVersion: `prague`,
     }
   },
   defaultNetwork: "hardhat",
