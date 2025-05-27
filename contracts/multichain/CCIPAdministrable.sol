@@ -25,21 +25,38 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 contract CCIPAdministrable {
 
 	address private CCIPAdmin;
 
+  event CCIPAdminChanged(address indexed oldAdmin, address indexed newAdmin);
+
+  error CCIPAdministrable_NotCCIPAdmin(address sender);
+
   constructor(address _ccipAdmin) {
     CCIPAdmin = _ccipAdmin;
+        emit CCIPAdminChanged(address(0), CCIPAdmin);
   }
 
-  function setCCIPAdmin(address newAdmin) public onlyOwner {
-      CCIPAdmin = newAdmin;
+  function setCCIPAdmin(address newAdmin) external onlyCCIPAdmin {
+    emit CCIPAdminChanged(CCIPAdmin, newAdmin);
+    CCIPAdmin = newAdmin;
   }
 
-  function getCCIPAdmin() public {
+  function getCCIPAdmin() public view returns (address) {
       return CCIPAdmin;
+  }
+
+  modifier onlyCCIPAdmin() {
+      _checkCCIPAdmin();
+      _;
+  }
+
+  function _checkCCIPAdmin() internal view {
+      if (msg.sender != CCIPAdmin) {
+        revert CCIPAdministrable_NotCCIPAdmin(msg.sender);
+      }
   }
 }

@@ -26,29 +26,44 @@
 * SOFTWARE.
 */
 
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
+import "../ERC20/ERC20Named.sol";
 import "../recovery/ERC20Recoverable.sol";
 import "../ERC20/ERC20PermitLight.sol";
 import "../ERC20/ERC20Permit2.sol";
 import "./CCIPAdministrable.sol";
 
-contract MultichainSharesChild is ERC20Recoverable, ERC20PermitLight, ERC20Permit2, CCIPAdministrable {
+contract MultichainSharesChild is ERC20Named, ERC20Recoverable, ERC20PermitLight, ERC20Permit2, CCIPAdministrable {
 
 	address private CCIPAdmin;
 
   constructor(
+    string memory _name,
+    string memory _symbol,
     string memory _terms,
     IRecoveryHub _recoveryHub,
     address _owner,
     Permit2Hub _permit2Hub,
     address _ccipAdmin
   )
+    ERC20Named(_name, _symbol, 0, _owner)
     ERC20Recoverable(_recoveryHub)
     ERC20Permit2(_permit2Hub)
-    Ownable(_owner)
     CCIPAdministrable(_ccipAdmin)
   {
 
+  }
+
+  function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
+      return super.allowance(owner, spender);
+  }
+
+  function transfer(address to, uint256 value) virtual override(IERC20, ERC20Flaggable, ERC20Recoverable) public returns (bool) {
+      return super.transfer(to, value);
+  }
+
+  function getClaimDeleter() public view override returns (address) {
+      return owner;
   }
 }
