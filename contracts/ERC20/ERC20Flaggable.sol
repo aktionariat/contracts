@@ -10,7 +10,7 @@
 // - use upper 32 bits of balance for flags
 // - add a global settings variable
 
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 import "./IERC20.sol";
 import "./ERC20Errors.sol";

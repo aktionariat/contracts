@@ -25,24 +25,20 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 contract Nonce {
 
     uint256 public constant MAX_INCREASE = 100;
     
-    uint256 private compound;
-    
-    constructor(){
-        setBoth(128, 0);
-    }
+    uint128 private max; // highest nonce ever used
+    uint128 private reg;
     
     /**
      * The next recommended nonce, which is the highest nonce ever used plus one.
-     * The initial nonce is 129.
      */
     function nextNonce() external view returns (uint128){
-        return getMax() + 1;
+        return max + 1;
     }
 
     /**
@@ -51,8 +47,7 @@ contract Nonce {
      * For the nonces in the interval [nextNonce() - 129, nextNonce() - 1], this is true for the nonces that have not been used yet.
      */ 
     function isFree(uint128 nonce) external view returns (bool){
-        uint128 max = getMax();
-        return isValidHighNonce(max, nonce) || isValidLowNonce(max, getRegister(), nonce);
+        return isValidHighNonce(nonce) || isValidLowNonce(nonce);
     }
 
     /**
@@ -60,37 +55,32 @@ contract Nonce {
      * Reverts if the provided nonce is not free.
      */
     function flagUsed(uint128 nonce) internal {
-        uint256 comp = compound;
-        uint128 max = uint128(comp);
-        uint128 reg = uint128(comp >> 128);
-        if (isValidHighNonce(max, nonce)){
-            setBoth(nonce, ((reg << 1) | 0x1) << (nonce - max - 1));
-        } else if (isValidLowNonce(max, reg, nonce)){
-            setBoth(max, uint128(reg | 0x1 << (max - nonce - 1)));
+        if (isValidHighNonce(nonce)){
+            reg = ((reg << 1) | 0x1) << (nonce - max - 1);
+            max = nonce;
+        } else if (isValidLowNonce(nonce)){
+            reg = uint128(reg | 0x1 << (max - nonce - 1));
         } else {
             revert("used");
         }
     }
     
-    function getMax() private view returns (uint128) {
-        return uint128(compound);
-    }
-    
-    function getRegister() private view returns (uint128) {
-        return uint128(compound >> 128);
-    }
-    
-    function setBoth(uint128 max, uint128 reg) private {
-        compound = uint256(reg) << 128 | max;
+    function setBoth(uint128 max_, uint128 reg_) private {
+        max = max_;
+        reg = reg_;
     }
 
-    function isValidHighNonce(uint128 max, uint128 nonce) private pure returns (bool){
+    function isValidHighNonce(uint128 nonce) private view returns (bool){
         return nonce > max && nonce <= max + MAX_INCREASE;
     }
 
-    function isValidLowNonce(uint128 max, uint128 reg, uint128 nonce) private pure returns (bool){
-        uint256 diff = max - nonce;
-        return diff > 0 && diff <= 128 && ((0x1 << (diff - 1)) & reg == 0);
+    function isValidLowNonce(uint128 nonce) private view returns (bool){
+        if (nonce < max){
+            uint256 diff = max - nonce;
+            return diff <= 128 && ((0x1 << (diff - 1)) & reg == 0);
+        } else {
+            return false;
+        }
     }
     
 }

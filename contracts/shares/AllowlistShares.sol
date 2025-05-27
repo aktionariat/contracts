@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity 0.8.29;
+pragma solidity 0.8.30;
 
 import "../recovery/ERC20Recoverable.sol";
 import "../ERC20/ERC20Allowlistable.sol";
