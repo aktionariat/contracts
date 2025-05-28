@@ -32,8 +32,6 @@ import "./CCIPAdministrable.sol";
 
 contract MultichainSharesMaster is AllowlistDraggableShares, CCIPAdministrable {
 
-	address private CCIPAdmin;
-
   constructor(
     string memory _terms,
     DraggableParams memory _params,

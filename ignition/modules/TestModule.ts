@@ -35,6 +35,19 @@ export const TestModuleConfig = {
     totalShares: 1000000,
   },
 
+  // Uses the same config as draggableShareConfig, adding CCIPAdmin
+  multichainShareMasterConfig: {
+    ccipAdmin: "0xdCaa50578efe0A2AB95767A6DC41d104d543E8D9"
+  },
+
+  multichainShareChildConfig: {
+    symbol: "MTCS",
+    name: "Multichain Test Company Shares",
+    terms: "https://atest.com",
+    totalShares: 1000000,
+    ccipAdmin: "0xdCaa50578efe0A2AB95767A6DC41d104d543E8D9"
+  },
+
   brokerbotConfig: {
     price: 1000000000000000000n,
     increment: 0n,
@@ -65,10 +78,12 @@ const TestModule = buildModule("TestModule", (m) => {
   const draggableSharesWithPredecessorExternal = m.contract("DraggableSharesWithPredecessorExternal", [draggableShares, TestModuleConfig.draggableShareConfig.terms, [shares, TestModuleConfig.draggableShareConfig.quorumDrag, TestModuleConfig.draggableShareConfig.quorumMigration, TestModuleConfig.draggableShareConfig.votePeriod], recoveryHub, offerFactory, owner, permit2Hub]);
   const allowlistShares = m.contract("AllowlistShares", [TestModuleConfig.allowlistShareConfig.symbol, TestModuleConfig.allowlistShareConfig.name, TestModuleConfig.allowlistShareConfig.terms, TestModuleConfig.allowlistShareConfig.totalShares, recoveryHub, owner, permit2Hub]);
   const allowlistDraggableShares = m.contract("AllowlistDraggableShares", [TestModuleConfig.draggableShareConfig.terms, [allowlistShares, TestModuleConfig.draggableShareConfig.quorumDrag, TestModuleConfig.draggableShareConfig.quorumMigration, TestModuleConfig.draggableShareConfig.votePeriod], recoveryHub, offerFactory, owner, permit2Hub]);
+  const multichainSharesMaster = m.contract("MultichainSharesMaster", [TestModuleConfig.draggableShareConfig.terms, [allowlistShares, TestModuleConfig.draggableShareConfig.quorumDrag, TestModuleConfig.draggableShareConfig.quorumMigration, TestModuleConfig.draggableShareConfig.votePeriod], recoveryHub, offerFactory, owner, permit2Hub, TestModuleConfig.multichainShareMasterConfig.ccipAdmin]);
+  const multichainSharesChild = m.contract("MultichainSharesChild", [TestModuleConfig.multichainShareChildConfig.name, TestModuleConfig.multichainShareChildConfig.symbol, TestModuleConfig.allowlistShareConfig.terms, recoveryHub, owner, permit2Hub, TestModuleConfig.multichainShareChildConfig.ccipAdmin]);
+  
   const erc20Cancelled = m.contract("ERC20Cancelled", [draggableShares]);
   const paymentHub = m.contract("PaymentHub", [TestModuleConfig.trustedForwarder, TestModuleConfig.uniswapQuoter, TestModuleConfig.uniswapRouter, TestModuleConfig.priceFeedCHFUSD, TestModuleConfig.priceFeedETHUSD]);
   const brokerbot = m.contract("Brokerbot", [draggableShares, TestModuleConfig.brokerbotConfig.price, TestModuleConfig.brokerbotConfig.increment, TestModuleConfig.frankencoinAddress, owner, paymentHub]);
-
 
   const zchf = m.contractAt("ERC20Named", TestModuleConfig.zchfAddress, { id: "ZCHF"});
   const dai = m.contractAt("ERC20Named", TestModuleConfig.daiAddress, { id: "DAI"});
@@ -89,6 +104,8 @@ const TestModule = buildModule("TestModule", (m) => {
     draggableSharesWithPredecessorExternal,
     allowlistShares,
     allowlistDraggableShares,
+    multichainSharesMaster,
+    multichainSharesChild,
     erc20Cancelled,
     paymentHub, 
     brokerbot,

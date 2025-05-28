@@ -29,15 +29,26 @@ pragma solidity 0.8.30;
 
 contract CCIPAdministrable {
 
-	address private CCIPAdmin;
+	address public CCIPAdmin;
+  address public CCIPMinter;
+  address public CCIPBurner;
 
   event CCIPAdminChanged(address indexed oldAdmin, address indexed newAdmin);
+  event CCIPMinterChanged(address indexed oldMinter, address indexed newMinter);
+  event CCIPBurnerChanged(address indexed oldBurner, address indexed newBurner);
 
   error CCIPAdministrable_NotCCIPAdmin(address sender);
+  error CCIPAdministrable_NotCCIPMinter(address sender);
+  error CCIPAdministrable_NotCCIPBurner(address sender);
 
   constructor(address _ccipAdmin) {
     CCIPAdmin = _ccipAdmin;
-        emit CCIPAdminChanged(address(0), CCIPAdmin);
+    CCIPMinter = _ccipAdmin;
+    CCIPBurner = _ccipAdmin;
+
+    emit CCIPAdminChanged(address(0), CCIPAdmin);
+    emit CCIPMinterChanged(address(0), CCIPMinter);
+    emit CCIPBurnerChanged(address(0), CCIPBurner);
   }
 
   function setCCIPAdmin(address newAdmin) external onlyCCIPAdmin {
@@ -45,8 +56,26 @@ contract CCIPAdministrable {
     CCIPAdmin = newAdmin;
   }
 
+  function setCCIPMinter(address newMinter) external onlyCCIPAdmin {
+    emit CCIPAdminChanged(CCIPMinter, newMinter);
+    CCIPMinter = newMinter;
+  }
+
+  function setCCIPBurner(address newBurner) external onlyCCIPAdmin {
+    emit CCIPAdminChanged(CCIPBurner, newBurner);
+    CCIPBurner = newBurner;
+  }
+
   function getCCIPAdmin() public view returns (address) {
       return CCIPAdmin;
+  }
+
+  function getCCIPMinter() public view returns (address) {
+      return CCIPMinter;
+  }
+
+  function getCCIPBurner() public view returns (address) {
+      return CCIPBurner;
   }
 
   modifier onlyCCIPAdmin() {
@@ -54,9 +83,31 @@ contract CCIPAdministrable {
       _;
   }
 
+  modifier onlyCCIPMinter() {
+      _checkCCIPMinter();
+      _;
+  }
+
+  modifier onlyCCIPBurner() {
+      _checkCCIPBurner();
+      _;
+  }
+
   function _checkCCIPAdmin() internal view {
       if (msg.sender != CCIPAdmin) {
         revert CCIPAdministrable_NotCCIPAdmin(msg.sender);
+      }
+  }
+
+  function _checkCCIPMinter() internal view {
+      if (msg.sender != CCIPMinter) {
+        revert CCIPAdministrable_NotCCIPMinter(msg.sender);
+      }
+  }
+
+  function _checkCCIPBurner() internal view {
+      if (msg.sender != CCIPBurner) {
+        revert CCIPAdministrable_NotCCIPBurner(msg.sender);
       }
   }
 }

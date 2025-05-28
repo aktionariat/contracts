@@ -36,8 +36,6 @@ import "./CCIPAdministrable.sol";
 
 contract MultichainSharesChild is ERC20Named, ERC20Recoverable, ERC20PermitLight, ERC20Permit2, CCIPAdministrable {
 
-	address private CCIPAdmin;
-
   constructor(
     string memory _name,
     string memory _symbol,
@@ -65,5 +63,19 @@ contract MultichainSharesChild is ERC20Named, ERC20Recoverable, ERC20PermitLight
 
   function getClaimDeleter() public view override returns (address) {
       return owner;
+  }
+
+  function mint(address target, uint256 amount) public onlyCCIPMinter {
+      _mint(target, amount);
+  }
+
+  function burn(uint256 _amount) external {
+      _transfer(msg.sender, address(this), _amount);
+      _burn(address(this), _amount);
+  }
+
+  function burnFrom(address _from, uint256 _amount) external onlyCCIPBurner {
+      _transfer(_from, address(this), _amount);
+      _burn(address(this), _amount);
   }
 }
