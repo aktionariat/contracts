@@ -4,8 +4,9 @@ pragma solidity >=0.7.0 <0.9.0;
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
+import "./MultiSigWalletMaster.sol";
 
-contract MultisigWallet is CCIPReceiver {
+contract MultichainWallet is CCIPReceiver, MultiSigWalletMaster {
 
     uint64 public constant MAINNET_CHAIN_SELECTOR = 5009297550715157269;
     address public immutable LINK_TOKEN;
@@ -15,11 +16,11 @@ contract MultisigWallet is CCIPReceiver {
     error InsufficientNativeFeeToken(uint256 found, uint256 required);
 
     event SyncSent(bytes32 msgId, uint64 chain, address signer, uint8 power);
-    event SyncReceived(address signer, uint8 power);
+    event SyncReceived(bytes32 msgId, address signer, uint8 power);
 
-    constructor(address router, address linkToken) CCIPReceiver(router){
-        IERC20(linkToken).approve(router, type(uint256).max);
-        LINK_TOKEN = linkToken;
+    constructor(IArgumentSource args) CCIPReceiver(args.router()){
+        IERC20(args.link()).approve(args.router(), type(uint256).max);
+        LINK_TOKEN = args.link();
     }
 
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
@@ -29,17 +30,16 @@ contract MultisigWallet is CCIPReceiver {
         
         (address signer, uint8 power) = abi.decode(message.data, (address, uint8));
         _setSigner(signer, power);
+        emit SyncReceived(message.messageId, signer, power);
     }
 
-    function _setSigner(address signer, uint8 power) internal {
-        emit SyncReceived(signer, power);
+    function sync(uint64[] calldata targets, address signer, bool useLink) external payable {
+        for (uint i=0; i<targets.length; i++){
+            sync(targets[i], signer, useLink);
+        }
     }
 
-    function signers(address signer) public view returns (uint8) {
-        return uint8(uint160(signer));
-    }
-
-    function sync(uint64 chain, address signer, bool useLink) external payable {
+    function sync(uint64 chain, address signer, bool useLink) public payable {
         uint8 power = signers(signer);
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(address(this)), // ABI-encoded receiver address
@@ -78,4 +78,9 @@ contract MultisigWallet is CCIPReceiver {
 interface IERC20 {
     function approve(address spender, uint256 amount) external returns (bool);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+}
+
+interface IArgumentSource {
+    function router() external returns (address);
+    function link() external returns (address);
 }

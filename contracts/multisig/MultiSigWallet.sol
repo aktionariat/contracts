@@ -15,7 +15,8 @@ contract MultiSigWallet is Nonce {
   // Version 5: added version field and changed chain id
   // Version 6: fixed potential reentrancy in execute
   // Version 7: support authorizations, moved initialization to subclass, enable itself as signer
-  uint8 public constant VERSION = 0x7;
+  // Version 8: multichain synchronization with CCIP
+  uint8 public constant VERSION = 0x8;
 
   mapping (address signer => uint8 power) internal power; // The addresses that can co-sign transactions and the number of signatures needed
 
