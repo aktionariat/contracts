@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity >=0.8.0 <0.9.0;
 
 /**
  * If this contract is deterministically deployed across chains, it can
@@ -7,6 +7,8 @@ pragma solidity >=0.7.0 <0.9.0;
  * the same addresses even if the immutables differ across chains.
  */
 contract MultichainWalletArgumentSource {
+
+    // Deployed on 0xf6d96dD440D020022134b8d902bedC2a2249E041 on Mainnet and Polygon
 
     // Router
     // Mainnet: 0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D
