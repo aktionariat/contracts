@@ -4,9 +4,9 @@ pragma solidity >=0.7.0 <0.9.0;
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
-import "./MultiSigWalletMaster.sol";
+import "./MultiSigWallet.sol";
 
-contract MultichainWallet is CCIPReceiver, MultiSigWalletMaster {
+contract MultichainWallet is CCIPReceiver, MultiSigWallet {
 
     uint64 public constant MAINNET_CHAIN_SELECTOR = 5009297550715157269;
     address public immutable LINK_TOKEN;
