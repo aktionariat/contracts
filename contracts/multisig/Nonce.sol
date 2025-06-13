@@ -30,15 +30,19 @@ pragma solidity 0.8.30;
 contract Nonce {
 
     uint256 public constant MAX_INCREASE = 100;
+    uint128 private constant MASK = 1 << 127;
+    uint128 private constant UNMASK = MASK ^ type(uint128).max;
     
     uint128 private max; // highest nonce ever used
     uint128 private reg;
     
     /**
      * The next recommended nonce, which is the highest nonce ever used plus one.
+     * 
+     * Starts with 1^127 to prevent replay attacks, i.e. multisig transactions being replayed on individual signer accounts.
      */
     function nextNonce() external view returns (uint128){
-        return max + 1;
+        return (max + 1) | MASK;
     }
 
     /**
@@ -47,7 +51,8 @@ contract Nonce {
      * For the nonces in the interval [nextNonce() - 129, nextNonce() - 1], this is true for the nonces that have not been used yet.
      */ 
     function isFree(uint128 nonce) external view returns (bool){
-        return isValidHighNonce(nonce) || isValidLowNonce(nonce);
+        uint128 unmaskedNonce = UNMASK & nonce;
+        return isValidHighNonce(unmaskedNonce) || isValidLowNonce(unmaskedNonce);
     }
 
     /**
@@ -55,11 +60,12 @@ contract Nonce {
      * Reverts if the provided nonce is not free.
      */
     function flagUsed(uint128 nonce) internal {
-        if (isValidHighNonce(nonce)){
-            reg = ((reg << 1) | 0x1) << (nonce - max - 1);
-            max = nonce;
-        } else if (isValidLowNonce(nonce)){
-            reg = uint128(reg | 0x1 << (max - nonce - 1));
+        uint128 unmaskedNonce = UNMASK & nonce;
+        if (isValidHighNonce(unmaskedNonce)){
+            reg = ((reg << 1) | 0x1) << (unmaskedNonce - max - 1);
+            max = unmaskedNonce;
+        } else if (isValidLowNonce(unmaskedNonce)){
+            reg = uint128(reg | 0x1 << (max - unmaskedNonce - 1));
         } else {
             revert("used");
         }

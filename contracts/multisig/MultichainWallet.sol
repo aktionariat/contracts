@@ -12,6 +12,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     address public immutable LINK_TOKEN;
 
     error InvalidSourceChain(uint64 selector);
+    error InvalidDestinationChain();
     error InvalidSender(address sender);
     error InsufficientNativeFeeToken(uint256 found, uint256 required);
 
@@ -24,6 +25,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     }
 
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
+        if (block.chainid == 1) revert InvalidDestinationChain();
         if (message.sourceChainSelector != MAINNET_CHAIN_SELECTOR) revert InvalidSourceChain(message.sourceChainSelector);
         address decodedSender = abi.decode(message.sender, (address));
         if (decodedSender != address(this)) revert InvalidSender(decodedSender);
