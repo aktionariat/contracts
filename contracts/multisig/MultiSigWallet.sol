@@ -66,7 +66,7 @@ contract MultiSigWallet is Nonce {
   // two multisig contracts with the same id, and that's all we need to prevent
   // replay-attacks.
   function contractId() public view returns (bytes memory) {
-    return toBytes(uint32(uint160(address(this))));
+    return toBytes(uint32(uint160(address(this))) ^ block.chainid);
   }
 
   /**
@@ -199,23 +199,6 @@ contract MultiSigWallet is Nonce {
     if (signerCount == 0) {
       revert Multisig_InsufficientSigners();
     }
-  }
-
-  function migrate(address destination) external {
-    _migrate(msg.sender, destination);
-  }
-
-  function migrate(address source, address destination) external authorized {
-    _migrate(source, destination);
-  }
-
-  function _migrate(address source, address destination) internal {
-    // do not overwrite existing signer!
-    if (power[destination] > 0 ) {
-      revert Multisig_InvalidDestination(destination);
-    }
-    _setSigner(destination, power[source]);
-    _setSigner(source, 0);
   }
 
   function _setSigner(address signer, uint8 signaturesNeeded) internal {

@@ -20,7 +20,6 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     event SyncReceived(bytes32 msgId, address signer, uint8 power);
 
     constructor(IArgumentSource args) CCIPReceiver(args.router()){
-        IERC20(args.link()).approve(args.router(), type(uint256).max);
         LINK_TOKEN = args.link();
     }
 
@@ -48,13 +47,9 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
             data: abi.encode(signer, power), // ABI-encoded string
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array indicating no tokens are being sent
             extraArgs: Client._argsToBytes(
-                // Additional arguments, setting gas limit and allowing out-of-order execution.
-                // Best Practice: For simplicity, the values are hardcoded. It is advisable to use a more dynamic approach
-                // where you set the extra arguments off-chain. This allows adaptation depending on the lanes, messages,
-                // and ensures compatibility with future CCIP upgrades. Read more about it here: https://docs.chain.link/ccip/concepts/best-practices/evm#using-extraargs
                 Client.GenericExtraArgsV2({
-                    gasLimit: 200_000, // Gas limit for the callback on the destination chain
-                    allowOutOfOrderExecution: true // Allows the message to be executed out of order relative to other messages from the same sender
+                    gasLimit: 100_000, // Gas limit for the callback on the destination chain, should be more than enough, typically 40'000
+                    allowOutOfOrderExecution: true // Should always be possible according to CCIP support
                 })
             ),
             // Set the feeToken  address, indicating LINK will be used for fees
