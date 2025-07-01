@@ -1,0 +1,6 @@
+Deployment order, using account 0xa35e30d9Cd597Be18CE9086Fd22bFAde95F9Db67 starting with the initial nonce.
+
+1. Deploy MultichainWalletArgumentSource to 0x82f359F387B4E400C022146fECA4264b4A43c70A
+2. Init MultichainWalletArgumentSource
+3. Deploy MultiSigWalletMaster with 0x82f359F387B4E400C022146fECA4264b4A43c70A as argument to 0xf180206B2b17aa104366A8D43D7966C25F25d82a
+4. Deploy MultiSigCloneFactory to 0x6db6cbf6177e23289e83db2f87450c36fbbc2188

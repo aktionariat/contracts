@@ -7,10 +7,9 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-// Deployed at 0x3cb73399cE9D7300f284a2F4Ad4bcEd6F64B89E6
 contract MultiSigCloneFactory {
 
-  address constant public IMPLEMENTATION = address(0xF71dEc9eA8892871cbEA369Dc41E39773e13b925);
+  address constant public IMPLEMENTATION = address(0xf180206B2b17aa104366A8D43D7966C25F25d82a);
 
   event ContractCreated(address indexed contractAddress, string indexed typeName, bytes32 salt);
 

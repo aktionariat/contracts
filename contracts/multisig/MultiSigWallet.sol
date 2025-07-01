@@ -8,7 +8,6 @@ import "../utils/Address.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
-// Deployed V8 at 0x68c573d2d60a58637c3096a69f1fe9a7baf9a616
 contract MultiSigWallet is Nonce {
 
   // Version history
