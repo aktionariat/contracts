@@ -2,12 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity 0.8.30;
+pragma solidity >=0.8.0 <0.9.0;
 
 import "../utils/Address.sol";
 import "./RLPEncode.sol";
 import "./Nonce.sol";
 
+// Deployed V8 at 0x68c573d2d60a58637c3096a69f1fe9a7baf9a616
 contract MultiSigWallet is Nonce {
 
   // Version history
@@ -15,7 +16,8 @@ contract MultiSigWallet is Nonce {
   // Version 5: added version field and changed chain id
   // Version 6: fixed potential reentrancy in execute
   // Version 7: support authorizations, moved initialization to subclass, enable itself as signer
-  uint8 public constant VERSION = 0x7;
+  // Version 8: multichain synchronization with CCIP
+  uint8 public constant VERSION = 0x8;
 
   mapping (address signer => uint8 power) internal power; // The addresses that can co-sign transactions and the number of signatures needed
 
@@ -64,7 +66,7 @@ contract MultiSigWallet is Nonce {
   // two multisig contracts with the same id, and that's all we need to prevent
   // replay-attacks.
   function contractId() public view returns (bytes memory) {
-    return toBytes(uint32(uint160(address(this))));
+    return toBytes(uint32(uint160(address(this))) ^ block.chainid);
   }
 
   /**
@@ -132,7 +134,7 @@ contract MultiSigWallet is Nonce {
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(sequence); // sequence number instead of nonce
     all[1] = id; // contract id instead of gas price
-    all[2] = bytes("\x82\x52\x08"); // 21000 gas limitation
+    all[2] = bytes("\x82\x52\x08"); // 21000 gas limitation, cannot be lower
     all[3] = abi.encodePacked (bytes1 (0x94), to);
     all[4] = toBytes(value);
     all[5] = data;
@@ -197,23 +199,6 @@ contract MultiSigWallet is Nonce {
     if (signerCount == 0) {
       revert Multisig_InsufficientSigners();
     }
-  }
-
-  function migrate(address destination) external {
-    _migrate(msg.sender, destination);
-  }
-
-  function migrate(address source, address destination) external authorized {
-    _migrate(source, destination);
-  }
-
-  function _migrate(address source, address destination) internal {
-    // do not overwrite existing signer!
-    if (power[destination] > 0 ) {
-      revert Multisig_InvalidDestination(destination);
-    }
-    _setSigner(destination, power[source]);
-    _setSigner(source, 0);
   }
 
   function _setSigner(address signer, uint8 signaturesNeeded) internal {
