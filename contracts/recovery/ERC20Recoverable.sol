@@ -55,7 +55,7 @@ abstract contract ERC20Recoverable is ERC20Flaggable, IRecoverable {
     // Rate the custom collateral currency is multiplied to be valued like one share.
     uint256 public customCollateralRate;
 
-    uint256 constant CLAIM_PERIOD = 180 days;
+    uint256 public constant CLAIM_PERIOD = 30 days;
 
     IRecoveryHub public override immutable recovery;
 
