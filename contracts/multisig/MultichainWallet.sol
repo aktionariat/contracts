@@ -9,7 +9,6 @@ import "./MultiSigWallet.sol";
 contract MultichainWallet is CCIPReceiver, MultiSigWallet {
 
     uint64 public constant MAINNET_CHAIN_SELECTOR = 5009297550715157269;
-    address public immutable LINK_TOKEN;
 
     error InvalidSourceChain(uint64 selector);
     error InvalidDestinationChain();
@@ -20,7 +19,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     event SyncReceived(bytes32 msgId, address signer, uint8 power);
 
     constructor(IArgumentSource args) CCIPReceiver(args.router()){
-        LINK_TOKEN = args.link();
+        // Must only be used to initialize immutables as clones won't inherit other state
     }
 
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
@@ -34,13 +33,17 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         emit SyncReceived(message.messageId, signer, power);
     }
 
-    function sync(uint64[] calldata targets, address signer, bool useLink) external payable {
+    function sync(uint64[] calldata targets, address signer, address feeToken_) external payable {
         for (uint i=0; i<targets.length; i++){
-            sync(targets[i], signer, useLink);
+            sync(targets[i], signer, feeToken_);
         }
     }
 
-    function sync(uint64 chain, address signer, bool useLink) public payable {
+    function sync(uint64 chain, address signer) public payable {
+        sync(chain, signer, address(0x0));
+    }
+
+    function sync(uint64 chain, address signer, address feeToken_) public payable {
         uint8 power = signers(signer);
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(address(this)), // ABI-encoded receiver address
@@ -53,11 +56,11 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
                 })
             ),
             // Set the feeToken  address, indicating LINK will be used for fees
-            feeToken: useLink ? LINK_TOKEN : address(0)
+            feeToken: feeToken_
         });
         uint256 fee =  IRouterClient(getRouter()).getFee(chain, message);
         bytes32 msgId;
-        if (useLink) {
+        if (feeToken_ != address(0x0)) {
             IERC20(message.feeToken).transferFrom(msg.sender, address(this), fee);
             IERC20(message.feeToken).approve(getRouter(), fee);
             msgId = IRouterClient(getRouter()).ccipSend(chain, message);
