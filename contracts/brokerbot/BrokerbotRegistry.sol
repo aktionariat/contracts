@@ -10,7 +10,7 @@
 *
 * Copyright (c) 2022 Aktionariat AG (aktionariat.com), All rights reserved.
 */
-pragma solidity 0.8.30;
+pragma solidity >=0.8.0 <0.9.0;
 
 import "./IBrokerbot.sol";
 import "../ERC20/IERC20.sol";

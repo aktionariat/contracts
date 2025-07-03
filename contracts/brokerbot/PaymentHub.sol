@@ -25,7 +25,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 */
-pragma solidity 0.8.30;
+pragma solidity >=0.8.0 <0.9.0;
 
 import "../utils/Address.sol";
 import "../ERC20/IERC20.sol";

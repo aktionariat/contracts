@@ -2,7 +2,7 @@
 // Copied from 
 // https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/IQuoter.sol
 // https://github.com/Uniswap/v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
-pragma solidity 0.8.30;
+pragma solidity >=0.8.0 <0.9.0;
 
 import "../ERC20/IERC20.sol";
 

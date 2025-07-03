@@ -4,7 +4,7 @@
 * Copyright (c) 2016-2019 zOS Global Limited
 *
 */
-pragma solidity 0.8.30;
+pragma solidity >=0.8.0 <0.9.0;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
