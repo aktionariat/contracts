@@ -9,9 +9,13 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract MultiSigCloneFactory {
 
-  address constant public IMPLEMENTATION = address(0xF4C4C02fe590548BA2fcC42e832Be2a25DDC6C95);
+  address immutable public IMPLEMENTATION;
 
   event ContractCreated(address indexed contractAddress, string indexed typeName, bytes32 salt);
+
+  constructor(address master){
+    IMPLEMENTATION = master;
+  }
 
   function predict(bytes32 salt) external view returns (address) {
     return Clones.predictDeterministicAddress(IMPLEMENTATION, salt);
