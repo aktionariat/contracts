@@ -19,8 +19,8 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     event SyncSent(bytes32 msgId, uint64 chain, address signer, uint8 power);
     event SyncReceived(bytes32 msgId, address signer, uint8 power);
 
-    constructor(IArgumentSource args) CCIPReceiver(args.router()){
-        LINK_TOKEN = args.link();
+    constructor(IMultichainWalletFactory factory) CCIPReceiver(factory.getRouterAddress()){
+        LINK_TOKEN = factory.getLinkAddress();
     }
 
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
@@ -77,7 +77,7 @@ interface IERC20 {
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 }
 
-interface IArgumentSource {
-    function router() external returns (address);
-    function link() external returns (address);
+interface IMultichainWalletFactory {
+    function getRouterAddress() external view returns (address);
+    function getLinkAddress() external view returns (address);
 }
