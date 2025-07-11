@@ -15,8 +15,8 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     error InvalidSender(address sender);
     error InsufficientNativeFeeToken(uint256 found, uint256 required);
 
-    event SyncSent(bytes32 msgId, uint64 chain, address signer, uint8 power);
-    event SyncReceived(bytes32 msgId, address signer, uint8 power);
+    event SyncSent(bytes32 msgId, uint64 chain, address signerList, uint8 power);
+    event SyncReceived(bytes32 msgId, address signerList, uint8 power);
 
     constructor(IArgumentSource args) CCIPReceiver(args.router()){
         // Must only be used to initialize immutables as clones won't inherit other state
@@ -28,26 +28,37 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         address decodedSender = abi.decode(message.sender, (address));
         if (decodedSender != address(this)) revert InvalidSender(decodedSender);
         
-        (address signer, uint8 power) = abi.decode(message.data, (address, uint8));
-        _setSigner(signer, power);
-        emit SyncReceived(message.messageId, signer, power);
+        (address[] memory signerList, uint8[] memory powers) = abi.decode(message.data, (address[], uint8[]));
+        for (uint i=0; i<signerList.length; i++){
+            _setSigner(signerList[i], powers[i]);
+            emit SyncReceived(message.messageId, signerList[i], powers[i]);
+        }
     }
 
-    function sync(uint64[] calldata targets, address signer, address feeToken_) external payable {
+    function sync(uint64[] calldata targets, address[] calldata signerList, address feeToken_) external payable {
         for (uint i=0; i<targets.length; i++){
-            sync(targets[i], signer, feeToken_);
+            sync(targets[i], signerList, feeToken_);
         }
     }
 
     function sync(uint64 chain, address signer) public payable {
-        sync(chain, signer, address(0x0));
+        address[] memory signerList = new address[](1);
+        signerList[0] = signer;
+        sync(chain, signerList, address(0x0));
     }
 
-    function sync(uint64 chain, address signer, address feeToken_) public payable {
-        uint8 power = signers(signer);
+    function sync(uint64 chain, address[] calldata signerList) public payable {
+        sync(chain, signerList, address(0x0));
+    }
+
+    function sync(uint64 chain, address[] memory signerList, address feeToken_) public payable {
+        uint8[] memory powers = new uint8[](signerList.length);
+        for (uint i=0; i<signerList.length; i++){
+            powers[i] = signers(signerList[i]);
+        }
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(address(this)), // ABI-encoded receiver address
-            data: abi.encode(signer, power), // ABI-encoded string
+            data: abi.encode(signerList, powers), // ABI-encoded string
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array indicating no tokens are being sent
             extraArgs: Client._argsToBytes(
                 Client.GenericExtraArgsV2({
@@ -70,7 +81,9 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
             // return overpaid fee to sender. We don't care about the success of this call.
             if(msg.value - fee > 0) payable(msg.sender).call{value: msg.value - fee}("");
         }
-        emit SyncSent(msgId, chain, signer, power);
+        for (uint i=0; i<signerList.length; i++){
+            emit SyncSent(msgId, chain, signerList[i], powers[i]);
+        }
     }
 
 }
