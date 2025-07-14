@@ -6,6 +6,7 @@ pragma solidity >=0.8.0 <0.9.0;
  * be used to initialize immutables in the MultiChain wallet, yielding
  * the same addresses even if the immutables differ across chains.
  */
+
 contract MultichainWalletArgumentSource {
 
     // Router

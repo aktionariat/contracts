@@ -67,9 +67,6 @@ const config: HardhatUserConfig = {
       polygon: KEYS.etherscan.polygon,
       base: KEYS.etherscan.base
     },
-  },
-  sourcify: {
-    enabled: true
   }
 };
 
