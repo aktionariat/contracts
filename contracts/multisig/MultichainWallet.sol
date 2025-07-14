@@ -82,5 +82,4 @@ interface IERC20 {
 
 interface IArgumentSource {
     function router() external returns (address);
-    function link() external returns (address);
 }

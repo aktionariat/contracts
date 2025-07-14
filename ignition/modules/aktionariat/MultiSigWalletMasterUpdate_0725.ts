@@ -14,8 +14,10 @@ const MultiSigWalletMasterUpdateModule0725 = buildModule("MultiSigWalletMasterUp
   const backendOwner = m.getAccount(0);
 
   // Deploy argument source and initialize it
-  const argumentSource = m.contract("MultchainWalletArgumentSource", [], { from: backendOwner });
+  const argumentSource = m.contract("MultichainWalletArgumentSource", [], { from: backendOwner });
   m.call(argumentSource, "initialize", [CCIPRouterAddress.mainnet], { from: backendOwner });
+
+  console.log(m.call(argumentSource, "router", [], { from: backendOwner }));
 
   // Deploy the MultiSigWalletMaster using the argument source and initialize it
   const multiSigWalletMaster = m.contract("MultiSigWalletMaster", [argumentSource], { from: backendOwner });
