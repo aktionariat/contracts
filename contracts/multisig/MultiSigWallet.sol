@@ -5,8 +5,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "../utils/Address.sol";
-import "./RLPEncode.sol";
-import "./Nonce.sol";
+import "../lib/RLPEncode.sol";
+import "../lib/Nonce.sol";
 
 contract MultiSigWallet is Nonce {
 
