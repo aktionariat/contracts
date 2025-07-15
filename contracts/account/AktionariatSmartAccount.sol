@@ -5,8 +5,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "../utils/Address.sol";
-import "./RLPEncode.sol";
-import "./Nonce.sol";
+import "../multisig/RLPEncode.sol";
+import "../multisig/Nonce.sol";
 
 contract AktionariatSmartAccount is Nonce {
 
@@ -35,18 +35,16 @@ contract AktionariatSmartAccount is Nonce {
   /**
    * Checks if the provided signatures suffice to sign the transaction and if the nonce is correct.
    */
-  function checkSignature(uint128 nonce, address to, uint value, bytes calldata data, uint8 calldata v, bytes32 calldata r, bytes32 calldata s) external view returns (address memory) {
-    bytes32 transactionHash = calculateTransactionHash(nonce, contractId(), to, value, data);
+  function checkSignature(uint128 nonce, address to, uint value, bytes calldata data, uint8 v, bytes32 r, bytes32 s) public view {
+    bytes32 transactionHash = calculateTransactionHash(nonce, to, value, data);
     address signer = ecrecover(transactionHash, v, r, s);
     if (signer != address(this)) {
       revert Multisig_InvalidSigner(signer);
     }
-    return signer;
   }
 
-  function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8 calldata v, bytes32 calldata r, bytes32 calldata s) external returns (bytes memory) {
-    bytes32 transactionHash = calculateTransactionHash(nonce, contractId(), to, value, data);
-    address[] memory found = verifySignatures(transactionHash, v, r, s);
+  function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8 v, bytes32 r, bytes32 s) external returns (bytes memory) {
+    checkSignature(nonce, to, value, data, v, r, s);
     flagUsed(nonce);
     bytes memory returndata = Address.functionCallWithValue(to, data, value);
     return returndata;
@@ -74,7 +72,7 @@ contract AktionariatSmartAccount is Nonce {
     internal view returns (bytes32){
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(nonce);                        // nonce provided by Nonce.sol
-    all[1] = id;                                    // empty bytes instead of contract id
+    all[1] = contractId();                          // id based on this implementations address and chain id
     all[2] = bytes("\x82\x52\x08");                 // 21000 gas limitation, cannot be lower
     all[3] = abi.encodePacked (bytes1 (0x94), to);
     all[4] = toBytes(value);
