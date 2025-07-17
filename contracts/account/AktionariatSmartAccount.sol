@@ -2,13 +2,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.8.30 <0.9.0;
 
 import "../utils/Address.sol";
 import "../lib/RLPEncode.sol";
 import "../lib/Nonce.sol";
 
-contract AktionariatSmartAccount is Nonce {
+contract AktionariatSmartAccount layout at 0xDDDAAAEEE is Nonce {
+
+  /**
+   * BE CAREFUL when modifying state variables. 
+   * AktionariatSmartAccount inherits Nonce and uses custom storage layout.
+   * Changes in EIP-7702 delegation and state storage can lead to serious corruption issues.
+   */
 
   // Version history
   uint8 public constant VERSION = 0x1;

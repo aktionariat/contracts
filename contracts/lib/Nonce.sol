@@ -27,10 +27,11 @@
 */
 pragma solidity >=0.8.0 <0.9.0;
 
-contract Nonce layout at keccak256("aktionariat.nonce.storage") {
+contract Nonce {
 
     /**
-     * BE CAREFUL when modifying state variables. Nonce is used in AktionariatSmartAccount.
+     * BE CAREFUL when modifying state variables. 
+     * AktionariatSmartAccount inherits Nonce and uses custom storage layout.
      * Changes in EIP-7702 delegation and state storage can lead to serious corruption issues.
      */
     uint256 public constant MAX_INCREASE = 100;
