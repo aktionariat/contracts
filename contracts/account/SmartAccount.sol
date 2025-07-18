@@ -8,11 +8,11 @@ import "../utils/Address.sol";
 import "../lib/RLPEncode.sol";
 import "../lib/Nonce.sol";
 
-contract AktionariatSmartAccount layout at 0xDDDAAAEEE is Nonce {
+contract SmartAccount layout at 0xDDDAAAEEE is Nonce {
 
   /**
    * BE CAREFUL when modifying state variables. 
-   * AktionariatSmartAccount inherits Nonce and uses custom storage layout.
+   * SmartAccount inherits Nonce and uses custom storage layout.
    * Changes in EIP-7702 delegation and state storage can lead to serious corruption issues.
    */
 
@@ -42,7 +42,7 @@ contract AktionariatSmartAccount layout at 0xDDDAAAEEE is Nonce {
    * Checks if the provided signatures suffice to sign the transaction and if the nonce is correct.
    */
   function checkSignature(uint128 nonce, address to, uint value, bytes calldata data, uint8 v, bytes32 r, bytes32 s) public view {
-    bytes32 transactionHash = calculateTransactionHash(nonce, to, value, data);
+    bytes32 transactionHash = _calculateTransactionHash(nonce, to, value, data);
     address signer = ecrecover(transactionHash, v, r, s);
     if (signer != address(this)) {
       revert Multisig_InvalidSigner(signer);
@@ -73,9 +73,12 @@ contract AktionariatSmartAccount layout at 0xDDDAAAEEE is Nonce {
     }
   }
 
+  function calculateTransactionHash(uint128 nonce, address to, uint value, bytes calldata data) external view returns (bytes32) {
+    return _calculateTransactionHash(nonce, to, value, data);
+  }
+
   // Note: does not work with contract creation
-  function calculateTransactionHash(uint128 nonce, address to, uint value, bytes calldata data)
-    internal view returns (bytes32){
+  function _calculateTransactionHash(uint128 nonce, address to, uint value, bytes calldata data) internal view returns (bytes32) {
     bytes[] memory all = new bytes[](9);
     all[0] = toBytes(nonce);                        // nonce provided by Nonce.sol
     all[1] = contractId();                          // id based on this implementations address and chain id

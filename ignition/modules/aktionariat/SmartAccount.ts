@@ -1,13 +1,13 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-const AktionariatSmartAccountModule = buildModule("AktionariatSmartAccountModule", (m) => {
+const SmartAccountModule = buildModule("SmartAccountModule", (m) => {
   const backendOwner = m.getAccount(0);
 
-  const smartAccount = m.contract("AktionariatSmartAccount", [], { from: backendOwner });
+  const smartAccount = m.contract("SmartAccount", [], { from: backendOwner });
 
   return { 
     smartAccount
    };
 });
 
-export default AktionariatSmartAccountModule;
+export default SmartAccountModule;
