@@ -15,6 +15,7 @@ import { Ownable } from "../Ownable.sol";
 /**
  * @title TokenFactory
  * @author rube
+ * @author muratogat
  * 
  * @dev Factory to deploy shares contracts
  * @notice This contract allows the creation of share tokens with optional draggable functionality and allowlist features.
@@ -90,6 +91,19 @@ contract TokenFactory is Ownable {
       return draggable;
     } else {
       return token;
+    }
+  }
+
+  function predictTokenAddress(TokenConfig calldata tokenConfig, address tokenOwner, string calldata salt) external view returns (address) {
+    bytes32 saltHash = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol, salt))));
+    bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistShares).creationCode, abi.encode(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub())));
+    bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), saltHash, initCodeHash));
+    address baseTokenAddress = address(uint160(uint256(hashResult)));
+
+    if (tokenConfig.draggable) {
+      return allowlistDraggableFactory.predictAllowlistDraggableAddress(tokenConfig, tokenOwner, IERC20Permit(baseTokenAddress), salt);
+    } else {
+      return baseTokenAddress;
     }
   }
 
