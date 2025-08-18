@@ -10,7 +10,7 @@ import { Ownable } from "../Ownable.sol";
 
 /**
  * @title Allowlist draggable factory
- * @author rube
+ * @author muratogat
  * 
  * @notice This contract is responsible for creating new AllowlistDraggableShares tokens
  * @dev Inherits from Ownable for access control

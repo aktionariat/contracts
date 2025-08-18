@@ -6,7 +6,6 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 
 import { AllowlistDraggableFactory } from "./AllowlistDraggableFactory.sol";
 import { AllowlistShares, Shares } from "../../shares/AllowlistShares.sol";
-import { DraggableTokenFactory } from "./DraggableTokenFactory.sol";
 import { FactoryManager } from "./FactoryManager.sol";
 import { TokenConfig } from "./FactoryStructs.sol";
 import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
@@ -14,7 +13,6 @@ import { Ownable } from "../Ownable.sol";
 
 /**
  * @title TokenFactory
- * @author rube
  * @author muratogat
  * 
  * @dev Factory to deploy shares contracts
@@ -26,7 +24,8 @@ contract TokenFactory is Ownable {
   // Version history
   // 1: Initial version
   // 2: Allowlisting functionality always available
-  uint8 public constant VERSION = 2;
+  // 3: Token address prediction
+  uint8 public constant VERSION = 3;
 
   /// @notice Factory manager contract
   FactoryManager public manager;
@@ -56,10 +55,6 @@ contract TokenFactory is Ownable {
   /// @notice Emitted when the factory manager is updated
   /// @param manager The new factory manager
   event FactoryManagerUpdated(address manager);
-
-  /// @notice Emitted when the draggable token factory is updated
-  /// @param factory The new draggable token factory
-  event DraggableTokenFactoryUpdated(DraggableTokenFactory factory);
 
   /// @notice Emitted when the allowlist draggable token factory is updated
   /// @param factory The new allowlist draggable token factory

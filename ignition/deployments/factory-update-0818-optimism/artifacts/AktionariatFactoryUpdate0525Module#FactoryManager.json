@@ -1,0 +1,273 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "FactoryManager",
+  "sourceName": "contracts/utils/factory/FactoryManager.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_owner",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "Ownable_NotOwner",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "contract MultiSigCloneFactory",
+          "name": "MultiSigCloneFactory",
+          "type": "address"
+        }
+      ],
+      "name": "MultiSigCloneFactoryUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "contract IOfferFactory",
+          "name": "offerFactory",
+          "type": "address"
+        }
+      ],
+      "name": "OfferFactoryUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "contract PaymentHub",
+          "name": "paymentHub",
+          "type": "address"
+        }
+      ],
+      "name": "PaymentHubUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "contract Permit2Hub",
+          "name": "permit2Hub",
+          "type": "address"
+        }
+      ],
+      "name": "Permit2HubUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "contract RecoveryHub",
+          "name": "recoveryHub",
+          "type": "address"
+        }
+      ],
+      "name": "RecoveryHubUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "multisigFactory",
+      "outputs": [
+        {
+          "internalType": "contract MultiSigCloneFactory",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "offerFactory",
+      "outputs": [
+        {
+          "internalType": "contract IOfferFactory",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paymentHub",
+      "outputs": [
+        {
+          "internalType": "contract PaymentHub",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "permit2Hub",
+      "outputs": [
+        {
+          "internalType": "contract Permit2Hub",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "recoveryHub",
+      "outputs": [
+        {
+          "internalType": "contract RecoveryHub",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract MultiSigCloneFactory",
+          "name": "_multisigFactory",
+          "type": "address"
+        }
+      ],
+      "name": "setMultiSigCloneFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IOfferFactory",
+          "name": "_offerFactory",
+          "type": "address"
+        }
+      ],
+      "name": "setOfferFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract PaymentHub",
+          "name": "_paymentHub",
+          "type": "address"
+        }
+      ],
+      "name": "setPaymentHub",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract Permit2Hub",
+          "name": "_permit2Hub",
+          "type": "address"
+        }
+      ],
+      "name": "setPermit2Hub",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract RecoveryHub",
+          "name": "_recoveryHub",
+          "type": "address"
+        }
+      ],
+      "name": "setRecoveryHub",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f5ffd5b506040516104fd3803806104fd833981016040819052602b916078565b5f80546001600160a01b0319166001600160a01b03831690811782556040518392907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0908290a3505060a3565b5f602082840312156087575f5ffd5b81516001600160a01b0381168114609c575f5ffd5b9392505050565b61044d806100b05f395ff3fe608060405234801561000f575f5ffd5b50600436106100b1575f3560e01c80639b610c211161006e5780639b610c2114610144578063c4e61be214610157578063d0b031e51461016a578063ecd7cf781461017d578063f2fde38b14610190578063fff4da1f146101a3575f5ffd5b806318efcce5146100b5578063421b58d6146100e45780634f1a73db146100f7578063645beb0d1461010c5780638da5cb5b1461011f5780639220623b14610131575b5f5ffd5b6005546100c8906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b6002546100c8906001600160a01b031681565b61010a6101053660046103f5565b6101b6565b005b61010a61011a3660046103f5565b610207565b5f546100c8906001600160a01b031681565b6004546100c8906001600160a01b031681565b61010a6101523660046103f5565b610258565b6003546100c8906001600160a01b031681565b61010a6101783660046103f5565b6102a9565b6001546100c8906001600160a01b031681565b61010a61019e3660046103f5565b6102fa565b61010a6101b13660046103f5565b61035b565b6101be6103ac565b600580546001600160a01b0319166001600160a01b0383169081179091556040517f90864ea4b001bddde3f867a70a90ac9379f6ba38b0663f685f30716f261300a3905f90a250565b61020f6103ac565b600280546001600160a01b0319166001600160a01b0383169081179091556040517fec3e4bd3c8d481920b54e812c0ddb28e0daa7c6b5250de3e4364c21a5249f3c3905f90a250565b6102606103ac565b600180546001600160a01b0319166001600160a01b0383169081179091556040517f284989f10a03f8bcf05a3ff020487a642ff3360daeef38c5a5de081931cb5662905f90a250565b6102b16103ac565b600480546001600160a01b0319166001600160a01b0383169081179091556040517f62b9668a4618e3853007ed5838d2ddcdf7581327fa1a82d6b29659c1d2149e40905f90a250565b6103026103ac565b5f80546040516001600160a01b03808516939216917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a35f80546001600160a01b0319166001600160a01b0392909216919091179055565b6103636103ac565b600380546001600160a01b0319166001600160a01b0383169081179091556040517fe9074b903af6e04fa64fd837453b5fcca6585108a57c9e8098632d0beacbb9cc905f90a250565b5f546001600160a01b031633146103dc576040516396a19be960e01b815233600482015260240160405180910390fd5b565b6001600160a01b03811681146103f2575f5ffd5b50565b5f60208284031215610405575f5ffd5b8135610410816103de565b939250505056fea2646970667358221220c39c425e57f630555ed1b1df5bb5c2a3e26a9b0b6c5ba6aa6cd1edae9dcb961c64736f6c634300081e0033",
+  "deployedBytecode": "0x608060405234801561000f575f5ffd5b50600436106100b1575f3560e01c80639b610c211161006e5780639b610c2114610144578063c4e61be214610157578063d0b031e51461016a578063ecd7cf781461017d578063f2fde38b14610190578063fff4da1f146101a3575f5ffd5b806318efcce5146100b5578063421b58d6146100e45780634f1a73db146100f7578063645beb0d1461010c5780638da5cb5b1461011f5780639220623b14610131575b5f5ffd5b6005546100c8906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b6002546100c8906001600160a01b031681565b61010a6101053660046103f5565b6101b6565b005b61010a61011a3660046103f5565b610207565b5f546100c8906001600160a01b031681565b6004546100c8906001600160a01b031681565b61010a6101523660046103f5565b610258565b6003546100c8906001600160a01b031681565b61010a6101783660046103f5565b6102a9565b6001546100c8906001600160a01b031681565b61010a61019e3660046103f5565b6102fa565b61010a6101b13660046103f5565b61035b565b6101be6103ac565b600580546001600160a01b0319166001600160a01b0383169081179091556040517f90864ea4b001bddde3f867a70a90ac9379f6ba38b0663f685f30716f261300a3905f90a250565b61020f6103ac565b600280546001600160a01b0319166001600160a01b0383169081179091556040517fec3e4bd3c8d481920b54e812c0ddb28e0daa7c6b5250de3e4364c21a5249f3c3905f90a250565b6102606103ac565b600180546001600160a01b0319166001600160a01b0383169081179091556040517f284989f10a03f8bcf05a3ff020487a642ff3360daeef38c5a5de081931cb5662905f90a250565b6102b16103ac565b600480546001600160a01b0319166001600160a01b0383169081179091556040517f62b9668a4618e3853007ed5838d2ddcdf7581327fa1a82d6b29659c1d2149e40905f90a250565b6103026103ac565b5f80546040516001600160a01b03808516939216917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a35f80546001600160a01b0319166001600160a01b0392909216919091179055565b6103636103ac565b600380546001600160a01b0319166001600160a01b0383169081179091556040517fe9074b903af6e04fa64fd837453b5fcca6585108a57c9e8098632d0beacbb9cc905f90a250565b5f546001600160a01b031633146103dc576040516396a19be960e01b815233600482015260240160405180910390fd5b565b6001600160a01b03811681146103f2575f5ffd5b50565b5f60208284031215610405575f5ffd5b8135610410816103de565b939250505056fea2646970667358221220c39c425e57f630555ed1b1df5bb5c2a3e26a9b0b6c5ba6aa6cd1edae9dcb961c64736f6c634300081e0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

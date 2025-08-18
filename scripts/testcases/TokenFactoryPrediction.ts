@@ -13,7 +13,6 @@ describe("Test Factory Address Prediction", function () {
   let salt = "0x39E5351E6CE3c4B19B8b0a2F5C82c511782457BE000000000000000000000dae";
   
   before(async function() {
-    // This all need to be done on Optimism
     await switchForkedNetwork("mainnet");
 
     [owner] = await ethers.getSigners();
