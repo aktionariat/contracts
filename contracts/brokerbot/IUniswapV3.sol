@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copied from 
 // https://github.com/Uniswap/v3-periphery/blob/main/contracts/interfaces/IQuoterV2.sol
-// https://github.com/Uniswap/v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
+// https://github.com/Uniswap/swap-router-contracts/blob/main/contracts/interfaces/ISwapRouter02.sol
 pragma solidity >=0.8.0 <0.9.0;
 pragma abicoder v2;
 
