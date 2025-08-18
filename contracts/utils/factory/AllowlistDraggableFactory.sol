@@ -10,7 +10,7 @@ import { Ownable } from "../Ownable.sol";
 
 /**
  * @title Allowlist draggable factory
- * @author rube
+ * @author muratogat
  * 
  * @notice This contract is responsible for creating new AllowlistDraggableShares tokens
  * @dev Inherits from Ownable for access control
@@ -54,6 +54,20 @@ contract AllowlistDraggableFactory is Ownable {
             tokenOwner,
             manager.permit2Hub()
         );
+    }
+
+    function predictAllowlistDraggableAddress(TokenConfig calldata tokenConfig, address tokenOwner, IERC20Permit token, string calldata _salt) external view returns (address) {
+        bytes32 salt = bytes32(keccak256(abi.encodePacked(tokenConfig.symbol, token, _salt)));
+        DraggableParams memory params = DraggableParams(
+            token,
+            tokenConfig.quorumDrag,
+            tokenConfig.quorumMigration,
+            tokenConfig.votePeriod
+        );
+
+        bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistDraggableShares).creationCode, abi.encode(tokenConfig.terms, params, manager.recoveryHub(), manager.offerFactory(), tokenOwner, manager.permit2Hub())));
+        bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, initCodeHash));
+        return address(uint160(uint256(hashResult)));
     }
 
     /**

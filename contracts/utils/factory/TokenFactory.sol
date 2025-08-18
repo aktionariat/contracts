@@ -6,7 +6,6 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 
 import { AllowlistDraggableFactory } from "./AllowlistDraggableFactory.sol";
 import { AllowlistShares, Shares } from "../../shares/AllowlistShares.sol";
-import { DraggableTokenFactory } from "./DraggableTokenFactory.sol";
 import { FactoryManager } from "./FactoryManager.sol";
 import { TokenConfig } from "./FactoryStructs.sol";
 import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
@@ -14,7 +13,7 @@ import { Ownable } from "../Ownable.sol";
 
 /**
  * @title TokenFactory
- * @author rube
+ * @author muratogat
  * 
  * @dev Factory to deploy shares contracts
  * @notice This contract allows the creation of share tokens with optional draggable functionality and allowlist features.
@@ -25,7 +24,8 @@ contract TokenFactory is Ownable {
   // Version history
   // 1: Initial version
   // 2: Allowlisting functionality always available
-  uint8 public constant VERSION = 2;
+  // 3: Token address prediction
+  uint8 public constant VERSION = 3;
 
   /// @notice Factory manager contract
   FactoryManager public manager;
@@ -55,10 +55,6 @@ contract TokenFactory is Ownable {
   /// @notice Emitted when the factory manager is updated
   /// @param manager The new factory manager
   event FactoryManagerUpdated(address manager);
-
-  /// @notice Emitted when the draggable token factory is updated
-  /// @param factory The new draggable token factory
-  event DraggableTokenFactoryUpdated(DraggableTokenFactory factory);
 
   /// @notice Emitted when the allowlist draggable token factory is updated
   /// @param factory The new allowlist draggable token factory
@@ -90,6 +86,19 @@ contract TokenFactory is Ownable {
       return draggable;
     } else {
       return token;
+    }
+  }
+
+  function predictTokenAddress(TokenConfig calldata tokenConfig, address tokenOwner, string calldata salt) external view returns (address) {
+    bytes32 saltHash = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol, salt))));
+    bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistShares).creationCode, abi.encode(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub())));
+    bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), saltHash, initCodeHash));
+    address baseTokenAddress = address(uint160(uint256(hashResult)));
+
+    if (tokenConfig.draggable) {
+      return allowlistDraggableFactory.predictAllowlistDraggableAddress(tokenConfig, tokenOwner, IERC20Permit(baseTokenAddress), salt);
+    } else {
+      return baseTokenAddress;
     }
   }
 
