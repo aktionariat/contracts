@@ -54,7 +54,8 @@ contract PaymentHub {
     // Version 7: added sell against eth and erc20, version, add permitinfo/swapinfo struct
     // Version 8: use SafeERC20 for transfers
     // Version 9: change payFromEther to include a swap path
-    uint256 public constant VERSION = 9;
+    // Version 10: Uniswap Quoter and Router update
+    uint256 public constant VERSION = 10;
 
     uint256 private constant KEEP_ETHER = 0x4; // copied from brokerbot
 
