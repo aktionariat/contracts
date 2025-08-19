@@ -33,14 +33,13 @@ import "./DraggableShares.sol";
 contract AllowlistDraggableShares is DraggableShares, ERC20Allowlistable {
 
   constructor(
-    string memory _terms,
     DraggableParams memory _params,
     IRecoveryHub _recoveryHub,
     IOfferFactory _offerFactory,
     address _oracle,
     Permit2Hub _permit2Hub
   )
-    DraggableShares(_terms, _params, _recoveryHub, _offerFactory, _oracle, _permit2Hub)
+    DraggableShares(_params, _recoveryHub, _offerFactory, _oracle, _permit2Hub)
     Ownable(_oracle)
   {
     // initialization is done in ERC20Allowlistbale and DraggableShares

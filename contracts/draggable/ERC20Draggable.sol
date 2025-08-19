@@ -246,24 +246,23 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		emit ChangeOracle(oracle);
 	}
 
-	function migrateWithExternalApproval(address successor, uint256 additionalVotes) external override onlyOracle {
+	function migrateWithExternalApproval(address successor, uint256 additionalVotes, uint256 totalVotes) external override onlyOracle {
 		// Additional votes cannot be higher than the votes not represented by these tokens.
 		// The assumption here is that more shareholders are bound to the shareholder agreement
 		// that this contract helps enforce and a vote among all parties is necessary to change
 		// it, with an oracle counting and reporting the votes of the others.
-		if (totalSupply() + additionalVotes > totalVotingTokens()) {
-			revert Draggable_TooManyVotes(totalVotingTokens(), totalSupply() + additionalVotes);
+		if (totalSupply() + additionalVotes > totalVotes) {
+			revert Draggable_TooManyVotes(totalVotes, totalSupply() + additionalVotes);
 		}
-		_migrate(successor, additionalVotes);
+		_migrate(successor, additionalVotes, totalVotes);
 	}
 
-	function migrate() external override {
-		_migrate(msg.sender, 0);
+	function migrate(uint256 totalVotes) external override {
+		_migrate(msg.sender, 0, totalVotes);
 	}
 
-	function _migrate(address successor, uint256 additionalVotes) internal {
+	function _migrate(address successor, uint256 additionalVotes, uint256 totalVotes) internal {
 		uint256 yesVotes = additionalVotes + balanceOf(successor);
-		uint256 totalVotes = totalVotingTokens();
 		if (yesVotes > totalVotes) {
 			revert Draggable_TooManyVotes(totalVotes, yesVotes);
 		}
@@ -280,10 +279,6 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	function votingPower(address voter) external view override returns (uint256) {
 		return balanceOf(voter);
-	}
-
-	function totalVotingTokens() public view override returns (uint256) {
-		return IShares(address(wrapped)).totalShares();
 	}
 
 	function _hasVoted(address voter) internal view returns (bool) {

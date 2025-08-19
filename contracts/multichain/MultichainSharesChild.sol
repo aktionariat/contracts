@@ -39,7 +39,6 @@ contract MultichainSharesChild is ERC20Named, ERC20Recoverable, ERC20PermitLight
   constructor(
     string memory _name,
     string memory _symbol,
-    string memory _terms,
     IRecoveryHub _recoveryHub,
     address _owner,
     Permit2Hub _permit2Hub,
