@@ -89,16 +89,17 @@ contract TokenFactory is Ownable {
     }
   }
 
-  function predictTokenAddress(TokenConfig calldata tokenConfig, address tokenOwner, string calldata salt) external view returns (address) {
+  function predictTokenAddress(TokenConfig calldata tokenConfig, address tokenOwner, string calldata salt) external view returns (address baseToken, address draggableToken) {
     bytes32 saltHash = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol, salt))));
     bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistShares).creationCode, abi.encode(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub())));
     bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), saltHash, initCodeHash));
     address baseTokenAddress = address(uint160(uint256(hashResult)));
 
     if (tokenConfig.draggable) {
-      return allowlistDraggableFactory.predictAllowlistDraggableAddress(tokenConfig, tokenOwner, IERC20Permit(baseTokenAddress), salt);
+      address draggableTokenAddress = allowlistDraggableFactory.predictAllowlistDraggableAddress(tokenConfig, tokenOwner, IERC20Permit(baseTokenAddress), salt);
+      return (baseTokenAddress, draggableTokenAddress);
     } else {
-      return baseTokenAddress;
+      return (baseTokenAddress, address(0));
     }
   }
 
