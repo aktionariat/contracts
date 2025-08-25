@@ -71,8 +71,8 @@ contract ERC20Cancelled is ERC20Flaggable {
      * the ones it has, leaving the minority with draggable shares that wrap
      * cancelled tokens.
      */
-    function migrateWithQuorum() public {
-        SHA.migrate();
+    function migrateWithQuorum(uint256 totalVotes) public {
+        SHA.migrate(totalVotes);
         uint256 predecessorBalance = SHA.balanceOf(address(this));
         SHA.unwrap(predecessorBalance);
         _burn(address(this), predecessorBalance);
@@ -87,9 +87,9 @@ contract ERC20Cancelled is ERC20Flaggable {
      * 3. Call burnBaseToken from any address.
      * 
      */
-    function burnThemAll() external {
+    function burnThemAll(uint256 totalVotes) external {
         mintToSHA();
-        migrateWithQuorum();
+        migrateWithQuorum(totalVotes);
         burnBaseToken();
     }
 }

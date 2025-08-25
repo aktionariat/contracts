@@ -38,14 +38,13 @@ contract DraggableSharesWithPredecessorExternal is DraggableShares {
 
   constructor(
     IDraggable _predecessor,
-    string memory _terms,
     DraggableParams memory _params,
     IRecoveryHub _recoveryHub,
     IOfferFactory _offerFactory,
     address _oracle,
     Permit2Hub _permit2Hub
   )
-    DraggableShares(_terms, _params, _recoveryHub, _offerFactory, _oracle, _permit2Hub)
+    DraggableShares(_params, _recoveryHub, _offerFactory, _oracle, _permit2Hub)
   {
     predecessor = _predecessor;
   }
@@ -54,11 +53,11 @@ contract DraggableSharesWithPredecessorExternal is DraggableShares {
    * @notice This contract needs to hold the majority of the predecessor tokens and the this contract needs to be the oracle of the predecessor.
    * 
    */
-  function initiateMigrationWithExternalApproval(uint256 additionalVotes) external onlyOracle {
+  function initiateMigrationWithExternalApproval(uint256 additionalVotes, uint256 totalVotes) external onlyOracle {
     uint256 predecessorSupply = predecessor.totalSupply();
     _mint(address(predecessor), predecessorSupply);
     wrapped = predecessor.wrapped();
-    predecessor.migrateWithExternalApproval(address(this), additionalVotes);
+    predecessor.migrateWithExternalApproval(address(this), additionalVotes, totalVotes);
     uint256 predecessorBalance = predecessor.balanceOf(address(this));
     if (predecessorBalance > 0) {
       predecessor.unwrap(predecessorBalance);

@@ -45,15 +45,10 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, 
     // 1: pre permit
     // 2: includes permit
     // 3: added permit2 allowance, VERSION field
+    // 4: removed terms, poiting to terms of wrapped token
     uint8 public constant VERSION = 3;
 
-    string public terms;
-
-    /// Event when the terms are changed with setTerms().
-    event ChangeTerms(string terms); 
-
     constructor(
-        string memory _terms,
         DraggableParams memory _params,
         IRecoveryHub _recoveryHub,
         IOfferFactory _offerFactory,
@@ -64,7 +59,6 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, 
         ERC20Recoverable(_recoveryHub)
         ERC20Permit2(_permit2Hub)
     {
-        terms = _terms; // to update the terms, migrate to a new contract. That way it is ensured that the terms can only be updated when the quorom agrees.
         _recoveryHub.setRecoverable(false);
     }
 
@@ -99,15 +93,6 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, 
         }
     }
 
-    /**
-     * @notice This function allows the oracle to set the terms.
-     * @param _terms The new terms.
-     */
-    function setTerms(string calldata _terms) external override onlyOracle {
-        terms = _terms;
-        emit ChangeTerms(terms);
-    }
-
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Draggable) internal {
         super._beforeTokenTransfer(from, to, amount);
     }
@@ -115,5 +100,4 @@ contract DraggableShares is ERC20Draggable, ERC20Recoverable, ERC20PermitLight, 
     function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
         return super.allowance(owner, spender);
     }
-
 }
