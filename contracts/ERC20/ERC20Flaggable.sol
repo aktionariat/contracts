@@ -63,8 +63,6 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     uint8 public immutable override decimals;
 
-    event NameChanged(string name, string symbol);
-
     /// Overflow on minting, transfer. 
     /// @param receiver The address were the balance overflows. 
     /// @param balance The current balance of the receiver. 
@@ -268,17 +266,18 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      *
      * Calling conditions:
      *
-     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-     * will be to transferred to `to`.
+     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens will be to transferred to `to`.
      * - when `from` is zero, `amount` tokens will be minted for `to`.
      * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
      * - `from` and `to` are never both zero.
      *
-     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     * This function is intentionally left blank. By default ERC20Flaggable does not take any actions on its own, 
+     * but derived contracts may override it to implement custom logic. For example, allowlisting.
      */
-     // solhint-disable-next-line no-empty-blocks
+
+    // solhint-disable-next-line no-empty-blocks
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal {
-        // intentionally left blank
+
     }
 
     /**

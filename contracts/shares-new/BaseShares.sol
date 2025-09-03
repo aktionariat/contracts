@@ -38,6 +38,7 @@ import "../shares/IShares.sol";
 /**
  * @title CompanyName AG Shares
  * @author Luzius Meisser, luzius@aktionariat.com
+ * @author Murat Ögat, murat@aktionariat.com
  *
  * These tokens represent ledger-based securities according to article 973d of the Swiss Code of Obligations.
  * This smart contract serves as an ownership registry, enabling the token holders to register them as
@@ -49,7 +50,7 @@ import "../shares/IShares.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract Shares2 is ERC20Named, ERC20PermitLight, ERC20Permit2, ERC20Allowlistable, IShares {
+contract BaseShares is ERC20Named, ERC20Allowlistable, ERC20PermitLight, ERC20Permit2 {
 
     // Version history:
     // 1: everything before 2022-07-19
@@ -67,6 +68,11 @@ contract Shares2 is ERC20Named, ERC20PermitLight, ERC20Permit2, ERC20Allowlistab
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
     event ChangeTerms(string terms);
     event ChangeTotalShares(uint256 total);
+
+	/// Array lengths have to be equal. 
+	/// @param targets Array length of targets.
+	/// @param amount Array length of amounts.
+	error Shares_UnequalLength(uint256 targets, uint256 amount);
 
     constructor(
         string memory _symbol,
@@ -124,6 +130,10 @@ contract Shares2 is ERC20Named, ERC20PermitLight, ERC20Permit2, ERC20Allowlistab
      * Allows the company to tokenize shares and transfer them e.g to the draggable contract and wrap them.
      * If these shares are newly created, setTotalShares must be called first in order to adjust the total number of shares.
      */
+    function mint(address target, uint256 amount) public onlyOwner {
+        _mint(target, amount);
+    }
+
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
         if (!IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data)) {
@@ -131,6 +141,16 @@ contract Shares2 is ERC20Named, ERC20PermitLight, ERC20Permit2, ERC20Allowlistab
         }
     }
 
+    function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
+        uint256 len = target.length;
+        if (len != amount.length) {
+            revert Shares_UnequalLength(len, amount.length);
+        }
+        for (uint256 i = 0; i<len; i++){
+            _mint(target[i], amount[i]);
+        }
+    }
+    
     function mintManyAndCall(address[] calldata target, address callee, uint256[] calldata amount, bytes calldata data) external {
         uint256 len = target.length;
         if (len != amount.length) {
@@ -148,34 +168,20 @@ contract Shares2 is ERC20Named, ERC20PermitLight, ERC20Permit2, ERC20Allowlistab
         }
     }
 
-    function mint(address target, uint256 amount) public onlyOwner {
-        _mint(target, amount);
-    }
-
-    function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
-        uint256 len = target.length;
-        if (len != amount.length) {
-            revert Shares_UnequalLength(len, amount.length);
-        }
-        for (uint256 i = 0; i<len; i++){
-            _mint(target[i], amount[i]);
-        }
-    }
-
     function _mint(address account, uint256 amount) internal virtual override {
         super._mint(account, amount);
     }
 
     function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
-        return super.allowance(owner, spender);
+        return ERC20Permit2.allowance(owner, spender);
     }
     
     function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Allowlistable) internal {
-        super._beforeTokenTransfer(from, to, amount);
+        ERC20Allowlistable._beforeTokenTransfer(from, to, amount);
     }
 
     function transfer(address to, uint256 value) virtual override(ERC20Flaggable, IERC20) public returns (bool) {
-        return super.transfer(to, value);
+        return ERC20Flaggable.transfer(to, value);
     }
 
     /**
@@ -188,7 +194,7 @@ contract Shares2 is ERC20Named, ERC20PermitLight, ERC20Permit2, ERC20Allowlistab
      * tokens on a different blockchain). It is not recommended to call this function without
      * having agreed with the company on the further fate of the shares in question.
      */
-    function burn(uint256 _amount) override external {
+    function burn(uint256 _amount) external {
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
     }

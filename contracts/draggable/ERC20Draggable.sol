@@ -238,7 +238,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		wrapped = newWrapped;
 		if (totalSupply() > 0) // if there are no tokens, no need to deactivate
 			_deactivate(newWrapped.balanceOf(address(this)) / totalSupply());
-		emit NameChanged(name(), symbol());
+		// emit NameChanged(name(), symbol());
 	}
 
 	function setOracle(address newOracle) external override onlyOracle {
