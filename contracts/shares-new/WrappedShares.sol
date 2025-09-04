@@ -175,7 +175,9 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver
 
     // Proposals
 
+/*
     function _executeRecovery(address lostAddress, address recipient) internal override {
         _transfer(lostAddress, recipient, balanceOf(lostAddress));
     }
+    */
 }
