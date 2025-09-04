@@ -99,9 +99,9 @@ abstract contract Proposals is ERC20Flaggable, Ownable {
     }
 
 
-    /************
+    /********
      * BURN *
-     ************
+     ********
      * 
      * Burn the wrapped tokens on an address. The corresponding base shares are also burned.
      * The burn has to be proposed by the contract owner and can then be executed with a 20 day delay.
@@ -147,9 +147,17 @@ abstract contract Proposals is ERC20Flaggable, Ownable {
     function _executeBurn(address burnAddress) internal virtual;
 
 
-    ////////////////
-    // Drag-along //
-    ////////////////
+    /**************
+     * DRAG-ALONG *
+     **************
+     * 
+     * Executed a drag-along clause, fording minority shareholders to sell their shares to a buyer.
+     * The drag-along has to be proposed by the contract owner and can then be executed with a 20 day delay.
+     * It can be cancelled by the contract owner or any shareholder with 10% of the shares at any time before execution.
+     * It can be executed by the contract owner or any shareholder with 90% of the shares without a delay.
+     * Sellers get paid in the specified currency token directly from the buyer.
+     * 
+     */
 
     struct DragAlongProposal {
         address buyer;
@@ -182,15 +190,29 @@ abstract contract Proposals is ERC20Flaggable, Ownable {
         if (msg.sender != owner && !hasPercentageOfSupply(msg.sender, 10)) revert DragAlongOfferNoVetoPower();
 
         delete dragAlongProposal;
-
-
     }
+    
+    function executeDragAlong() public {
+        uint256 deadline = dragAlongProposal.timestamp + DRAG_PROPOSAL_DELAY;
+        if (dragAlongProposal.buyer == address(0)) revert DragAlongOfferNotFound(); 
+        if (block.timestamp < deadline && !hasPercentageOfSupply(dragAlongProposal.buyer, 90)) revert BurnTooEarly(deadline); 
+
+        _executeDragAlong(dragAlongProposal.buyer, dragAlongProposal.currencyToken, dragAlongProposal.pricePerShare);
+
+        delete dragAlongProposal;
+    }
+
+    // Must be implemented by the inheriting contract, since the implementation can vary to account for wrapping.
+    function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal virtual;
+
+    
 
     // Migration
 
     // Cancellation
 
     // Modifiers
+
 
     // Helpers
 
