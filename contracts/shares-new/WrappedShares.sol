@@ -28,6 +28,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "./BaseShares.sol";
+import "./Proposals.sol";
 import "../ERC20/ERC20Allowlistable.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "../ERC20/ERC20PermitLight.sol";
@@ -42,9 +43,8 @@ import "../utils/SafeERC20.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract WrappedShares is ERC20Allowlistable, IERC677Receiver, ERC20PermitLight, ERC20Permit2 {
-
-	using SafeERC20 for IERC20;
+contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver, ERC20PermitLight, ERC20Permit2 {
+    using SafeERC20 for IERC20;
 
     // Version history:
     // 1: pre permit
@@ -54,7 +54,7 @@ contract WrappedShares is ERC20Allowlistable, IERC677Receiver, ERC20PermitLight,
     uint8 public constant VERSION = 4;
 
     // Base shares being wrapped and SHA terms
-	BaseShares public baseShares;
+	IERC20 public baseShares;
     string public terms;
 
     /// Event when the terms are changed with setTerms().
@@ -125,7 +125,7 @@ contract WrappedShares is ERC20Allowlistable, IERC677Receiver, ERC20PermitLight,
 	 */
 	function burn(uint256 amount) external {
 		_burn(msg.sender, amount);
-		baseShares.burn(amount);
+		BaseShares(address(baseShares)).burn(amount);
 	}
 
     /**
@@ -172,4 +172,10 @@ contract WrappedShares is ERC20Allowlistable, IERC677Receiver, ERC20PermitLight,
 		_checkSender(address(baseShares));
 		_;
 	}
+
+    // Proposals
+
+    function _executeRecovery(address lostAddress, address recipient) internal override {
+        _transfer(lostAddress, recipient, balanceOf(lostAddress));
+    }
 }

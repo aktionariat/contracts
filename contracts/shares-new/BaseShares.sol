@@ -34,6 +34,7 @@ import "../ERC20/ERC20Allowlistable.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "../recovery/ERC20Recoverable.sol";
 import "../shares/IShares.sol";
+import "../utils/SafeERC20.sol";
 
 /**
  * @title CompanyName AG Shares
@@ -50,7 +51,8 @@ import "../shares/IShares.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract BaseShares is ERC20Named, ERC20Allowlistable, ERC20PermitLight, ERC20Permit2 {
+contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, ERC20PermitLight, ERC20Permit2 {
+    using SafeERC20 for IERC20;
 
     // Version history:
     // 1: everything before 2022-07-19
