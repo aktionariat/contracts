@@ -126,7 +126,7 @@ abstract contract Proposals is ERC20Flaggable, Ownable {
         return (burnAddress, block.timestamp);
 	}
 
-    function cancelburn(address burnAddress) public {
+    function cancelBurn(address burnAddress) public {
         if (msg.sender != owner && msg.sender != burnAddress) revert BurnInvalidSender(msg.sender);
         if (burnProposals[burnAddress] == 0) revert BurnNotFound(burnAddress); 
 
@@ -171,12 +171,13 @@ abstract contract Proposals is ERC20Flaggable, Ownable {
     
     error DragAlongInvalidBuyer();
     error DragAlongInvalidCurrency();
-    error DragAlongOfferExists(DragAlongProposal dragAlongProposal);
-    error DragAlongOfferNotFound();
-    error DragAlongOfferNoVetoPower();
+    error DragAlongExists(DragAlongProposal dragAlongProposal);
+    error DragAlongNotFound();
+    error DragAlongNoVetoPower();
+    error DragAlongTooEarly(uint256 timestamp);
 
     function proposeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) public onlyOwner returns (DragAlongProposal memory) {
-        if (dragAlongProposal.buyer != address(0)) revert DragAlongOfferExists(dragAlongProposal); 
+        if (dragAlongProposal.buyer != address(0)) revert DragAlongExists(dragAlongProposal); 
         if (buyer == address(0)) revert DragAlongInvalidBuyer(); 
         if (currencyToken == address(0)) revert DragAlongInvalidCurrency(); 
 
@@ -186,30 +187,84 @@ abstract contract Proposals is ERC20Flaggable, Ownable {
 	}
 
     function cancelDragAlong() public {
-        if (dragAlongProposal.buyer == address(0)) revert DragAlongOfferNotFound(); 
-        if (msg.sender != owner && !hasPercentageOfSupply(msg.sender, 10)) revert DragAlongOfferNoVetoPower();
+        if (dragAlongProposal.buyer == address(0)) revert DragAlongNotFound(); 
+        if (msg.sender != owner && !hasPercentageOfSupply(msg.sender, 10)) revert DragAlongNoVetoPower();
 
         delete dragAlongProposal;
     }
     
     function executeDragAlong() public {
         uint256 deadline = dragAlongProposal.timestamp + DRAG_PROPOSAL_DELAY;
-        if (dragAlongProposal.buyer == address(0)) revert DragAlongOfferNotFound(); 
-        if (block.timestamp < deadline && !hasPercentageOfSupply(dragAlongProposal.buyer, 90)) revert BurnTooEarly(deadline); 
+        if (dragAlongProposal.buyer == address(0)) revert DragAlongNotFound(); 
+        if (block.timestamp < deadline && !hasPercentageOfSupply(dragAlongProposal.buyer, 90) && !hasPercentageOfSupply(msg.sender, 90)) revert DragAlongTooEarly(deadline); 
 
-        _executeDragAlong(dragAlongProposal.buyer, dragAlongProposal.currencyToken, dragAlongProposal.pricePerShare);
-
+        // Delete before execute to protect agains reentrancy
+        DragAlongProposal memory _dragAlongProposal = dragAlongProposal;
         delete dragAlongProposal;
+
+        _executeDragAlong(_dragAlongProposal.buyer, _dragAlongProposal.currencyToken, _dragAlongProposal.pricePerShare);
     }
 
     // Must be implemented by the inheriting contract, since the implementation can vary to account for wrapping.
     function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal virtual;
 
+
+    /**************
+     * MIGRATION  *
+     **************
+     * 
+     * Migrate to a new contract. Meaning can depend on the token to be migrated.
+     * - Upgrades
+     * Draggable tokens can be "upgraded" by replacing the underlying with a new contract.
+     * In this case, users are expected to unwrap to the new token by themselves.
+     * - Cancellation / Detokenization
+     * In case of a cancellation of the SHA or detokenization, the underlying can be
+     * replaced by a shell contract, such as ERC20Cancelled.
+     */
+
+    struct MigrationProposal {
+        address successor;
+        uint256 timestamp;
+	}
+
+    uint256 public constant MIGRATION_PROPOSAL_DELAY = 20 days;
+    MigrationProposal public migrationProposal;
+
+    error MigrationNotContract(address successor);
+    error MigrationNotFound();
+    error MigrationNoVetoPower();
+    error MigrationTooEearly(uint256 timestamp);
     
+    function proposeMigration(address successor) public onlyOwner returns (MigrationProposal memory) {
+        if (successor.code.length == 0) revert MigrationNotContract(successor); 
 
-    // Migration
+        migrationProposal = MigrationProposal({ successor: successor, timestamp: block.timestamp });
 
-    // Cancellation
+        return migrationProposal;
+	}
+
+    function cancelMigration() public {
+        if (migrationProposal.successor == address(0)) revert MigrationNotFound(); 
+        if (msg.sender != owner && !hasPercentageOfSupply(msg.sender, 10)) revert MigrationNoVetoPower();
+
+        delete migrationProposal;
+    }
+    
+    function executeMigration() public {
+        uint256 deadline = migrationProposal.timestamp + MIGRATION_PROPOSAL_DELAY;
+        if (migrationProposal.successor == address(0)) revert MigrationNotFound(); 
+        if (block.timestamp < deadline && !hasPercentageOfSupply(migrationProposal.successor, 90) && !hasPercentageOfSupply(msg.sender, 90)) revert MigrationTooEearly(deadline); 
+
+        // Delete before execute to protect agains reentrancy
+        MigrationProposal memory _migrationProposal = migrationProposal;
+        delete migrationProposal;
+
+        _executeMigration(_migrationProposal.successor);
+    }
+    
+    // Must be implemented by the inheriting contract, since the implementation can vary to account for wrapping.
+    function _executeMigration(address successor) internal virtual;
+
 
     // Modifiers
 
