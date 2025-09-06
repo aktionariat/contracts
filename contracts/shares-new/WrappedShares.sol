@@ -163,6 +163,22 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver
         return ERC20Permit2.allowance(owner, spender);
     }
 
+    // Proposals
+
+    function _executeBurn(address burnAddress, uint256 amount) internal override {
+		_burn(burnAddress, amount);
+		IShares(address(baseShares)).burn(amount);
+    }
+
+    function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal override {
+        // TO DO
+    }
+
+    function _executeMigration(address successor) internal override {
+        // TO DO
+    }
+
+    
     // Modifiers //
 
     /**
@@ -172,12 +188,4 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver
 		_checkSender(address(baseShares));
 		_;
 	}
-
-    // Proposals
-
-/*
-    function _executeRecovery(address lostAddress, address recipient) internal override {
-        _transfer(lostAddress, recipient, balanceOf(lostAddress));
-    }
-    */
 }

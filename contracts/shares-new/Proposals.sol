@@ -108,43 +108,50 @@ abstract contract Proposals is ERC20Flaggable, Ownable {
      * It can be cancelled by the contract owner or the owner of the "burn" address at any time before execution.
      */
 
+    struct BurnProposal {
+        uint256 amount;
+        uint256 timestamp;
+	}
+
     uint256 public constant BURN_PROPOSAL_DELAY = 20 days;
     
-    mapping(address burnAddress => uint256 timestamp) public burnProposals;
+    mapping(address burnAddress => BurnProposal burnProposal) public burnProposals;
     
-    error BurnNoBalance(address burnAddress);
+    error BurnInvalidBalance(address burnAddress);
     error BurnExists(address burnAddress);
     error BurnInvalidSender(address sender);
     error BurnNotFound(address burnAddress);
     error BurnTooEarly(uint256 timestamp);
 
-	function proposeBurn(address burnAddress) public onlyOwner returns (address, uint256 time) {
-        if (balanceOf(burnAddress) == 0) revert BurnNoBalance(burnAddress);
-        if (burnProposals[burnAddress] != 0) revert BurnExists(burnAddress); 
+	function proposeBurn(address burnAddress, uint256 amount) public onlyOwner returns (BurnProposal memory burnProposal) {
+        if (amount == 0 || balanceOf(burnAddress) == 0 || amount > balanceOf(burnAddress)) revert BurnInvalidBalance(burnAddress);
+        if (burnProposals[burnAddress].timestamp != 0) revert BurnExists(burnAddress); 
 
-        burnProposals[burnAddress] = block.timestamp;
-        return (burnAddress, block.timestamp);
+        burnProposal = BurnProposal({ amount: amount, timestamp: block.timestamp });
+        burnProposals[burnAddress] = burnProposal;
+        return burnProposal;
 	}
 
     function cancelBurn(address burnAddress) public {
         if (msg.sender != owner && msg.sender != burnAddress) revert BurnInvalidSender(msg.sender);
-        if (burnProposals[burnAddress] == 0) revert BurnNotFound(burnAddress); 
+        if (burnProposals[burnAddress].timestamp == 0) revert BurnNotFound(burnAddress); 
 
         delete burnProposals[burnAddress];
     }
 
     function executeBurn(address burnAddress) public {
-        if (burnProposals[burnAddress] == 0) revert BurnNotFound(burnAddress); 
-        uint256 deadline = burnProposals[burnAddress] + BURN_PROPOSAL_DELAY;
+        BurnProposal memory burnProposal = burnProposals[burnAddress];
+        if (burnProposal.timestamp == 0) revert BurnNotFound(burnAddress); 
+        uint256 deadline = burnProposal.timestamp + BURN_PROPOSAL_DELAY;
         if (block.timestamp < deadline) revert BurnTooEarly(deadline); 
 
         delete burnProposals[burnAddress];
 
-        _executeBurn(burnAddress);
+        _executeBurn(burnAddress, burnProposal.amount);
     }
 
     // Must be implemented by the inheriting contract, since the implementation can vary to account for wrapping.
-    function _executeBurn(address burnAddress) internal virtual;
+    function _executeBurn(address burnAddress, uint256 amount) internal virtual;
 
 
     /**************
