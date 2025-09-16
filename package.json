@@ -1,32 +1,23 @@
 {
-  "name": "contracts-new",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
-    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.9",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@nomicfoundation/hardhat-verify": "^2.0.12",
-    "@types/chance": "^1.1.6",
-    "chance": "^1.1.12",
-    "hardhat": "^2.22.18",
-    "hardhat-tracer": "^3.1.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
-  },
   "dependencies": {
-    "@chainlink/contracts": "^1.3.0",
-    "@chainlink/contracts-ccip": "^1.6.0",
-    "@nomicfoundation/ethereumjs-util": "^9.0.4",
-    "@openzeppelin/contracts": "^5.3.0"
+    "hardhat": "^3.0.6"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@chainlink/contracts": "^1.4.0",
+    "@chainlink/contracts-ccip": "^1.6.1",
+    "@nomicfoundation/hardhat-ignition": "^3.0.3",
+    "@nomicfoundation/hardhat-ignition-ethers": "^3.0.3",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@types/chai": "^4.3.20",
+    "@types/chai-as-promised": "^8.0.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.18.4",
+    "chai": "^5.3.3",
+    "ethers": "^6.15.0",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "mocha": "^11.7.2",
+    "typescript": "~5.8.0"
   }
 }
