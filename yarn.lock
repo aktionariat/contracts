@@ -1403,11 +1403,6 @@ ajv@^8.0.1:
     json-schema-traverse "^1.0.0"
     require-from-string "^2.0.2"
 
-amdefine@>=0.0.4:
-  version "1.0.1"
-  resolved "https://registry.npmjs.org/amdefine/-/amdefine-1.0.1.tgz"
-  integrity sha512-S2Hw0TtNkMJhIabBwIojKL9YHO5T0n5eNqWJ7Lrlel/zDbftQpxpapi8tZs3X1HWa+u+QeydGmzzNU0m09+Rcg==
-
 ansi-align@^3.0.0:
   version "3.0.1"
   resolved "https://registry.npmjs.org/ansi-align/-/ansi-align-3.0.1.tgz"
@@ -4212,13 +4207,6 @@ source-map@^0.6.1:
   resolved "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
 
-source-map@~0.2.0:
-  version "0.2.0"
-  resolved "https://registry.npmjs.org/source-map/-/source-map-0.2.0.tgz"
-  integrity sha512-CBdZ2oa/BHhS4xj5DlhjWNHcan57/5YuvfdLf17iVmIpd9KRm+DFLmC6nBNj+6Ua7Kt3TmOjDpQT1aTYOQtoUA==
-  dependencies:
-    amdefine ">=0.0.4"
-
 spawndamnit@^3.0.1:
   version "3.0.1"
   resolved "https://registry.npmjs.org/spawndamnit/-/spawndamnit-3.0.1.tgz"
@@ -4555,11 +4543,6 @@ typical@^5.2.0:
   version "5.2.0"
   resolved "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz"
   integrity sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==
-
-uglify-js@^3.1.4:
-  version "3.19.3"
-  resolved "https://registry.npmjs.org/uglify-js/-/uglify-js-3.19.3.tgz"
-  integrity sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==
 
 undici-types@~6.19.2:
   version "6.19.8"
