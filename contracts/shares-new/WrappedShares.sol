@@ -56,9 +56,12 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver
     // Base shares being wrapped and SHA terms
 	IERC20 public baseShares;
     string public terms;
+    bool public isBinding = true;
 
     /// Event when the terms are changed with setTerms().
     event ChangeTerms(string terms); 
+    
+    error Unwrap_IsBinding();
 
     constructor(
         string memory _terms,
@@ -104,15 +107,20 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver
 		baseShares.safeTransferFrom(msg.sender, address(this), amount);
 		_mint(shareholder, amount);
 	}
+    
+    function forceUnwrap(address owner, uint256 amount) external onlyOwner {
+        _unwrap(owner, amount);
+	}
     	
-    /**
-	 * Unwraps wrapped shares into base shares.
-     * Only the owner (i.e. the company) is allowed to unwrap shares.
-	 */
-    function unwrap(uint256 amount) external onlyOwner {
+    function unwrap(uint256 amount) external {
+        if (isBinding) revert Unwrap_IsBinding();
+        _unwrap(msg.sender, amount);
+	}
+
+    function _unwrap(address owner, uint256 amount) internal {
 		_burn(owner, amount);
 		baseShares.safeTransfer(owner, amount);
-	}
+    }
 
 	/**
 	 * Burns both the token itself as well as the wrapped token!
