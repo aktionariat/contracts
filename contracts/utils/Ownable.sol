@@ -32,7 +32,7 @@ contract Ownable {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor (address initialOwner) {
+    constructor(address initialOwner) {
         owner = initialOwner;
         emit OwnershipTransferred(address(0), owner);
     }
