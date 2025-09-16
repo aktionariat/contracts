@@ -120,7 +120,7 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver
 	 * deactivated by a majority vote or acquisition.
 	 *
 	 * Burning only works if wrapped token supports burning. Also, the exact meaning of this
-	 * operation might depend on the circumstances. Burning and reussing the wrapped token
+	 * operation might depend on the circumstances. Burning and reissuing the wrapped token
 	 * does not free the sender from the legal obligations of the shareholder agreement.
 	 */
 	function burn(uint256 amount) external {
