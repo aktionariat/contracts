@@ -28,7 +28,7 @@ library PermitHash {
     function hashWithWitness(
         ISignatureTransfer.PermitTransferFrom memory permit,
         bytes32 witness,
-        string calldata witnessTypeString
+        string memory witnessTypeString
     ) internal view returns (bytes32) {
         bytes32 typeHash = keccak256(abi.encodePacked(_PERMIT_TRANSFER_FROM_WITNESS_TYPEHASH_STUB, witnessTypeString));
 

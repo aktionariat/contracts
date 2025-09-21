@@ -2,21 +2,22 @@
 
 pragma solidity >=0.8.0 <0.9.0;
 
-import {SignatureTransfer} from "../lib/SignatureTransfer.sol";
-import {ISignatureTransfer} from "../lib/ISignatureTransfer.sol";
+import {SignatureTransfer} from "./SignatureTransfer.sol";
+import {ISignatureTransfer} from "./ISignatureTransfer.sol";
 import {IERC20Permit} from "../ERC20/IERC20Permit.sol";
 import {IERC20} from "../ERC20/IERC20.sol";
-import {Intent, IntentHash} from "../lib/IntentHash.sol";
-import {PaymentHub} from "./PaymentHub.sol";
-import {IBrokerbot} from "./IBrokerbot.sol";
+import {Intent, IntentHash} from "./IntentHash.sol";
+import {PaymentHub} from "../brokerbot/PaymentHub.sol";
+import {IBrokerbot} from "../brokerbot/IBrokerbot.sol";
 import {SafeERC20} from "../utils/SafeERC20.sol";
+import {IReactor} from "./IReactor.sol";
 
 /**
  * @title TradeReactor Contract
  * @notice This contract handles the signaling and processing of trade intents between buyers and sellers.
  * @dev This contract uses the SignatureTransfer contract for secure transfers with signatures.
 */
-contract TradeReactor {
+contract TradeReactor is SignatureTransfer, IReactor {
 
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
@@ -41,12 +42,6 @@ contract TradeReactor {
     /// @param signature The signature of the owner authorizing the intent.
     event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint48 exp, uint48 nonce, bytes data, bytes signature);
 
-    SignatureTransfer immutable public transfer;
-
-    constructor(SignatureTransfer _transfer){
-        transfer = _transfer;
-    }
-
     /**
      * @notice A function to publicly signal an intent to buy or sell a token so it can be picked up by the filler for processing.
      * Alternaticely, the owner can directly communicate with the filler, without recording the intent on chain.
@@ -54,7 +49,17 @@ contract TradeReactor {
      * @param signature The signature of the intent owner.
     */
     function signalIntent(Intent calldata intent, bytes calldata signature) external {
+        verify(intent, signature);
         emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
+    }
+
+    function verify(Intent calldata intent, bytes calldata sig) public view {
+        if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
+        this.verify(toPermit(intent), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sig);
+    }
+
+    function calculateHash(Intent calldata intent) external pure returns (bytes32) {
+        return intent.hash();
     }
 
     /**
@@ -95,8 +100,8 @@ contract TradeReactor {
      * @return The maximum valid trade amount.
      */
     function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent) public view returns (uint256) {
-        uint256 sellerAvailable = transfer.getPermittedAmount(sellerIntent.owner, toPermit(sellerIntent));
-        uint256 buyerAvailable = transfer.getPermittedAmount(buyerIntent.owner, toPermit(buyerIntent));
+        uint256 sellerAvailable = this.getPermittedAmount(sellerIntent.owner, toPermit(sellerIntent));
+        uint256 buyerAvailable = this.getPermittedAmount(buyerIntent.owner, toPermit(buyerIntent));
         uint256 biddingFor = buyerIntent.amountIn * buyerAvailable / buyerIntent.amountOut;
         uint256 maxAmount = biddingFor > sellerAvailable ? sellerAvailable : biddingFor;
         uint256 ask = getAsk(sellerIntent, maxAmount);
@@ -135,8 +140,8 @@ contract TradeReactor {
         uint256 bid = getBid(buyerIntent, amount);
         if (bid < ask) revert TradeReactor_OfferTooLow();
         // move tokens to reactor in order to implicitly allowlist target address in case reactor is powerlisted
-        transfer.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(address(this), amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
-        transfer.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), buyerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
+        this.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(address(this), amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
+        this.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), buyerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
         // move tokens to target addresses
         IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, amount);
         IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, ask);
@@ -155,31 +160,12 @@ contract TradeReactor {
      */
     function buyFromBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 amount) external returns (uint256) {
         PaymentHub hub = PaymentHub(payable(bot.paymenthub()));
-        transfer.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), amount), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
+        this.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), amount), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
         IERC20(intent.tokenOut).approve(address(hub), amount);
         uint256 received = hub.payAndNotify(bot, amount, intent.data);
         if (amount > getBid(intent, received)) revert TradeReactor_OfferTooLow();
         IERC20(intent.tokenIn).safeTransfer(intent.owner, received);
         IERC20(intent.tokenOut).safeTransfer(intent.owner, IERC20(intent.tokenOut).balanceOf(address(this))); // refund over paid amount
-        return received;
-    }
-
-    /**
-     * @notice Sells tokens to a Brokerbot.
-     * @dev This function allows a user to sell tokens to a Brokerbot by transferring the specified amount of tokens to the Brokerbot and receiving the payment in return. The function ensures that the received amount is not lower than the ask price.
-     * @param bot The Brokerbot to which tokens are being sold.
-     * @param intent The trade intent data structure.
-     * @param signature The signature of the intent owner.
-     * @param soldShares The amount of tokens being sold.
-     * @return The amount of payment received from the Brokerbot.
-     */
-    function sellToBrokerbot(IBrokerbot bot, Intent calldata intent, bytes calldata signature, uint256 soldShares)public returns (uint256) {
-        PaymentHub hub = PaymentHub(payable(bot.paymenthub()));
-        transfer.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), soldShares), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
-        IERC20(intent.tokenOut).approve(address(hub), soldShares);
-        uint256 received = hub.payAndNotify(IERC20(intent.tokenOut), bot, soldShares, intent.data);
-        if (received < getAsk(intent, soldShares)) revert TradeReactor_OfferTooLow();
-        IERC20(intent.tokenIn).safeTransfer(intent.owner, received);
         return received;
     }
 
