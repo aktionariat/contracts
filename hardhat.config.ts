@@ -1,73 +1,133 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-ignition-ethers";
-import "@nomicfoundation/hardhat-toolbox";
-import "@nomicfoundation/hardhat-verify";
-import "hardhat-tracer";
-import KEYS from "./KEYS";
+import type { HardhatUserConfig } from "hardhat/config";
+import HardhatIgnitionEthersPlugin from '@nomicfoundation/hardhat-ignition-ethers'
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
+import KEYS from "./KEYS.ts";
 
 const config: HardhatUserConfig = {
-  solidity: {
-    version: "0.8.30",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200
-      },
-      evmVersion: `prague`,
+    plugins: [
+        HardhatIgnitionEthersPlugin,
+        hardhatToolboxMochaEthers,
+        hardhatVerify
+    ],
+
+    solidity: {
+        version: "0.8.30",
+        settings: {
+            optimizer: {
+                enabled: true,
+                runs: 200
+            },
+            evmVersion: `prague`,
+        }
+    },    
+    networks: {
+        // Real Networks
+        mainnet: {
+            type: "http",
+            chainId: 1,
+            chainType: "l1",
+            url: KEYS.alchemy.mainnet,
+            accounts: {
+                mnemonic: KEYS.mnemonics.mainnet
+            }
+        },
+        optimism: {
+            type: "http",
+            chainId: 10,
+            chainType: "op",
+            url: KEYS.alchemy.optimism,
+            accounts: {
+                mnemonic: KEYS.mnemonics.optimism
+            }
+        },
+        polygon: {
+            type: "http",
+            chainId: 137,
+            chainType: "generic",
+            url: KEYS.alchemy.polygon,
+            accounts: {
+                mnemonic: KEYS.mnemonics.polygon
+            }
+        },
+        base: {
+            type: "http",
+            chainId: 8453,
+            chainType: "op",
+            url: KEYS.alchemy.base,
+            accounts: {
+                mnemonic: KEYS.mnemonics.base
+            }
+        },
+
+        // Simulated Networks
+        hardhatMainnet: {
+            type: "edr-simulated",
+            chainId: 1,
+            chainType: "l1",
+            forking: {
+                url: KEYS.alchemy.mainnet,
+                enabled: true
+            },
+            accounts: {
+                mnemonic: KEYS.mnemonics.mainnet
+            }
+        },
+        hardhatOptimism: {
+            type: "edr-simulated",
+            chainId: 10,
+            chainType: "op",
+            forking: {
+                url: KEYS.alchemy.optimism,
+                enabled: true
+            },
+            accounts: {
+                mnemonic: KEYS.mnemonics.optimism
+            }
+        },
+        hardhatPolygon: {
+            type: "edr-simulated",
+            chainId: 137,
+            chainType: "generic",
+            forking: {
+                url: KEYS.alchemy.polygon,
+                enabled: true
+            },
+            accounts: {
+                mnemonic: KEYS.mnemonics.polygon
+            }
+        },
+        hardhatBase: {
+            type: "edr-simulated",
+            chainId: 8453,
+            chainType: "op",
+            forking: {
+                url: KEYS.alchemy.base,
+                enabled: true
+            },
+            accounts: {
+                mnemonic: KEYS.mnemonics.base
+            }
+        },
+    },
+
+    ignition: {
+        strategyConfig: {
+            create2: {
+                salt: "0x39E5351E6CE3c4B19B8b0a2F5C82c511782457BE000000000000000000000dae"
+            },
+        },
+    },
+    
+    verify: {
+        // With Etherscan V2, a single API key works for multiple networks
+        etherscan: {
+            apiKey: KEYS.etherscan.mainnet
+        },
+        blockscout: {
+            enabled: true,
+        },
     }
-  },
-  defaultNetwork: "hardhat",
-  networks: {
-    hardhat: {
-      chainId: 1,
-      forking: {
-        url: KEYS.alchemy.mainnet
-      },
-      accounts: {
-        mnemonic: KEYS.mnemonics.mainnet
-      }
-    },
-    mainnet: {
-      chainId: 1,
-      url: KEYS.alchemy.mainnet,
-      accounts: {
-        mnemonic: KEYS.mnemonics.mainnet
-      }
-    },
-    optimism: {
-      chainId: 10,
-      url: KEYS.alchemy.optimism,
-      accounts: {
-        mnemonic: KEYS.mnemonics.optimism
-      }
-    },
-    polygon: {
-      chainId: 137,
-      url: KEYS.alchemy.polygon,
-      accounts: {
-        mnemonic: KEYS.mnemonics.polygon
-      }
-    },
-    base: {
-      chainId: 8453,
-      url: KEYS.alchemy.base
-    },
-  },
-  ignition: {
-    strategyConfig: {
-      create2: {
-        salt: "0x39E5351E6CE3c4B19B8b0a2F5C82c511782457BE000000000000000000000dae"
-      },
-    },
-  },
-  etherscan: {
-    apiKey: {
-      mainnet: KEYS.etherscan.mainnet,
-      optimisticEthereum: KEYS.etherscan.optimism,
-      polygon: KEYS.etherscan.polygon,
-      base: KEYS.etherscan.base
-    },
-  }
 };
 
 export default config;

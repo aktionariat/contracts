@@ -1,32 +1,20 @@
-import hre, { ethers } from "hardhat";
-import { expect } from "chai";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import TestModule from "../ignition/modules/TestModule";
-import { setZCHFBalancesForSigners } from "../scripts/helpers/setBalance";
-import { mint, mintAndWrap, mintAndWrapByCall } from "../scripts/helpers/mintAndWrap";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import TestModule from "../ignition/modules/TestModule.js";
 import { Contract } from "ethers";
+import { expect } from "chai";
+import { mint, mintAndWrap, mintAndWrapByCall } from "../scripts/helpers/mintAndWrap.js";
+import { setZCHFBalancesForSigners } from "../scripts/helpers/setBalance.js";
+import { connection, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
 
-async function deployTestModuleFixture() {
-  return hre.ignition.deploy(TestModule);
-}
 
 describe("Scripts", function () {
-  let deployer: HardhatEthersSigner;
-  let owner: HardhatEthersSigner;
-  let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner, signer3: HardhatEthersSigner, signer4: HardhatEthersSigner, signer5: HardhatEthersSigner;
   let shares: Contract;
   let draggableShares: Contract;
   let zchf: Contract;
   const amount: bigint = 100n;
-    
-  before(async function() {
-    [deployer, owner, signer1, signer2, signer3, signer4, signer5] = await ethers.getSigners();
-  });
 
   // Reset the state before each test
   beforeEach(async function() {
-    ({ shares, draggableShares, zchf } = await loadFixture(deployTestModuleFixture));
+    ({ shares, draggableShares, zchf } = await connection.ignition.deploy(TestModule));
   });
 
   it("Set Balance", async function () {
@@ -38,7 +26,7 @@ describe("Scripts", function () {
     expect(await zchf.balanceOf(signer5)).to.be.equal(amount);
   });
 
-  it("Mint", async function () {    
+  it("Mint", async function () {
     await mint(shares, signer1.address, amount);
     expect(await shares.balanceOf(signer1)).to.be.equal(amount);
   });

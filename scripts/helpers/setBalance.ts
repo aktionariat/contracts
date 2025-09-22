@@ -1,4 +1,8 @@
-import { ethers } from "hardhat";
+import { ethers, provider } from "../../test/TestBase.ts";
+
+export async function setBalance(address: string, amount: bigint) {
+    await provider.request({method: "hardhat_setBalance", params: [address, "0x" + amount.toString(16)]});
+}
 
 export async function setZCHFBalance(address: string, amount: bigint) {
     const zchfAddress = "0xB58E61C3098d85632Df34EecfB899A1Ed80921cB";
@@ -20,7 +24,8 @@ async function setERC20Balance(contractAddress: string, address: string, slot: n
 }
 
 const setStorageAt = async (address: string, index: string, value: string) => {
-    await ethers.provider.send("hardhat_setStorageAt", [address, index, value]);
-    await ethers.provider.send("hardhat_mine", []); // Just mines to the next block
+    await provider.request({method: "hardhat_setStorageAt", params: [address, index, value]});
+    await provider.request({method: "hardhat_mine"}); // Just mines to the next block
 };
+
 
