@@ -2,6 +2,7 @@ import { ethers, provider } from "../../test/TestBase.ts";
 
 export async function setBalance(address: string, amount: bigint) {
     await provider.request({method: "hardhat_setBalance", params: [address, "0x" + amount.toString(16)]});
+    await provider.request({method: "hardhat_mine"}); // Just mines to the next block
 }
 
 export async function setZCHFBalance(address: string, amount: bigint) {
@@ -19,7 +20,7 @@ export async function setZCHFBalancesForSigners(amount: bigint) {
 
 async function setERC20Balance(contractAddress: string, address: string, slot: number, amount: bigint) {
     const index = ethers.solidityPackedKeccak256(["uint256", "uint256"], [address, 0]);
-    const amountBytesStr = ethers.hexlify(ethers.zeroPadValue('0x' + amount.toString(16), 32)).toString() 
+    const amountBytesStr = ethers.toBeHex(amount, 32);
     setStorageAt(contractAddress, index, amountBytesStr);
 }
 

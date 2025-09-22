@@ -61,6 +61,18 @@ const config: HardhatUserConfig = {
         },
 
         // Simulated Networks
+        default: {
+            type: "edr-simulated",
+            chainId: 1,
+            chainType: "l1",
+            forking: {
+                url: KEYS.alchemy.mainnet,
+                enabled: true
+            },
+            accounts: {
+                mnemonic: KEYS.mnemonics.mainnet
+            }
+        },
         hardhatMainnet: {
             type: "edr-simulated",
             chainId: 1,
