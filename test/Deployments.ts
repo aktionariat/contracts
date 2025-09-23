@@ -1,70 +1,85 @@
-import hre from "hardhat";
+import { Contract } from "ethers";
 import { expect } from "chai";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import TestModule from "../ignition/modules/TestModule";
+import { connection } from "./TestBase.ts";
+import TestModule from "../ignition/modules/TestModule.ts";
 
-async function deployTestModuleFixture() {
-  return hre.ignition.deploy(TestModule);
-}
 
 describe("Contract Deployment", function () {
+  let recoveryHub: Contract;
+  let offerFactory: Contract;
+  let permit2Hub: Contract;
+  let shares: Contract;
+  let draggableShares: Contract;
+  let draggableSharesWithPredecessor: Contract;
+  let draggableSharesWithPredecessorExternal: Contract;
+  let erc20Cancelled: Contract;
+  let paymentHub: Contract;
+  let zchf: Contract;
+  let dai: Contract;
+  let usdc: Contract;
+
+  before(async function() {
+    ({ 
+      recoveryHub, 
+      offerFactory, 
+      permit2Hub, 
+      shares, 
+      draggableShares, 
+      draggableSharesWithPredecessor, 
+      draggableSharesWithPredecessorExternal, 
+      erc20Cancelled,
+      paymentHub,
+      zchf,
+      dai,
+      usdc
+    } = await connection.ignition.deploy(TestModule));
+  });
+
   it("Should deploy RecoveryHub", async function () {
-    const { recoveryHub } = await loadFixture(deployTestModuleFixture);
     expect(await recoveryHub.getAddress()).to.not.be.null
   });
 
   it("Should deploy OfferFactory", async function () {
-    const { offerFactory } = await loadFixture(deployTestModuleFixture);
     expect(await offerFactory.getAddress()).to.not.be.null
   });
 
   it("Should deploy Permit2Hub", async function () {
-    const { permit2Hub } = await loadFixture(deployTestModuleFixture);
     expect(await permit2Hub.getAddress()).to.not.be.null
   });
 
   it("Should deploy Shares", async function () {
-    const { shares } = await loadFixture(deployTestModuleFixture);
     expect(await shares.getAddress()).to.not.be.null
   });
 
   it("Should deploy DraggableShares", async function () {
-    const { draggableShares } = await loadFixture(deployTestModuleFixture);
     expect(await draggableShares.getAddress()).to.not.be.null
   });
 
   it("Should deploy DraggableSharesWithPredecessor", async function () {
-    const { draggableSharesWithPredecessor } = await loadFixture(deployTestModuleFixture);
     expect(await draggableSharesWithPredecessor.getAddress()).to.not.be.null
   });
 
   it("Should deploy DraggableSharesWithPredecessorExternal", async function () {
-    const { draggableSharesWithPredecessorExternal } = await loadFixture(deployTestModuleFixture);
     expect(await draggableSharesWithPredecessorExternal.getAddress()).to.not.be.null
   });
 
   it("Should deploy ERC20Cancelled", async function () {
-    const { erc20Cancelled } = await loadFixture(deployTestModuleFixture);
     expect(await erc20Cancelled.getAddress()).to.not.be.null
   });
 
   it("Should deploy PaymentHub", async function () {
-    const { paymentHub } = await loadFixture(deployTestModuleFixture);
     expect(await paymentHub.getAddress()).to.not.be.null
   });
 
   it("Should get ZCHF", async function () {
-    const { zchf } = await loadFixture(deployTestModuleFixture);
     expect(await zchf.getAddress()).to.not.be.null
   });
 
   it("Should get DAI", async function () {
-    const { dai } = await loadFixture(deployTestModuleFixture);
     expect(await dai.getAddress()).to.not.be.null
   });
 
   it("Should get USDC", async function () {
-    const { usdc } = await loadFixture(deployTestModuleFixture);
     expect(await usdc.getAddress()).to.not.be.null
   });
 });

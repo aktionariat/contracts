@@ -1,25 +1,16 @@
-import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { loadFixture, setBalance } from "@nomicfoundation/hardhat-network-helpers";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule";
-
-async function deployTestModuleFixture() {
-  return hre.ignition.deploy(TestModule);
-}
+import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
+import { setBalance } from "../scripts/helpers/setBalance.ts";
+import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule.ts";
 
 describe("Shares", function () {
-  let deployer: HardhatEthersSigner;
-  let owner: HardhatEthersSigner;
-  let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner;
   
   let shares: Contract;
   let paymentHub: Contract;
   
   before(async function() {
-    ({ shares, paymentHub } = await loadFixture(deployTestModuleFixture));
-    [deployer, owner, signer1, signer2] = await ethers.getSigners();
+    ({ shares, paymentHub } = await  connection.ignition.deploy(TestModule));
 
     setBalance(await signer1.getAddress(), ethers.parseEther("1"));
     await shares.connect(owner).mint(signer1, 100n);

@@ -1,22 +1,14 @@
-import hre, { ethers } from "hardhat";
-import { expect } from "chai";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { checkBrokerbotSetting } from "../scripts/helpers/checkBrokerbotSetting";
-import { randomBigInt } from "../scripts/helpers/randomValue";
-import { Contract } from "ethers";
-import { setZCHFBalance, setZCHFBalancesForSigners } from "../scripts/helpers/setBalance";
-import { Chance } from "chance";
 
-async function deployTestModuleFixture() {
-  return hre.ignition.deploy(TestModule);
-}
+import { expect } from "chai";
+import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
+import { Contract } from "ethers";
+import { Chance } from "chance";
+import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule.ts";
+import { setZCHFBalance, setZCHFBalancesForSigners } from "../scripts/helpers/setBalance.ts";
+import { checkBrokerbotSetting } from "../scripts/helpers/checkBrokerbotSetting.ts";
+import { randomBigInt } from "../scripts/helpers/randomValue.ts";
 
 describe("Brokerbot", function () {  
-  let deployer: HardhatEthersSigner;
-  let owner: HardhatEthersSigner;
-  let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner;
 
   let brokerbot: Contract;
   let shares: Contract;
@@ -25,8 +17,7 @@ describe("Brokerbot", function () {
   let zchf: Contract;
   
   before(async function() {
-    ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await loadFixture(deployTestModuleFixture));
-    [deployer, owner, signer1, signer2] = await ethers.getSigners();
+    ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await connection.ignition.deploy(TestModule));
 
     // Make brokerbot ready to trade
     await shares.connect(owner).mintAndCall(brokerbot, draggableShares, 10000n, "0x");
@@ -50,7 +41,7 @@ describe("Brokerbot", function () {
   });
 
   it("Should have correct default settings", async function () {
-    const { brokerbot } = await loadFixture(deployTestModuleFixture);
+    ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await connection.ignition.deploy(TestModule));
     expect(await brokerbot.VERSION()).to.equal(TestModuleConfig.brokerbotConfig.version);
     expect(await checkBrokerbotSetting(brokerbot, TestModuleConfig.brokerbotConfig.buyingEnabled)).to.be.true;
     expect(await checkBrokerbotSetting(brokerbot, TestModuleConfig.brokerbotConfig.sellingEnabled)).to.be.true;
@@ -58,7 +49,7 @@ describe("Brokerbot", function () {
   });
 
   it("should allow enabling/disabling buying/selling.", async function () {
-    const { brokerbot } = await loadFixture(deployTestModuleFixture);
+    ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await connection.ignition.deploy(TestModule));
     
     await brokerbot.connect(owner).setEnabled(true, false);      
     expect(await checkBrokerbotSetting(brokerbot, TestModuleConfig.brokerbotConfig.buyingEnabled)).to.be.true;
@@ -78,7 +69,8 @@ describe("Brokerbot", function () {
   });
 
   it("Should be able to change PaymentHub", async function () {
-    const { brokerbot } = await loadFixture(deployTestModuleFixture);
+    ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await connection.ignition.deploy(TestModule));
+
     let owner = await brokerbot.owner()
     let ownerSigner = await ethers.getSigner(owner);
     let dummyAddress = "0x0000000000000000000000000000000000012345"
@@ -87,9 +79,10 @@ describe("Brokerbot", function () {
   });
 
   it("Should not be able to change PaymentHub from non-owner", async function () {
-    const { brokerbot } = await loadFixture(deployTestModuleFixture);
+    ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await connection.ignition.deploy(TestModule));
+
     let dummyAddress = "0x0000000000000000000000000000000000012345"
-    expect(brokerbot.setPaymentHub(dummyAddress)).to.be.reverted
+    expect(brokerbot.setPaymentHub(dummyAddress)).to.be.revert(ethers)
   });
 
   it("Should get correct buy price - no increment", async function () {
@@ -199,7 +192,8 @@ describe("Brokerbot", function () {
   describe("- Trading", function () {  
     before(async function() {
       // Make brokerbot ready to trade
-      ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await loadFixture(deployTestModuleFixture));
+      ({ brokerbot, shares, draggableShares, paymentHub, zchf } = await connection.ignition.deploy(TestModule));
+
       await shares.connect(owner).mintAndCall(await brokerbot.getAddress(), await draggableShares.getAddress(), 10000n, "0x");
       await shares.connect(owner).mintAndCall(signer1, await draggableShares.getAddress(), 1000n, "0x");
       await setZCHFBalance(signer1.address, ethers.parseUnits("1000", "ether"))
@@ -207,15 +201,14 @@ describe("Brokerbot", function () {
       await brokerbot.connect(owner).setPrice(TestModuleConfig.brokerbotConfig.price, 0);
     });
 
-    it('Should sell shares against BaseCurrency', async function () {
-  
+    it('Should sell shares against BaseCurrency', async function () {  
       const buyPrice = await brokerbot.getBuyPrice(TestModuleConfig.brokerbotConfig.testAmount);
       const shareBalanceBefore = await draggableShares.balanceOf(signer1.address);
       const baseCurrencyBalanceBefore = await zchf.balanceOf(signer1.address);
   
       expect(await paymentHub.connect(signer1).payAndNotify(await brokerbot.getAddress(), buyPrice, "0x"))
         .to.emit(brokerbot, "Trade")
-        .withArgs(await draggableShares.getAddress(), signer1, TestModuleConfig.brokerbotConfig.testAmount, await zchf.getAddress(), buyPrice, 0, TestModuleConfig.brokerbotConfig.price);
+        .withArgs(await draggableShares.getAddress(), signer1, "0x", TestModuleConfig.brokerbotConfig.testAmount, await zchf.getAddress(), buyPrice, 0, TestModuleConfig.brokerbotConfig.price);
   
       const shareBalanceAfter = await draggableShares.balanceOf(signer1);
       const baseCurrencyBalanceAfter = await zchf.balanceOf(signer1);

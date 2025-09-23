@@ -1,11 +1,11 @@
-import { ethers, network } from "hardhat";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
+import { NetworkConnection } from "hardhat/types/network";
 
-export async function getImpersonatedSigner(impersonatedAddress: string): Promise<HardhatEthersSigner> {
-    await network.provider.request({
+export async function getImpersonatedSigner(impersonatedAddress: string, connection: NetworkConnection): Promise<HardhatEthersSigner> {
+    await connection.provider.request({
         method: "hardhat_impersonateAccount",
         params: [impersonatedAddress],
     });
-    const signer = ethers.provider.getSigner(impersonatedAddress);
+    const signer = connection.ethers.getSigner(impersonatedAddress);
     return signer;
 }

@@ -1,33 +1,19 @@
-import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import TestModule from "../ignition/modules/TestModule";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import { mintAndWrapByCall } from "../scripts/helpers/mintAndWrap";
-
-async function deployTestModuleFixture() {
-  return hre.ignition.deploy(TestModule);
-}
+import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
+import TestModule from "../ignition/modules/TestModule.ts";
+import { mintAndWrapByCall } from "../scripts/helpers/mintAndWrap.ts";
 
 describe("ERC20Cancelled", function () {
-  let deployer: HardhatEthersSigner;
-  let owner: HardhatEthersSigner;
-  let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner, signer3: HardhatEthersSigner, signer4: HardhatEthersSigner, signer5: HardhatEthersSigner;
   let shares: Contract;
   let draggableShares: Contract;
   let erc20Cancelled: Contract;
   
   before(async function() {
-    [deployer, owner, signer1, signer2, signer3, signer4, signer5] = await ethers.getSigners();
+    ({ shares, draggableShares, erc20Cancelled } = await connection.ignition.deploy(TestModule));
   });
-
-  beforeEach(async function() {
-    ({ shares, draggableShares, erc20Cancelled } = await loadFixture(deployTestModuleFixture));
-  });
-
+  
   it("Set Base and SHA correctly", async function () {
-    const { shares, draggableShares, erc20Cancelled } = await loadFixture(deployTestModuleFixture);
     expect(await erc20Cancelled.BASE()).to.be.equal(shares);
     expect(await erc20Cancelled.SHA()).to.be.equal(draggableShares);
   });
