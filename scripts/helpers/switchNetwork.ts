@@ -1,7 +1,7 @@
-import { network } from "hardhat";
-import KEYS from "../../KEYS";
+import KEYS from "../../KEYS.ts";
+import { NetworkConnection } from "hardhat/types/network";
 
-export async function switchForkedNetwork(networkName: string) {
+export async function switchForkedNetwork(connection: NetworkConnection, networkName: string) {
     let forkURL: string;
 
     switch (networkName) {
@@ -12,7 +12,7 @@ export async function switchForkedNetwork(networkName: string) {
         default: forkURL = KEYS.alchemy.mainnet; break;
     }
     
-    await network.provider.request({
+    await connection.provider.request({
         method: "hardhat_reset",
         params: [{
             forking: {

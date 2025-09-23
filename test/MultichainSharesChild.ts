@@ -1,26 +1,14 @@
-import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import TestModule from "../ignition/modules/TestModule";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { Contract } from "ethers";
+import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
+import TestModule from "../ignition/modules/TestModule.ts";
 
-async function deployTestModuleFixture() {
-  return hre.ignition.deploy(TestModule);
-}
 
 describe("MultichainSharesChild", function () {
-  let deployer: HardhatEthersSigner;
-  let owner: HardhatEthersSigner;
-  let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner, signer3: HardhatEthersSigner, signer4: HardhatEthersSigner, signer5: HardhatEthersSigner;
   let multichainSharesChild: Contract;
-  
-  before(async function() {
-    [deployer, owner, signer1, signer2, signer3, signer4, signer5] = await ethers.getSigners();
-  });
 
-  beforeEach(async function() {
-    ({ multichainSharesChild } = await loadFixture(deployTestModuleFixture));
+  before(async function() {
+    ({ multichainSharesChild } = await connection.ignition.deploy(TestModule));
   });
 
   it("Should deploy", async function () {
@@ -30,6 +18,4 @@ describe("MultichainSharesChild", function () {
   it("Should set owner correctly", async function () {
     expect(await multichainSharesChild.owner()).to.be.equal(owner.address);
   })
-
-  
 });

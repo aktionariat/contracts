@@ -1,24 +1,14 @@
-import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { loadFixture, setBalance } from "@nomicfoundation/hardhat-network-helpers";
-import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import { mintAndWrapByCall } from "../scripts/helpers/mintAndWrap";
-
-async function deployTestModuleFixture() {
-  return hre.ignition.deploy(TestModule);
-}
+import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
+import { setBalance } from "../scripts/helpers/setBalance.ts";
+import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule.ts";
 
 describe("AllowlistShares", function () {
-  let deployer: HardhatEthersSigner;
-  let owner: HardhatEthersSigner;
-  let signer1: HardhatEthersSigner, signer2: HardhatEthersSigner, signer3: HardhatEthersSigner, signer4: HardhatEthersSigner, signer5: HardhatEthersSigner;
   let allowlistShares: Contract;
   
   before(async function() {
-    [deployer, owner, signer1, signer2, signer3, signer4, signer5] = await ethers.getSigners();
-    ({ allowlistShares } = await loadFixture(deployTestModuleFixture));
+    ({ allowlistShares } = await connection.ignition.deploy(TestModule));
     
     setBalance(await signer1.getAddress(), ethers.parseEther("1"));
     setBalance(await signer2.getAddress(), ethers.parseEther("1"));
@@ -52,14 +42,14 @@ describe("AllowlistShares", function () {
   });
 
   it("Accounts should not have any status by default", async () => {
-    ({ allowlistShares } = await loadFixture(deployTestModuleFixture));
+    ({ allowlistShares } = await connection.ignition.deploy(TestModule));
     expect(await allowlistShares.isAllowed(signer1)).to.equal(false)
     expect(await allowlistShares.isRestricted(signer1)).to.equal(false)
     expect(await allowlistShares.isAdmin(signer1)).to.equal(false)
   });
 
   it("Should allow setting type by owner", async () => {
-    ({ allowlistShares } = await loadFixture(deployTestModuleFixture));
+    ({ allowlistShares } = await connection.ignition.deploy(TestModule));
     expect(await allowlistShares.isAllowed(signer1)).to.equal(false)
     await allowlistShares.connect(owner)["setType(address,uint8)"](signer1, 1)
     expect(await allowlistShares.isAllowed(signer1)).to.equal(true)
@@ -72,12 +62,12 @@ describe("AllowlistShares", function () {
   });
 
   it("Should not allow setting type by non-owner", async () => {
-    ({ allowlistShares } = await loadFixture(deployTestModuleFixture));
-    await expect(allowlistShares.connect(signer1)["setType(address,uint8)"](signer1, 4)).to.be.reverted
+    ({ allowlistShares } = await connection.ignition.deploy(TestModule));
+    await expect(allowlistShares.connect(signer1)["setType(address,uint8)"](signer1, 4)).to.revert(ethers);
   });
 
   it("Should implement restrictions ruleset correctly", async () => {
-    ({ allowlistShares } = await loadFixture(deployTestModuleFixture));
+    ({ allowlistShares } = await connection.ignition.deploy(TestModule));
     await allowlistShares.connect(owner).mint(signer1, 100n);
     await allowlistShares.connect(owner).mint(signer2, 100n);
     await allowlistShares.connect(owner).mint(signer3, 100n);
@@ -93,35 +83,35 @@ describe("AllowlistShares", function () {
 
     // signer1 free
     await allowlistShares.connect(owner)["setType(address,uint8)"](signer1, 0)
-    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.not.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.not.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.be.reverted
+    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.not.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.not.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.revert(ethers)
     
     // signer1 allowed
     await allowlistShares.connect(owner)["setType(address,uint8)"](signer1, 1)
-    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.not.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.be.reverted
+    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.not.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.revert(ethers)
     
     // signer1 restricted
     await allowlistShares.connect(owner)["setType(address,uint8)"](signer1, 2)
-    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.be.reverted
+    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.revert(ethers)
     
     // signer1 admin
     await allowlistShares.connect(owner)["setType(address,uint8)"](signer1, 4)
-    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.not.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.not.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.be.reverted
-    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.be.reverted
+    await expect(allowlistShares.connect(signer1).transfer(signer2, 1)).to.not.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer3, 1)).to.not.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer4, 1)).to.revert(ethers)
+    await expect(allowlistShares.connect(signer1).transfer(signer5, 1)).to.not.revert(ethers)
   });
 
   it("Should let ADMIN convert FREE to ALLOWED upon transfer", async () => {
-    ({ allowlistShares } = await loadFixture(deployTestModuleFixture));
+    ({ allowlistShares } = await connection.ignition.deploy(TestModule));
     await allowlistShares.connect(owner).mint(signer1, 100n);
 
     await allowlistShares.connect(owner)["setType(address,uint8)"](signer1, 4)
