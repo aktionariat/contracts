@@ -18,6 +18,3 @@ ignition/deployments/chain-31337
 # Sensitive Files
 KEYS.ts
 /.deps
-
-# Ignition directory. Push deployments to a separate repo.
-/ignition
