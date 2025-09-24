@@ -172,24 +172,11 @@ contract Offer is IOffer {
     }
 
     function isAccepted() public view returns (bool) {
-        if (isVotingOpen()) {
-            // is it already clear that more than the quorum requiered will vote yes even though the vote is not over yet?
-            return yesVotes * BPS_MUL  >= quorum * token.totalVotingTokens();
-        } else {
-            // did more than the quorum requiered votes say 'yes'?
-            return yesVotes * BPS_MUL >= quorum * (yesVotes + noVotes);
-        }
+        return !isVotingOpen() && (yesVotes * BPS_MUL >= quorum * (yesVotes + noVotes));
     }
 
     function isDeclined() public view returns (bool) {
-        if (isVotingOpen()) {
-            // is it already clear that 25% will vote no even though the vote is not over yet?
-            uint256 supply = token.totalVotingTokens();
-            return (supply - noVotes) * BPS_MUL < quorum * supply;
-        } else {
-            // did quorum% of all cast votes say 'no'?
-            return BPS_MUL * yesVotes < quorum * (yesVotes + noVotes);
-        }
+        return !isVotingOpen() && (BPS_MUL * yesVotes < quorum * (yesVotes + noVotes));
     }
 
     function notifyMoved(address from, address to, uint256 value) external override onlyToken {
@@ -228,12 +215,6 @@ contract Offer is IOffer {
      * oracle should always report the total number of yes and no votes. Abstentions are not counted.
      */
     function reportExternalVotes(uint256 yes, uint256 no) external onlyOracle votingOpen {
-        uint256 maxVotes = token.totalVotingTokens();
-        uint256 reportingVotes = yes + no + IERC20(address(token)).totalSupply();
-        if (reportingVotes > maxVotes) {
-            revert Offer_TooManyVotes(maxVotes, reportingVotes);
-        }
-        // adjust total votes taking into account that the oralce might have reported different counts before
         yesVotes = yesVotes - yesExternal + yes;
         noVotes = noVotes - noExternal + no;
         // remember how the oracle voted in case the oracle later reports updated numbers

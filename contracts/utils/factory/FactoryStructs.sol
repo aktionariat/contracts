@@ -9,7 +9,6 @@ struct TokenConfig{
   string symbol;
   string terms;
   bool draggable;
-  uint256 numberOfShares;
   uint256 quorumDrag;
   uint256 quorumMigration;
   uint256 votePeriod;
