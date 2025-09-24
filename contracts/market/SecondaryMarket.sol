@@ -178,10 +178,14 @@ contract SecondaryMarket is Ownable {
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
         (uint256 proceeds, uint256 spread) = IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedTokens);
         uint256 price = buyerIsTaker ? proceeds * 10000 / (10000 - tradingFeeBips) : proceeds + spread;
+        splitSpread(buyer.owner, seller, tradedTokens, price, buyerIsTaker ? buyer.owner : seller.owner, spread);
+    }
+
+    function splitSpread(address buyer, Intent calldata seller, uint256 tradedTokens, uint256 price, address spreadRecipient, uint256 spread) internal {
         uint256 fees = tradingFeeBips * price / 10000;
-        emit Trade(seller.owner, buyer.owner, seller.tokenOut, tradedTokens, seller.tokenIn, price, fees);
+        emit Trade(seller.owner, buyer, seller.tokenOut, tradedTokens, seller.tokenIn, price, fees);
         if (spread > fees) {
-            IERC20(buyer.tokenOut).transfer(buyerIsTaker ? buyer.owner : seller.owner, spread - fees); // return excess spread to the taker who entered the order later
+            IERC20(seller.tokenIn).transfer(spreadRecipient, spread - fees); // return excess spread to the taker who entered the order later
         }
     }
 

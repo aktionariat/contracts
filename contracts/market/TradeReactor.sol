@@ -126,23 +126,33 @@ contract TradeReactor is SignatureTransfer, IReactor {
      * @param amount The amount of the token to trade.
      */
     function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) public returns (uint256 proceeds, uint256 spread){
-        // signatures will be verified in SignatureTransfer
-        if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
-        if (sellerIntent.filler != address(0x0) && sellerIntent.filler != msg.sender) revert InvalidFiller();
-        if (buyerIntent.filler != address(0x0) && buyerIntent.filler != msg.sender) revert InvalidFiller();
+        {
+            // signatures will be verified in SignatureTransfer
+            if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
+            if (sellerIntent.filler != address(0x0) && sellerIntent.filler != msg.sender) revert InvalidFiller();
+            if (buyerIntent.filler != address(0x0) && buyerIntent.filler != msg.sender) revert InvalidFiller();
+        }
         uint256 ask = getAsk(sellerIntent, amount);
         uint256 bid = getBid(buyerIntent, amount);
         if (bid < ask) revert SpreadTooLow(bid, ask, 0);
-        // move tokens to reactor in order to implicitly allowlist target address in case reactor is powerlisted
-        this.permitWitnessTransferFrom(toPermit(sellerIntent), toDetails(address(this), amount), sellerIntent.owner, sellerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sellerSig);
-        this.permitWitnessTransferFrom(toPermit(buyerIntent), toDetails(address(this), bid), buyerIntent.owner, buyerIntent.hash(), IntentHash.PERMIT2_INTENT_TYPE, buyerSig);
-        // move tokens to target addresses
-        IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, amount); // transfer sold tokens to buyer
-        IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, ask); // transfer net proceeds to seller
-        IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, bid - ask); // collect spread as fee
+        {
+            // move tokens to reactor in order to implicitly allowlist target address in case reactor is powerlisted
+            obtainTokens(sellerIntent, sellerSig, amount);
+            obtainTokens(buyerIntent, buyerSig, bid);
+        }
+        {
+            // move tokens to target addresses
+            IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, amount); // transfer sold tokens to buyer
+            IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, ask); // transfer net proceeds to seller
+            IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, bid - ask); // collect spread as fee
+        }
         return (ask, bid - ask);
         //leave it to the filler to emit an event with the fees correctly specified
         //emit Trade(sellerIntent.owner, buyerIntent.owner, sellerIntent.tokenOut, amount, sellerIntent.tokenIn, ask, bid - ask);
+    }
+
+    function obtainTokens(Intent calldata intent, bytes calldata signature, uint256 amount) private {
+        this.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), amount), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
     }
 
     function toDetails(address recipient, uint256 amount) internal pure returns (ISignatureTransfer.SignatureTransferDetails memory){
