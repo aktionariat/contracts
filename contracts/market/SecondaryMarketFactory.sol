@@ -16,8 +16,8 @@ contract SecondaryMarketFactory {
      * @param router The router address
      * @return market The address of the deployed SecondaryMarket
      */
-    function deploy(address owner, address router) external returns (address) {
-        SecondaryMarket market = new SecondaryMarket{salt: SALT}(owner, REACTOR, router);
+    function deploy(address owner, address router, address currency) external returns (address) {
+        SecondaryMarket market = new SecondaryMarket{salt: SALT}(owner, REACTOR, router, currency);
         emit SecondaryMarketDeployed(owner, address(market), router);
         return address(market);
     }
@@ -28,8 +28,8 @@ contract SecondaryMarketFactory {
      * @param router The router address
      * @return predicted The predicted deployment address
      */
-    function predict(address owner, address router) external view returns (address predicted) {
-        bytes memory initCode = abi.encodePacked(type(SecondaryMarket).creationCode, abi.encode(owner, REACTOR, router));
+    function predict(address owner, address router, address currency) external view returns (address predicted) {
+        bytes memory initCode = abi.encodePacked(type(SecondaryMarket).creationCode, abi.encode(owner, REACTOR, router, currency));
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), SALT, keccak256(initCode)));
         return address(uint160(uint256(hash)));
     }
@@ -40,8 +40,8 @@ contract SecondaryMarketFactory {
      * @param router The router address
      * @return isDeployed True if a contract exists at the predicted address
      */
-    function isDeployed(address owner, address router) external view returns (bool) {
-        address predictedAddress = this.predict(owner, router);
+    function isDeployed(address owner, address router, address currency) external view returns (bool) {
+        address predictedAddress = this.predict(owner, router, currency);
         uint32 size;
         assembly {
             size := extcodesize(predictedAddress)
