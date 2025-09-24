@@ -28,7 +28,10 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "./BaseShares.sol";
-import "./Proposals.sol";
+import "./Recoverable.sol";
+import "./Burnable.sol";
+import "./Draggable.sol";
+import "./Migratable.sol";
 import "../ERC20/ERC20Allowlistable.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "../ERC20/ERC20PermitLight.sol";
@@ -43,7 +46,7 @@ import "../utils/SafeERC20.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract WrappedShares is IERC20, ERC20Allowlistable, Proposals, IERC677Receiver, ERC20PermitLight, ERC20Permit2 {
+contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Burnable, Draggable, Migratable, IERC677Receiver, ERC20PermitLight, ERC20Permit2 {
     using SafeERC20 for IERC20;
 
     // Version history:
