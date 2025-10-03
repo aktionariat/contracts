@@ -42,50 +42,98 @@ import "../utils/Ownable.sol";
 
 abstract contract Recoverable is ERC20Flaggable, Ownable {
 
-    struct RecoveryProposal {
-        address recipient;
-        uint256 timestamp;
-	}
+    uint256 public constant RECOVERY_PROPOSAL_DELAY = 45 days;
+    uint96 public deterrenceFee;
 
-    uint256 public constant RECOVERY_PROPOSAL_DELAY = 20 days;
-    
-    mapping(address lostAddress => RecoveryProposal recoveryProposal) public recoveryProposals;
+    mapping(address lostAddress => Recovery recovery) public recoveries;
+
+    struct Recovery {
+        address recipient;
+        uint24 timestamp;
+	}
     
     error RecoveryNoBalance(address lostAddress);
     error RecoveryExists(address lostAddress);
     error RecoveryNotFound(address lostAddress);
-    error RecoveryInvalidRecipient(address recipient);
-    error RecoveryInvalidSender(address sender);
     error RecoveryTooEarly(uint256 timestamp);
-    
-	function proposeRecovery(address lostAddress, address recipient) public onlyOwner returns (RecoveryProposal memory recoveryProposal) {
-        if (balanceOf(lostAddress) == 0) revert RecoveryNoBalance(lostAddress);
-        if (recoveryProposals[lostAddress].timestamp != 0) revert RecoveryExists(lostAddress); 
-        if (recipient == address(0) || recipient == lostAddress) revert RecoveryInvalidRecipient(recipient);
 
-        recoveryProposal = RecoveryProposal({ recipient: recipient, timestamp: block.timestamp });
-        recoveryProposals[lostAddress] = recoveryProposal;
+    event DeterrenceFeePaid(address payer, uint96 fee);
+    event RecoveryInitiated(address lostAddress, address recipient);
+    event RecoveryDeleted(address lostAddress);
+    event Recovered(address lost, address target, uint256 amount);
+    event Burned(address lost, uint256 amount);
+
+    constructor(){
+        deterrenceFee = 0.01 ether;
+    }
+
+    function setDeterrenceFee(uint96 fee) external onlyOwner {
+        deterrenceFee = fee;
+    }
+
+    function initBurn(address target) external onlyOwner returns Recovery {
+        initRecovery(target, , address(0x0));
+    }
+
+    function initRecovery(address lostAddress) external payable returns Recovery {
+        return initRecovery(lostAddress, msg.sender);
+    }
+    
+	function initRecovery(address lostAddress, address recipient) payable returns (Recovery memory recovery) {
+        if (balanceOf(lostAddress) == 0) revert RecoveryNoBalance(lostAddress);
+        if (recoveries[lostAddress].timestamp != 0) revert RecoveryExists(lostAddress);
+        if (msg.sender != owner && deterrenceFee > 0) payDeterrenceFee(); // to deter bad actors
+
+        Recovery = Recovery({ recipient: recipient, timestamp: int24(block.timestamp) });
+        recoveries[lostAddress] = recoveryProposal;
+        emit RecoveryInitiated(lostAddress, recipient);
         return recoveryProposal;
 	}
 
-    function cancelRecovery(address lostAddress) public {
-        if (msg.sender != owner && msg.sender != lostAddress) revert RecoveryInvalidSender(msg.sender);
-        if (recoveryProposals[lostAddress].timestamp == 0) revert RecoveryNotFound(lostAddress); 
-        delete recoveryProposals[lostAddress];
+    function payDeterrenceFee() internal {
+        payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).call{value:deterrenceFee}("");
+        emit DeterrenceFeePaid(msg.sender, deterrenceFee);
     }
 
-    function executeRecovery(address lostAddress) public {
-        RecoveryProposal memory recoveryProposal = recoveryProposals[lostAddress];
-        if (recoveryProposal.timestamp == 0) revert RecoveryNotFound(lostAddress); 
+    function cancelRecovery() external {
+        deleteRecovery(msg.sender);
+    }
+
+    function cancelRecovery(address lostAddress) public onlyOwner {
+        deleteRecovery(lostAddress);
+    }
+
+    function deleteRecovery(address lostAddress) internal {
+        delete recoveryProposals[lostAddress];
+        emit RecoveryDeleted(lostAddress);
+    }
+
+    function burn(address lostAddress) external onlyOwner {
+        burn(lostAddress, balanceOf(lostAddress));
+    }
+
+    public burn(address uint256, uint256 balance) public onlyOwner
+        address target = prepare(lostAddress);
+        if (target != address(0x0)) revert NotBurn();
+        _burn(lostAddress, balance);
+        emit Burned(lostAddress, balance);
+    }
+
+    function recover(address lostAddress) external {
+        address target = prepare(lostAddress);
+        if (target == address(0x0)) revert NotRecovery();
+        uint256 balance = balanceOf(lostAddress);
+        _transfer(lostAddress, target, balance);
+        emit Recovered(lostAddress, target, balance);
+    }
+
+    function prepare(address lostAddress) internal returns (address) {
+        Recovery memory recovery = recoveries[lostAddress];
+        if (recovery.timestamp == 0) revert RecoveryNotFound(lostAddress);
         uint256 deadline = recoveryProposal.timestamp + RECOVERY_PROPOSAL_DELAY;
-        if (block.timestamp < deadline) revert RecoveryTooEarly(deadline); 
-
-        delete recoveryProposals[lostAddress];
-
-        _executeRecovery(lostAddress, recoveryProposal.recipient);
+        if (block.timestamp < deadline) revert RecoveryTooEarly(deadline);
+        delete recoveries[lostAddress]; // TODO: check that we can still access recovery.recipient after deletion
+        return recovery.recipient;
     }
 
-    function _executeRecovery(address lostAddress, address recipient) internal virtual {
-        _transfer(lostAddress, recipient, balanceOf(lostAddress));
-    }
 }
