@@ -11,17 +11,21 @@ import {Intent} from "./IntentHash.sol";
 contract SecondaryMarket is Ownable {
 
     uint16 public constant ALL = 10000;
-    address public immutable REACTOR;
-    address public immutable CURRENCY;
+    address public constant REACTOR = address(0x0); // TODO: set the reactor address here
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
+
+    address public immutable CURRENCY;
+    address public immutable TOKEN;
 
     event TradingFeeCollected(address currency, uint256 actualFee, address spreadRecipient, uint256 returnedSpread);
     event TradingFeeWithdrawn(address currency, address target, uint256 amount);
     event LicenseFeePaid(address currency, address target, uint256 amount);
+    event TradingWindow(uint24 from, uint24 to);
     event Trade(address indexed seller, address indexed buyer, address token, uint256 tokenAmount, address currency, uint256 currencyAmount, uint256 fees);
 
     error LargerSpreadNeeded(uint256 feesCollected, uint256 requiredMinimum);
     error WrongFiller();
+    error WrongTokens();
     error WrongRouter(address expected, address actual);
     error InvalidConfiguration();
     error SignatureExpired(uint256 signatureDeadline);
@@ -38,9 +42,10 @@ contract SecondaryMarket is Ownable {
     uint24 public openFrom; // Market opening time
     uint24 public openTo; // Market closing time
 
-    constructor(address owner, address reactor, address currency, address router_) Ownable(owner) {
+    constructor(address owner, address currency, address token, address router_) Ownable(owner) {
         REACTOR = reactor;
         CURRENCY = currency;
+        TOKEN = token;
         licenseShare = 5000; // default license fee is 50% of fees
         router = router_;
         routerShare = 0;
@@ -76,6 +81,7 @@ contract SecondaryMarket is Ownable {
     function setTradingWindow(uint24 openTime, uint24 window) onlyOwner public {
         openFrom = openTime;
         openTo = openTime + window;
+        emit TradingWindow(openFrom, openTo);
     }
 
     /**
@@ -108,16 +114,16 @@ contract SecondaryMarket is Ownable {
     /**
      * Create an order intent that can be signed by the owner.
      */
-    function createBuyOrder(address owner, uint160 amountOut, address tokenIn, uint160 amountIn) public view returns (Intent memory) {
-        return Intent(owner, address(this), CURRENCY, amountOut, tokenIn, amountIn, uint48(block.timestamp + 90 days), ISignatureTransfer(REACTOR).findFreeNonce(owner), new bytes(0));
+    function createBuyOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
+        return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, uint48(block.timestamp + validitySeconds), ISignatureTransfer(REACTOR).findFreeNonce(owner), new bytes(0));
     }
 
     /**
      * Create an order intent that can be signed by the owner.
      * The tokenIn amount is reduced by the trading fee, which is always charged to the seller.
      */
-    function createSellOrder(address owner, address tokenOut, uint160 amountOut, uint160 amountIn) public view returns (Intent memory) {
-        return Intent(owner, address(this), tokenOut, amountOut, CURRENCY, amountIn * (10000 - tradingFeeBips) / 10000, uint48(block.timestamp + 90 days), ISignatureTransfer(REACTOR).findFreeNonce(owner), new bytes(0));
+    function createSellOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
+        return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn * (10000 - tradingFeeBips) / 10000, uint48(block.timestamp + validitySeconds), ISignatureTransfer(REACTOR).findFreeNonce(owner), new bytes(0));
     }
 
     /**
@@ -157,6 +163,13 @@ contract SecondaryMarket is Ownable {
      */
     function validateOrder(Intent calldata intent, bytes calldata sig) external view returns (uint256) {
         verifySignature(intent, sig);
+        if (intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY){
+            // ok, sell order
+        } else if (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN){
+            // ok, buy order
+        } else {
+            revert WrongTokens();
+        }
         uint256 balance = IERC20(intent.tokenOut).balanceOf(intent.owner);
         if (balance == 0) revert NoBalance(intent.tokenOut, intent.owner);
         uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
