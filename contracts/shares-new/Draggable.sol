@@ -49,6 +49,7 @@ abstract contract Draggable is ERC20Flaggable, Ownable {
         uint256 timestamp;
         address currencyToken;
         uint256 pricePerShare;
+        bool executed;
 	}
 
     uint256 public constant DRAG_PROPOSAL_DELAY = 20 days;
@@ -60,19 +61,21 @@ abstract contract Draggable is ERC20Flaggable, Ownable {
     error DragAlongNotFound();
     error DragAlongNoVetoPower();
     error DragAlongTooEarly(uint256 timestamp);
+    error DragAlongAlreadyExecuted(address buyer);
 
     function proposeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) public onlyOwner returns (DragAlongProposal memory) {
         if (dragAlongProposal.buyer != address(0)) revert DragAlongExists(dragAlongProposal); 
         if (buyer == address(0)) revert DragAlongInvalidBuyer(); 
         if (currencyToken == address(0)) revert DragAlongInvalidCurrency(); 
 
-        dragAlongProposal = DragAlongProposal({ buyer: buyer, timestamp: block.timestamp, currencyToken: currencyToken, pricePerShare: pricePerShare });
+        dragAlongProposal = DragAlongProposal({ buyer: buyer, timestamp: block.timestamp, currencyToken: currencyToken, pricePerShare: pricePerShare, executed: false });
 
         return dragAlongProposal;
 	}
 
     function cancelDragAlong() public {
         if (dragAlongProposal.buyer == address(0)) revert DragAlongNotFound(); 
+        if (dragAlongProposal.executed) revert DragAlongAlreadyExecuted(dragAlongProposal.buyer); 
         if (msg.sender != owner && !hasPercentageOfSupply(msg.sender, 10)) revert DragAlongNoVetoPower();
 
         delete dragAlongProposal;
@@ -81,13 +84,12 @@ abstract contract Draggable is ERC20Flaggable, Ownable {
     function executeDragAlong() public {
         uint256 deadline = dragAlongProposal.timestamp + DRAG_PROPOSAL_DELAY;
         if (dragAlongProposal.buyer == address(0)) revert DragAlongNotFound(); 
+        if (dragAlongProposal.executed) revert DragAlongAlreadyExecuted(dragAlongProposal.buyer); 
         if (block.timestamp < deadline && !hasPercentageOfSupply(dragAlongProposal.buyer, 90) && !hasPercentageOfSupply(msg.sender, 90)) revert DragAlongTooEarly(deadline); 
 
-        // Delete before execute to protect agains reentrancy
-        DragAlongProposal memory _dragAlongProposal = dragAlongProposal;
-        delete dragAlongProposal;
+        dragAlongProposal.executed = true;
 
-        _executeDragAlong(_dragAlongProposal.buyer, _dragAlongProposal.currencyToken, _dragAlongProposal.pricePerShare);
+        _executeDragAlong();
     }
 
     function hasPercentageOfSupply(address owner, uint256 percentage) public view returns (bool) {
@@ -95,5 +97,5 @@ abstract contract Draggable is ERC20Flaggable, Ownable {
     }
 
     // Must be implemented by the inheriting contract, since the implementation can vary to account for wrapping.
-    function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal virtual;
+    function _executeDragAlong() internal virtual;
 }

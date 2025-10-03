@@ -107,6 +107,9 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Burnable, Dra
 	 * Wraps base shares into wrapped shares.
 	 */
 	function wrap(address shareholder, uint256 amount) external {
+        // Prevent wrapping if a dragAlongProposal has already been executed.
+        if (dragAlongProposal.executed) revert DragAlongAlreadyExecuted(dragAlongProposal.buyer); 
+
 		baseShares.safeTransferFrom(msg.sender, address(this), amount);
 		_mint(shareholder, amount);
 	}
@@ -122,7 +125,15 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Burnable, Dra
 
     function _unwrap(address owner, uint256 amount) internal {
 		_burn(owner, amount);
-		baseShares.safeTransfer(owner, amount);
+
+        // If tokens have been dragged, pay out the acquisition proceeds
+        // Otherwise simply give back the baseShares 1:1
+        if (dragAlongProposal.executed) {
+            dragAlongProposal.currencyToken.safeTransfer(owner, dragAlongProposal.pricePerShare * amount);
+        }
+        else {
+		    baseShares.safeTransfer(owner, amount);
+        }
     }
 
 	/**
@@ -181,12 +192,31 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Burnable, Dra
 		IShares(address(baseShares)).burn(amount);
     }
 
-    function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal override {
-        // TO DO
+    function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal override {        
+        // Unwrap buyers tokens first and send base tokens to buyer address. 
+        // They should not pay for their own balance and be excluded from unwrapping directly after drag-along.
+        _unwrap(buyer, balanceOf(buyer));
+
+        // Get the currency for the acquisition from the buyer
+        uint256 totalPrice = baseShares.balanceOf(address(this)) * pricePerShare;
+        currencyToken.safeTransferFrom(buyer, address(this), totalPrice);
+        
+        // Transfer all base tokens held by this contract to the buyer
+		baseShares.safeTransfer(buyer, baseShares.balanceOf(address(this)));
     }
 
     function _executeMigration(address successor) internal override {
-        // TO DO
+        // Transfer this contracts baseShares to the successor contract
+        // and get the same amount of the new token in return 
+        baseShares.approve(address(successor), baseShares.balanceOf(address(this)));
+        successor.wrap(address(this), baseShares.balanceOf(address(this)));
+
+        // Replace the token being wrapped to be the successor contract.
+        // Normally, the successor contract should be wrapping the original baseShares.
+        // Old WrappedToken --wraps--> New WrappedToken --wraps--> BaseShares
+        // Therefore, users can manually unwrap to get the new WrappedToken, when needed.
+        baseShares = IERC20(successor);
+        isBinding = false;
     }
 
     
