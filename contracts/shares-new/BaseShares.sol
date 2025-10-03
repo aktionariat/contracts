@@ -52,7 +52,8 @@ import "../utils/SafeERC20.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Proposals, ERC20PermitLight, ERC20Permit2 {
+contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
+
     using SafeERC20 for IERC20;
 
     // Version history:
