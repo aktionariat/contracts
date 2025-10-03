@@ -37,13 +37,12 @@ pragma solidity >=0.8.0 <0.9.0;
  * It can be cancelled by the contract owner or the owner of the "lost" address at any time before execution.
  */
 
+import "./DeterrenceFee.sol";
 import "../ERC20/ERC20Flaggable.sol";
-import "../utils/Ownable.sol";
 
-abstract contract Recoverable is ERC20Flaggable, Ownable {
+abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
 
     uint256 public constant RECOVERY_PROPOSAL_DELAY = 45 days;
-    uint96 public deterrenceFee;
 
     mapping(address lostAddress => Recovery recovery) public recoveries;
 
@@ -57,7 +56,6 @@ abstract contract Recoverable is ERC20Flaggable, Ownable {
     error RecoveryNotFound(address lostAddress);
     error RecoveryTooEarly(uint256 timestamp);
 
-    event DeterrenceFeePaid(address payer, uint96 fee);
     event RecoveryInitiated(address lostAddress, address recipient);
     event RecoveryDeleted(address lostAddress);
     event Recovered(address lost, address target, uint256 amount);
@@ -65,10 +63,6 @@ abstract contract Recoverable is ERC20Flaggable, Ownable {
 
     constructor(){
         deterrenceFee = 0.01 ether;
-    }
-
-    function setDeterrenceFee(uint96 fee) external onlyOwner {
-        deterrenceFee = fee;
     }
 
     function initBurn(address target) external onlyOwner returns Recovery {
@@ -90,11 +84,6 @@ abstract contract Recoverable is ERC20Flaggable, Ownable {
         return recoveryProposal;
 	}
 
-    function payDeterrenceFee() internal {
-        payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).call{value:deterrenceFee}("");
-        emit DeterrenceFeePaid(msg.sender, deterrenceFee);
-    }
-
     function cancelRecovery() external {
         deleteRecovery(msg.sender);
     }
@@ -112,7 +101,14 @@ abstract contract Recoverable is ERC20Flaggable, Ownable {
         burn(lostAddress, balanceOf(lostAddress));
     }
 
-    public burn(address uint256, uint256 balance) public onlyOwner
+    /**
+     * Burns the indicated number of share tokens on the target address.
+     * 
+     * Burning tokens can indicate that the underlying shares have been cancelled.
+     * But it could also be a preparatory step for re-issuing the shares in a different form
+     * or as a new token on a different chain.
+     */
+    public burn(address lostAddress, uint256 balance) public onlyOwner {
         address target = prepare(lostAddress);
         if (target != address(0x0)) revert NotBurn();
         _burn(lostAddress, balance);
