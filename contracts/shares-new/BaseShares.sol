@@ -1,30 +1,30 @@
 /**
-* SPDX-License-Identifier: LicenseRef-Aktionariat
-*
-* MIT License with Automated License Fee Payments
-*
-* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
-*
-* Permission is hereby granted to any person obtaining a copy of this software
-* and associated documentation files (the "Software"), to deal in the Software
-* without restriction, including without limitation the rights to use, copy,
-* modify, merge, publish, distribute, sublicense, and/or sell copies of the
-* Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* - The above copyright notice and this permission notice shall be included in
-*   all copies or substantial portions of the Software.
-* - All automated license fee payments integrated into this and related Software
-*   are preserved.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
+ * SPDX-License-Identifier: LicenseRef-Aktionariat
+ *
+ * MIT License with Automated License Fee Payments
+ *
+ * Copyright (c) 2022 Aktionariat AG (aktionariat.com)
+ *
+ * Permission is hereby granted to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * - The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ * - All automated license fee payments integrated into this and related Software
+ *   are preserved.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 pragma solidity >=0.8.0 <0.9.0;
 
 import "../ERC20/ERC20Named.sol";
@@ -61,36 +61,24 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     // 2: added mintMany and mintManyAndCall, added VERSION field
     // 3: added permit
     // 4: refactor to custom errors, added allowance for permit2
-    // 5: New single token share class without quorum
+    // 5: New base share class with CMTA compatibility
     uint8 public constant VERSION = 5;
 
     string public terms;
-
-    uint256 public invalidTokens;
+    address public successor; // the successor contract, if any
 
     event Announcement(string message);
-    event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
     event ChangeTerms(string terms);
     event ChangeTotalShares(uint256 total);
 
-	/// Array lengths have to be equal. 
-	/// @param targets Array length of targets.
-	/// @param amount Array length of amounts.
-	error Shares_UnequalLength(uint256 targets, uint256 amount);
+    /// Array lengths have to be equal.
+    /// @param targets Array length of targets.
+    /// @param amount Array length of amounts.
+    error Shares_UnequalLength(uint256 targets, uint256 amount);
 
-    constructor(
-        string memory _symbol,
-        string memory _name,
-        string memory _terms,
-        address _owner,
-        Permit2Hub _permit2Hub
-    )
-        ERC20Named(_symbol, _name, 0, _owner) 
-        ERC20Permit2(_permit2Hub)
-        ERC20Allowlistable()
-    {
+    constructor(string calldata _symbol, string calldata _name, string calldata _terms, address _owner) 
+        ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() {
         terms = _terms;
-        invalidTokens = 0;
     }
 
     function setTerms(string memory _terms) external onlyOwner {
@@ -99,40 +87,48 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     }
 
     /**
-     * Allows the issuer to make public announcements that are visible on the blockchain.
+     * Allows the issuer to make public announcements that are visible on chain.
      */
-    function announcement(string calldata message) external onlyOwner() {
+    function announcement(string calldata message) external onlyOwner {
         emit Announcement(message);
     }
 
     /**
-     * Signals that the indicated tokens have been declared invalid (e.g. by a court ruling in accordance
-     * with article 973g of the Swiss Code of Obligations) and got detached from
-     * the underlying shares. Invalid tokens do not carry any shareholder rights any more.
-     *
-     * This function is purely declarative. It does not technically immobilize the affected tokens as
-     * that would give the issuer too much power.
+     * Set a successor contract such that holders can migrate to a new version of this token.
      */
-    function declareInvalid(address holder, uint256 amount, string calldata message) external onlyOwner() {
-        uint256 holderBalance = balanceOf(holder);
-        if (amount > holderBalance) {
-            revert ERC20InsufficientBalance(holder, holderBalance, amount);
-        }
-        invalidTokens += amount;
-        emit TokensDeclaredInvalid(holder, amount, message);
+    function setSuccessor(address successor_) external onlyOwner {
+        successor = successor_;
     }
 
     /**
-     * The total number of valid tokens in circulation. In case some tokens have been declared invalid, this
-     * number might be lower than totalSupply(). Also, it will always be lower than or equal to totalShares().
+     * Convenience function to migrate the full balance.
      */
-    function totalValidSupply() public view returns (uint256) {
-        return totalSupply() - invalidTokens;
+    function migrate() external {
+        migrate(balanceOf(msg.sender));
     }
 
     /**
-     * Allows the company to tokenize shares and transfer them e.g to the draggable contract and wrap them.
-     * If these shares are newly created, setTotalShares must be called first in order to adjust the total number of shares.
+     * Migrates a number of tokens to the successor contract and burns them there,
+     * so the successor contract can mint new tokens for the user.
+     * 
+     * The successor contract is set by the issuer and should represent a new version 
+     * of this token.
+     * 
+     * Alternatively, the token holder can burn the token with the burn function, in
+     * which case they are returned to the issuer, and then hope for the issuer to
+     * mint a new token or other form of security as a replacement.
+     */
+    function migrate(uint256 amount){
+        bool success = transferAndCall(successor, amount, "");
+        if (!success) revert;
+        _burn(successor, amount);
+    }
+
+    /**
+     * Mint the indicated amount of share tokens.
+     * 
+     * It is the responsibility of the issuer to ensure that all legal preconditions for the creation
+     * of valid share tokens have been met before minting them.
      */
     function mint(address target, uint256 amount) public onlyOwner {
         _mint(target, amount);
@@ -147,26 +143,22 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
         uint256 len = target.length;
-        if (len != amount.length) {
-            revert Shares_UnequalLength(len, amount.length);
-        }
-        for (uint256 i = 0; i<len; i++){
+        if (len != amount.length) revert Shares_UnequalLength(len, amount.length);
+        for (uint256 i = 0; i < len; i++) {
             _mint(target[i], amount[i]);
         }
     }
-    
+
     function mintManyAndCall(address[] calldata target, address callee, uint256[] calldata amount, bytes calldata data) external {
         uint256 len = target.length;
-        if (len != amount.length) {
-            revert Shares_UnequalLength(len, amount.length);
-        }
+        if (len != amount.length) revert Shares_UnequalLength(len, amount.length);
         uint256 total = 0;
-        for (uint256 i = 0; i<len; i++){
+        for (uint256 i = 0; i < len; i++) {
             total += amount[i];
         }
         mint(callee, total);
-        for (uint256 i = 0; i<len; i++){
-            if(!IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data)){
+        for (uint256 i = 0; i < len; i++) {
+            if (!IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data)) {
                 revert IERC677Receiver.IERC677_OnTokenTransferFailed();
             }
         }
@@ -179,12 +171,12 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
         return ERC20Permit2.allowance(owner, spender);
     }
-    
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Allowlistable) internal {
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20Flaggable, ERC20Allowlistable) {
         ERC20Allowlistable._beforeTokenTransfer(from, to, amount);
     }
 
-    function transfer(address to, uint256 value) virtual override(ERC20Flaggable, IERC20) public returns (bool) {
+    function transfer(address to, uint256 value) public virtual override(ERC20Flaggable, IERC20) returns (bool) {
         return ERC20Flaggable.transfer(to, value);
     }
 
@@ -203,17 +195,4 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
         _burn(address(this), _amount);
     }
 
-    
-
-    function _executeBurn(address burnAddress, uint256 amount) internal override {
-        // TO DO
-    }
-
-    function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal override {
-        // TO DO
-    }
-
-    function _executeMigration(address successor) internal override {
-        // TO DO
-    }
 }

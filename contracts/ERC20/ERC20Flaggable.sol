@@ -182,8 +182,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     // ERC-677 functionality, can be useful for swapping and wrapping tokens
     function transferAndCall(address recipient, uint amount, bytes calldata data) external virtual returns (bool) {
-        return transfer (recipient, amount) 
-            && IERC677Receiver (recipient).onTokenTransfer (msg.sender, amount, data);
+        return transfer(recipient, amount) && IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
