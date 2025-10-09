@@ -14,9 +14,9 @@ const votePeriod = 5184000;
 const salt = ethers.keccak256(toUtf8Bytes(symbol));
 
 const tokenFactoryAddress = "0xA40852c32d142733390c03E1eB549B20f58b37C9";
-const companyMultisigAddress = "0x5faf3CCD8180725c42114a455AbDD1abAFAa990A";
+const companyMultisigAddress = "0x9122DdD4bed618833FfA6DD78D9eCD450517066e";
 
-const SNXSharesDeploymentModule = buildModule("SNXSharesDeploymentModule", (m) => {
+const TRIBUSharesDeploymentModule = buildModule("TRIBUSharesDeploymentModule", (m) => {
   const tokenFactory = m.contractAt("TokenFactory", tokenFactoryAddress);
   m.call(
     tokenFactory, 
@@ -40,4 +40,4 @@ const SNXSharesDeploymentModule = buildModule("SNXSharesDeploymentModule", (m) =
   return {};
 });
 
-export default SNXSharesDeploymentModule;
+export default TRIBUSharesDeploymentModule;
