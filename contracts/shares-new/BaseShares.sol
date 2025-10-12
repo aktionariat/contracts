@@ -28,12 +28,9 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "../ERC20/ERC20Named.sol";
-import "../ERC20/ERC20PermitLight.sol";
-import "../ERC20/ERC20Permit2.sol";
 import "../ERC20/ERC20Allowlistable.sol";
-import "./Proposals.sol";
 import "../ERC20/IERC677Receiver.sol";
-import "../recovery/ERC20Recoverable.sol";
+import "./Recoverable.sol";
 import "../shares/IShares.sol";
 import "../utils/SafeERC20.sol";
 
@@ -53,7 +50,7 @@ import "../utils/SafeERC20.sol";
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
 contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
-
+    
     using SafeERC20 for IERC20;
 
     // Version history:
@@ -65,7 +62,7 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     uint8 public constant VERSION = 5;
 
     string public terms;
-    address public successor; // the successor contract, if any
+    ISuccessorToken public successor; // the successor contract, if any
 
     event Announcement(string message);
     event ChangeTerms(string terms);
@@ -76,8 +73,7 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     /// @param amount Array length of amounts.
     error Shares_UnequalLength(uint256 targets, uint256 amount);
 
-    constructor(string calldata _symbol, string calldata _name, string calldata _terms, address _owner) 
-        ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() {
+    constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() {
         terms = _terms;
     }
 
@@ -94,9 +90,33 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     }
 
     /**
-     * Set a successor contract such that holders can migrate to a new version of this token.
+     * Restricts the given addresses.
+     *
+     * To pause the whole contract, call this function with all addresses in use.
+     *
+     * In our experience, this function is never used. However, it is a requirement to fulfill the CMTA standard,
+     * so we added it in a way that does not impose an overhead of 2000 gas on every transfer. Wiht our approach,
+     * pausing and unpausing is more expensive, but total gas use should still be lower.
      */
-    function setSuccessor(address successor_) external onlyOwner {
+    function pause(address[] calldata accounts) external onlyOwner {
+        setType(accounts, TYPE_RESTRICTED);
+    }
+
+    /**
+     * Unpauses accounts previously paused with the 'pause' function, resetting the
+     * given addresses to the default type (e.g. TYPE_FREE).
+     */
+    function unpause(address[] calldata accounts, uint8 defaultType) external onlyOwner {
+        setType(accounts, defaultType);
+    }
+
+    /**
+     * Set a successor contract such that holders can migrate to a new version of this token.
+     * 
+     * The success must implement IERC677Receiver and mint new tokens to the sender when
+     * receiving this token. Immediately after, the transferred tokens will be burned.
+     */
+    function setSuccessor(ISuccessorToken successor_) external onlyOwner {
         successor = successor_;
     }
 
@@ -110,23 +130,23 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     /**
      * Migrates a number of tokens to the successor contract and burns them there,
      * so the successor contract can mint new tokens for the user.
-     * 
-     * The successor contract is set by the issuer and should represent a new version 
+     *
+     * The successor contract is set by the issuer and should represent a new version
      * of this token.
-     * 
+     *
      * Alternatively, the token holder can burn the token with the burn function, in
      * which case they are returned to the issuer, and then hope for the issuer to
      * mint a new token or other form of security as a replacement.
      */
-    function migrate(uint256 amount){
-        bool success = transferAndCall(successor, amount, "");
-        if (!success) revert;
+    function migrate(uint256 amount) public {
+        _transfer(msg.sender, successor, amount);
         _burn(successor, amount);
+        ISuccessorToken(successor).notifyBurnedOnArrival(msg.sender, amount);
     }
 
     /**
      * Mint the indicated amount of share tokens.
-     * 
+     *
      * It is the responsibility of the issuer to ensure that all legal preconditions for the creation
      * of valid share tokens have been met before minting them.
      */
@@ -168,10 +188,6 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
         super._mint(account, amount);
     }
 
-    function allowance(address owner, address spender) public view virtual override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
-        return ERC20Permit2.allowance(owner, spender);
-    }
-
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20Flaggable, ERC20Allowlistable) {
         ERC20Allowlistable._beforeTokenTransfer(from, to, amount);
     }
@@ -194,5 +210,9 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
         _transfer(msg.sender, address(this), _amount);
         _burn(address(this), _amount);
     }
+}
 
+interface ISuccessorToken {
+
+    function notifyBurnedOnArrival(address beneficiary, uint256 amount) external;
 }

@@ -52,36 +52,36 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
 	}
     
     error RecoveryNoBalance(address lostAddress);
-    error RecoveryExists(address lostAddress);
+    error RecoveryInProgress(address lostAddress);
     error RecoveryNotFound(address lostAddress);
     error RecoveryTooEarly(uint256 timestamp);
+    error NotRecovery();
+    error NotBurn();
 
     event RecoveryInitiated(address lostAddress, address recipient);
     event RecoveryDeleted(address lostAddress);
     event Recovered(address lost, address target, uint256 amount);
     event Burned(address lost, uint256 amount);
 
-    constructor(){
-        deterrenceFee = 0.01 ether;
+    constructor() DeterrenceFee(uint96(0.01 ether)) {
     }
 
-    function initBurn(address target) external onlyOwner returns Recovery {
-        initRecovery(target, , address(0x0));
+    function initBurn(address target) external onlyOwner returns (Recovery memory) {
+        return initRecovery(target, address(0x0));
     }
 
-    function initRecovery(address lostAddress) external payable returns Recovery {
+    function initRecovery(address lostAddress) external payable returns (Recovery memory) {
         return initRecovery(lostAddress, msg.sender);
     }
     
-	function initRecovery(address lostAddress, address recipient) payable returns (Recovery memory recovery) {
+	function initRecovery(address lostAddress, address recipient) public payable deter returns (Recovery memory) {
         if (balanceOf(lostAddress) == 0) revert RecoveryNoBalance(lostAddress);
-        if (recoveries[lostAddress].timestamp != 0) revert RecoveryExists(lostAddress);
-        if (msg.sender != owner && deterrenceFee > 0) payDeterrenceFee(); // to deter bad actors
+        if (recoveries[lostAddress].timestamp != 0) revert RecoveryInProgress(lostAddress);
 
-        Recovery = Recovery({ recipient: recipient, timestamp: int24(block.timestamp) });
-        recoveries[lostAddress] = recoveryProposal;
+        Recovery memory recovery = Recovery({ recipient: recipient, timestamp: int24(block.timestamp) });
+        recoveries[lostAddress] = recovery;
         emit RecoveryInitiated(lostAddress, recipient);
-        return recoveryProposal;
+        return recovery;
 	}
 
     function cancelRecovery() external {
@@ -93,7 +93,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
     }
 
     function deleteRecovery(address lostAddress) internal {
-        delete recoveryProposals[lostAddress];
+        delete recoveries[lostAddress];
         emit RecoveryDeleted(lostAddress);
     }
 
@@ -108,7 +108,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
      * But it could also be a preparatory step for re-issuing the shares in a different form
      * or as a new token on a different chain.
      */
-    public burn(address lostAddress, uint256 balance) public onlyOwner {
+    function burn(address lostAddress, uint256 balance) public onlyOwner {
         address target = prepare(lostAddress);
         if (target != address(0x0)) revert NotBurn();
         _burn(lostAddress, balance);
@@ -126,7 +126,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
     function prepare(address lostAddress) internal returns (address) {
         Recovery memory recovery = recoveries[lostAddress];
         if (recovery.timestamp == 0) revert RecoveryNotFound(lostAddress);
-        uint256 deadline = recoveryProposal.timestamp + RECOVERY_PROPOSAL_DELAY;
+        uint256 deadline = recovery.timestamp + RECOVERY_PROPOSAL_DELAY;
         if (block.timestamp < deadline) revert RecoveryTooEarly(deadline);
         delete recoveries[lostAddress]; // TODO: check that we can still access recovery.recipient after deletion
         return recovery.recipient;

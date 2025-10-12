@@ -29,13 +29,10 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "./BaseShares.sol";
 import "./Recoverable.sol";
-import "./Burnable.sol";
 import "./Draggable.sol";
 import "./Migratable.sol";
 import "../ERC20/ERC20Allowlistable.sol";
 import "../ERC20/IERC677Receiver.sol";
-import "../ERC20/ERC20PermitLight.sol";
-import "../ERC20/ERC20Permit2.sol";
 import "../utils/SafeERC20.sol";
 
 /**
@@ -47,6 +44,7 @@ import "../utils/SafeERC20.sol";
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
 contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Migratable, IERC677Receiver {
+    
     using SafeERC20 for IERC20;
 
     // Version history:
@@ -66,7 +64,7 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
 
     error Unwrap_IsBinding();
 
-    constructor(string memory _terms, uint8 _decimals, address _owner, Permit2Hub _permit2Hub) ERC20Flaggable(_decimals) Ownable(_owner) ERC20Allowlistable() ERC20Permit2(_permit2Hub) {
+    constructor(string memory _terms, uint8 _decimals, address _owner) ERC20Flaggable(_decimals) Ownable(_owner) ERC20Allowlistable() {
         terms = _terms;
     }
 
@@ -164,14 +162,6 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
     function onTokenTransfer(address from, uint256 amount, bytes calldata) external override onlyBaseShares returns (bool) {
         _mint(from, amount);
         return true;
-    }
-
-    /**
-     * Overriding the allowance function.
-     * ERC20Permit2 is specifically used, since it checks for Permit2 and then falls back to ERC20Flaggable.
-     */
-    function allowance(address owner, address spender) public view override(ERC20Permit2, ERC20Flaggable, IERC20) returns (uint256) {
-        return ERC20Permit2.allowance(owner, spender);
     }
 
     // Proposals

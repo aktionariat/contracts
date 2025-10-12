@@ -37,10 +37,10 @@ import "../utils/Ownable.sol";
  */
 abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
 
-  uint8 private constant TYPE_FREE = 0x0;
-  uint8 private constant TYPE_ALLOWED = 0x1;
-  uint8 private constant TYPE_RESTRICTED = 0x2;
-  uint8 private constant TYPE_ADMIN = 0x4;
+  uint8 public constant TYPE_FREE = 0x0;
+  uint8 public constant TYPE_ALLOWED = 0x1;
+  uint8 public constant TYPE_RESTRICTED = 0x2;
+  uint8 public constant TYPE_ADMIN = 0x4;
 
   uint8 private constant FLAG_INDEX_ALLOWED = 20;
   uint8 private constant FLAG_INDEX_RESTRICTED = 21;
@@ -137,7 +137,6 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
    * | Admin      |  Y  |  Y  |  N  |  Y  |
    * +------------+-----+-----+-----+-----+
    */
-
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
     super._beforeTokenTransfer(from, to, amount);
 
