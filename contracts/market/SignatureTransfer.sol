@@ -28,27 +28,31 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
 
     error OverFilled();
 
-    function permitTransferFrom(PermitTransferFrom memory permit, SignatureTransferDetails calldata transferDetails, address owner, bytes calldata signature) external {
+    function permitTransferFrom(PermitTransferFrom calldata permit, SignatureTransferDetails calldata transferDetails, address owner, bytes calldata signature) external {
         _permitTransferFrom(permit, transferDetails, owner, permit.hash(), signature);
     }
 
     /// @inheritdoc ISignatureTransfer
     function permitWitnessTransferFrom(
-        PermitTransferFrom memory permit,
+        PermitTransferFrom calldata permit,
         SignatureTransferDetails calldata transferDetails,
         address owner,
         bytes32 witness,
         string calldata witnessTypeString,
         bytes calldata signature
-    ) external {
+    ) public {
         _permitTransferFrom(permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature);
+    }
+
+    function findFreeNonce(address owner) external view returns (uint48){
+        return findFreeNonce(owner, 0);
     }
 
     /**
      * Find a nonce that looks free given the data on the blockchain.
      * Of course, this method cannot take into account nonces of valid but unused permits.
      */
-    function findFreeNonce(address owner, uint256 start) public view returns (uint256){
+    function findFreeNonce(address owner, uint48 start) public view returns (uint48){
         while (!isFreeNonce(owner, start)){
             start++;
         }
@@ -65,12 +69,17 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         return nonceBitmap[owner][wordPos] & bit != 0;
     }
 
-    function getPermittedAmount(address owner, PermitTransferFrom calldata permit) public view returns (uint256) {
-        if (isUsedNonce(owner, permit.nonce)) {
+    function getPermittedAmount(address owner, uint256 permitMax, uint48 nonce) public view returns (uint256) {
+        if (isUsedNonce(owner, nonce)) {
             return 0;
         } else {
-            return permit.permitted.amount - partialFills[owner][permit.nonce];
+            return permitMax - partialFills[owner][nonce];
         }
+    }
+
+    function verify(PermitTransferFrom calldata permit, address owner, bytes32 witness, string memory witnessTypeString, bytes calldata signature) public view {
+        if (block.timestamp > permit.deadline) revert SignatureExpired(permit.deadline);
+        signature.verify(_hashTypedData(permit.hashWithWitness(witness, witnessTypeString)), owner);
     }
 
     /// @notice Transfers a token using a signed permit message.
@@ -79,7 +88,7 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
     /// @param owner The owner of the tokens to transfer
     /// @param transferDetails The spender's requested transfer details for the permitted token
     /// @param signature The signature to verify
-    function _permitTransferFrom(PermitTransferFrom memory permit, SignatureTransferDetails calldata transferDetails, address owner, bytes32 dataHash, bytes calldata signature) private {
+    function _permitTransferFrom(PermitTransferFrom calldata permit, SignatureTransferDetails calldata transferDetails, address owner, bytes32 dataHash, bytes calldata signature) private {
         uint256 requestedAmount = transferDetails.requestedAmount;
 
         if (block.timestamp > permit.deadline) revert SignatureExpired(permit.deadline);
@@ -91,10 +100,17 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         IERC20(permit.permitted.token).transferFrom(owner, transferDetails.to, requestedAmount);
     }
 
-    /// @inheritdoc ISignatureTransfer
-    function invalidateUnorderedNonces(uint256 wordPos, uint256 mask) external {
-        nonceBitmap[msg.sender][wordPos] |= mask;
+    /**
+     * Invalidate a nonce.
+     */
+    function invalidateNonce(uint256 nonce) external {
+        (uint256 wordPos, uint256 bitPos) = bitmapPositions(nonce);
+        invalidateUnorderedNonces(wordPos, 1 << bitPos);
+    }
 
+    /// @inheritdoc ISignatureTransfer
+    function invalidateUnorderedNonces(uint256 wordPos, uint256 mask) public {
+        nonceBitmap[msg.sender][wordPos] |= mask;
         emit UnorderedNonceInvalidation(msg.sender, wordPos, mask);
     }
 
