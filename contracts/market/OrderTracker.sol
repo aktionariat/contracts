@@ -10,14 +10,9 @@ import {SignatureVerification} from "./SignatureVerification.sol";
 import {PermitHash} from "./PermitHash.sol";
 import {EIP712} from "./EIP712.sol";
 
-contract SignatureTransfer is ISignatureTransfer, EIP712 {
+contract OrderTracker {
 
-    using SignatureVerification for bytes;
-    using PermitHash for PermitTransferFrom;
-
-    /// @inheritdoc ISignatureTransfer
-    mapping(address => mapping(uint256 => uint256)) public nonceBitmap;
-    mapping(address => mapping(uint256 => uint256)) public partialFills;
+    mapping(bytes32 => uint256) public filledAmount;
 
     /// @notice Thrown when validating an inputted signature that is stale
     /// @param signatureDeadline The timestamp at which a signature is no longer valid
@@ -28,21 +23,7 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
 
     error OverFilled();
 
-    function permitTransferFrom(PermitTransferFrom calldata permit, SignatureTransferDetails calldata transferDetails, address owner, bytes calldata signature) external {
-        _permitTransferFrom(permit, transferDetails, owner, permit.hash(), signature);
-    }
 
-    /// @inheritdoc ISignatureTransfer
-    function permitWitnessTransferFrom(
-        PermitTransferFrom calldata permit,
-        SignatureTransferDetails calldata transferDetails,
-        address owner,
-        bytes32 witness,
-        string calldata witnessTypeString,
-        bytes calldata signature
-    ) public {
-        _permitTransferFrom(permit, transferDetails, owner, permit.hashWithWitness(witness, witnessTypeString), signature);
-    }
 
     function findFreeNonce(address owner) external view returns (uint48){
         return findFreeNonce(owner, 0);
@@ -75,29 +56,6 @@ contract SignatureTransfer is ISignatureTransfer, EIP712 {
         } else {
             return permitMax - partialFills[owner][nonce];
         }
-    }
-
-    function verify(PermitTransferFrom calldata permit, address owner, bytes32 witness, string memory witnessTypeString, bytes calldata signature) public view {
-        if (block.timestamp > permit.deadline) revert SignatureExpired(permit.deadline);
-        signature.verify(_hashTypedData(permit.hashWithWitness(witness, witnessTypeString)), owner);
-    }
-
-    /// @notice Transfers a token using a signed permit message.
-    /// @param permit The permit data signed over by the owner
-    /// @param dataHash The EIP-712 hash of permit data to include when checking signature
-    /// @param owner The owner of the tokens to transfer
-    /// @param transferDetails The spender's requested transfer details for the permitted token
-    /// @param signature The signature to verify
-    function _permitTransferFrom(PermitTransferFrom calldata permit, SignatureTransferDetails calldata transferDetails, address owner, bytes32 dataHash, bytes calldata signature) private {
-        uint256 requestedAmount = transferDetails.requestedAmount;
-
-        if (block.timestamp > permit.deadline) revert SignatureExpired(permit.deadline);
-
-        _useUnorderedNonce(owner, permit.nonce, requestedAmount, permit.permitted.amount);
-
-        signature.verify(_hashTypedData(dataHash), owner);
-
-        IERC20(permit.permitted.token).transferFrom(owner, transferDetails.to, requestedAmount);
     }
 
     /**

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import "./EIP712.sol";
+import "./OrderTracker.sol";
 import "../ERC20/IERC20.sol";
 import "../utils/Ownable.sol";
 import {IReactor} from "./IReactor.sol";
-import {ISignatureTransfer} from "./ISignatureTransfer.sol";
 import {Intent} from "./IntentHash.sol";
 
 contract SecondaryMarket is Ownable {
@@ -114,7 +113,7 @@ contract SecondaryMarket is Ownable {
      * Create an order intent that can be signed by the owner.
      */
     function createBuyOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
-        return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, uint48(block.timestamp + validitySeconds), ISignatureTransfer(REACTOR).findFreeNonce(owner), new bytes(0));
+        return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, uint48(block.timestamp + validitySeconds), findFreeNonce(owner), new bytes(0));
     }
 
     /**
@@ -122,7 +121,7 @@ contract SecondaryMarket is Ownable {
      * The tokenIn amount is reduced by the trading fee, which is always charged to the seller.
      */
     function createSellOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
-        return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn * (10000 - tradingFeeBips) / 10000, uint48(block.timestamp + validitySeconds), ISignatureTransfer(REACTOR).findFreeNonce(owner), new bytes(0));
+        return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn * (10000 - tradingFeeBips) / 10000, uint48(block.timestamp + validitySeconds), findFreeNonce(owner), new bytes(0));
     }
 
     /**
@@ -162,19 +161,17 @@ contract SecondaryMarket is Ownable {
      */
     function validateOrder(Intent calldata intent, bytes calldata sig) external view returns (uint256) {
         verifySignature(intent, sig);
-        if (intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY){
-            // ok, sell order
-        } else if (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN){
-            // ok, buy order
-        } else {
-            revert WrongTokens();
-        }
+        require((intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY) || (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN), WrongTokens());
+
         uint256 balance = IERC20(intent.tokenOut).balanceOf(intent.owner);
         if (balance == 0) revert NoBalance(intent.tokenOut, intent.owner);
+
         uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
         if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, REACTOR);
+
         uint256 permitted = ISignatureTransfer(REACTOR).getPermittedAmount(intent.owner, intent.amountOut, intent.nonce);
         if (permitted == 0) revert NonceUsed(intent.owner, intent.nonce);
+
         return permitted;
     }
 
@@ -188,6 +185,9 @@ contract SecondaryMarket is Ownable {
     function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedTokens, bool buyerIsTaker) external {
         if (!isOpen()) revert MarketClosed(openFrom, openTo, block.timestamp);
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
+
+
+
         (uint256 proceeds, uint256 spread) = IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedTokens);
         uint256 price = buyerIsTaker ? proceeds * 10000 / (10000 - tradingFeeBips) : proceeds + spread;
         splitSpread(buyer.owner, seller, tradedTokens, price, buyerIsTaker ? buyer.owner : seller.owner, spread);
