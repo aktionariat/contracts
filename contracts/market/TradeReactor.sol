@@ -2,9 +2,6 @@
 
 pragma solidity >=0.8.0 <0.9.0;
 
-import {SignatureTransfer} from "./SignatureTransfer.sol";
-import {ISignatureTransfer} from "./ISignatureTransfer.sol";
-import {IERC20Permit} from "../ERC20/IERC20Permit.sol";
 import {IERC20} from "../ERC20/IERC20.sol";
 import {Intent, IntentHash} from "./IntentHash.sol";
 import {SafeERC20} from "../utils/SafeERC20.sol";
@@ -13,14 +10,13 @@ import {IReactor} from "./IReactor.sol";
 /**
  * @title TradeReactor Contract
  * @notice This contract handles the signaling and processing of trade intents between buyers and sellers.
- * @dev This contract uses the SignatureTransfer contract for secure transfers with signatures.
 */
 contract TradeReactor is IReactor {
 
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
 
-    mapping(bytes32 => uint256) public filledAmount;
+    mapping(bytes32 => uint160) public filledAmount;
 
     /// @dev Emitted when an intent to trade is signaled.
     /// @param owner The address of the intent owner.
@@ -39,6 +35,8 @@ contract TradeReactor is IReactor {
     error InvalidFiller();
     error TokenMismatch();
     error SpreadTooLow(uint256 bid, uint256 ask, uint16 minSpread);
+    error OverFilled();
+    error SignatureExpired(uint256 signatureDeadline);
 
     /**
      * @notice A function to publicly signal an intent to buy or sell a token so it can be picked up by the filler for processing.
@@ -121,12 +119,17 @@ contract TradeReactor is IReactor {
     function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) public returns (uint256 proceeds, uint256 spread){
         verify(sellerIntent, sellerSig);
         verify(buyerIntent, buyerSig);
-
-        if ((sellerIntent.tokenOut != buyerIntent.tokenIn) || (sellerIntent.tokenIn != buyerIntent.tokenOut)) revert TokenMismatch();
+        if (sellerIntent.tokenOut != buyerIntent.tokenIn) revert TokenMismatch();
+        if (sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
+        if (amount > (sellerIntent.amountOut - filledAmount[sellerIntent.hash()])) revert OverFilled();
+        if (amount > (buyerIntent.amountIn - filledAmount[buyerIntent.hash()])) revert OverFilled();
 
         uint256 ask = getAsk(sellerIntent, amount);
         uint256 bid = getBid(buyerIntent, amount);
         if (bid < ask) revert SpreadTooLow(bid, ask, 0);
+
+        filledAmount[sellerIntent.hash()] += uint160(amount);
+        filledAmount[buyerIntent.hash()] += uint160(amount);
 
         // Move tokens to reactor in order to implicitly allowlist the buyer in case TradeReactor is powerlisted
         IERC20(sellerIntent.tokenOut).safeTransferFrom(sellerIntent.owner, address(this), amount);
@@ -145,7 +148,15 @@ contract TradeReactor is IReactor {
     function verify(Intent calldata intent, bytes calldata signature) public view {
         intent.verifyIntentSignature(signature);
         if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
-        if (intent.filler != address(0x0) && intent.filler != msg.sender) revert InvalidFiller();
-        if (isUsedNonce(intent.owner, intent.nonce)) revert InvalidNonce();
+        if (intent.filler != msg.sender) revert InvalidFiller();
+    }
+
+    function cleanupExpiredIntentData(Intent[] calldata intents) external {
+        for (uint i = 0; i < intents.length; i++) {
+            Intent calldata intent = intents[i];
+            if (block.timestamp > intent.expiration) {
+                delete filledAmount[intent.hash()];
+            }
+        }
     }
 }

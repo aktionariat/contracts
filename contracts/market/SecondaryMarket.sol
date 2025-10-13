@@ -27,7 +27,6 @@ contract SecondaryMarket is Ownable {
     error WrongTokens();
     error WrongRouter(address expected, address actual);
     error InvalidConfiguration();
-    error SignatureExpired(uint256 signatureDeadline);
     error MarketClosed(uint256 openFrom, uint256 openTo, uint256 nowTime);
     error NoBalance(address token, address owner);
     error NoAllowance(address token, address owner, address spender);
