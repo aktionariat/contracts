@@ -16,7 +16,7 @@ contract SecondaryMarketFactory {
      * @return market The address of the deployed SecondaryMarket
      */
     function deploy(address owner, address currency, address token, address router) external returns (address) {
-        SecondaryMarket market = new SecondaryMarket{salt: SALT}(msg.sender, currency, token, router);
+        SecondaryMarket market = new SecondaryMarket{salt: SALT}(owner, currency, token, router);
         emit SecondaryMarketDeployed(owner, address(market));
         return address(market);
     }

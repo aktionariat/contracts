@@ -15,7 +15,7 @@ import {IReactor} from "./IReactor.sol";
  * @notice This contract handles the signaling and processing of trade intents between buyers and sellers.
  * @dev This contract uses the SignatureTransfer contract for secure transfers with signatures.
 */
-contract TradeReactor is SignatureTransfer, IReactor {
+contract TradeReactor is IReactor {
 
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
@@ -49,15 +49,6 @@ contract TradeReactor is SignatureTransfer, IReactor {
         emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
     }
 
-    function verify(Intent calldata intent, bytes calldata sig) public view {
-        if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
-        this.verify(toPermit(intent), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, sig);
-    }
-
-    function calculateHash(Intent calldata intent) external pure returns (bytes32) {
-        return intent.hash();
-    }
-
     /**
      * @notice Calculates the asking price for a given amount of tokenOut.
      * @dev Ideally called with an intent where tokenIn is a currency with many (e.g. 18) decimals.
@@ -89,33 +80,33 @@ contract TradeReactor is SignatureTransfer, IReactor {
         return intent.amountOut * amount / intent.amountIn;
     }
 
-    /**
-     * @notice Determines the maximum valid amount that can be traded based on seller and buyer intents.
-     * @param sellerIntent The seller's trade intent.
-     * @param buyerIntent The buyer's trade intent.
-     * @return The maximum valid trade amount.
-     */
-    function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent, uint16 minSpread) public view returns (uint256) {
-        uint256 sellerAvailable = getPermittedAmount(sellerIntent.owner, sellerIntent.amountOut, sellerIntent.nonce);
-        uint256 buyerAvailable = getPermittedAmount(buyerIntent.owner, buyerIntent.amountOut, buyerIntent.nonce);
-        uint256 biddingFor = buyerIntent.amountIn * buyerAvailable / buyerIntent.amountOut;
-        uint256 maxAmount = biddingFor > sellerAvailable ? sellerAvailable : biddingFor;
-        uint256 ask = getAsk(sellerIntent, maxAmount);
-        uint256 bid = getBid(buyerIntent, maxAmount);
-        if ((bid < ask) || (bid - ask < (ask * minSpread) / 10000)) revert SpreadTooLow(bid, ask, minSpread);
-        return maxAmount;
-    }
+    // /**
+    //  * @notice Determines the maximum valid amount that can be traded based on seller and buyer intents.
+    //  * @param sellerIntent The seller's trade intent.
+    //  * @param buyerIntent The buyer's trade intent.
+    //  * @return The maximum valid trade amount.
+    //  */
+    // function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent, uint16 minSpread) public view returns (uint256) {
+    //     uint256 sellerAvailable = getPermittedAmount(sellerIntent.owner, sellerIntent.amountOut, sellerIntent.nonce);
+    //     uint256 buyerAvailable = getPermittedAmount(buyerIntent.owner, buyerIntent.amountOut, buyerIntent.nonce);
+    //     uint256 biddingFor = buyerIntent.amountIn * buyerAvailable / buyerIntent.amountOut;
+    //     uint256 maxAmount = biddingFor > sellerAvailable ? sellerAvailable : biddingFor;
+    //     uint256 ask = getAsk(sellerIntent, maxAmount);
+    //     uint256 bid = getBid(buyerIntent, maxAmount);
+    //     if ((bid < ask) || (bid - ask < (ask * minSpread) / 10000)) revert SpreadTooLow(bid, ask, minSpread);
+    //     return maxAmount;
+    // }
 
-    /**
-     * @notice Processes a trade between a seller and a buyer with the maximum valid amount.
-     * @param sellerIntent The seller's trade intent.
-     * @param sellerSig The seller's signature.
-     * @param buyerIntent The buyer's trade intent.
-     * @param buyerSig The buyer's signature.
-     */    
-    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) external {
-        process(sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent, 0));
-    }
+    // /**
+    //  * @notice Processes a trade between a seller and a buyer with the maximum valid amount.
+    //  * @param sellerIntent The seller's trade intent.
+    //  * @param sellerSig The seller's signature.
+    //  * @param buyerIntent The buyer's trade intent.
+    //  * @param buyerSig The buyer's signature.
+    //  */    
+    // function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) external {
+    //     process(sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent, 0));
+    // }
 
     /**
      * @notice Processes a trade between a seller and a buyer for a specified amount.
@@ -126,48 +117,27 @@ contract TradeReactor is SignatureTransfer, IReactor {
      * @param amount The amount of the token to trade.
      */
     function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) public returns (uint256 proceeds, uint256 spread){
-        {
-            // signatures will be verified in SignatureTransfer
-            if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
-            if (sellerIntent.filler != address(0x0) && sellerIntent.filler != msg.sender) revert InvalidFiller();
-            if (buyerIntent.filler != address(0x0) && buyerIntent.filler != msg.sender) revert InvalidFiller();
-        }
+        verifyIntentSignature(sellerIntent, sellerSig);
+        verifyIntentSignature(buyerIntent, buyerSig);
+        if (sellerIntent.tokenOut != buyerIntent.tokenIn || sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
+        if (sellerIntent.filler != address(0x0) && sellerIntent.filler != msg.sender) revert InvalidFiller();
+        if (buyerIntent.filler != address(0x0) && buyerIntent.filler != msg.sender) revert InvalidFiller();
+
         uint256 ask = getAsk(sellerIntent, amount);
         uint256 bid = getBid(buyerIntent, amount);
         if (bid < ask) revert SpreadTooLow(bid, ask, 0);
-        {
-            // move tokens to reactor in order to implicitly allowlist target address in case reactor is powerlisted
-            obtainTokens(sellerIntent, sellerSig, amount);
-            obtainTokens(buyerIntent, buyerSig, bid);
-        }
-        {
-            // move tokens to target addresses
-            IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, amount); // transfer sold tokens to buyer
-            IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, ask); // transfer net proceeds to seller
-            IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, bid - ask); // collect spread as fee
-        }
+
+        // Move tokens to reactor in order to implicitly allowlist the buyer in case TradeReactor is powerlisted
+        IERC20(sellerIntent.tokenOut).safeTransfer(address(this), amount);
+        IERC20(buyerIntent.tokenOut).safeTransfer(address(this), bid);
+
+        // Distribute proceeds
+        IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, amount); // transfer sold tokens to buyer
+        IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, ask); // transfer net proceeds to seller
+        IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, bid - ask); // collect spread as fee
+        
         return (ask, bid - ask);
         //leave it to the filler to emit an event with the fees correctly specified
         //emit Trade(sellerIntent.owner, buyerIntent.owner, sellerIntent.tokenOut, amount, sellerIntent.tokenIn, ask, bid - ask);
     }
-
-    function obtainTokens(Intent calldata intent, bytes calldata signature, uint256 amount) private {
-        this.permitWitnessTransferFrom(toPermit(intent), toDetails(address(this), amount), intent.owner, intent.hash(), IntentHash.PERMIT2_INTENT_TYPE, signature);
-    }
-
-    function toDetails(address recipient, uint256 amount) internal pure returns (ISignatureTransfer.SignatureTransferDetails memory){
-        return ISignatureTransfer.SignatureTransferDetails({to: recipient, requestedAmount: amount});
-    }
- 
-    function toPermit(Intent memory intent) internal pure returns (ISignatureTransfer.PermitTransferFrom memory) {
-        return ISignatureTransfer.PermitTransferFrom({
-            permitted: ISignatureTransfer.TokenPermissions({
-                token: address(intent.tokenOut),
-                amount: intent.amountOut
-            }),
-            nonce: intent.nonce,
-            deadline: intent.expiration
-        });
-    }
-
 }

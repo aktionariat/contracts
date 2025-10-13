@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {IERC20} from "../ERC20/IERC20.sol";
-import {PermitHash} from "./PermitHash.sol";
 
 struct Intent {
 	address owner;
@@ -12,7 +11,7 @@ struct Intent {
 	address tokenIn; // The ERC20 token received
 	uint160 amountIn; // The amount received in exchange for the maximum of the sent token
 	uint48 expiration; // timestamp at which the intent expires
-	uint48 nonce; // a unique value indexed per owner,token,and spender for each signature
+	uint48 nonce; // a unique value indexed per owner, token and spender for each signature
 	bytes data;
 }
 
@@ -34,9 +33,6 @@ library IntentHash {
 		);
 
 	bytes32 internal constant INTENT_TYPE_HASH = keccak256(INTENT_TYPE);
-
-	string internal constant PERMIT2_INTENT_TYPE =
-        string(abi.encodePacked("Intent witness)", INTENT_TYPE, PermitHash._TOKEN_PERMISSIONS_TYPESTRING));
 
 	/// @notice hash the given intent
 	/// @param intent the intent to hash
