@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import "./OrderTracker.sol";
 import "../ERC20/IERC20.sol";
 import "../utils/Ownable.sol";
 import {IReactor} from "./IReactor.sol";
@@ -168,7 +167,8 @@ contract SecondaryMarket is Ownable {
         uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
         if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, REACTOR);
 
-        uint256 permitted = ISignatureTransfer(REACTOR).getPermittedAmount(intent.owner, intent.amountOut, intent.nonce);
+        // TODO
+        // uint256 permitted = ISignatureTransfer(REACTOR).getPermittedAmount(intent.owner, intent.amountOut, intent.nonce);
         if (permitted == 0) revert NonceUsed(intent.owner, intent.nonce);
 
         return permitted;
