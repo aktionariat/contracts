@@ -38,5 +38,23 @@ describe("SecondaryMarket", function () {
     expect(await secondaryMarketWithRouter.router()).to.equal(router);
   });
 
+  it("Should be able to sign a manually constructed structured intent", async function () {
+    const intent = {
+      owner: signer1.address,
+      filler: await secondaryMarket.ge(),
+      tokenOut: allowlistDraggableShares.getAddress,
+      amountOut: ethers.parseUnits("10", 0),
+      tokenIn: zchf.address,
+      amountIn: ethers.parseUnits("100", 18),
+      creation: Math.floor(Date.now() / 1000),
+      expiration: Math.floor(Date.now() / 1000) + 3600,
+      data: "0x"
+    }
+
+    signer2.signTypedData
+
+
+  });
+
 
 });
