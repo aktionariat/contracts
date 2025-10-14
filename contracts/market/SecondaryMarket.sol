@@ -177,18 +177,18 @@ contract SecondaryMarket is Ownable {
      * Validates a match between a seller and a buyer intent and returns the maximum amount of tokens that can be traded.
      */
     function validateMatch(Intent calldata sellerIntent, Intent calldata buyerIntent) external view returns (uint256) {
-        return IReactor(REACTOR).getMaxValidAmount(sellerIntent, buyerIntent, tradingFeeBips);
+        return IReactor(REACTOR).getMaxValidAmount(sellerIntent, buyerIntent);
     }
 
-    function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedTokens) external {
+    function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedAmount) external {
         if (!isOpen()) revert MarketClosed(openFrom, openTo, block.timestamp);
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
 
-        uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedTokens);
+        uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedAmount);
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / 10000;
 
-        IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedTokens, totalFee);
-        emit Trade(seller.owner, buyer.owner, seller.tokenOut, tradedTokens, seller.tokenIn, totalExecutionPrice, totalFee);
+        IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedAmount, totalFee);
+        emit Trade(seller.owner, buyer.owner, seller.tokenOut, tradedAmount, seller.tokenIn, totalExecutionPrice, totalFee);
     }
 
     /**

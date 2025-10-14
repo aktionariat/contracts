@@ -80,13 +80,17 @@ contract TradeReactor is IReactor {
         return intent.amountOut * amount / intent.amountIn;
     }
 
-    function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedTokens) public pure returns (uint256) {
-        uint256 ask = getAsk(sellerIntent, tradedTokens);
-        uint256 bid = getBid(buyerIntent, tradedTokens);
+    function verifyPriceMatch(Intent calldata buyerIntent, Intent calldata sellerIntent) public pure {
+        uint256 ask = getAsk(sellerIntent, sellerIntent.amountOut);
+        uint256 bid = getBid(buyerIntent, buyerIntent.amountIn);
         if (bid < ask) revert OfferTooLow();
+    }
+
+    function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedAmount) public pure returns (uint256) {
+        verifyPriceMatch(buyerIntent, sellerIntent);
 
         uint256 executionPrice = (sellerIntent.creation >= buyerIntent.creation) ? ask : bid;
-        uint256 totalCost = executionPrice * tradedTokens;
+        uint256 totalCost = executionPrice * tradedAmount;
         return totalCost;
     }
 
@@ -100,14 +104,13 @@ contract TradeReactor is IReactor {
      * @param buyerIntent The buyer's trade intent.
      * @return The maximum valid trade amount.
      */
-    function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent, uint16 minSpread) public view returns (uint256) {
+    function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent) public view returns (uint256) {
+        verifyPriceMatch(buyerIntent, sellerIntent);
+
         uint256 sellerUnfilled = sellerIntent.amountOut - filledAmount[sellerIntent.hash()];
         uint256 buyerUnfilled = buyerIntent.amountIn - filledAmount[buyerIntent.hash()];
-        uint256 biddingFor = buyerIntent.amountIn * buyerAvailable / buyerIntent.amountOut;
-        uint256 maxAmount = biddingFor > sellerAvailable ? sellerAvailable : biddingFor;
-        uint256 ask = getAsk(sellerIntent, maxAmount);
-        uint256 bid = getBid(buyerIntent, maxAmount);
-        if ((bid < ask) || (bid - ask < (ask * minSpread) / 10000)) revert SpreadTooLow(bid, ask, minSpread);
+        uint256 maxAmount = (sellerUnfilled > buyerUnfilled) ? buyerUnfilled : sellerUnfilled;
+        
         return maxAmount;
     }
 
