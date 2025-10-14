@@ -80,6 +80,20 @@ contract TradeReactor is IReactor {
         return intent.amountOut * amount / intent.amountIn;
     }
 
+    function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedTokens) public pure returns (uint256) {
+        uint256 ask = getAsk(sellerIntent, tradedTokens);
+        uint256 bid = getBid(buyerIntent, tradedTokens);
+        if (bid < ask) revert OfferTooLow();
+
+        uint256 executionPrice = (sellerIntent.creation >= buyerIntent.creation) ? ask : bid;
+        uint256 totalCost = executionPrice * tradedTokens;
+        return totalCost;
+    }
+
+    function getFilledAmount(Intent calldata intent) external view returns (uint160) {
+        return filledAmount[intent.hash()];
+    }
+
     /**
      * @notice Determines the maximum valid amount that can be traded based on seller and buyer intents.
      * @param sellerIntent The seller's trade intent.
@@ -114,33 +128,30 @@ contract TradeReactor is IReactor {
      * @param sellerSig The seller's signature.
      * @param buyerIntent The buyer's trade intent.
      * @param buyerSig The buyer's signature.
-     * @param amount The amount of the token to trade.
+     * @param tradedTokens The amount of the token to trade.
      */
-    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) public returns (uint256 proceeds, uint256 spread){
+    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 tradedTokens, uint256 totalFee) public {
         verify(sellerIntent, sellerSig);
         verify(buyerIntent, buyerSig);
         if (sellerIntent.tokenOut != buyerIntent.tokenIn) revert TokenMismatch();
         if (sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
-        if (amount > (sellerIntent.amountOut - filledAmount[sellerIntent.hash()])) revert OverFilled();
-        if (amount > (buyerIntent.amountIn - filledAmount[buyerIntent.hash()])) revert OverFilled();
+        if (tradedTokens > (sellerIntent.amountOut - filledAmount[sellerIntent.hash()])) revert OverFilled();
+        if (tradedTokens > (buyerIntent.amountIn - filledAmount[buyerIntent.hash()])) revert OverFilled();
 
-        uint256 ask = getAsk(sellerIntent, amount);
-        uint256 bid = getBid(buyerIntent, amount);
-        if (bid < ask) revert SpreadTooLow(bid, ask, 0);
+        filledAmount[sellerIntent.hash()] += uint160(tradedTokens);
+        filledAmount[buyerIntent.hash()] += uint160(tradedTokens);
 
-        filledAmount[sellerIntent.hash()] += uint160(amount);
-        filledAmount[buyerIntent.hash()] += uint160(amount);
+        uint256 totalExecutionPrice = getTotalExecutionPrice(buyerIntent, sellerIntent, tradedTokens);
 
         // Move tokens to reactor in order to implicitly allowlist the buyer in case TradeReactor is powerlisted
-        IERC20(sellerIntent.tokenOut).safeTransferFrom(sellerIntent.owner, address(this), amount);
-        IERC20(buyerIntent.tokenOut).safeTransferFrom(buyerIntent.owner, address(this), bid);
+        IERC20(sellerIntent.tokenOut).safeTransferFrom(sellerIntent.owner, address(this), tradedTokens);
+        IERC20(buyerIntent.tokenOut).safeTransferFrom(buyerIntent.owner, address(this), totalExecutionPrice);
 
         // Distribute proceeds
-        IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, amount); // transfer sold tokens to buyer
-        IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, ask); // transfer net proceeds to seller
-        IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, bid - ask); // collect spread as fee
-        
-        return (ask, bid - ask);
+        IERC20(sellerIntent.tokenOut).safeTransfer(buyerIntent.owner, tradedTokens); // transfer sold tokens to buyer
+        IERC20(sellerIntent.tokenIn).safeTransfer(sellerIntent.owner, totalExecutionPrice - totalFee); // transfer net proceeds to seller
+        IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, totalFee); // collect fee to msg.sender
+
         //leave it to the filler to emit an event with the fees correctly specified
         //emit Trade(sellerIntent.owner, buyerIntent.owner, sellerIntent.tokenOut, amount, sellerIntent.tokenIn, ask, bid - ask);
     }
@@ -148,7 +159,7 @@ contract TradeReactor is IReactor {
     function verify(Intent calldata intent, bytes calldata signature) public view {
         intent.verifyIntentSignature(signature);
         if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
-        if (intent.filler != msg.sender) revert InvalidFiller();
+        if (intent.filler != msg.sender || intent.filler != address(0x0)) revert InvalidFiller();
     }
 
     function cleanupExpiredIntentData(Intent[] calldata intents) external {

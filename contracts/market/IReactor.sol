@@ -5,10 +5,11 @@ import {Intent} from "./IntentHash.sol";
 
 interface IReactor {
 
-    function calculateHash(Intent calldata intent) external view returns (bytes32);
     function verify(Intent calldata intent, bytes calldata sig) external view;
     function signalIntent(Intent calldata intent, bytes calldata signature) external;
+    function getFilledAmount(Intent calldata intent) external view returns (uint160);
     function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent, uint16 minSpread) external view returns (uint256);
-    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 amount) external returns (uint256 proceeds, uint256 spread);
+    function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedTokens) external pure returns (uint256);
+    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 tradedTokens, uint256 totalFee) external;
 
 }

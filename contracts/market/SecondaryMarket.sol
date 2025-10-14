@@ -11,6 +11,7 @@ contract SecondaryMarket is Ownable {
     uint16 public constant ALL = 10000;
     address public constant REACTOR = address(0x0); // TODO: set the reactor address here
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
+    uint160 public constant CANCELLED = 2**160 - 1;
 
     address public immutable CURRENCY;
     address public immutable TOKEN;
@@ -29,7 +30,8 @@ contract SecondaryMarket is Ownable {
     error MarketClosed(uint256 openFrom, uint256 openTo, uint256 nowTime);
     error NoBalance(address token, address owner);
     error NoAllowance(address token, address owner, address spender);
-    error NonceUsed(address owner, uint256 nonce);
+    error AlreadyFilled();
+    error UserCancelled();
 
     // The following fields should fit into one 32B slot, 20 + 2 + 1 + 1 + 4 + 4 = 32
     address public router; // null for any, 20B
@@ -98,6 +100,7 @@ contract SecondaryMarket is Ownable {
     function setLicenseFee(uint16 licenseShare_) onlyOwner external {
         if (uint256(licenseShare_) + routerShare > ALL) revert InvalidConfiguration();
         licenseShare = licenseShare_;
+
     }
 
     function setTradingFee(uint16 tradingFeeBips_) onlyOwner external {
@@ -111,7 +114,7 @@ contract SecondaryMarket is Ownable {
      * Create an order intent that can be signed by the owner.
      */
     function createBuyOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
-        return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, uint48(block.timestamp + validitySeconds), findFreeNonce(owner), new bytes(0));
+        return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, uint48(block.timestamp), uint48(block.timestamp + validitySeconds), new bytes(0));
     }
 
     /**
@@ -119,14 +122,7 @@ contract SecondaryMarket is Ownable {
      * The tokenIn amount is reduced by the trading fee, which is always charged to the seller.
      */
     function createSellOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
-        return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn * (10000 - tradingFeeBips) / 10000, uint48(block.timestamp + validitySeconds), findFreeNonce(owner), new bytes(0));
-    }
-
-    /**
-     * Calculate the hash to be signed.
-     */
-    function calculateHash(Intent calldata intent) public view returns (bytes32) {
-        return IReactor(REACTOR).calculateHash(intent);
+        return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn, uint48(block.timestamp), uint48(block.timestamp + validitySeconds), new bytes(0));
     }
 
     /**
@@ -139,6 +135,7 @@ contract SecondaryMarket is Ownable {
      * transmission shortcut does not effectively preserve privacy.
      * 
      * To invalidate an order, the owner must call the invalidateNonce function on the SignatureTransfer
+     * 
      * contract found in this.ROUTER().TRANSFER().
      */
     function placeOrder(Intent calldata intent, bytes calldata signature) external {
@@ -157,7 +154,7 @@ contract SecondaryMarket is Ownable {
     /**
      * Check if an order can be executed and if yes, returns the maximum amount of the tokenOut.
      */
-    function validateOrder(Intent calldata intent, bytes calldata sig) external view returns (uint256) {
+    function validateOrder(Intent calldata intent, bytes calldata sig) external view returns (uint160) {
         verifySignature(intent, sig);
         require((intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY) || (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN), WrongTokens());
 
@@ -167,11 +164,13 @@ contract SecondaryMarket is Ownable {
         uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
         if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, REACTOR);
 
-        // TODO
-        // uint256 permitted = ISignatureTransfer(REACTOR).getPermittedAmount(intent.owner, intent.amountOut, intent.nonce);
-        if (permitted == 0) revert NonceUsed(intent.owner, intent.nonce);
+        uint160 amountTokens = (intent.tokenOut == TOKEN) ? intent.amountOut : intent.amountIn;
+        uint160 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
+        if (alreadyFilled == CANCELLED) revert UserCancelled();
+        if (amountTokens <= alreadyFilled) revert AlreadyFilled();
+        uint160 remaining = amountTokens - alreadyFilled;
 
-        return permitted;
+        return remaining;
     }
 
     /**
@@ -181,23 +180,15 @@ contract SecondaryMarket is Ownable {
         return IReactor(REACTOR).getMaxValidAmount(sellerIntent, buyerIntent, tradingFeeBips);
     }
 
-    function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedTokens, bool buyerIsTaker) external {
+    function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedTokens) external {
         if (!isOpen()) revert MarketClosed(openFrom, openTo, block.timestamp);
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
 
+        uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedTokens);
+        uint256 totalFee = totalExecutionPrice * tradingFeeBips / 10000;
 
-
-        (uint256 proceeds, uint256 spread) = IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedTokens);
-        uint256 price = buyerIsTaker ? proceeds * 10000 / (10000 - tradingFeeBips) : proceeds + spread;
-        splitSpread(buyer.owner, seller, tradedTokens, price, buyerIsTaker ? buyer.owner : seller.owner, spread);
-    }
-
-    function splitSpread(address buyer, Intent calldata seller, uint256 tradedTokens, uint256 price, address spreadRecipient, uint256 spread) internal {
-        uint256 fees = tradingFeeBips * price / 10000;
-        emit Trade(seller.owner, buyer, seller.tokenOut, tradedTokens, seller.tokenIn, price, fees);
-        if (spread > fees) {
-            IERC20(seller.tokenIn).transfer(spreadRecipient, spread - fees); // return excess spread to the taker who entered the order later
-        }
+        IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedTokens, totalFee);
+        emit Trade(seller.owner, buyer.owner, seller.tokenOut, tradedTokens, seller.tokenIn, totalExecutionPrice, totalFee);
     }
 
     /**
