@@ -3,6 +3,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {IERC20} from "../ERC20/IERC20.sol";
+import {EIP712} from "./EIP712.sol";
 import {Intent, IntentHash} from "./IntentHash.sol";
 import {SafeERC20} from "../utils/SafeERC20.sol";
 import {IReactor} from "./IReactor.sol";
@@ -11,7 +12,7 @@ import {IReactor} from "./IReactor.sol";
  * @title TradeReactor Contract
  * @notice This contract handles the signaling and processing of trade intents between buyers and sellers.
 */
-contract TradeReactor is IReactor {
+contract TradeReactor is IReactor, EIP712 {
 
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
@@ -46,7 +47,7 @@ contract TradeReactor is IReactor {
     */
     function signalIntent(Intent calldata intent, bytes calldata signature) external {
         verify(intent, signature);
-        emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.expiration, intent.nonce, intent.data, signature);
+        emit IntentSignal(intent.owner, intent.filler, intent.tokenOut, intent.amountOut, intent.tokenIn, intent.amountIn, intent.creation, intent.expiration, intent.data, signature);
     }
 
     /**
@@ -89,8 +90,9 @@ contract TradeReactor is IReactor {
     function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedAmount) public pure returns (uint256) {
         verifyPriceMatch(buyerIntent, sellerIntent);
 
-        uint256 executionPrice = (sellerIntent.creation >= buyerIntent.creation) ? ask : bid;
+        uint256 executionPrice = (sellerIntent.creation >= buyerIntent.creation) ? getAsk(sellerIntent, tradedAmount) : getBid(buyerIntent, tradedAmount);
         uint256 totalCost = executionPrice * tradedAmount;
+
         return totalCost;
     }
 
@@ -110,7 +112,7 @@ contract TradeReactor is IReactor {
         uint256 sellerUnfilled = sellerIntent.amountOut - filledAmount[sellerIntent.hash()];
         uint256 buyerUnfilled = buyerIntent.amountIn - filledAmount[buyerIntent.hash()];
         uint256 maxAmount = (sellerUnfilled > buyerUnfilled) ? buyerUnfilled : sellerUnfilled;
-        
+
         return maxAmount;
     }
 
@@ -121,8 +123,8 @@ contract TradeReactor is IReactor {
      * @param buyerIntent The buyer's trade intent.
      * @param buyerSig The buyer's signature.
      */    
-    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig) external {
-        process(sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent, 0));
+    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 totalFee) external {
+        process(sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent), totalFee);
     }
 
     /**
@@ -160,7 +162,7 @@ contract TradeReactor is IReactor {
     }
 
     function verify(Intent calldata intent, bytes calldata signature) public view {
-        intent.verifyIntentSignature(signature);
+        verifyIntentSignature(intent, signature);
         if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
         if (intent.filler != msg.sender || intent.filler != address(0x0)) revert InvalidFiller();
     }
