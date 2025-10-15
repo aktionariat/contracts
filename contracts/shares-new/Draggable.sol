@@ -42,60 +42,118 @@ pragma solidity >=0.8.0 <0.9.0;
 import "../ERC20/ERC20Flaggable.sol";
 import "../utils/Ownable.sol";
 
-abstract contract Draggable is ERC20Flaggable, Ownable {
+abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
 
-    struct DragAlongProposal {
-        address buyer;
-        uint256 timestamp;
-        address currencyToken;
-        uint256 pricePerShare;
-        bool executed;
+    struct Offer {
+        IBuyerContract targetContract;
+        uint24 timestamp;
 	}
 
-    uint256 public constant DRAG_PROPOSAL_DELAY = 20 days;
-    DragAlongProposal public dragAlongProposal;
+    uint24 public constant DRAG_PROPOSAL_DELAY = uint24(60 days);
+    uint24 public constant DRAG_PROPOSAL_EXPIRATION = uint24(90 days);
+
+    Offer public latestOffer;
     
-    error DragAlongInvalidBuyer();
-    error DragAlongInvalidCurrency();
-    error DragAlongExists(DragAlongProposal dragAlongProposal);
+    error InvalidOffer();
+    error NoOfferFound();
+    error OfferPending();
     error DragAlongNotFound();
-    error DragAlongNoVetoPower();
+    error CannotCancel();
     error DragAlongTooEarly(uint256 timestamp);
-    error DragAlongAlreadyExecuted(address buyer);
 
-    function proposeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) public onlyOwner returns (DragAlongProposal memory) {
-        if (dragAlongProposal.buyer != address(0)) revert DragAlongExists(dragAlongProposal); 
-        if (buyer == address(0)) revert DragAlongInvalidBuyer(); 
-        if (currencyToken == address(0)) revert DragAlongInvalidCurrency(); 
+    event OfferMade(address sender, IBuyerContract buyerContract, string message);
+    event OfferDenied(address sender, string message);
+    event OfferAccepted(address sender, IBuyerContract offer, uint256 tokens, address currency, uint256 pricePerTokenE18);
 
-        dragAlongProposal = DragAlongProposal({ buyer: buyer, timestamp: block.timestamp, currencyToken: currencyToken, pricePerShare: pricePerShare, executed: false });
-
+    /**
+     * Make an acquisition offer for all underlying tokens.
+     * 
+     * If the acquisition offer is not denied by the issuer or someone with 10% of the outstanding tokens,
+     * the offer can be executed. The buyer contract must implement the IBuyerContract.notifyTokensReceived
+     * function as specified.
+     */
+    function offerAcquisition(IBuyerContract buyerContract, string calldata message) external deter(100) return (Offer memory) {
+        if (acquisitionOffer.targetContract != address(0)) revert OfferPending(); 
+        dragAlongProposal = Offer({ buyer: address(buyerContract), timestamp: uint24(block.timestamp) });
+        emit OfferMade(msg.sender, buyerContract, message);
         return dragAlongProposal;
 	}
 
-    function cancelDragAlong() public {
-        if (dragAlongProposal.buyer == address(0)) revert DragAlongNotFound(); 
-        if (dragAlongProposal.executed) revert DragAlongAlreadyExecuted(dragAlongProposal.buyer); 
-        if (msg.sender != owner && !hasPercentageOfSupply(msg.sender, 10)) revert DragAlongNoVetoPower();
+    modifier offerPresent() {
+        if (address(offer.buyerContract) == address(0x0)) revert NoOfferFound();
+        _;
+    }
 
-        delete dragAlongProposal;
+    /**
+     * Cancels the current offer.
+     * 
+     * This can be called by the issuer, the owner of the offer, or anyone with 10% of the tokens.
+     * 
+     * Being able to cancel an offer does not mean that you are also legally allowed to.
+     */
+    function cancelOffer(string calldata message) external offerPresent {
+        if (!canCancelOffer(msg.sender)) revert CannotCancel();
+        delete offer;
+        emit OfferDenied(msg.sender, message);
+    }
+
+    /**
+     * Returns whether the given address can cancel the current offer.
+     */
+    function canCancelOffer(address holder) public view offerPresent returns (bool) {
+        if (holder == owner){
+            return true; // issuer can cancel
+        } else if (offer.timestamp + DRAG_PROPOSAL_EXPIRATION < block.timestamp){
+            return true; // offer expired, anyone can cancel
+        } else if (balanceOf(holder) > totalSupply() / 10) {
+            return true; // anyone with 10% of the tokens can cancel
+        } else {
+            try Ownable(offer).owner() returns (address offerOwner) {
+                // owner of offer can cancel
+                return offerOwner == holder;
+            } catch {
+                // offer does not implement Ownable
+                return false;
+            }
+        }
     }
     
-    function executeDragAlong() public {
-        uint256 deadline = dragAlongProposal.timestamp + DRAG_PROPOSAL_DELAY;
-        if (dragAlongProposal.buyer == address(0)) revert DragAlongNotFound(); 
-        if (dragAlongProposal.executed) revert DragAlongAlreadyExecuted(dragAlongProposal.buyer); 
-        if (block.timestamp < deadline && !hasPercentageOfSupply(dragAlongProposal.buyer, 90) && !hasPercentageOfSupply(msg.sender, 90)) revert DragAlongTooEarly(deadline); 
-
-        dragAlongProposal.executed = true;
-
-        _executeDragAlong();
+    function acceptOffer() public offerPresent {
+        if (dragAlongProposal.timestamp + DRAG_PROPOSAL_DELAY < block.timestamp) revert DragAlongTooEarly();
+        IERC20 wrappedToken = wrapped();
+        uint256 balance = wrapped().balanceOf(address(this));
+        wrappedToken.transfer(offer.buyerContract, balance);
+        uint256 ownedTokensToBurn = offer.buyerContract.notifyTokensReceived(balance);
+        _burn(address(offer.buyerContract), ownedTokensToBurn);
+        IERC20 currency = offer.buyerContract.offeredCurrency();
+        uint256 price = offer.buyerContract.offeredPrice();
+        replaceBase(currency, price);
+        emit OfferAccepted(msg.sender, offer.buyerContract, balance, currency, price);
     }
 
-    function hasPercentageOfSupply(address owner, uint256 percentage) public view returns (bool) {
-        return balanceOf(owner) * 100 >= totalSupply() * percentage;
-    }
+    function base() public abstract returns (IERC20);
 
-    // Must be implemented by the inheriting contract, since the implementation can vary to account for wrapping.
-    function _executeDragAlong() internal virtual;
+    function replaceBase(IERC20 wrapped, uint256 factorE18) internal abstract;
+
+}
+
+interface IBuyerContract {
+
+    function offeredCurrency() external view returns (IERC20);
+
+    /**
+     * Conversion price with 18 decimals.
+     */
+    function offeredPrice() external view returns (uint92);
+
+    /**
+     * When this is called on the buyer contract, the payment should be made back to the calling contract.
+     * 
+     * The buyer contract can also indicate how many of their own tokens should be burned in order to reduce the
+     * acquisition costs. For example, if the buyer contract already has 2000 out of 10'000 wrapper tokens and
+     * the price is 3 per share, they can indicate that 2000 wrapper token should be burned so they only need
+     * to pay 24'000 to finance the acquisition of the 10'000 wrapped tokens.
+     */
+    function notifyTokensReceived(uint256 amount) returns (uint256 ownedTokensToBurn);
+
 }

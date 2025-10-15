@@ -36,15 +36,19 @@ abstract contract DeterrenceFee is Ownable {
 
     event DeterrenceFeePaid(address payer, uint96 fee);
 
+    error FeeMissing(uint256 required, uint256 found);
+
     constructor(uint96 deterrenceFee_){
         deterrenceFee = deterrenceFee_;
     }
 
-    modifier deter() {
+    modifier deter(uint16 multiple) {
         // Pay the deterrence fee to the Aktionariat ledger
         if (msg.sender != owner){
-            payable(0x29Fe8914e76da5cE2d90De98a64d0055f199d06D).call{value:deterrenceFee}("");
-            emit DeterrenceFeePaid(msg.sender, deterrenceFee);
+            uint256 fee = deterrenceFee * multiple;
+            (bool success, ) = payable(owner).call{value:fee}("");
+            if (!success) revert FeeMissing(fee, msg.value);
+            emit DeterrenceFeePaid(msg.sender, deterrenceFee * multiple);
         }
         _;
     }

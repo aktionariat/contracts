@@ -51,18 +51,20 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
     // 1: pre permit
     // 2: includes permit
     // 3: added permit2 allowance, VERSION field
-    // 4: New token standard
-    uint8 public constant VERSION = 4;
+    // 5 New token standard, skipping 4 to match base security version number
+    uint8 public constant VERSION = 5;
 
     // Base shares being wrapped and SHA terms
-    IERC20 public baseShares;
+    IERC20 public base;
+
+    bool public binding = true;
+
     string public terms;
-    bool public isBinding = true;
 
     /// Event when the terms are changed with setTerms().
     event ChangeTerms(string terms);
 
-    error Unwrap_IsBinding();
+    error ContractBinding();
 
     constructor(string memory _terms, uint8 _decimals, address _owner) ERC20Flaggable(_decimals) Ownable(_owner) ERC20Allowlistable() {
         terms = _terms;
@@ -93,64 +95,39 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
 
     /**
      * Wraps base shares into wrapped shares.
+     * 
+     * Does not work if totalSupply is zero.
      */
-    function wrap(address shareholder, uint256 amount) external {
-        // Prevent wrapping if a dragAlongProposal has already been executed.
-        if (dragAlongProposal.executed) revert DragAlongAlreadyExecuted(dragAlongProposal.buyer);
-
-        baseShares.safeTransferFrom(msg.sender, address(this), amount);
-        _mint(shareholder, amount);
+    function mint(address recipient, uint256 amount) external {
+        _wrap(recipient, amount, convertToBase(amount));
     }
 
-    function forceUnwrap(address owner, uint256 amount) external onlyOwner {
-        _unwrap(owner, amount);
+    /**
+     * Wraps base shares into wrapped shares.
+     */
+    function mint(address recipient, uint256 amount, uint256 expectedWrappedAmount) external {
+        if (totalSupply() > 0 && convertToBase(amount) != expectedWrappedAmount) revert InvalidExpectedAmount(); 
+        wrap(recipient, amount, expectedWrappedAmount);
+    }
+
+    function wrap(address recipient, uint256 mintAmount, uint256 wrappedAmount) internal {
+        wrapped.transferFrom(msg.sender, address(this), wrappedAmount);
+        _mint(recipient, amount);
     }
 
     function unwrap(uint256 amount) external {
-        if (isBinding) revert Unwrap_IsBinding();
-        _unwrap(msg.sender, amount);
+        if (binding) revert ContractBinding();
+        // This is the amount of tokens that can be unwrapped when buring amount, rounded down
+        uint256 unwrappedAmount = convertToBase(amount);
+        // To unwrap 'unwrappedAmount' tokens, we only need to burn requiredBurn tokens.
+        uint256 requiredBurn = unwrappedAmount * totalSupply() / wrapped.balanceOf(address(this));
+        assert convertToBase(requiredBurn) == unwrappedAmount;
+        _burn(owner, requiredBurn);
+        wrapped.transfer(owner, unwrapped);
     }
 
-    function _unwrap(address owner, uint256 amount) internal {
-        _burn(owner, amount);
-
-        // If tokens have been dragged, pay out the acquisition proceeds
-        // Otherwise simply give back the baseShares 1:1
-        if (dragAlongProposal.executed) {
-            dragAlongProposal.currencyToken.safeTransfer(owner, dragAlongProposal.pricePerShare * amount);
-        } else {
-            baseShares.safeTransfer(owner, amount);
-        }
-    }
-
-    /**
-     * Burns both the token itself as well as the wrapped token!
-     * If you want to get out of the shareholder agreement, use unwrap after it has been
-     * deactivated by a majority vote or acquisition.
-     *
-     * Burning only works if wrapped token supports burning. Also, the exact meaning of this
-     * operation might depend on the circumstances. Burning and reissuing the wrapped token
-     * does not free the sender from the legal obligations of the shareholder agreement.
-     */
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
-        BaseShares(address(baseShares)).burn(amount);
-    }
-
-    /**
-     * Transfers tokens, respecting ERC20Flaggable flag logic
-     */
-    function transfer(address to, uint256 value) public virtual override(IERC20, ERC20Flaggable) returns (bool) {
-        return ERC20Flaggable.transfer(to, value);
-    }
-
-    /**
-     * Hook to be called before any transfer.
-     * ERC20Flaggable by default has an empty implementation.
-     * ERC20allowlistable implements allowlist logic.
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20Flaggable, ERC20Allowlistable) {
-        ERC20Allowlistable._beforeTokenTransfer(from, to, amount);
+    function convertToBase(uint256 amount) public returns (uint256) {
+        return amount * wrapped.balanceOf(address(this)) / totalSupply();
     }
 
     /**
@@ -164,24 +141,9 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
         return true;
     }
 
-    // Proposals
-
-    function _executeBurn(address burnAddress, uint256 amount) internal override {
-        _burn(burnAddress, amount);
-        IShares(address(baseShares)).burn(amount);
-    }
-
-    function _executeDragAlong(address buyer, address currencyToken, uint256 pricePerShare) internal override {
-        // Unwrap buyers tokens first and send base tokens to buyer address.
-        // They should not pay for their own balance and be excluded from unwrapping directly after drag-along.
-        _unwrap(buyer, balanceOf(buyer));
-
-        // Get the currency for the acquisition from the buyer
-        uint256 totalPrice = baseShares.balanceOf(address(this)) * pricePerShare;
-        currencyToken.safeTransferFrom(buyer, address(this), totalPrice);
-
-        // Transfer all base tokens held by this contract to the buyer
-        baseShares.safeTransfer(buyer, baseShares.balanceOf(address(this)));
+    function replaceBase(IERC20 wrapped_) internal override {
+        wrapped = wrapped_;
+        isBinding = false;
     }
 
     function _executeMigration(address successor) internal override {

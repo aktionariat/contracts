@@ -46,50 +46,63 @@ import "../utils/Ownable.sol";
 
 abstract contract Migratable is ERC20Flaggable, Ownable {
 
-    struct MigrationProposal {
+    struct Migration {
         address successor;
-        uint256 timestamp;
+        uint24 timestamp;
 	}
 
     uint256 public constant MIGRATION_PROPOSAL_DELAY = 20 days;
-    MigrationProposal public migrationProposal;
+    Migration public migration;
 
-    error MigrationNotContract(address successor);
     error MigrationNotFound();
     error MigrationNoVetoPower();
     error MigrationTooEearly(uint256 timestamp);
+
+    event MigrationProposed(address sender, address successor);
+    event MigrationCancelled(address sender, address successor);
+    event MigrationExecuted(address sender, address successor);
     
-    function proposeMigration(address successor) public onlyOwner returns (MigrationProposal memory) {
-        if (successor.code.length == 0) revert MigrationNotContract(successor); 
-
-        migrationProposal = MigrationProposal({ successor: successor, timestamp: block.timestamp });
-
-        return migrationProposal;
+    /**
+     * The issuer or holders with 10% of the tokens can propose a migration to a new contract.
+     */
+    function proposeMigration(address successor) public returns (Migration memory) {
+        if (!canCancelMigration(msg.sender)) revert MigrationNoVetoPower();
+        migration = Migration({ successor: successor, timestamp: block.timestamp });
+        emit MigrationProposed(msg.sender, successor);
+        return migration;
 	}
 
+    /**
+     * The issuer or holders with 10% of the tokens can cancal a proposed migration.
+     */
     function cancelMigration() public {
-        if (migrationProposal.successor == address(0)) revert MigrationNotFound(); 
-        if (msg.sender != owner && !hasPercentageOfSupply(msg.sender, 10)) revert MigrationNoVetoPower();
-
-        delete migrationProposal;
+        if (migration.successor == address(0)) revert MigrationNotFound(); 
+        if (!canCancelMigration(msg.sender)) revert MigrationNoVetoPower();
+        emit MigrationCancelled(msg.sender, migration.successor);
+        delete migration;
     }
     
+    /**
+     * Returns whether the given address can cancel the current offer.
+     */
+    function canCancelMigration(address holder) public view returns (bool) {
+        return holder == owner || (balanceOf(holder) > totalSupply() / 10);
+    }
+    
+    /**
+     * Anyone can execute the migration once it has passed the veto process.
+     */
     function executeMigration() public {
-        uint256 deadline = migrationProposal.timestamp + MIGRATION_PROPOSAL_DELAY;
-        if (migrationProposal.successor == address(0)) revert MigrationNotFound(); 
-        if (block.timestamp < deadline && !hasPercentageOfSupply(migrationProposal.successor, 90) && !hasPercentageOfSupply(msg.sender, 90)) revert MigrationTooEearly(deadline); 
-
+        if (migration.successor == address(0)) revert MigrationNotFound(); 
+        if (block.timestamp < migration.timestamp + MIGRATION_PROPOSAL_DELAY) revert MigrationTooEearly(deadline); 
         // Delete before execute to protect agains reentrancy
-        MigrationProposal memory _migrationProposal = migrationProposal;
-        delete migrationProposal;
-
-        _executeMigration(_migrationProposal.successor);
-    }
-
-    function hasPercentageOfSupply(address owner, uint256 percentage) public view returns (bool) {
-        return balanceOf(owner) * 100 >= totalSupply() * percentage;
+        base().transfer(migration.successor, base().balanceOf(address(this)));
+        emit MigrationExecuted(msg.sender, migration.successor);
+        delete migration;
     }
     
-    // Must be implemented by the inheriting contract, since the implementation can vary to account for wrapping.
-    function _executeMigration(address successor) internal virtual;
+    function base() public abstract returns (IERC20);
+
+    function replaceBase(IERC20 wrapped) internal abstract;
+
 }
