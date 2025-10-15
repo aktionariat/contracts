@@ -14,6 +14,7 @@ contract SecondaryMarket is Ownable {
 
     address public immutable CURRENCY;
     address public immutable TOKEN;
+    address public immutable REACTOR; 
 
     event TradingFeeCollected(address currency, uint256 actualFee, address spreadRecipient, uint256 returnedSpread);
     event TradingFeeWithdrawn(address currency, address target, uint256 amount);
@@ -32,7 +33,6 @@ contract SecondaryMarket is Ownable {
     error AlreadyFilled();
     error UserCancelled();
 
-    address public reactor; 
 
     address public router; // null for any, 20B
     uint16 public tradingFeeBips; // 2B
@@ -43,8 +43,8 @@ contract SecondaryMarket is Ownable {
     constructor(address owner, address currency, address token, address _reactor, address _router) Ownable(owner) {
         CURRENCY = currency;
         TOKEN = token;
+        REACTOR = _reactor;
         licenseShare = 5000; // default license fee is 50% of fees
-        reactor = _reactor;
         router = _router;
         routerShare = 0;
         isOpen = true;
@@ -124,7 +124,7 @@ contract SecondaryMarket is Ownable {
      */
     function placeOrder(Intent calldata intent, bytes calldata signature) external {
         verifySignature(intent, signature);
-        IReactor(reactor).signalIntent(intent, signature);
+        IReactor(REACTOR).signalIntent(intent, signature);
     }
 
     /**
@@ -132,7 +132,7 @@ contract SecondaryMarket is Ownable {
      */
     function verifySignature(Intent calldata intent, bytes calldata sig) public view {
         if (intent.filler != address(this)) revert WrongFiller();
-        IReactor(reactor).verify(intent, sig);
+        IReactor(REACTOR).verify(intent, sig);
     }
 
     /**
@@ -145,11 +145,11 @@ contract SecondaryMarket is Ownable {
         uint256 balance = IERC20(intent.tokenOut).balanceOf(intent.owner);
         if (balance == 0) revert NoBalance(intent.tokenOut, intent.owner);
 
-        uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, reactor);
-        if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, reactor);
+        uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
+        if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, REACTOR);
 
         uint160 amountTokens = (intent.tokenOut == TOKEN) ? intent.amountOut : intent.amountIn;
-        uint160 alreadyFilled = IReactor(reactor).getFilledAmount(intent);
+        uint160 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
         if (alreadyFilled == CANCELLED) revert UserCancelled();
         if (amountTokens <= alreadyFilled) revert AlreadyFilled();
         uint160 remaining = amountTokens - alreadyFilled;
@@ -161,17 +161,17 @@ contract SecondaryMarket is Ownable {
      * Validates a match between a seller and a buyer intent and returns the maximum amount of tokens that can be traded.
      */
     function validateMatch(Intent calldata sellerIntent, Intent calldata buyerIntent) external view returns (uint256) {
-        return IReactor(reactor).getMaxValidAmount(sellerIntent, buyerIntent);
+        return IReactor(REACTOR).getMaxValidAmount(sellerIntent, buyerIntent);
     }
 
     function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedAmount) external {
         if (!isOpen) revert MarketClosed();
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
 
-        uint256 totalExecutionPrice = IReactor(reactor).getTotalExecutionPrice(buyer, seller, tradedAmount);
+        uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedAmount);
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / 10000;
 
-        IReactor(reactor).process(seller, sellerSig, buyer, buyerSig, tradedAmount, totalFee);
+        IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedAmount, totalFee);
         emit Trade(seller.owner, buyer.owner, seller.tokenOut, tradedAmount, seller.tokenIn, totalExecutionPrice, totalFee);
     }
 
