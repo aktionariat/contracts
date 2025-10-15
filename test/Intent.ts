@@ -68,7 +68,6 @@ export function getEIP712Fields(intentStruct: Intent, verifyingContract: string)
 
   const intent = getNamedStruct(intentStruct);
 
-
   return { domain, types, intent };
 }
 

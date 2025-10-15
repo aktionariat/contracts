@@ -89,11 +89,8 @@ contract TradeReactor is IReactor, EIP712 {
 
     function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedAmount) public pure returns (uint256) {
         verifyPriceMatch(buyerIntent, sellerIntent);
-
         uint256 executionPrice = (sellerIntent.creation >= buyerIntent.creation) ? getAsk(sellerIntent, tradedAmount) : getBid(buyerIntent, tradedAmount);
-        uint256 totalCost = executionPrice * tradedAmount;
-
-        return totalCost;
+        return executionPrice;
     }
 
     function getFilledAmount(Intent calldata intent) external view returns (uint160) {
