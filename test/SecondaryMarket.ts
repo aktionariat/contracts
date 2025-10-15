@@ -3,9 +3,11 @@ import { Contract } from "ethers";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
 import TestModule from "../ignition/modules/TestModule.ts";
 import { SecondaryMarket } from "../types/ethers-contracts/index.ts";
+import { buyerIntentConfig, getEIP712Fields, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
 
 
 describe("SecondaryMarket", function () {
+  let tradeReactor: Contract;
   let secondaryMarketFactory: Contract;
   let secondaryMarket: SecondaryMarket;
   let secondaryMarketWithRouter: SecondaryMarket;
@@ -18,7 +20,7 @@ describe("SecondaryMarket", function () {
   }
 
   before(async function() {
-    ({ secondaryMarketFactory, zchf, allowlistDraggableShares } = await connection.networkHelpers.loadFixture(deployTestModuleFixture));
+    ({ secondaryMarketFactory, zchf, allowlistDraggableShares, tradeReactor } = await connection.networkHelpers.loadFixture(deployTestModuleFixture));
     const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, ethers.ZeroAddress);
     await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, ethers.ZeroAddress);
     secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
@@ -38,22 +40,24 @@ describe("SecondaryMarket", function () {
     expect(await secondaryMarketWithRouter.router()).to.equal(router);
   });
 
-  it("Should be able to sign a manually constructed structured intent", async function () {
-    const intent = {
-      owner: signer1.address,
-      filler: await secondaryMarket.ge(),
-      tokenOut: allowlistDraggableShares.getAddress,
-      amountOut: ethers.parseUnits("10", 0),
-      tokenIn: zchf.address,
-      amountIn: ethers.parseUnits("100", 18),
-      creation: Math.floor(Date.now() / 1000),
-      expiration: Math.floor(Date.now() / 1000) + 3600,
-      data: "0x"
-    }
+  it("Should be able to execute matching intents", async function () {
+    const buyerIntent = getNamedStruct(await secondaryMarket.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds));
+    const buyerSignature = await getSignature(signer1, buyerIntent, await tradeReactor.getAddress());
 
-    signer2.signTypedData
+    const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
+    const sellerSignature = await getSignature(signer2, sellerIntent, await tradeReactor.getAddress());
+
+    await tradeReactor.verifyPriceMatch(buyerIntent, sellerIntent);
+
+    const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
+    
+    await tradeReactor.verifyIntentSignature(buyerIntent, buyerSignature);
+    await tradeReactor.verifyIntentSignature(sellerIntent, sellerSignature);
+
+    console.log("verifyIntentSignature succeeds")
 
 
+    await secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount);
   });
 
 

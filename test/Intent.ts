@@ -30,7 +30,21 @@ export const sellerIntentConfig = {
   validitySeconds: 3600                    // Valid for 1 hour
 }
 
-function getEIP712Fields(intentStruct: Intent, verifyingContract: string) {
+export function getNamedStruct(intentStruct: Intent) {
+  return {
+    owner: intentStruct.owner,
+    filler: intentStruct.filler,
+    tokenOut: intentStruct.tokenOut,
+    amountOut: intentStruct.amountOut,
+    tokenIn: intentStruct.tokenIn,
+    amountIn: intentStruct.amountIn,
+    creation: intentStruct.creation,
+    expiration: intentStruct.expiration,
+    data: intentStruct.data
+  }
+}
+
+export function getEIP712Fields(intentStruct: Intent, verifyingContract: string) {
   const domain = {
     name: 'TradeIntent',
     version: '1',
@@ -53,19 +67,14 @@ function getEIP712Fields(intentStruct: Intent, verifyingContract: string) {
     ]
   };
 
-  const intent = {
-    owner: intentStruct.owner,
-    filler: intentStruct.filler,
-    tokenOut: intentStruct.tokenOut,
-    amountOut: intentStruct.amountOut,
-    tokenIn: intentStruct.tokenIn,
-    amountIn: intentStruct.amountIn,
-    creation: intentStruct.creation,
-    expiration: intentStruct.expiration,
-    data: intentStruct.data
-  };
+  const intent = getNamedStruct(intentStruct);
 
   return { domain, types, intent };
+}
+
+export function getSignature(signer: any, intentStruct: Intent, verifyingContract: string) {
+  const { domain, types, intent } = getEIP712Fields(intentStruct, verifyingContract);
+  return signer.signTypedData(domain, types, intent);
 }
 
 describe("Intents and Signing", function () {
@@ -119,15 +128,15 @@ describe("Intents and Signing", function () {
 
     const signature = await signer1.signTypedData(domain, types, intent);
 
-    await expect(tradeReactor.verifyIntentSignature(intent, signature)).to.not.revert(ethers);
+    await expect(secondaryMarket.verifySignature(intent, signature)).to.not.revert(ethers);
   });
 
   it("Should be able to sign a sell intent", async function () {
-    const intentStruct = await secondaryMarket.createBuyOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds);
+    const intentStruct = await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds);
     const { domain, types, intent } = getEIP712Fields(intentStruct, await tradeReactor.getAddress());
 
     const signature = await signer2.signTypedData(domain, types, intent);
-    
-    await expect(tradeReactor.verifyIntentSignature(intent, signature)).to.not.revert(ethers);
+
+    await expect(secondaryMarket.verifySignature(intent, signature)).to.not.revert(ethers);
   });
 });

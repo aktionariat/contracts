@@ -9,7 +9,7 @@ import {Intent} from "./IntentHash.sol";
 contract SecondaryMarket is Ownable {
 
     uint16 public constant ALL = 10000;
-    address public constant REACTOR = address(0x0); // TODO: set the reactor address here
+    address public constant REACTOR = 0x7848c938F6bA780827F7fe0D6AaDc95B6d213720; // TODO: set the REAL reactor address here
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
     uint160 public constant CANCELLED = 2**160 - 1;
 
@@ -19,7 +19,7 @@ contract SecondaryMarket is Ownable {
     event TradingFeeCollected(address currency, uint256 actualFee, address spreadRecipient, uint256 returnedSpread);
     event TradingFeeWithdrawn(address currency, address target, uint256 amount);
     event LicenseFeePaid(address currency, address target, uint256 amount);
-    event TradingWindow(uint24 from, uint24 to);
+    event TradingWindow(uint160 from, uint160 to);
     event Trade(address indexed seller, address indexed buyer, address token, uint256 tokenAmount, address currency, uint256 currencyAmount, uint256 fees);
 
     error LargerSpreadNeeded(uint256 feesCollected, uint256 requiredMinimum);
@@ -38,8 +38,8 @@ contract SecondaryMarket is Ownable {
     uint16 public tradingFeeBips; // 2B
     uint16 public routerShare; // Share of the trading fee that goes to the router in bips
     uint16 public licenseShare; // Share of the trading fee that goes to the router in bips
-    uint24 public openFrom; // Market opening time
-    uint24 public openTo; // Market closing time
+    uint160 public openFrom; // Market opening time
+    uint160 public openTo; // Market closing time
 
     constructor(address owner, address currency, address token, address router_) Ownable(owner) {
         CURRENCY = currency;
@@ -48,7 +48,7 @@ contract SecondaryMarket is Ownable {
         router = router_;
         routerShare = 0;
         openFrom = 0;
-        openTo = type(uint24).max;
+        openTo = type(uint160).max;
     }
 
     //// ADMINISTRATION ////
@@ -76,7 +76,7 @@ contract SecondaryMarket is Ownable {
      * @param openTime The time in seconds since 1970-01-01 the market opens.
      * @param window The dureation in seconds for which the market stays open.
      */
-    function setTradingWindow(uint24 openTime, uint24 window) onlyOwner public {
+    function setTradingWindow(uint160 openTime, uint160 window) onlyOwner public {
         openFrom = openTime;
         openTo = openTime + window;
         emit TradingWindow(openFrom, openTo);

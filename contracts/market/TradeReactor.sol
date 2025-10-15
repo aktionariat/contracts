@@ -82,8 +82,8 @@ contract TradeReactor is IReactor, EIP712 {
     }
 
     function verifyPriceMatch(Intent calldata buyerIntent, Intent calldata sellerIntent) public pure {
-        uint256 ask = getAsk(sellerIntent, sellerIntent.amountOut);
-        uint256 bid = getBid(buyerIntent, buyerIntent.amountIn);
+        uint256 ask = getAsk(sellerIntent, 1);
+        uint256 bid = getBid(buyerIntent, 1);
         if (bid < ask) revert OfferTooLow();
     }
 
@@ -164,7 +164,7 @@ contract TradeReactor is IReactor, EIP712 {
     function verify(Intent calldata intent, bytes calldata signature) public view {
         verifyIntentSignature(intent, signature);
         if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
-        if (intent.filler != msg.sender || intent.filler != address(0x0)) revert InvalidFiller();
+        if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
     }
 
     function cleanupExpiredIntentData(Intent[] calldata intents) external {
