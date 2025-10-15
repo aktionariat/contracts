@@ -194,11 +194,20 @@ describe("SecondaryMarket", function () {
     expect(await tradeReactor.getFilledAmount(sellerIntent)).to.equal(100);
     expect(await tradeReactor.getFilledAmount(buyer3Intent)).to.equal(20);
     expect(await allowlistDraggableShares.balanceOf(signer2.address)).to.equal(sellerRemainingBalance - tradeAmount3);
-
-
-
-  
   });
 
+  it("Should not execute expired intents", async function () {
+    const buyerIntent = getNamedStruct(await secondaryMarket.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds));
+    const buyerSignature = await getSignature(signer1, buyerIntent, await tradeReactor.getAddress());    
+
+    // Pass the time
+    connection.networkHelpers.time.increase(buyerIntentConfig.validitySeconds + 1);
+
+    const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
+    const sellerSignature = await getSignature(signer2, sellerIntent, await tradeReactor.getAddress());
+    const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
+
+    await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount)).to.be.revertedWithCustomError(tradeReactor, "IntentExpired");
+  });
 
 });

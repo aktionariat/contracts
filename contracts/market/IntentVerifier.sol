@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {Intent, IntentHash} from "./IntentHash.sol";
 
-contract EIP712 {
+contract IntentVerifier {
 
     using IntentHash for Intent;
     
@@ -11,19 +11,20 @@ contract EIP712 {
     error InvalidSignature();
     error InvalidSigner();
 
-    string private EIP712DomainName = "TradeIntent";
-    string private EIP712DomainVersion = "1";
-    uint256 private EIP712DomainChainId = block.chainid;
-    address private EIP712DomainVerifyingContract = address(this);
-    bytes32 private EIP712DomainSalt = keccak256(bytes("aktionariat"));
+    // EIP-712 Domain Properties
+    // Name: "TradeIntent"
+    // Version: "1"
+    // Chain ID: current chain id
+    // Verifying Contract: this contract
+    // Salt: hash of "aktionariat" as bytes32
 
     bytes32 private DOMAIN_SEPARATOR = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"),
-            keccak256(bytes(EIP712DomainName)),
-            keccak256(bytes(EIP712DomainVersion)),
-            EIP712DomainChainId,
-            EIP712DomainVerifyingContract,
-            EIP712DomainSalt
+            keccak256(bytes("TradeIntent")),
+            keccak256(bytes("1")),
+            block.chainid,
+            address(this),
+            keccak256(bytes("aktionariat"))
     ));
 
     function verifyIntentSignature(Intent calldata intent, bytes calldata sig) public view {

@@ -3,7 +3,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {IERC20} from "../ERC20/IERC20.sol";
-import {EIP712} from "./EIP712.sol";
+import {IntentVerifier} from "./IntentVerifier.sol";
 import {Intent, IntentHash} from "./IntentHash.sol";
 import {SafeERC20} from "../utils/SafeERC20.sol";
 import {IReactor} from "./IReactor.sol";
@@ -12,7 +12,7 @@ import {IReactor} from "./IReactor.sol";
  * @title TradeReactor Contract
  * @notice This contract handles the signaling and processing of trade intents between buyers and sellers.
 */
-contract TradeReactor is IReactor, EIP712 {
+contract TradeReactor is IReactor, IntentVerifier {
 
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
@@ -37,7 +37,7 @@ contract TradeReactor is IReactor, EIP712 {
     error TokenMismatch();
     error SpreadTooLow(uint256 bid, uint256 ask, uint16 minSpread);
     error OverFilled();
-    error SignatureExpired(uint256 signatureDeadline);
+    error IntentExpired(uint256 signatureDeadline);
 
     /**
      * @notice A function to publicly signal an intent to buy or sell a token so it can be picked up by the filler for processing.
@@ -160,7 +160,7 @@ contract TradeReactor is IReactor, EIP712 {
 
     function verify(Intent calldata intent, bytes calldata signature) public view {
         verifyIntentSignature(intent, signature);
-        if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
+        if (block.timestamp > intent.expiration) revert IntentExpired(intent.expiration);
         if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
     }
 

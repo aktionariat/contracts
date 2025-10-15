@@ -19,7 +19,7 @@ contract SecondaryMarket is Ownable {
     event TradingFeeCollected(address currency, uint256 actualFee, address spreadRecipient, uint256 returnedSpread);
     event TradingFeeWithdrawn(address currency, address target, uint256 amount);
     event LicenseFeePaid(address currency, address target, uint256 amount);
-    event TradingWindow(uint256 from, uint256 to);
+    event MarketStatusChanged(bool isOpen, uint256 timestamp);
     event Trade(address indexed seller, address indexed buyer, address token, uint256 tokenAmount, address currency, uint256 currencyAmount, uint256 fees);
 
     error LargerSpreadNeeded(uint256 feesCollected, uint256 requiredMinimum);
@@ -57,6 +57,7 @@ contract SecondaryMarket is Ownable {
      */
     function open() onlyOwner external {
         isOpen = true;
+        emit MarketStatusChanged(true, block.timestamp);
     }
 
     /**
@@ -64,6 +65,7 @@ contract SecondaryMarket is Ownable {
      */
     function close() onlyOwner external {
         isOpen = false;
+        emit MarketStatusChanged(false, block.timestamp);
     }
 
     /**
