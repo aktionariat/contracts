@@ -161,7 +161,7 @@ contract TradeReactor is IReactor, EIP712 {
     function verify(Intent calldata intent, bytes calldata signature) public view {
         verifyIntentSignature(intent, signature);
         if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
-        // if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
+        if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
     }
 
     function cleanupExpiredIntentData(Intent[] calldata intents) external {
