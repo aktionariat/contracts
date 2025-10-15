@@ -60,8 +60,30 @@ describe("SecondaryMarket", function () {
     await tradeReactor.verifyPriceMatch(buyerIntent, sellerIntent);
 
     const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
+    const totalExecutionPrice = await tradeReactor.getTotalExecutionPrice(buyerIntent, sellerIntent, tradedAmount);
+    const tradingFeeBips = await secondaryMarket.tradingFeeBips();
+    const totalFee = totalExecutionPrice * tradingFeeBips / 10000n;
+
+    const buyerCurrencyBefore = await zchf.balanceOf(buyerIntentConfig.owner);
+    const buyerTokenBefore = await allowlistDraggableShares.balanceOf(buyerIntentConfig.owner);
+    const sellerCurrencyBefore = await zchf.balanceOf(sellerIntentConfig.owner);
+    const sellerTokenBefore = await allowlistDraggableShares.balanceOf(sellerIntentConfig.owner);
+    const fillerCurrencyBefore = await zchf.balanceOf(await secondaryMarket.getAddress());
 
     await secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount);
+    
+    const buyerCurrencyAfter = await zchf.balanceOf(buyerIntentConfig.owner);
+    const buyerTokenAfter = await allowlistDraggableShares.balanceOf(buyerIntentConfig.owner);
+    const sellerCurrencyAfter = await zchf.balanceOf(sellerIntentConfig.owner);
+    const sellerTokenAfter = await allowlistDraggableShares.balanceOf(sellerIntentConfig.owner);
+    const fillerCurrencyAfter = await zchf.balanceOf(await secondaryMarket.getAddress());
+
+    expect(buyerTokenAfter - buyerTokenBefore).to.equal(tradedAmount);
+    expect(sellerTokenBefore - sellerTokenAfter).to.equal(tradedAmount);
+    expect(buyerCurrencyBefore - buyerCurrencyAfter).to.equal(totalExecutionPrice);
+    expect(sellerCurrencyAfter - sellerCurrencyBefore).to.equal(totalExecutionPrice - totalFee);
+    expect(fillerCurrencyAfter - fillerCurrencyBefore).to.equal(totalFee);
+
   });
 
 
