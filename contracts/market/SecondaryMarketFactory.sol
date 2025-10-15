@@ -15,8 +15,8 @@ contract SecondaryMarketFactory {
      * @param router The router address
      * @return market The address of the deployed SecondaryMarket
      */
-    function deploy(address owner, address currency, address token, address router) external returns (address) {
-        SecondaryMarket market = new SecondaryMarket{salt: SALT}(owner, currency, token, router);
+    function deploy(address owner, address currency, address token, address reactor, address router) external returns (address) {
+        SecondaryMarket market = new SecondaryMarket{salt: SALT}(owner, currency, token, reactor, router);
         emit SecondaryMarketDeployed(owner, address(market));
         return address(market);
     }
@@ -27,8 +27,8 @@ contract SecondaryMarketFactory {
      * @param router The router address
      * @return predicted The predicted deployment address
      */
-    function predict(address owner, address currency, address token, address router) external view returns (address predicted) {
-        bytes memory initCode = abi.encodePacked(type(SecondaryMarket).creationCode, abi.encode(owner, currency, token, router));
+    function predict(address owner, address currency, address token, address reactor, address router) external view returns (address predicted) {
+        bytes memory initCode = abi.encodePacked(type(SecondaryMarket).creationCode, abi.encode(owner, currency, token, reactor, router));
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), SALT, keccak256(initCode)));
         return address(uint160(uint256(hash)));
     }
@@ -39,8 +39,8 @@ contract SecondaryMarketFactory {
      * @param router The router address
      * @return isDeployed True if a contract exists at the predicted address
      */
-    function isDeployed(address owner, address currency, address token, address router) external view returns (bool) {
-        address predictedAddress = this.predict(owner, currency, token, router);
+    function isDeployed(address owner, address currency, address token, address reactor, address router) external view returns (bool) {
+        address predictedAddress = this.predict(owner, currency, token, reactor, router);
         uint32 size;
         assembly {
             size := extcodesize(predictedAddress)

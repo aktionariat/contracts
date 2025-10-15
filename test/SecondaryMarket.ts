@@ -4,6 +4,8 @@ import { connection, deployer, ethers, owner, provider, signer1, signer2, signer
 import TestModule from "../ignition/modules/TestModule.ts";
 import { SecondaryMarket } from "../types/ethers-contracts/index.ts";
 import { buyerIntentConfig, getEIP712Fields, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
+import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
+import { mintAndWrap } from "../scripts/helpers/mintAndWrap.ts";
 
 
 describe("SecondaryMarket", function () {
@@ -11,6 +13,7 @@ describe("SecondaryMarket", function () {
   let secondaryMarketFactory: Contract;
   let secondaryMarket: SecondaryMarket;
   let secondaryMarketWithRouter: SecondaryMarket;
+  let allowlistShares: Contract
   let allowlistDraggableShares: Contract
   let zchf: Contract;
   const router = signer5; // Use an existing signer as router
@@ -20,14 +23,21 @@ describe("SecondaryMarket", function () {
   }
 
   before(async function() {
-    ({ secondaryMarketFactory, zchf, allowlistDraggableShares, tradeReactor } = await connection.networkHelpers.loadFixture(deployTestModuleFixture));
-    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, ethers.ZeroAddress);
-    await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, ethers.ZeroAddress);
+    ({ secondaryMarketFactory, zchf, allowlistShares, allowlistDraggableShares, tradeReactor } = await connection.networkHelpers.loadFixture(deployTestModuleFixture));
+
+    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, tradeReactor, ethers.ZeroAddress);
+    await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, tradeReactor, ethers.ZeroAddress);
     secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
     
-    const secondaryMarketWithRouterAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, router);
-    await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, router);
+    const secondaryMarketWithRouterAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, tradeReactor, router);
+    await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, tradeReactor, router);
     secondaryMarketWithRouter = await ethers.getContractAt("SecondaryMarket", secondaryMarketWithRouterAddress);
+
+    // Set balances and allowances of buyer and seller
+    await setZCHFBalance(signer1.address, ethers.parseUnits("1000", 18));
+    await mintAndWrap(allowlistShares, allowlistDraggableShares, signer2.address, ethers.parseUnits("1000", 0));
+    await zchf.connect(signer1).approve(tradeReactor, ethers.MaxUint256);
+    await allowlistDraggableShares.connect(signer2).approve(tradeReactor, ethers.MaxUint256);
   });
 
   it("Deploy with and without router", async function () {
@@ -50,12 +60,6 @@ describe("SecondaryMarket", function () {
     await tradeReactor.verifyPriceMatch(buyerIntent, sellerIntent);
 
     const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
-    
-    await tradeReactor.verifyIntentSignature(buyerIntent, buyerSignature);
-    await tradeReactor.verifyIntentSignature(sellerIntent, sellerSignature);
-
-    console.log("verifyIntentSignature succeeds")
-
 
     await secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount);
   });

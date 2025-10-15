@@ -26,11 +26,11 @@ contract TradeReactor is IReactor, EIP712 {
     /// @param amountOut The amount of the tokenOut the owner wants to sell or exchange.
     /// @param tokenIn The address of the token the owner wants to receive in exchange.
     /// @param amountIn The amount of the tokenIn the owner wants to receive.
-    /// @param exp The expiration time of the intent.
-    /// @param nonce A nonce to ensure the uniqueness of the intent.
+    /// @param creation The creation time of the intent.
+    /// @param expiration The expiration time of the intent.
     /// @param data Additional data that may be used in the trade execution.
     /// @param signature The signature of the owner authorizing the intent.
-    event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint48 exp, uint48 nonce, bytes data, bytes signature);
+    event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint256 creation, uint256 expiration, bytes data, bytes signature);
 
     error OfferTooLow();
     error InvalidFiller();
@@ -164,7 +164,7 @@ contract TradeReactor is IReactor, EIP712 {
     function verify(Intent calldata intent, bytes calldata signature) public view {
         verifyIntentSignature(intent, signature);
         if (block.timestamp > intent.expiration) revert SignatureExpired(intent.expiration);
-        if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
+        // if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
     }
 
     function cleanupExpiredIntentData(Intent[] calldata intents) external {

@@ -10,8 +10,8 @@ struct Intent {
 	uint160 amountOut; // The maximum amount
 	address tokenIn; // The ERC20 token received
 	uint160 amountIn; // The amount received in exchange for the maximum of the sent token
-	uint48 creation; // timestamp at which the intent was created
-	uint48 expiration; // timestamp at which the intent expires
+	uint256 creation; // timestamp at which the intent was created
+	uint256 expiration; // timestamp at which the intent expires
 	bytes data;
 }
 
@@ -27,8 +27,8 @@ library IntentHash {
 			"uint160 amountOut,",
 			"address tokenIn,",
 			"uint160 amountIn,",
-			"uint48 creation,",
-			"uint48 expiration,",
+			"uint256 creation,",
+			"uint256 expiration,",
 			"bytes data)"
 		);
 

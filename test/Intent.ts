@@ -61,13 +61,14 @@ export function getEIP712Fields(intentStruct: Intent, verifyingContract: string)
       { name: 'amountOut', type: 'uint160' },
       { name: 'tokenIn', type: 'address' },
       { name: 'amountIn', type: 'uint160' },
-      { name: 'creation', type: 'uint48' },
-      { name: 'expiration', type: 'uint48' },
+      { name: 'creation', type: 'uint256' },
+      { name: 'expiration', type: 'uint256' },
       { name: 'data', type: 'bytes' }
     ]
   };
 
   const intent = getNamedStruct(intentStruct);
+
 
   return { domain, types, intent };
 }
@@ -87,8 +88,8 @@ describe("Intents and Signing", function () {
 
   before(async function() {
     ({ secondaryMarketFactory, zchf, allowlistDraggableShares, tradeReactor } = await connection.ignition.deploy(TestModule));
-    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, ethers.ZeroAddress);
-    await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, ethers.ZeroAddress);
+    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, tradeReactor, ethers.ZeroAddress);
+    await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, tradeReactor, ethers.ZeroAddress);
     secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
   });
 

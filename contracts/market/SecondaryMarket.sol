@@ -9,7 +9,6 @@ import {Intent} from "./IntentHash.sol";
 contract SecondaryMarket is Ownable {
 
     uint16 public constant ALL = 10000;
-    address public constant REACTOR = 0x7848c938F6bA780827F7fe0D6AaDc95B6d213720; // TODO: set the REAL reactor address here
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
     uint160 public constant CANCELLED = 2**160 - 1;
 
@@ -19,7 +18,7 @@ contract SecondaryMarket is Ownable {
     event TradingFeeCollected(address currency, uint256 actualFee, address spreadRecipient, uint256 returnedSpread);
     event TradingFeeWithdrawn(address currency, address target, uint256 amount);
     event LicenseFeePaid(address currency, address target, uint256 amount);
-    event TradingWindow(uint160 from, uint160 to);
+    event TradingWindow(uint256 from, uint256 to);
     event Trade(address indexed seller, address indexed buyer, address token, uint256 tokenAmount, address currency, uint256 currencyAmount, uint256 fees);
 
     error LargerSpreadNeeded(uint256 feesCollected, uint256 requiredMinimum);
@@ -33,22 +32,23 @@ contract SecondaryMarket is Ownable {
     error AlreadyFilled();
     error UserCancelled();
 
-    // The following fields should fit into one 32B slot, 20 + 2 + 1 + 1 + 4 + 4 = 32
+    address public reactor; 
     address public router; // null for any, 20B
     uint16 public tradingFeeBips; // 2B
     uint16 public routerShare; // Share of the trading fee that goes to the router in bips
     uint16 public licenseShare; // Share of the trading fee that goes to the router in bips
-    uint160 public openFrom; // Market opening time
-    uint160 public openTo; // Market closing time
+    uint256 public openFrom; // Market opening time
+    uint256 public openTo; // Market closing time
 
-    constructor(address owner, address currency, address token, address router_) Ownable(owner) {
+    constructor(address owner, address currency, address token, address _reactor, address _router) Ownable(owner) {
         CURRENCY = currency;
         TOKEN = token;
         licenseShare = 5000; // default license fee is 50% of fees
-        router = router_;
+        reactor = _reactor;
+        router = _router;
         routerShare = 0;
         openFrom = 0;
-        openTo = type(uint160).max;
+        openTo = type(uint256).max;
     }
 
     //// ADMINISTRATION ////
@@ -76,7 +76,7 @@ contract SecondaryMarket is Ownable {
      * @param openTime The time in seconds since 1970-01-01 the market opens.
      * @param window The dureation in seconds for which the market stays open.
      */
-    function setTradingWindow(uint160 openTime, uint160 window) onlyOwner public {
+    function setTradingWindow(uint24 openTime, uint24 window) onlyOwner public {
         openFrom = openTime;
         openTo = openTime + window;
         emit TradingWindow(openFrom, openTo);
@@ -114,7 +114,7 @@ contract SecondaryMarket is Ownable {
      * Create an order intent that can be signed by the owner.
      */
     function createBuyOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
-        return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, uint48(block.timestamp), uint48(block.timestamp + validitySeconds), new bytes(0));
+        return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, block.timestamp, block.timestamp + validitySeconds, new bytes(0));
     }
 
     /**
@@ -122,7 +122,7 @@ contract SecondaryMarket is Ownable {
      * The tokenIn amount is reduced by the trading fee, which is always charged to the seller.
      */
     function createSellOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
-        return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn, uint48(block.timestamp), uint48(block.timestamp + validitySeconds), new bytes(0));
+        return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn, block.timestamp, block.timestamp + validitySeconds, new bytes(0));
     }
 
     /**
@@ -140,7 +140,7 @@ contract SecondaryMarket is Ownable {
      */
     function placeOrder(Intent calldata intent, bytes calldata signature) external {
         verifySignature(intent, signature);
-        IReactor(REACTOR).signalIntent(intent, signature);
+        IReactor(reactor).signalIntent(intent, signature);
     }
 
     /**
@@ -148,7 +148,7 @@ contract SecondaryMarket is Ownable {
      */
     function verifySignature(Intent calldata intent, bytes calldata sig) public view {
         if (intent.filler != address(this)) revert WrongFiller();
-        IReactor(REACTOR).verify(intent, sig);
+        IReactor(reactor).verify(intent, sig);
     }
 
     /**
@@ -161,11 +161,11 @@ contract SecondaryMarket is Ownable {
         uint256 balance = IERC20(intent.tokenOut).balanceOf(intent.owner);
         if (balance == 0) revert NoBalance(intent.tokenOut, intent.owner);
 
-        uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
-        if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, REACTOR);
+        uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, reactor);
+        if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, reactor);
 
         uint160 amountTokens = (intent.tokenOut == TOKEN) ? intent.amountOut : intent.amountIn;
-        uint160 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
+        uint160 alreadyFilled = IReactor(reactor).getFilledAmount(intent);
         if (alreadyFilled == CANCELLED) revert UserCancelled();
         if (amountTokens <= alreadyFilled) revert AlreadyFilled();
         uint160 remaining = amountTokens - alreadyFilled;
@@ -177,17 +177,17 @@ contract SecondaryMarket is Ownable {
      * Validates a match between a seller and a buyer intent and returns the maximum amount of tokens that can be traded.
      */
     function validateMatch(Intent calldata sellerIntent, Intent calldata buyerIntent) external view returns (uint256) {
-        return IReactor(REACTOR).getMaxValidAmount(sellerIntent, buyerIntent);
+        return IReactor(reactor).getMaxValidAmount(sellerIntent, buyerIntent);
     }
 
     function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedAmount) external {
         if (!isOpen()) revert MarketClosed(openFrom, openTo, block.timestamp);
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
 
-        uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedAmount);
+        uint256 totalExecutionPrice = IReactor(reactor).getTotalExecutionPrice(buyer, seller, tradedAmount);
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / 10000;
 
-        IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedAmount, totalFee);
+        IReactor(reactor).process(seller, sellerSig, buyer, buyerSig, tradedAmount, totalFee);
         emit Trade(seller.owner, buyer.owner, seller.tokenOut, tradedAmount, seller.tokenIn, totalExecutionPrice, totalFee);
     }
 
