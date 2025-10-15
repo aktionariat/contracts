@@ -4,20 +4,19 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-contract SponsoredCall {
+contract SponsoredCall layout at 971071161051111109711410597116 {
     using ECDSA for bytes32;
-
-    /// @notice A nonce used for replay protection.
-    uint256 public nonce;
-
-    /// @notice Represents a single call within a batch.
+    
+    /// @notice The raw call to be executed
     struct Call {
         address to;
         uint256 value;
         bytes data;
     }
 
-    /// @notice Emitted for every individual call executed.
+    /// @notice A nonce used for replay protection, stored in custom storage layout
+    uint256 public nonce;
+
     event CallExecuted(address indexed sender, address indexed to, uint256 value, bytes data);
 
     /**
