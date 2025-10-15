@@ -2,7 +2,6 @@ import TestModule from "../ignition/modules/TestModule.ts";
 import { Contract, getAddress } from "ethers";
 import { expect } from "chai";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
-import { SecondaryMarket } from "../types/ethers-contracts/index.ts";
 
 interface Intent { 
   owner: string,
@@ -81,8 +80,8 @@ export function getSignature(signer: any, intentStruct: Intent, verifyingContrac
 describe("Intents and Signing", function () {
   let tradeReactor: Contract;
   let secondaryMarketFactory: Contract;
-  let secondaryMarket: SecondaryMarket;
-  let secondaryMarketWithRouter: SecondaryMarket;
+  let secondaryMarket: Contract;
+  let secondaryMarketWithRouter: Contract;
   let allowlistDraggableShares: Contract
   let zchf: Contract;
 

@@ -26,19 +26,19 @@ contract SecondaryMarket is Ownable {
     error WrongTokens();
     error WrongRouter(address expected, address actual);
     error InvalidConfiguration();
-    error MarketClosed(uint256 openFrom, uint256 openTo, uint256 nowTime);
+    error MarketClosed();
     error NoBalance(address token, address owner);
     error NoAllowance(address token, address owner, address spender);
     error AlreadyFilled();
     error UserCancelled();
 
     address public reactor; 
+
     address public router; // null for any, 20B
     uint16 public tradingFeeBips; // 2B
     uint16 public routerShare; // Share of the trading fee that goes to the router in bips
     uint16 public licenseShare; // Share of the trading fee that goes to the router in bips
-    uint256 public openFrom; // Market opening time
-    uint256 public openTo; // Market closing time
+    bool public isOpen;
 
     constructor(address owner, address currency, address token, address _reactor, address _router) Ownable(owner) {
         CURRENCY = currency;
@@ -47,39 +47,23 @@ contract SecondaryMarket is Ownable {
         reactor = _reactor;
         router = _router;
         routerShare = 0;
-        openFrom = 0;
-        openTo = type(uint256).max;
+        isOpen = true;
     }
 
     //// ADMINISTRATION ////
 
-    function isOpen() public view returns (bool) {
-        return block.timestamp >= openFrom && block.timestamp < openTo;
-    }
-    
     /**
      * Opens the market.
      */
     function open() onlyOwner external {
-        setTradingWindow(0, type(uint24).max);
+        isOpen = true;
     }
 
     /**
      * Closes the market.
      */
     function close() onlyOwner external {
-        setTradingWindow(0, 0);
-    }
-
-    /**
-     * Opens the market for a limited amount of time.
-     * @param openTime The time in seconds since 1970-01-01 the market opens.
-     * @param window The dureation in seconds for which the market stays open.
-     */
-    function setTradingWindow(uint24 openTime, uint24 window) onlyOwner public {
-        openFrom = openTime;
-        openTo = openTime + window;
-        emit TradingWindow(openFrom, openTo);
+        isOpen = false;
     }
 
     /**
@@ -181,7 +165,7 @@ contract SecondaryMarket is Ownable {
     }
 
     function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedAmount) external {
-        if (!isOpen()) revert MarketClosed(openFrom, openTo, block.timestamp);
+        if (!isOpen) revert MarketClosed();
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
 
         uint256 totalExecutionPrice = IReactor(reactor).getTotalExecutionPrice(buyer, seller, tradedAmount);

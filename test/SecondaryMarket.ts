@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { Contract } from "ethers";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
 import TestModule from "../ignition/modules/TestModule.ts";
-import { SecondaryMarket } from "../types/ethers-contracts/index.ts";
 import { buyerIntentConfig, getEIP712Fields, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
 import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
 import { mintAndWrap } from "../scripts/helpers/mintAndWrap.ts";
@@ -11,8 +10,8 @@ import { mintAndWrap } from "../scripts/helpers/mintAndWrap.ts";
 describe("SecondaryMarket", function () {
   let tradeReactor: Contract;
   let secondaryMarketFactory: Contract;
-  let secondaryMarket: SecondaryMarket;
-  let secondaryMarketWithRouter: SecondaryMarket;
+  let secondaryMarket: Contract;
+  let secondaryMarketWithRouter: Contract;
   let allowlistShares: Contract
   let allowlistDraggableShares: Contract
   let zchf: Contract;
