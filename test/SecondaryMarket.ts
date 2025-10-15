@@ -1,11 +1,10 @@
 import { expect } from "chai";
-import { Contract } from "ethers";
+import { Contract, MaxInt256 } from "ethers";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
 import TestModule from "../ignition/modules/TestModule.ts";
-import { buyerIntentConfig, getEIP712Fields, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
-import { setBalance, setZCHFBalance } from "../scripts/helpers/setBalance.ts";
+import { buyerIntentConfig, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
+import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
 import { mintAndWrap } from "../scripts/helpers/mintAndWrap.ts";
-import { getImpersonatedSigner } from "../scripts/helpers/getImpersonatedSigner.ts";
 
 
 describe("SecondaryMarket", function () {
@@ -16,10 +15,21 @@ describe("SecondaryMarket", function () {
   let allowlistShares: Contract
   let allowlistDraggableShares: Contract
   let zchf: Contract;
-  const router = signer5; // Use an existing signer as router
+  const router = deployer; // Use an existing signer as router
 
   async function deployTestModuleFixture() {
     return connection.ignition.deploy(TestModule);
+  }
+
+  // Convenience method to create 2 matching intents for testing
+  // Calling this on the same block should return the same intents
+  // Whereas calling it after a transaction or manual mining should return new, different intents
+  async function createMatchingIntents() {
+    const buyerIntent = getNamedStruct(await secondaryMarket.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds));
+    const buyerSignature = await getSignature(signer1, buyerIntent, await tradeReactor.getAddress());    
+    const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
+    const sellerSignature = await getSignature(signer2, sellerIntent, await tradeReactor.getAddress());
+    return { buyerIntent, buyerSignature, sellerIntent, sellerSignature }
   }
 
   before(async function() {
@@ -34,10 +44,16 @@ describe("SecondaryMarket", function () {
     secondaryMarketWithRouter = await ethers.getContractAt("SecondaryMarket", secondaryMarketWithRouterAddress);
 
     // Set balances and allowances of buyer and seller
-    await setZCHFBalance(signer1.address, ethers.parseUnits("1000", 18));
+    await setZCHFBalance(signer1.address, ethers.parseUnits("100000", 18));
+    await setZCHFBalance(signer3.address, ethers.parseUnits("100000", 18));
+    await setZCHFBalance(signer4.address, ethers.parseUnits("100000", 18));
+    await setZCHFBalance(signer5.address, ethers.parseUnits("100000", 18));
+    await zchf.connect(signer1).approve(tradeReactor, ethers.parseUnits("100000", 18));
+    await zchf.connect(signer3).approve(tradeReactor, ethers.parseUnits("100000", 18));
+    await zchf.connect(signer4).approve(tradeReactor, ethers.parseUnits("100000", 18));
+    await zchf.connect(signer5).approve(tradeReactor, ethers.parseUnits("100000", 18));
     await mintAndWrap(allowlistShares, allowlistDraggableShares, signer2.address, ethers.parseUnits("1000", 0));
-    await zchf.connect(signer1).approve(tradeReactor, ethers.parseUnits("1000", 18));
-    await allowlistDraggableShares.connect(signer2).approve(tradeReactor, ethers.parseUnits("1000", 0));
+    await allowlistDraggableShares.connect(signer2).approve(tradeReactor, ethers.parseUnits("100000", 0));
   });
 
   it("Deploy with and without router", async function () {
@@ -51,11 +67,7 @@ describe("SecondaryMarket", function () {
   });
 
   it("Should be able to execute matching intents", async function () {
-    const buyerIntent = getNamedStruct(await secondaryMarket.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds));
-    const buyerSignature = await getSignature(signer1, buyerIntent, await tradeReactor.getAddress());
-
-    const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
-    const sellerSignature = await getSignature(signer2, sellerIntent, await tradeReactor.getAddress());
+    const { buyerIntent, buyerSignature, sellerIntent, sellerSignature } = await createMatchingIntents();
 
     await tradeReactor.verifyPriceMatch(buyerIntent, sellerIntent);
 
@@ -106,20 +118,86 @@ describe("SecondaryMarket", function () {
     const sellerSignature2 = await getSignature(signer2, sellerIntent2, await tradeReactor.getAddress());
     const tradedAmount2 = await tradeReactor.getMaxValidAmount(sellerIntent2, buyerIntent2);
 
-    
     await expect(secondaryMarket.process(sellerIntent1, sellerSignature1, buyerIntent1, buyerSignature1, tradedAmount1)).to.not.revert(ethers);
     await expect(secondaryMarket.process(sellerIntent2, sellerSignature2, buyerIntent2, buyerSignature2, tradedAmount2)).to.not.revert(ethers);
   });
 
-  it("Should not be able to execute same intent twice - One would be OverFilled", async function () {
-    const buyerIntent = getNamedStruct(await secondaryMarket.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds));
-    const buyerSignature = await getSignature(signer1, buyerIntent, await tradeReactor.getAddress());    
-    const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
-    const sellerSignature = await getSignature(signer2, sellerIntent, await tradeReactor.getAddress());
+  it("Should not be able to execute same intents twice - One would be OverFilled", async function () {
+    const { buyerIntent, buyerSignature, sellerIntent, sellerSignature } = await createMatchingIntents();
     const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
 
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount)).to.not.revert(ethers);
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount)).to.revert(ethers);
+  });
+
+  it("Should be able to match one intent against multiple other intents at different prices until fully filled, and not more.", async function () {
+    // Seller selling 100 tokens for 10 ZCHF each
+    const sellerAmountTokens = ethers.parseUnits("100", 0);
+    const sellerAmountZCHF = ethers.parseUnits("1000", 18);
+    const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(signer2, sellerAmountTokens, sellerAmountZCHF, sellerIntentConfig.validitySeconds));
+    const sellerSignature = await getSignature(signer2, sellerIntent, await tradeReactor.getAddress());
+    var sellerRemainingBalance = await allowlistDraggableShares.balanceOf(signer2.address);
+
+    // Buyer 1 offering to buy 50 tokens for 10 ZCHF each
+    const buyer1AmountTokens = ethers.parseUnits("50", 0);
+    const buyer1AmountZCHF = ethers.parseUnits("500", 18);
+    const buyer1Intent = getNamedStruct(await secondaryMarket.createBuyOrder(signer1, buyer1AmountZCHF, buyer1AmountTokens, buyerIntentConfig.validitySeconds));
+    const buyer1Signature = await getSignature(signer1, buyer1Intent, await tradeReactor.getAddress());
+
+    // Buyer 2 offering to buy 30 tokens for 12 ZCHF each
+    const buyer2AmountTokens = ethers.parseUnits("30", 0);
+    const buyer2AmountZCHF = ethers.parseUnits("360", 18);
+    const buyer2Intent = getNamedStruct(await secondaryMarket.createBuyOrder(signer3,buyer2AmountZCHF,  buyer2AmountTokens, buyerIntentConfig.validitySeconds));
+    const buyer2Signature = await getSignature(signer3, buyer2Intent, await tradeReactor.getAddress());
+
+    // Buyer 3 offering to buy 40 tokens for 15 ZCHF each
+    const buyer3AmountTokens = ethers.parseUnits("40", 0);
+    const buyer3AmountZCHF = ethers.parseUnits("600", 18);
+    const buyer3Intent = getNamedStruct(await secondaryMarket.createBuyOrder(signer4,  buyer3AmountZCHF,buyer3AmountTokens, buyerIntentConfig.validitySeconds));
+    const buyer3Signature = await getSignature(signer4, buyer3Intent, await tradeReactor.getAddress());
+
+    // Buyer 4 offering to buy 50 tokens for 9 ZCHF each, which should not match
+    const buyer4AmountTokens = ethers.parseUnits("50", 0);
+    const buyer4AmountZCHF = ethers.parseUnits("450", 18);
+    const buyer4Intent = getNamedStruct(await secondaryMarket.createBuyOrder(signer5, buyer4AmountZCHF,buyer4AmountTokens, buyerIntentConfig.validitySeconds));
+    const buyer4Signature = await getSignature(signer5, buyer4Intent, await tradeReactor.getAddress());
+
+    // All intents created on the same block. //
+
+    // Seller - Buyer 4 should not match because price is too low
+    await expect(tradeReactor.verifyPriceMatch(buyer4Intent, sellerIntent)).to.revert(ethers);
+    await expect(tradeReactor.getMaxValidAmount(sellerIntent, buyer4Intent)).to.revert(ethers);
+    await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyer4Intent, buyer4Signature, 1)).to.revert(ethers);
+
+    // Seller - Buyer 1 should match for full 50 tokens
+    const tradeAmount1 = await tradeReactor.getMaxValidAmount(sellerIntent, buyer1Intent);
+    expect(tradeAmount1).to.equal(50);
+    expect(await secondaryMarket.process(sellerIntent, sellerSignature, buyer1Intent, buyer1Signature, 50)).to.not.revert(ethers);
+    expect(await tradeReactor.getFilledAmount(sellerIntent)).to.equal(50);
+    expect(await tradeReactor.getFilledAmount(buyer1Intent)).to.equal(50);
+    expect(await allowlistDraggableShares.balanceOf(signer2.address)).to.equal(sellerRemainingBalance - tradeAmount1);
+    sellerRemainingBalance -= tradeAmount1;
+
+    // Seller - Buyer 2 should match for full 30 tokens
+    const tradeAmount2 = await tradeReactor.getMaxValidAmount(sellerIntent, buyer2Intent);
+    expect(tradeAmount2).to.equal(30);
+    expect(await secondaryMarket.process(sellerIntent, sellerSignature, buyer2Intent, buyer2Signature, 30)).to.not.revert(ethers);
+    expect(await tradeReactor.getFilledAmount(sellerIntent)).to.equal(80);
+    expect(await tradeReactor.getFilledAmount(buyer2Intent)).to.equal(30);
+    expect(await allowlistDraggableShares.balanceOf(signer2.address)).to.equal(sellerRemainingBalance - tradeAmount2);
+    sellerRemainingBalance -= tradeAmount2;
+
+    // Seller - Buyer 3 should match for remaining 20 tokens, not full 40
+    const tradeAmount3 = await tradeReactor.getMaxValidAmount(sellerIntent, buyer3Intent);
+    expect(tradeAmount3).to.equal(20);
+    expect(await secondaryMarket.process(sellerIntent, sellerSignature, buyer3Intent, buyer3Signature, 20)).to.not.revert(ethers);
+    expect(await tradeReactor.getFilledAmount(sellerIntent)).to.equal(100);
+    expect(await tradeReactor.getFilledAmount(buyer3Intent)).to.equal(20);
+    expect(await allowlistDraggableShares.balanceOf(signer2.address)).to.equal(sellerRemainingBalance - tradeAmount3);
+
+
+
+  
   });
 
 
