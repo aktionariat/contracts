@@ -12,13 +12,16 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
 
     event CallExecuted(address indexed sender, address indexed to, uint256 value, bytes data);
 
+    error InvalidNonce();
+
     /**
      * @notice Executes a call using an off–chain signature.
      * @param call A Call struct containing destination, ETH value, and calldata.
-     * @param signature The ECDSA signature over the current nonce and the call data.
+     * @param signature The typed data signature over call, which also includes the nonce.
      */
     function execute(AuthorizedCall calldata call, bytes calldata signature) external payable {
-        // TODO nonce check
+        require(call.nonce == nonce, InvalidNonce());
+
         verifyAuthorizedCallSignature(call, signature);
         verifySponsoredCallFunction(call);
 
@@ -39,7 +42,7 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
         nonce++;
         (bool success,) = call.to.call{value: call.value}(call.data);
         require(success, "Call reverted");
-       //  emit CallExecuted(msg.sender, call.to, call.value, call.data);
+        emit CallExecuted(msg.sender, call.to, call.value, call.data);
     }
 
     fallback() external payable {}

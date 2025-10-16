@@ -11,9 +11,6 @@ contract AuthorizedCallVerifier {
     error InvalidSignature();
     error InvalidSigner();
 
-    event DebugBytes32(string, bytes32);
-    event emitAddress(string, address);
-
     // EIP-712 Domain Properties
     // Name: "AuthorizedCall"
     // Version: "1"
@@ -35,7 +32,7 @@ contract AuthorizedCallVerifier {
         ));
     }
 
-    function verifyAuthorizedCallSignature(AuthorizedCall calldata call, bytes calldata sig) public {
+    function verifyAuthorizedCallSignature(AuthorizedCall calldata call, bytes calldata sig) public view {
         bytes32 digest = keccak256(abi.encodePacked(
             "\x19\x01",
             getDomainSeparator(),
@@ -44,12 +41,6 @@ contract AuthorizedCallVerifier {
 
         (uint8 v, bytes32 r, bytes32 s) = signatureToVRS(sig);
         address recoveredAddress = ecrecover(digest, v, r, s);
-
-        emit DebugBytes32("domain", getDomainSeparator());
-        emit DebugBytes32("struct", call.hash());
-        emit DebugBytes32("digest", digest);
-        emit emitAddress("recoveredAddressBefore", recoveredAddress);
-        emit emitAddress("address this", address(this));
 
         if (recoveredAddress == address(0)) revert InvalidSignature();
         if (recoveredAddress != address(this)) revert InvalidSigner();
