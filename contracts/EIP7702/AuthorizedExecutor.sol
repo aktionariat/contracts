@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.0 <0.9.0;
 
 import {AuthorizedCall, AuthorizedCallHash} from "./AuthorizedCall.sol";
 import {AuthorizedCallVerifier} from "./AuthorizedCallVerifier.sol";
 
+/**
+ * @title AuthorizedExecutor
+ * @author Murat Ögat, murat@aktionariat.com
+ *
+ * A "Smart Account" contract, intended to be used for execution delegation per EIP-7702.
+ * If an authorization to this contract is set, calls can be executed by passing a signature.
+ * The expected signature is the signTypedData signature over the AuthorizedCall object.
+ */
+
 contract AuthorizedExecutor layout at 971071161051111109711410597116 is AuthorizedCallVerifier {
     using AuthorizedCallHash for AuthorizedCall;
     
-    /// @notice A nonce used for replay protection, stored in custom storage layout
-    uint256 public nonce;
+    uint256 public contractNonce;
 
     event CallExecuted(address indexed sender, address indexed to, uint256 value, bytes data);
 
@@ -22,18 +30,19 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
      * @param signature The typed data signature over call, which also includes the nonce.
      */
     function execute(AuthorizedCall calldata call, bytes calldata signature) external payable {
-        require(call.nonce == nonce, InvalidNonce());
-
+        require(call.nonce == contractNonce, InvalidNonce());
         verifyAuthorizedCallSignature(call, signature);
-        verifySponsoredCallFunction(call);
+        verifyAuthorizedCallFunction(call);
 
-        nonce++;
+        contractNonce++;
 
         _executeCall(call);
     }
 
-    function verifySponsoredCallFunction(AuthorizedCall calldata call) internal pure {
-        // TODO: Check the data starts with the function selector
+    /**
+     * @notice Compares the function signature the user has seen during signing against what will actually be executed.
+     */
+    function verifyAuthorizedCallFunction(AuthorizedCall calldata call) internal pure {
         bytes4 signedFunctionSignature = bytes4(keccak256(bytes(call.functionSignature)));
         require(signedFunctionSignature == bytes4(call.data), FunctionSignatureMismatch());
     }

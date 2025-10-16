@@ -38,7 +38,7 @@ describe("AuthorizedExecutor", function () {
         // We can't just check if the address is already delegated (and to our contract), and assume 0 nonce otherwise,
         // because delegations can be changed and we may be delegating back to AuthorizedExecutor with non-zero nonce stored in that context.
         // So we are making a view call and still passing the authorization, and as crazy as it sounds, this works.
-        const contractNonce = await signer1AsContract["nonce"]({type: 4, authorizationList: [auth]});
+        const contractNonce = await signer1AsContract["contractNonce"]({type: 4, authorizationList: [auth]});
 
         // Signing the AuthorizedCall for what we want to call
         const authorizedCall: AuthorizedCallStruct = {nonce: contractNonce, to: TestModuleConfig.zchfAddress, functionSignature: "approve(address,uint256)", value: 0n, data: encodedCall };

@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Intent, IntentHash} from "./IntentHash.sol";
+import {Intent, IntentHash} from "./IntentHash.sol";/**
+
+ * @title IntentVerifier
+ * @author Luzius Meisser, luzius@aktionariat.com
+ * @author Murat Ögat, murat@aktionariat.com
+ *
+ * EIP-712 verifier, intended to be used with TradeReactor.sol to separate verifying logic from execution.
+ * Recovers the signer from the signature of an Intent for secondary transaction and compares it to the intent owner.
+ */
 
 contract IntentVerifier {
 

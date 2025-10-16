@@ -3,6 +3,15 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {AuthorizedCall, AuthorizedCallHash} from "./AuthorizedCall.sol";
 
+/**
+ * @title AuthorizedCallVerifier
+ * @author Murat Ögat, murat@aktionariat.com
+ *
+ * EIP-712 verifier, intended to be used with AuthorizedExecutor.sol to separate verifying logic from execution.
+ * Recovers the signer from the signature of AuthorizedCall and compares it to address(this).
+ * Therefore, only the EOA owner is accepted as a signer.
+ */
+
 contract AuthorizedCallVerifier {
 
     using AuthorizedCallHash for AuthorizedCall;

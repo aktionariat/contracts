@@ -1,5 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
+
+/**
+ * @title AuthorizedCall
+ * @author Murat Ögat, murat@aktionariat.com
+ *
+ * The struct to be signed for AuthorizedExecutor execution and its hashing per EIP-712.
+ */
 
 struct AuthorizedCall {
 	uint256 nonce;
