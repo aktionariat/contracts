@@ -13,6 +13,8 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
     event CallExecuted(address indexed sender, address indexed to, uint256 value, bytes data);
 
     error InvalidNonce();
+    error FunctionSignatureMismatch();
+    error CallReverted();
 
     /**
      * @notice Executes a call using an off–chain signature.
@@ -25,13 +27,15 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
         verifyAuthorizedCallSignature(call, signature);
         verifySponsoredCallFunction(call);
 
+        nonce++;
+
         _executeCall(call);
     }
 
-    function verifySponsoredCallFunction(AuthorizedCall calldata call) internal {
+    function verifySponsoredCallFunction(AuthorizedCall calldata call) internal pure {
         // TODO: Check the data starts with the function selector
-        
-
+        bytes4 signedFunctionSignature = bytes4(keccak256(bytes(call.functionSignature)));
+        require(signedFunctionSignature == bytes4(call.data), FunctionSignatureMismatch());
     }
 
     /**
@@ -39,9 +43,8 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
      * @param call The Call struct containing destination, value, and calldata.
      */
     function _executeCall(AuthorizedCall calldata call) internal {
-        nonce++;
         (bool success,) = call.to.call{value: call.value}(call.data);
-        require(success, "Call reverted");
+        require(success, CallReverted());
         emit CallExecuted(msg.sender, call.to, call.value, call.data);
     }
 
