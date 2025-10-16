@@ -89,6 +89,7 @@ const TestModule = buildModule("TestModule", (m) => {
   const secondaryMarketFactory = m.contract("SecondaryMarketFactory", []);
 
   const sponsoredCall = m.contract("SponsoredCall", []);
+  const authorizedExecutor = m.contract("AuthorizedExecutor", []);
 
   const zchf = m.contractAt("ERC20Named", TestModuleConfig.zchfAddress, { id: "ZCHF"});
   const dai = m.contractAt("ERC20Named", TestModuleConfig.daiAddress, { id: "DAI"});
@@ -117,6 +118,7 @@ const TestModule = buildModule("TestModule", (m) => {
     tradeReactor,
     secondaryMarketFactory,
     sponsoredCall,
+    authorizedExecutor,
     zchf,
     usdc,
     dai
