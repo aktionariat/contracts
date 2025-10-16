@@ -9,14 +9,9 @@ struct AuthorizedCall {
 	bytes data;
 }
 
-/// @notice helpers for handling dutch order objects
 library AuthorizedCallHash {
-
 	bytes32 internal constant INTENT_TYPE_HASH = keccak256("AuthorizedCall(uint256 nonce,address to,string functionSignature,uint256 value,bytes data)");
 
-	/// @notice hash the given AuthorizedCall
-	/// @param call the AuthorizedCall to hash
-	/// @return the eip-712 sponsoredCall hash
 	function hash(AuthorizedCall calldata call) internal pure returns (bytes32) {
 		return
 			keccak256(

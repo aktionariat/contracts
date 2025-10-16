@@ -33,13 +33,9 @@ contract AuthorizedCallVerifier {
     }
 
     function verifyAuthorizedCallSignature(AuthorizedCall calldata call, bytes calldata sig) public view {
-        bytes32 digest = keccak256(abi.encodePacked(
-            "\x19\x01",
-            getDomainSeparator(),
-            call.hash()
-        ));
-
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), call.hash()));
         (uint8 v, bytes32 r, bytes32 s) = signatureToVRS(sig);
+        
         address recoveredAddress = ecrecover(digest, v, r, s);
 
         if (recoveredAddress == address(0)) revert InvalidSignature();
