@@ -47,8 +47,8 @@ import "../utils/Ownable.sol";
 abstract contract Migratable is ERC20Flaggable, Ownable {
 
     struct Migration {
-        address successor;
-        uint24 timestamp;
+        IERC20 successor;
+        uint64 timestamp;
 	}
 
     uint256 public constant MIGRATION_PROPOSAL_DELAY = 20 days;
@@ -56,27 +56,36 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
 
     error MigrationNotFound();
     error MigrationNoVetoPower();
-    error MigrationTooEearly(uint256 timestamp);
+    error MigrationTooEearly(uint256 earliest, uint256 timenow);
 
-    event MigrationProposed(address sender, address successor);
-    event MigrationCancelled(address sender, address successor);
-    event MigrationExecuted(address sender, address successor);
+    event MigrationProposed(address sender, IERC20 successor);
+    event MigrationCancelled(address sender, IERC20 successor);
+    event MigrationExecuted(address sender, IERC20 successor);
     
     /**
      * The issuer or holders with 10% of the tokens can propose a migration to a new contract.
      */
-    function proposeMigration(address successor) public returns (Migration memory) {
+    function proposeMigration(IERC20 successor) public returns (Migration memory) {
         if (!canCancelMigration(msg.sender)) revert MigrationNoVetoPower();
-        migration = Migration({ successor: successor, timestamp: block.timestamp });
+        migration = Migration({ successor: successor, timestamp: uint64(block.timestamp) });
         emit MigrationProposed(msg.sender, successor);
         return migration;
 	}
 
     /**
+     * Propose a termination of the shareholder agreement.
+     * 
+     * This is handled as a special case of the migration, with a migration to its base.
+     */
+    function proposeTermination() external returns (Migration memory) {
+        return proposeMigration(base());
+    }
+
+    /**
      * The issuer or holders with 10% of the tokens can cancal a proposed migration.
      */
     function cancelMigration() public {
-        if (migration.successor == address(0)) revert MigrationNotFound(); 
+        if (address(migration.successor) == address(0)) revert MigrationNotFound(); 
         if (!canCancelMigration(msg.sender)) revert MigrationNoVetoPower();
         emit MigrationCancelled(msg.sender, migration.successor);
         delete migration;
@@ -93,16 +102,20 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
      * Anyone can execute the migration once it has passed the veto process.
      */
     function executeMigration() public {
-        if (migration.successor == address(0)) revert MigrationNotFound(); 
-        if (block.timestamp < migration.timestamp + MIGRATION_PROPOSAL_DELAY) revert MigrationTooEearly(deadline); 
-        // Delete before execute to protect agains reentrancy
-        base().transfer(migration.successor, base().balanceOf(address(this)));
+        if (address(migration.successor) == address(0)) revert MigrationNotFound(); 
+        if (block.timestamp < migration.timestamp + MIGRATION_PROPOSAL_DELAY) revert MigrationTooEearly(migration.timestamp + MIGRATION_PROPOSAL_DELAY, block.timestamp); 
+        if (migration.successor == base()){
+            // This is a termination, not a migration. Don't move any tokens.
+        } else {
+            base().transfer(address(migration.successor), base().balanceOf(address(this)));
+        }
+        replaceBase(migration.successor);
         emit MigrationExecuted(msg.sender, migration.successor);
         delete migration;
     }
     
-    function base() public abstract returns (IERC20);
+    function base() public virtual returns (IERC20);
 
-    function replaceBase(IERC20 wrapped) internal abstract;
+    function replaceBase(IERC20 wrapped) internal virtual;
 
 }

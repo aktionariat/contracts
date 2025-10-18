@@ -138,8 +138,6 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
    * +------------+-----+-----+-----+-----+
    */
   function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
-    super._beforeTokenTransfer(from, to, amount);
-
     if (isRestricted(to)) {
         revert Allowlist_ReceiverIsForbidden(to);
     }

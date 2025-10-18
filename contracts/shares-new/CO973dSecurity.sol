@@ -49,10 +49,8 @@ import "../utils/SafeERC20.sol";
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
  */
-contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
+contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     
-    using SafeERC20 for IERC20;
-
     // Version history:
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
@@ -61,17 +59,22 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     // 5: New base share class with CMTA compatibility
     uint8 public constant VERSION = 5;
 
+    /**
+     * A link to the registration agreement in accordance with the Swiss Code of Obligations, fulfilling the linking
+     * requirement from article 973d paragraph 2 clause 3.
+     * https://www.fedlex.admin.ch/eli/cc/27/317_321_377/de#art_973_d
+     */
     string public terms;
+
+    /**
+     * A reference to a successor token (if any), allowing the token holders to convert their tokens into successor tokens.
+     * This can for example be useful to perform an upgrade of a token with additional functionality.
+     */
     ISuccessorToken public successor; // the successor contract, if any
 
     event Announcement(string message);
     event ChangeTerms(string terms);
     event ChangeTotalShares(uint256 total);
-
-    /// Array lengths have to be equal.
-    /// @param targets Array length of targets.
-    /// @param amount Array length of amounts.
-    error Shares_UnequalLength(uint256 targets, uint256 amount);
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() {
         terms = _terms;
@@ -139,8 +142,8 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      * mint a new token or other form of security as a replacement.
      */
     function migrate(uint256 amount) public {
-        _transfer(msg.sender, successor, amount);
-        _burn(successor, amount);
+        _transfer(msg.sender, address(successor), amount);
+        _burn(address(successor), amount);
         ISuccessorToken(successor).notifyBurnedOnArrival(msg.sender, amount);
     }
 
@@ -154,33 +157,23 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
         _mint(target, amount);
     }
 
-    function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
-        mint(callee, amount);
-        if (!IERC677Receiver(callee).onTokenTransfer(shareholder, amount, data)) {
-            revert IERC677Receiver.IERC677_OnTokenTransferFailed();
-        }
-    }
-
     function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
         uint256 len = target.length;
-        if (len != amount.length) revert Shares_UnequalLength(len, amount.length);
         for (uint256 i = 0; i < len; i++) {
             _mint(target[i], amount[i]);
         }
     }
 
-    function mintManyAndCall(address[] calldata target, address callee, uint256[] calldata amount, bytes calldata data) external {
+    function mintAndWrap(address shareholder, address wrapper, uint256 amount) public {
+        mint(shareholder, amount);
+        _approve(shareholder, wrapper, amount);
+        IWrapper(wrapper).mintFromBase(shareholder, amount);
+    }
+
+    function mintAndWrapMany(address[] calldata target, address wrapper, uint256[] calldata amount) external {
         uint256 len = target.length;
-        if (len != amount.length) revert Shares_UnequalLength(len, amount.length);
-        uint256 total = 0;
         for (uint256 i = 0; i < len; i++) {
-            total += amount[i];
-        }
-        mint(callee, total);
-        for (uint256 i = 0; i < len; i++) {
-            if (!IERC677Receiver(callee).onTokenTransfer(target[i], amount[i], data)) {
-                revert IERC677Receiver.IERC677_OnTokenTransferFailed();
-            }
+            mintAndWrap(target[i], wrapper, amount[i]);
         }
     }
 
@@ -213,6 +206,9 @@ contract BaseShares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 }
 
 interface ISuccessorToken {
-
     function notifyBurnedOnArrival(address beneficiary, uint256 amount) external;
+}
+
+interface IWrapper {
+    function mintFromBase(address holder, uint256 baseTokens) external;
 }

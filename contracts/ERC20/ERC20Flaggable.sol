@@ -275,9 +275,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      */
 
     // solhint-disable-next-line no-empty-blocks
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal {
-
-    }
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal;
 
     /**
      * Checks if msg.sender is an authorized address.

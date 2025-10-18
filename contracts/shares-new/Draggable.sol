@@ -41,16 +41,18 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "../ERC20/ERC20Flaggable.sol";
 import "../utils/Ownable.sol";
+import "./DeterrenceFee.sol";
 
 abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
 
     struct Offer {
-        IBuyerContract targetContract;
-        uint24 timestamp;
+        IBuyerContract buyer; // 160 Bits
+        uint64 timestamp; // 64 Bits
+        // 32 Bit left
 	}
 
-    uint24 public constant DRAG_PROPOSAL_DELAY = uint24(60 days);
-    uint24 public constant DRAG_PROPOSAL_EXPIRATION = uint24(90 days);
+    uint64 public constant DRAG_PROPOSAL_DELAY = uint64(60 days);
+    uint64 public constant DRAG_PROPOSAL_EXPIRATION = uint64(90 days);
 
     Offer public latestOffer;
     
@@ -59,7 +61,7 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
     error OfferPending();
     error DragAlongNotFound();
     error CannotCancel();
-    error DragAlongTooEarly(uint256 timestamp);
+    error DragAlongTooEarly(uint256 earliest, uint256 timeNow);
 
     event OfferMade(address sender, IBuyerContract buyerContract, string message);
     event OfferDenied(address sender, string message);
@@ -72,15 +74,15 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
      * the offer can be executed. The buyer contract must implement the IBuyerContract.notifyTokensReceived
      * function as specified.
      */
-    function offerAcquisition(IBuyerContract buyerContract, string calldata message) external deter(100) return (Offer memory) {
-        if (acquisitionOffer.targetContract != address(0)) revert OfferPending(); 
-        dragAlongProposal = Offer({ buyer: address(buyerContract), timestamp: uint24(block.timestamp) });
+    function offerAcquisition(IBuyerContract buyerContract, string calldata message) external payable deter(100) returns (Offer memory) {
+        if (address(latestOffer.buyer) != address(0)) revert OfferPending(); 
+        latestOffer = Offer({ buyer: buyerContract, timestamp: uint64(block.timestamp) });
         emit OfferMade(msg.sender, buyerContract, message);
-        return dragAlongProposal;
+        return latestOffer;
 	}
 
     modifier offerPresent() {
-        if (address(offer.buyerContract) == address(0x0)) revert NoOfferFound();
+        if (address(latestOffer.buyer) == address(0x0)) revert NoOfferFound();
         _;
     }
 
@@ -93,7 +95,7 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
      */
     function cancelOffer(string calldata message) external offerPresent {
         if (!canCancelOffer(msg.sender)) revert CannotCancel();
-        delete offer;
+        delete latestOffer;
         emit OfferDenied(msg.sender, message);
     }
 
@@ -103,12 +105,12 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
     function canCancelOffer(address holder) public view offerPresent returns (bool) {
         if (holder == owner){
             return true; // issuer can cancel
-        } else if (offer.timestamp + DRAG_PROPOSAL_EXPIRATION < block.timestamp){
+        } else if (latestOffer.timestamp + DRAG_PROPOSAL_EXPIRATION < block.timestamp){
             return true; // offer expired, anyone can cancel
         } else if (balanceOf(holder) > totalSupply() / 10) {
             return true; // anyone with 10% of the tokens can cancel
         } else {
-            try Ownable(offer).owner() returns (address offerOwner) {
+            try Ownable(address(latestOffer.buyer)).owner() returns (address offerOwner) {
                 // owner of offer can cancel
                 return offerOwner == holder;
             } catch {
@@ -119,21 +121,35 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
     }
     
     function acceptOffer() public offerPresent {
-        if (dragAlongProposal.timestamp + DRAG_PROPOSAL_DELAY < block.timestamp) revert DragAlongTooEarly();
-        IERC20 wrappedToken = wrapped();
-        uint256 balance = wrapped().balanceOf(address(this));
-        wrappedToken.transfer(offer.buyerContract, balance);
-        uint256 ownedTokensToBurn = offer.buyerContract.notifyTokensReceived(balance);
-        _burn(address(offer.buyerContract), ownedTokensToBurn);
-        IERC20 currency = offer.buyerContract.offeredCurrency();
-        uint256 price = offer.buyerContract.offeredPrice();
-        replaceBase(currency, price);
-        emit OfferAccepted(msg.sender, offer.buyerContract, balance, currency, price);
+        if (latestOffer.timestamp + DRAG_PROPOSAL_DELAY < block.timestamp) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
+        IERC20 wrappedToken = base();
+        IBuyerContract buyer = latestOffer.buyer;
+
+        // send full base balance to the buyer
+        uint256 balance = wrappedToken.balanceOf(address(this));
+        wrappedToken.transfer(address(buyer), balance);
+
+        // Notify the buyer that the tokens have been transferred
+        // Also the last chance for the buyer to set the approval
+        uint256 buyerTokensToBurn = buyer.notifyTokensReceived(balance);
+
+        // burn the indicated amount of buyer owned tokens to make the purchase cheaper
+        _burn(address(buyer), buyerTokensToBurn);
+
+        // get the money from the buyer, requires buyer approval
+        IERC20 currency = buyer.offeredCurrency();
+        uint256 priceE18 = buyer.offeredPrice();
+        currency.transferFrom(address(buyer), address(this), totalSupply() * priceE18 / 10**18);
+
+        // make the purchase proceeds the new base
+        replaceBase(currency);
+
+        emit OfferAccepted(msg.sender, latestOffer.buyer, balance, address(currency), priceE18);
     }
 
-    function base() public abstract returns (IERC20);
+    function base() public virtual returns (IERC20);
 
-    function replaceBase(IERC20 wrapped, uint256 factorE18) internal abstract;
+    function replaceBase(IERC20 wrapped) internal virtual;
 
 }
 
@@ -144,7 +160,7 @@ interface IBuyerContract {
     /**
      * Conversion price with 18 decimals.
      */
-    function offeredPrice() external view returns (uint92);
+    function offeredPrice() external view returns (uint256);
 
     /**
      * When this is called on the buyer contract, the payment should be made back to the calling contract.
@@ -154,6 +170,6 @@ interface IBuyerContract {
      * the price is 3 per share, they can indicate that 2000 wrapper token should be burned so they only need
      * to pay 24'000 to finance the acquisition of the 10'000 wrapped tokens.
      */
-    function notifyTokensReceived(uint256 amount) returns (uint256 ownedTokensToBurn);
+    function notifyTokensReceived(uint256 amount) external returns (uint256 ownTokensToBurn);
 
 }

@@ -27,7 +27,7 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
-import "./BaseShares.sol";
+import "./CO973dSecurity.sol";
 import "./Recoverable.sol";
 import "./Draggable.sol";
 import "./Migratable.sol";
@@ -43,10 +43,8 @@ import "../utils/SafeERC20.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Migratable, IERC677Receiver {
+contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, Migratable {
     
-    using SafeERC20 for IERC20;
-
     // Version history:
     // 1: pre permit
     // 2: includes permit
@@ -54,35 +52,48 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
     // 5 New token standard, skipping 4 to match base security version number
     uint8 public constant VERSION = 5;
 
-    // Base shares being wrapped and SHA terms
+    // Base security token
     IERC20 public base;
 
+    /**
+     * Indicates whether the terms are binding.
+     * 
+     * Once the terms cease to be binding, token holders are free to unwrap the token to gain
+     * direct possession of the underlying base token.
+     */ 
     bool public binding = true;
 
+    /**
+     * The url of the terms of this token.
+     */
     string public terms;
 
-    /// Event when the terms are changed with setTerms().
     event ChangeTerms(string terms);
 
     error ContractBinding();
+    error ContractNotBinding();
+    error InvalidExpectedAmount();
+    error TooManyDecimals();
 
-    constructor(string memory _terms, uint8 _decimals, address _owner) ERC20Flaggable(_decimals) Ownable(_owner) ERC20Allowlistable() {
+    constructor(IERC20 base_, string memory _terms, uint8 _decimals, address _owner) ERC20Flaggable(_decimals) Ownable(_owner) ERC20Allowlistable() {
+        base = base_;
         terms = _terms;
+        if (base.decimals() > decimals()) revert TooManyDecimals();
     }
 
     /**
      * Current naming convention is to add the postfix "SHA" to the plain shares
-     * to indicate that this token represents shares bound to a ShareHolder Agreement.
+     * to indicate that this token represents securities bound to a shareholder agreement.
      */
     function name() public view override returns (string memory) {
-        return string.concat(baseShares.name(), " SHA");
+        return string.concat(base.name(), " SHA");
     }
 
     /**
      * Current naming convention is to append "S" to the base share ticker.
      */
     function symbol() public view override returns (string memory) {
-        return string.concat(baseShares.symbol(), "S");
+        return string.concat(base.symbol(), "S");
     }
 
     /**
@@ -99,7 +110,7 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
      * Does not work if totalSupply is zero.
      */
     function mint(address recipient, uint256 amount) external {
-        _wrap(recipient, amount, convertToBase(amount));
+        wrap(recipient, amount, convertToBase(amount));
     }
 
     /**
@@ -107,12 +118,23 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
      */
     function mint(address recipient, uint256 amount, uint256 expectedWrappedAmount) external {
         if (totalSupply() > 0 && convertToBase(amount) != expectedWrappedAmount) revert InvalidExpectedAmount(); 
-        wrap(recipient, amount, expectedWrappedAmount);
+        wrap(msg.sender, recipient, amount, expectedWrappedAmount);
     }
 
-    function wrap(address recipient, uint256 mintAmount, uint256 wrappedAmount) internal {
-        wrapped.transferFrom(msg.sender, address(this), wrappedAmount);
-        _mint(recipient, amount);
+    function wrap(address sender, address recipient, uint256 mintAmount, uint256 wrappedAmount) internal {
+        base.transferFrom(sender, address(this), wrappedAmount);
+        _mint(recipient, mintAmount);
+    }
+
+    /**
+     * Allow the base token to directly wrap newly minted tokens.
+     * 
+     * Only works as long as the contract is binding.
+     * 
+     * Assumes 1:1 wrapping factor with support for varying decimals.
+     */
+    function mintFromBase(address holder, uint256 baseTokens) binding baseOnly external {
+        wrap(holder, holder, baseTokens * 10 ** (decimals - base().decimals()), baseTokens);
     }
 
     function unwrap(uint256 amount) external {
@@ -120,44 +142,26 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
         // This is the amount of tokens that can be unwrapped when buring amount, rounded down
         uint256 unwrappedAmount = convertToBase(amount);
         // To unwrap 'unwrappedAmount' tokens, we only need to burn requiredBurn tokens.
-        uint256 requiredBurn = unwrappedAmount * totalSupply() / wrapped.balanceOf(address(this));
-        assert convertToBase(requiredBurn) == unwrappedAmount;
+        uint256 requiredBurn = unwrappedAmount * totalSupply() / base.balanceOf(address(this));
+        assert(convertToBase(requiredBurn) == unwrappedAmount);
         _burn(owner, requiredBurn);
-        wrapped.transfer(owner, unwrapped);
+        base.transfer(owner, unwrappedAmount);
     }
 
     function convertToBase(uint256 amount) public returns (uint256) {
-        return amount * wrapped.balanceOf(address(this)) / totalSupply();
+        return amount * base.balanceOf(address(this)) / totalSupply();
     }
 
     /**
-     * Function to be called by the base shares to wrap them.
-     * The base shares must be IER677 compliant and call this function on transferAndCall.
-     * Only the base shares contract is allowed to call this function.
-     * The tokens are minted 1:1 to the sender of the base shares.
+     * Replaces the base token and causes the contract to not be binding any more.
+     * 
+     * Henceforth, holders will be able to unwrap their tokens to get direct control of the
+     * new underlying token. This new underlying token might again be subject to their own
+     * terms.
      */
-    function onTokenTransfer(address from, uint256 amount, bytes calldata) external override onlyBaseShares returns (bool) {
-        _mint(from, amount);
-        return true;
-    }
-
     function replaceBase(IERC20 wrapped_) internal override {
-        wrapped = wrapped_;
-        isBinding = false;
-    }
-
-    function _executeMigration(address successor) internal override {
-        // Transfer this contracts baseShares to the successor contract
-        // and get the same amount of the new token in return
-        baseShares.approve(address(successor), baseShares.balanceOf(address(this)));
-        successor.wrap(address(this), baseShares.balanceOf(address(this)));
-
-        // Replace the token being wrapped to be the successor contract.
-        // Normally, the successor contract should be wrapping the original baseShares.
-        // Old WrappedToken --wraps--> New WrappedToken --wraps--> BaseShares
-        // Therefore, users can manually unwrap to get the new WrappedToken, when needed.
-        baseShares = IERC20(successor);
-        isBinding = false;
+        base = wrapped_;
+        binding = false;
     }
 
     // Modifiers //
@@ -165,8 +169,14 @@ contract WrappedShares is IERC20, ERC20Allowlistable, Recoverable, Draggable, Mi
     /**
      * Allow only the base shares contract to call a function.
      */
-    modifier onlyBaseShares() {
-        _checkSender(address(baseShares));
+    modifier baseOnly() {
+        _checkSender(address(base));
         _;
     }
+
+    modifier binding() {
+        if (!binding) revert ContractNotBinding();
+        _;
+    }
+
 }
