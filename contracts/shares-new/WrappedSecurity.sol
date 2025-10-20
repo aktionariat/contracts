@@ -33,6 +33,7 @@ import "./Draggable.sol";
 import "./Migratable.sol";
 import "../ERC20/ERC20Allowlistable.sol";
 import "../ERC20/IERC677Receiver.sol";
+import "../ERC20/ERC20Named.sol";
 import "../utils/SafeERC20.sol";
 
 /**
@@ -43,7 +44,7 @@ import "../utils/SafeERC20.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, Migratable {
+contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggable, Migratable {
     
     // Version history:
     // 1: pre permit
@@ -69,31 +70,25 @@ contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, 
     string public terms;
 
     event ChangeTerms(string terms);
+    event Terminated();
+    event BaseTokenReplaced(IERC20 old, IERC20 neu);
 
     error ContractBinding();
     error ContractNotBinding();
     error InvalidExpectedAmount();
     error TooManyDecimals();
 
-    constructor(IERC20 base_, string memory _terms, uint8 _decimals, address _owner) ERC20Flaggable(_decimals) Ownable(_owner) ERC20Allowlistable() {
+    constructor(IERC20 base_, string memory _terms, uint8 _decimals, address _owner)
+        ERC20Named(string.concat(base_.name(), " SHA"), string.concat(base_.symbol(), "S"), _decimals, _owner)
+        ERC20Allowlistable()
+        DeterrenceFee(0.01 ether) {
         base = base_;
         terms = _terms;
-        if (base.decimals() > decimals()) revert TooManyDecimals();
+        if (base.decimals() > decimals) revert TooManyDecimals();
     }
 
-    /**
-     * Current naming convention is to add the postfix "SHA" to the plain shares
-     * to indicate that this token represents securities bound to a shareholder agreement.
-     */
-    function name() public view override returns (string memory) {
-        return string.concat(base.name(), " SHA");
-    }
-
-    /**
-     * Current naming convention is to append "S" to the base share ticker.
-     */
-    function symbol() public view override returns (string memory) {
-        return string.concat(base.symbol(), "S");
+    function baseToken() internal view override(Draggable, Migratable) returns (IERC20) {
+        return base;
     }
 
     /**
@@ -110,7 +105,7 @@ contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, 
      * Does not work if totalSupply is zero.
      */
     function mint(address recipient, uint256 amount) external {
-        wrap(recipient, amount, convertToBase(amount));
+        wrap(msg.sender, recipient, amount, convertToBase(amount));
     }
 
     /**
@@ -121,7 +116,7 @@ contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, 
         wrap(msg.sender, recipient, amount, expectedWrappedAmount);
     }
 
-    function wrap(address sender, address recipient, uint256 mintAmount, uint256 wrappedAmount) internal {
+    function wrap(address sender, address recipient, uint256 mintAmount, uint256 wrappedAmount) requireBinding internal {
         base.transferFrom(sender, address(this), wrappedAmount);
         _mint(recipient, mintAmount);
     }
@@ -133,12 +128,11 @@ contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, 
      * 
      * Assumes 1:1 wrapping factor with support for varying decimals.
      */
-    function mintFromBase(address holder, uint256 baseTokens) binding baseOnly external {
-        wrap(holder, holder, baseTokens * 10 ** (decimals - base().decimals()), baseTokens);
+    function mintFromBase(address holder, uint256 baseTokens) requireBinding baseOnly external {
+        wrap(holder, holder, baseTokens * 10 ** (decimals - base.decimals()), baseTokens);
     }
 
-    function unwrap(uint256 amount) external {
-        if (binding) revert ContractBinding();
+    function unwrap(uint256 amount) requireNonBinding external {
         // This is the amount of tokens that can be unwrapped when buring amount, rounded down
         uint256 unwrappedAmount = convertToBase(amount);
         // To unwrap 'unwrappedAmount' tokens, we only need to burn requiredBurn tokens.
@@ -148,20 +142,34 @@ contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, 
         base.transfer(owner, unwrappedAmount);
     }
 
-    function convertToBase(uint256 amount) public returns (uint256) {
+    function convertToBase(uint256 amount) public view returns (uint256) {
         return amount * base.balanceOf(address(this)) / totalSupply();
     }
 
     /**
-     * Replaces the base token and causes the contract to not be binding any more.
+     * Replaces the base token.
+     * 
+     * Often done in combination with a termination.
+     */
+    function replaceBase(IERC20 wrapped_) internal override(Draggable, Migratable) {
+        base = wrapped_;
+        emit BaseTokenReplaced(base, wrapped_);
+    }
+
+    /**
+     * Causes the contract to not be binding any more.
      * 
      * Henceforth, holders will be able to unwrap their tokens to get direct control of the
-     * new underlying token. This new underlying token might again be subject to their own
-     * terms.
+     * base token. The underlying token might be subject to their own terms. Terminating the
+     * terms of this token does not invalidate the terms of underlying tokens.
      */
-    function replaceBase(IERC20 wrapped_) internal override {
-        base = wrapped_;
+    function terminate() internal override(Draggable, Migratable) {
         binding = false;
+        // Name should no longer imply that there is a shareholder agreement
+        string memory newName = string.concat("Wrapped ", base.name());
+        string memory newSymbol = string.concat("W", base.symbol());
+        setNameInternal(newName, newSymbol);
+        emit Terminated();
     }
 
     // Modifiers //
@@ -174,7 +182,12 @@ contract WrappedSecurity is IERC20, ERC20Allowlistable, Recoverable, Draggable, 
         _;
     }
 
-    modifier binding() {
+    modifier requireBinding() {
+        if (binding) revert ContractBinding();
+        _;
+    }
+
+    modifier requireNonBinding() {
         if (!binding) revert ContractNotBinding();
         _;
     }

@@ -76,7 +76,10 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     event ChangeTerms(string terms);
     event ChangeTotalShares(uint256 total);
 
-    constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() {
+    constructor(string memory _symbol, string memory _name, string memory _terms, address _owner)
+        ERC20Named(_symbol, _name, 0, _owner)
+        ERC20Allowlistable() 
+        DeterrenceFee(0.01 ether) {
         terms = _terms;
     }
 

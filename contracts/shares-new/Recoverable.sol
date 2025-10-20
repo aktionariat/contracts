@@ -48,7 +48,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
 
     struct Recovery {
         address recipient;
-        uint24 timestamp;
+        uint40 timestamp;
 	}
     
     error RecoveryNoBalance(address lostAddress);
@@ -63,9 +63,6 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
     event Recovered(address lost, address target, uint256 amount);
     event Burned(address lost, uint256 amount);
 
-    constructor() DeterrenceFee(uint96(0.01 ether)) {
-    }
-
     function initBurn(address target) external onlyOwner returns (Recovery memory) {
         return initRecovery(target, address(0x0));
     }
@@ -74,11 +71,11 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
         return initRecovery(lostAddress, msg.sender);
     }
     
-	function initRecovery(address lostAddress, address recipient) public payable deter returns (Recovery memory) {
+	function initRecovery(address lostAddress, address recipient) public payable deter(1) returns (Recovery memory) {
         if (balanceOf(lostAddress) == 0) revert RecoveryNoBalance(lostAddress);
         if (recoveries[lostAddress].timestamp != 0) revert RecoveryInProgress(lostAddress);
 
-        Recovery memory recovery = Recovery({ recipient: recipient, timestamp: int24(block.timestamp) });
+        Recovery memory recovery = Recovery({ recipient: recipient, timestamp: uint40(block.timestamp) });
         recoveries[lostAddress] = recovery;
         emit RecoveryInitiated(lostAddress, recipient);
         return recovery;

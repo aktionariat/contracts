@@ -92,4 +92,7 @@ contract ERC20Cancelled is ERC20Flaggable {
         migrateWithQuorum();
         burnBaseToken();
     }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20Flaggable) {
+    }
 }

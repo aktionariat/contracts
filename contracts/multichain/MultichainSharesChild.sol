@@ -78,4 +78,7 @@ contract MultichainSharesChild is ERC20Named, ERC20Recoverable, ERC20PermitLight
       _transfer(_from, address(this), _amount);
       _burn(address(this), _amount);
   }
+
+  function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20Flaggable) {
+  }
 }

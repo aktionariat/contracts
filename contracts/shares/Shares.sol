@@ -142,6 +142,9 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
         emit TokensDeclaredInvalid(holder, amount, message);
     }
 
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20Flaggable) {
+    }
+
     /**
      * The total number of valid tokens in circulation. In case some tokens have been declared invalid, this
      * number might be lower than totalSupply(). Also, it will always be lower than or equal to totalShares().

@@ -303,7 +303,6 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 				setFlag(to, FLAG_VOTE_HINT, false);
 			}
 		}
-		super._beforeTokenTransfer(from, to, amount);
 	}
 
 	function _offerExists() internal view returns (bool) {

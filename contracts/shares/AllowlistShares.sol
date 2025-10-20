@@ -56,7 +56,7 @@ contract AllowlistShares is Shares, ERC20Allowlistable {
       super._mint(account, amount);
   }
 
-  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Flaggable, ERC20Allowlistable) internal {
+  function _beforeTokenTransfer(address from, address to, uint256 amount) virtual override(ERC20Allowlistable, Shares) internal {
     super._beforeTokenTransfer(from, to, amount);
   }
 

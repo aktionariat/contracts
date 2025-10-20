@@ -137,7 +137,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
    * | Admin      |  Y  |  Y  |  N  |  Y  |
    * +------------+-----+-----+-----+-----+
    */
-  function _beforeTokenTransfer(address from, address to, uint256 amount) override virtual internal {
+  function _beforeTokenTransfer(address from, address to, uint256 /* amount */) override virtual internal {
     if (isRestricted(to)) {
         revert Allowlist_ReceiverIsForbidden(to);
     }

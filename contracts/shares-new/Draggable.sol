@@ -39,6 +39,7 @@ pragma solidity >=0.8.0 <0.9.0;
  * Sellers get paid in the specified currency token directly from the buyer.
  */
 
+import "../ERC20/ERC20Named.sol";
 import "../ERC20/ERC20Flaggable.sol";
 import "../utils/Ownable.sol";
 import "./DeterrenceFee.sol";
@@ -122,7 +123,7 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
     
     function acceptOffer() public offerPresent {
         if (latestOffer.timestamp + DRAG_PROPOSAL_DELAY < block.timestamp) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
-        IERC20 wrappedToken = base();
+        IERC20 wrappedToken = baseToken();
         IBuyerContract buyer = latestOffer.buyer;
 
         // send full base balance to the buyer
@@ -141,15 +142,17 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
         uint256 priceE18 = buyer.offeredPrice();
         currency.transferFrom(address(buyer), address(this), totalSupply() * priceE18 / 10**18);
 
-        // make the purchase proceeds the new base
-        replaceBase(currency);
+        replaceBase(currency);  // make the purchase proceeds the new base
+        terminate(); // allow token holders to unwrap and collect proceeds
 
         emit OfferAccepted(msg.sender, latestOffer.buyer, balance, address(currency), priceE18);
     }
 
-    function base() public virtual returns (IERC20);
+    function baseToken() internal virtual returns (IERC20);
 
     function replaceBase(IERC20 wrapped) internal virtual;
+
+    function terminate() internal virtual;
 
 }
 
