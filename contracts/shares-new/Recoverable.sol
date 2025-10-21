@@ -42,7 +42,8 @@ import "../ERC20/ERC20Flaggable.sol";
 
 abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
 
-    uint256 public constant RECOVERY_PROPOSAL_DELAY = 45 days;
+    // In analogy to the Swiss code of obligations Art. 983, we set the recovery delay to 6 months (never more than 184 days)
+    uint256 public constant RECOVERY_DELAY = 184 days;
 
     mapping(address lostAddress => Recovery recovery) public recoveries;
 
@@ -123,7 +124,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
     function prepare(address lostAddress) internal returns (address) {
         Recovery memory recovery = recoveries[lostAddress];
         if (recovery.timestamp == 0) revert RecoveryNotFound(lostAddress);
-        uint256 deadline = recovery.timestamp + RECOVERY_PROPOSAL_DELAY;
+        uint256 deadline = recovery.timestamp + RECOVERY_DELAY;
         if (block.timestamp < deadline) revert RecoveryTooEarly(deadline);
         delete recoveries[lostAddress]; // TODO: check that we can still access recovery.recipient after deletion
         return recovery.recipient;

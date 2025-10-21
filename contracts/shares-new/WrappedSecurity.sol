@@ -128,9 +128,17 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
      * 
      * Assumes 1:1 wrapping factor with support for varying decimals.
      */
-    function mintFromBase(address holder, uint256 baseTokens) requireBinding baseOnly external {
+    function mintFromBase(address holder, uint256 baseTokens) requireBinding baseOnly public {
         wrap(holder, holder, baseTokens * 10 ** (decimals - base.decimals()), baseTokens);
     }
+
+    /**
+     * For backwards compatibility with previous base tokens minting.
+     */
+    function onTokenTransfer(address from, uint256 amount, bytes calldata) external returns (bool) {
+		mintFromBase(from, amount);
+		return true;
+	}
 
     function unwrap(uint256 amount) requireNonBinding external {
         // This is the amount of tokens that can be unwrapped when buring amount, rounded down
@@ -172,6 +180,13 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
         emit Terminated();
     }
 
+    /**
+     * Public defense against someone trying to recover tokens this contract holds.
+     */
+    function cancelBaseRecovery() external {
+        IBaseToken(address(base)).cancelRecovery();
+    }
+
     // Modifiers //
 
     /**
@@ -192,4 +207,8 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
         _;
     }
 
+}
+
+interface IBaseToken {
+    function cancelRecovery() external;
 }
