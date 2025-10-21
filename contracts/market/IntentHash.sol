@@ -23,7 +23,6 @@ struct Intent {
 	bytes data;
 }
 
-/// @notice helpers for handling dutch order objects
 library IntentHash {
 	bytes32 internal constant INTENT_TYPE_HASH = keccak256("Intent(address owner,address filler,address tokenOut,uint160 amountOut,address tokenIn,uint160 amountIn,uint256 creation,uint256 expiration,bytes data)");
 

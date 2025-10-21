@@ -4,9 +4,10 @@ pragma solidity >=0.8.0 <0.9.0;
 import "../ERC20/IERC20.sol";
 import "../utils/Ownable.sol";
 import {IReactor} from "./IReactor.sol";
-import {Intent} from "./IntentHash.sol";
+import {Intent, IntentHash} from "./IntentHash.sol";
 
 contract SecondaryMarket is Ownable {
+    using IntentHash for Intent;
 
     uint16 public constant ALL = 10000;
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
@@ -20,7 +21,7 @@ contract SecondaryMarket is Ownable {
     event TradingFeeWithdrawn(address currency, address target, uint256 amount);
     event LicenseFeePaid(address currency, address target, uint256 amount);
     event MarketStatusChanged(bool isOpen, uint256 timestamp);
-    event Trade(address indexed seller, address indexed buyer, address token, uint256 tokenAmount, address currency, uint256 currencyAmount, uint256 fees);
+    event Trade(address indexed seller, address indexed buyer, bytes32 sellIntentHash, bytes32 buyIntentHash, address token, uint256 tokenAmount, address currency, uint256 currencyAmount, uint256 fees);
 
     error LargerSpreadNeeded(uint256 feesCollected, uint256 requiredMinimum);
     error WrongFiller();
@@ -111,6 +112,10 @@ contract SecondaryMarket is Ownable {
         return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn, block.timestamp, block.timestamp + validitySeconds, new bytes(0));
     }
 
+    function getIntentHash(Intent calldata intent) external pure returns (bytes32) {
+        return intent.hash();
+    }
+
     /**
      * Stores an order in the Ethereum blockchain as a publicly readable event, so any allowed router
      * can pick it up and execute it against another valid order.
@@ -174,7 +179,7 @@ contract SecondaryMarket is Ownable {
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / 10000;
 
         IReactor(REACTOR).process(seller, sellerSig, buyer, buyerSig, tradedAmount, totalFee);
-        emit Trade(seller.owner, buyer.owner, seller.tokenOut, tradedAmount, seller.tokenIn, totalExecutionPrice, totalFee);
+        emit Trade(seller.owner, buyer.owner, seller.hash(), buyer.hash(), seller.tokenOut, tradedAmount, seller.tokenIn, totalExecutionPrice, totalFee);
     }
 
     /**
