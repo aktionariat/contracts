@@ -85,6 +85,11 @@ const TestModule = buildModule("TestModule", (m) => {
   const paymentHub = m.contract("PaymentHub", [TestModuleConfig.trustedForwarder, TestModuleConfig.uniswapQuoter, TestModuleConfig.uniswapRouter, TestModuleConfig.priceFeedCHFUSD, TestModuleConfig.priceFeedETHUSD]);
   const brokerbot = m.contract("Brokerbot", [draggableShares, TestModuleConfig.brokerbotConfig.price, TestModuleConfig.brokerbotConfig.increment, TestModuleConfig.frankencoinAddress, owner, paymentHub]);
 
+  const tradeReactor = m.contract("TradeReactor", []);
+  const secondaryMarketFactory = m.contract("SecondaryMarketFactory", []);
+
+  const authorizedExecutor = m.contract("AuthorizedExecutor", []);
+
   const zchf = m.contractAt("ERC20Named", TestModuleConfig.zchfAddress, { id: "ZCHF"});
   const dai = m.contractAt("ERC20Named", TestModuleConfig.daiAddress, { id: "DAI"});
   const usdc = m.contractAt("ERC20Named", TestModuleConfig.usdcAddress, { id: "USDC"});
@@ -109,6 +114,9 @@ const TestModule = buildModule("TestModule", (m) => {
     erc20Cancelled,
     paymentHub, 
     brokerbot,
+    tradeReactor,
+    secondaryMarketFactory,
+    authorizedExecutor,
     zchf,
     usdc,
     dai
