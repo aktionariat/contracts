@@ -164,6 +164,11 @@ contract TradeReactor is IReactor, IntentVerifier {
         if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
     }
 
+    function cancelIntent(Intent calldata intent) external {
+        if (msg.sender != intent.owner && msg.sender != intent.filler) revert InvalidFiller();
+        filledAmount[intent.hash()] = type(uint160).max;
+    }
+
     function cleanupExpiredIntentData(Intent[] calldata intents) external {
         for (uint i = 0; i < intents.length; i++) {
             Intent calldata intent = intents[i];

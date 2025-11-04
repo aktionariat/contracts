@@ -18,7 +18,7 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
     
     uint256 public contractNonce;
 
-    event CallExecuted(address indexed sender, address indexed to, uint256 value, bytes data);
+    event CallExecuted(address indexed sender, address indexed to, uint256 value, bytes data, uint256 nonce);
 
     error InvalidNonce();
     error FunctionSignatureMismatch();
@@ -54,7 +54,7 @@ contract AuthorizedExecutor layout at 971071161051111109711410597116 is Authoriz
     function _executeCall(AuthorizedCall calldata call) internal {
         (bool success,) = call.to.call{value: call.value}(call.data);
         require(success, CallReverted());
-        emit CallExecuted(msg.sender, call.to, call.value, call.data);
+        emit CallExecuted(msg.sender, call.to, call.value, call.data, call.nonce);
     }
 
     fallback() external payable {}

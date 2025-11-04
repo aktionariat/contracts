@@ -182,6 +182,11 @@ contract SecondaryMarket is Ownable {
         emit Trade(seller.owner, buyer.owner, seller.hash(), buyer.hash(), seller.tokenOut, tradedAmount, seller.tokenIn, totalExecutionPrice, totalFee);
     }
 
+    function cancelIntent(Intent calldata intent) external {
+        if (msg.sender != router) revert WrongRouter(msg.sender, router);
+        IReactor(REACTOR).cancelIntent(intent);
+    }
+
     /**
      * Withdraw the accumulated fees applying a 50/50 split between the two addresses.
      * 

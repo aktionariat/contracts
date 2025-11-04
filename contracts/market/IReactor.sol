@@ -11,5 +11,6 @@ interface IReactor {
     function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent) external view returns (uint256);
     function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedAmount) external pure returns (uint256);
     function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 tradedAmount, uint256 totalFee) external;
+    function cancelIntent(Intent calldata intent) external;
 
 }
