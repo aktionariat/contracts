@@ -44,19 +44,24 @@ import "../utils/SafeERC20.sol";
  * shareholders in the issuer's shareholder registry. This is equivalent to the traditional system
  * of having physical share certificates kept at home by the shareholders and a shareholder registry run by
  * the company. Just like with physical certificates, the owners of the tokens are the owners of the shares.
- * However, in order to exercise their rights (for example receive a dividend), shareholders must register
+ * And just like with physical certificates, rightful ownership is proven by demonstrating possession of the
+ * token. In order to exercise their rights (for example receive a dividend), shareholders must register
  * themselves. For example, in case the company pays out a dividend to a previous shareholder because
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
+ * 
+ * The presence of a function in this contract does not imply that the corresponding action is also legally
+ * permissible. The intended use of the contract functionality is defined in the accompanying registration agreement.
+ * In particular, the issuer must not use any administrative functions in violation of the registration agreement.
  */
 contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
-    
+
     // Version history:
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
     // 3: added permit
     // 4: refactor to custom errors, added allowance for permit2
-    // 5: New base share class with CMTA compatibility
+    // 5: Complete revistion, CMTA compatibility
     uint8 public constant VERSION = 5;
 
     /**
@@ -76,13 +81,13 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     event ChangeTerms(string terms);
     event ChangeTotalShares(uint256 total);
 
-    constructor(string memory _symbol, string memory _name, string memory _terms, address _owner)
-        ERC20Named(_symbol, _name, 0, _owner)
-        ERC20Allowlistable() 
-        DeterrenceFee(0.01 ether) {
+    constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         terms = _terms;
     }
 
+    /**
+     * Updates the link to the registration agreement.
+     */
     function setTerms(string memory _terms) external onlyOwner {
         terms = _terms;
         emit ChangeTerms(_terms);
@@ -96,21 +101,14 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     }
 
     /**
-     * Restricts the given addresses.
-     *
-     * To pause the whole contract, call this function with all addresses in use.
-     *
-     * In our experience, this function is never used. However, it is a requirement to fulfill the CMTA standard,
-     * so we added it in a way that does not impose an overhead of 2000 gas on every transfer. Wiht our approach,
-     * pausing and unpausing is more expensive, but total gas use should still be lower.
+     * Can be used to pause the contract when called with all addresses that are currently in use as an argument.
      */
     function pause(address[] calldata accounts) external onlyOwner {
         setType(accounts, TYPE_RESTRICTED);
     }
 
     /**
-     * Unpauses accounts previously paused with the 'pause' function, resetting the
-     * given addresses to the default type (e.g. TYPE_FREE).
+     * Unpauses accounts previously paused with the 'pause' function, resetting the given addresses to the given default type (e.g. TYPE_FREE).
      */
     function unpause(address[] calldata accounts, uint8 defaultType) external onlyOwner {
         setType(accounts, defaultType);
@@ -118,7 +116,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     /**
      * Set a successor contract such that holders can migrate to a new version of this token.
-     * 
+     *
      * The success must implement IERC677Receiver and mint new tokens to the sender when
      * receiving this token. Immediately after, the transferred tokens will be burned.
      */
@@ -128,6 +126,8 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     /**
      * Convenience function to migrate the full balance.
+     * 
+     * See migrate(uint256 amount) for more information.
      */
     function migrate() external {
         migrate(balanceOf(msg.sender));
@@ -160,6 +160,11 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
         _mint(target, amount);
     }
 
+    /**
+     * Mints tokens to multiple addresses in one transaction.
+     * 
+     * See mint for more information.
+     */
     function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
         uint256 len = target.length;
         for (uint256 i = 0; i < len; i++) {
@@ -167,29 +172,26 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
         }
     }
 
+    /**
+     * Mints the amount of tokens to the shareholder and instructs the wrapped contract to fetch and wrap them.
+     * The necessary allowance is set automatically.
+     */
     function mintAndWrap(address shareholder, address wrapper, uint256 amount) public {
         mint(shareholder, amount);
         _approve(shareholder, wrapper, amount);
         IWrapper(wrapper).mintFromBase(shareholder, amount);
     }
 
+    /**
+     * All-in-one function to mint and wrap tokens for multiple shareholders in one transaction.
+     * 
+     * See mintAndWrap for more information.
+     */
     function mintAndWrapMany(address[] calldata target, address wrapper, uint256[] calldata amount) external {
         uint256 len = target.length;
         for (uint256 i = 0; i < len; i++) {
             mintAndWrap(target[i], wrapper, amount[i]);
         }
-    }
-
-    function _mint(address account, uint256 amount) internal virtual override {
-        super._mint(account, amount);
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20Flaggable, ERC20Allowlistable) {
-        ERC20Allowlistable._beforeTokenTransfer(from, to, amount);
-    }
-
-    function transfer(address to, uint256 value) public virtual override(ERC20Flaggable, IERC20) returns (bool) {
-        return ERC20Flaggable.transfer(to, value);
     }
 
     /**
@@ -209,9 +211,26 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 }
 
 interface ISuccessorToken {
+    /**
+     * Notifies the successor token that tokens have been sent to it and burned on arrival.
+     * Legally, this means that the right associated with the burned tokens now rest with the
+     * successor contract. It is up to the successor contract and its terms to defined what
+     * this means. Most likely, the successor contract will mint an according number of new
+     * tokens for the indicated beneficiary, ensuring that the beneficiary retains control
+     * over the tokens.
+     */
     function notifyBurnedOnArrival(address beneficiary, uint256 amount) external;
 }
 
+/**
+ * Interface that wrapper tokens should implement in order to support minting and wrapping
+ * in one transaction.
+ */
 interface IWrapper {
+    /**
+     * When called, the wrapper contract is expected to fetch the indicated amount of base tokens
+     * from the holder and mint the corresponding amount of wrapped tokens to the holder. The
+     * wrapper contract can assume to have the necessary allowance.
+     */
     function mintFromBase(address holder, uint256 baseTokens) external;
 }
