@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Contract, MaxInt256 } from "ethers";
-import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
+import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5, signer6, signer7 } from "./TestBase.ts";
 import TestModule from "../ignition/modules/TestModule.ts";
 import { buyerIntentConfig, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
 import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
@@ -208,6 +208,58 @@ describe("SecondaryMarket", function () {
     const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
 
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount)).to.be.revertedWithCustomError(tradeReactor, "IntentExpired");
+  });
+
+  it("Should return immediately executable part of sell intents", async function () {
+    // Assign 100 shares to seller
+    await mintAndWrap(allowlistShares, allowlistDraggableShares, signer6.address, ethers.parseUnits("100", 0));
+
+    // Seller intent to sell 100 shares for 100 ZCHF, valid for 1 hour
+    const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(signer6, ethers.parseUnits("100", 0), ethers.parseUnits("100", 18), 3600));
+    
+    // First give full approval
+    var allowance = ethers.parseUnits("100000", 0);
+    await allowlistDraggableShares.connect(signer6).approve(tradeReactor, allowance);
+    var available = await secondaryMarket.getAvailableForExecution(sellerIntent);
+    expect(available).to.equal(ethers.parseUnits("100", 0));
+
+    // Then reduce balance
+    await allowlistDraggableShares.connect(signer6).transfer(signer1.address, ethers.parseUnits("50", 0));
+    var available = await secondaryMarket.getAvailableForExecution(sellerIntent);
+    expect(available).to.equal(ethers.parseUnits("50", 0));
+
+    // Then reduce allowance
+    var allowance = ethers.parseUnits("10", 0);
+    await allowlistDraggableShares.connect(signer6).approve(tradeReactor, allowance);
+    var available = await secondaryMarket.getAvailableForExecution(sellerIntent);
+    expect(available).to.equal(ethers.parseUnits("10", 0));
+
+    // Does not check partially filled cases. Maybe to do later, maybe assume they are working.
+  });
+
+  it("Should return immediately executable part of buy intents", async function () {
+    // Assign 100 ZCHF to buyer
+    await setZCHFBalance(signer7.address, ethers.parseUnits("100", 18));
+
+    // Buyer intent to sell 100 shares for 100 ZCHF, valid for 1 hour
+    const buyerIntent = getNamedStruct(await secondaryMarket.createBuyOrder(signer7, ethers.parseUnits("100", 18), ethers.parseUnits("100", 0), 3600));
+    
+    // First give full approval
+    var allowance = ethers.parseUnits("100000", 18);
+    await zchf.connect(signer7).approve(tradeReactor, allowance);
+    var available = await secondaryMarket.getAvailableForExecution(buyerIntent);
+    expect(available).to.equal(ethers.parseUnits("100", 0));
+
+    // Then reduce balance
+    await zchf.connect(signer7).transfer(signer1.address, ethers.parseUnits("50", 18));
+    var available = await secondaryMarket.getAvailableForExecution(buyerIntent);
+    expect(available).to.equal(ethers.parseUnits("50", 0));
+
+    // Then reduce allowance
+    var allowance = ethers.parseUnits("10", 18);
+    await zchf.connect(signer7).approve(tradeReactor, allowance);
+    var available = await secondaryMarket.getAvailableForExecution(buyerIntent);
+    expect(available).to.equal(ethers.parseUnits("10", 0));
   });
 
 });
