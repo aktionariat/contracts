@@ -72,7 +72,7 @@ describe("SecondaryMarket", function () {
 
     await tradeReactor.verifyPriceMatch(buyerIntent, sellerIntent);
 
-    const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
+    const tradedAmount = await secondaryMarket.executableTrade(sellerIntent, buyerIntent);
     const totalExecutionPrice = await tradeReactor.getTotalExecutionPrice(buyerIntent, sellerIntent, tradedAmount);
     const tradingFeeBips = await secondaryMarket.tradingFeeBips();
     const totalFee = totalExecutionPrice * tradingFeeBips / 10000n;
@@ -109,7 +109,7 @@ describe("SecondaryMarket", function () {
     const buyerSignature1 = await getSignature(signer1, buyerIntent1, await tradeReactor.getAddress());    
     const sellerIntent1 = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
     const sellerSignature1 = await getSignature(signer2, sellerIntent1, await tradeReactor.getAddress());
-    const tradedAmount1 = await tradeReactor.getMaxValidAmount(sellerIntent1, buyerIntent1);
+    const tradedAmount1 = await secondaryMarket.executableTrade(sellerIntent1, buyerIntent1);
 
     await connection.networkHelpers.mine();
 
@@ -117,7 +117,7 @@ describe("SecondaryMarket", function () {
     const buyerSignature2 = await getSignature(signer1, buyerIntent2, await tradeReactor.getAddress());    
     const sellerIntent2 = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
     const sellerSignature2 = await getSignature(signer2, sellerIntent2, await tradeReactor.getAddress());
-    const tradedAmount2 = await tradeReactor.getMaxValidAmount(sellerIntent2, buyerIntent2);
+    const tradedAmount2 = await secondaryMarket.executableTrade(sellerIntent2, buyerIntent2);
 
     await expect(secondaryMarket.process(sellerIntent1, sellerSignature1, buyerIntent1, buyerSignature1, tradedAmount1)).to.not.revert(ethers);
     await expect(secondaryMarket.process(sellerIntent2, sellerSignature2, buyerIntent2, buyerSignature2, tradedAmount2)).to.not.revert(ethers);
@@ -125,7 +125,7 @@ describe("SecondaryMarket", function () {
 
   it("Should not be able to execute same intents twice - One would be OverFilled", async function () {
     const { buyerIntent, buyerSignature, sellerIntent, sellerSignature } = await createMatchingIntents();
-    const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
+    const tradedAmount = await secondaryMarket.executableTrade(sellerIntent, buyerIntent);
 
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount)).to.not.revert(ethers);
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount)).to.revert(ethers);
@@ -167,11 +167,11 @@ describe("SecondaryMarket", function () {
 
     // Seller - Buyer 4 should not match because price is too low
     await expect(tradeReactor.verifyPriceMatch(buyer4Intent, sellerIntent)).to.revert(ethers);
-    await expect(tradeReactor.getMaxValidAmount(sellerIntent, buyer4Intent)).to.revert(ethers);
+    await expect(secondaryMarket.executableTrade(sellerIntent, buyer4Intent)).to.revert(ethers);
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyer4Intent, buyer4Signature, 1)).to.revert(ethers);
 
     // Seller - Buyer 1 should match for full 50 tokens
-    const tradeAmount1 = await tradeReactor.getMaxValidAmount(sellerIntent, buyer1Intent);
+    const tradeAmount1 = await secondaryMarket.executableTrade(sellerIntent, buyer1Intent);
     expect(tradeAmount1).to.equal(50);
     expect(await secondaryMarket.process(sellerIntent, sellerSignature, buyer1Intent, buyer1Signature, 50)).to.not.revert(ethers);
     expect(await tradeReactor.getFilledAmount(sellerIntent)).to.equal(50);
@@ -180,7 +180,7 @@ describe("SecondaryMarket", function () {
     sellerRemainingBalance -= tradeAmount1;
 
     // Seller - Buyer 2 should match for full 30 tokens
-    const tradeAmount2 = await tradeReactor.getMaxValidAmount(sellerIntent, buyer2Intent);
+    const tradeAmount2 = await secondaryMarket.executableTrade(sellerIntent, buyer2Intent);
     expect(tradeAmount2).to.equal(30);
     expect(await secondaryMarket.process(sellerIntent, sellerSignature, buyer2Intent, buyer2Signature, 30)).to.not.revert(ethers);
     expect(await tradeReactor.getFilledAmount(sellerIntent)).to.equal(80);
@@ -189,7 +189,7 @@ describe("SecondaryMarket", function () {
     sellerRemainingBalance -= tradeAmount2;
 
     // Seller - Buyer 3 should match for remaining 20 tokens, not full 40
-    const tradeAmount3 = await tradeReactor.getMaxValidAmount(sellerIntent, buyer3Intent);
+    const tradeAmount3 = await secondaryMarket.executableTrade(sellerIntent, buyer3Intent);
     expect(tradeAmount3).to.equal(20);
     expect(await secondaryMarket.process(sellerIntent, sellerSignature, buyer3Intent, buyer3Signature, 20)).to.not.revert(ethers);
     expect(await tradeReactor.getFilledAmount(sellerIntent)).to.equal(100);
@@ -206,7 +206,7 @@ describe("SecondaryMarket", function () {
 
     const sellerIntent = getNamedStruct(await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds));
     const sellerSignature = await getSignature(signer2, sellerIntent, await tradeReactor.getAddress());
-    const tradedAmount = await tradeReactor.getMaxValidAmount(sellerIntent, buyerIntent);
+    const tradedAmount = await secondaryMarket.executableTrade(sellerIntent, buyerIntent);
 
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount)).to.be.revertedWithCustomError(tradeReactor, "IntentExpired");
   });

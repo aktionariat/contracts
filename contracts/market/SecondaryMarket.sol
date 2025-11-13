@@ -6,8 +6,25 @@ import "../utils/Ownable.sol";
 import {IReactor} from "./IReactor.sol";
 import {Intent, IntentHash} from "./IntentHash.sol";
 
+/**
+ * @title SecondaryMarket
+ * 
+ * @author Luzius Meisser, luzius@aktionariat.com
+ * @author Murat Ögat, murat@aktionariat.com
+ * 
+ * @notice This contract handles the secondary market transactions and is controlled by the issuer.
+ * @notice It works together with a TradeReactor contract to verify and process trade intents.
+ * @notice If a filler is specified when creating and signing an intent, only this contract can forward it to the reactor for processing.
+ * @notice If a router is specified in this contract, only that address can call the process function to execute trades.
+ * @notice This contract also collects and distributes trading fees, if any. 
+*/
+
 contract SecondaryMarket is Ownable {
     using IntentHash for Intent;
+
+    // Version
+    // 1: initial version
+    uint16 public constant VERSION = 1;
 
     uint16 public constant ALL = 10000;
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
@@ -227,10 +244,15 @@ contract SecondaryMarket is Ownable {
     }
 
     /**
-     * Validates a match between a seller and a buyer intent and returns the maximum amount of tokens that can be traded.
+     * Convenience method to check with 2 intents to get what can be executed right now.
+     * Takes into account unfilled amounts, balances and allowances of both sides.
+     * Also reverts if price is not matching, with OfferTooLow().
      */
-    function validateMatch(Intent calldata sellerIntent, Intent calldata buyerIntent) external view returns (uint256) {
-        return IReactor(REACTOR).getMaxValidAmount(sellerIntent, buyerIntent);
+    function executableTrade(Intent calldata sellerIntent, Intent calldata buyerIntent) external view returns (uint256) {
+        IReactor(REACTOR).verifyPriceMatch(buyerIntent, sellerIntent);
+        uint256 executableSell = executableSellAmount(sellerIntent);
+        uint256 executableBuy = executableBuyAmount(buyerIntent);
+        return (executableSell < executableBuy) ? executableSell : executableBuy;
     }
 
     function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedAmount) external {

@@ -9,13 +9,22 @@ import {SafeERC20} from "../utils/SafeERC20.sol";
 import {IReactor} from "./IReactor.sol";
 
 /**
- * @title TradeReactor Contract
+ * @title TradeReactor
+ * 
+ * @author Luzius Meisser, luzius@aktionariat.com
+ * @author Murat Ögat, murat@aktionariat.com
+ * 
  * @notice This contract handles the signaling and processing of trade intents between buyers and sellers.
 */
+
 contract TradeReactor is IReactor, IntentVerifier {
 
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
+    
+    // Version
+    // 1: initial version
+    uint16 public constant VERSION = 1;
 
     mapping(bytes32 => uint256) public filledAmount;
 
