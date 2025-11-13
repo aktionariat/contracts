@@ -9,7 +9,7 @@ const config = {
 
 // (address owner, address currency, address token, address reactor, address router)
 
-const AktionariatSecondaryMarketTesting1021Module = buildModule("AktionariatSecondaryMarketTesting1021Module", (m) => {
+const AktionariatSecondaryMarketTesting1112Module = buildModule("AktionariatSecondaryMarketTesting1112Module", (m) => {
   const backendOwner = m.getAccount(0);
 
   const tradeReactor = m.contract("TradeReactor", []);
@@ -22,4 +22,4 @@ const AktionariatSecondaryMarketTesting1021Module = buildModule("AktionariatSeco
    };
 });
 
-export default AktionariatSecondaryMarketTesting1021Module;
+export default AktionariatSecondaryMarketTesting1112Module;

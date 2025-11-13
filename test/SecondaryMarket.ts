@@ -5,16 +5,17 @@ import TestModule from "../ignition/modules/TestModule.ts";
 import { buyerIntentConfig, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
 import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
 import { mintAndWrap } from "../scripts/helpers/mintAndWrap.ts";
+import { AllowlistDraggableShares, AllowlistShares, IERC20, SecondaryMarket, SecondaryMarketFactory, TradeReactor } from "../types/ethers-contracts/index.ts";
 
 
 describe("SecondaryMarket", function () {
-  let tradeReactor: Contract;
-  let secondaryMarketFactory: Contract;
-  let secondaryMarket: Contract;
-  let secondaryMarketWithRouter: Contract;
-  let allowlistShares: Contract
-  let allowlistDraggableShares: Contract
-  let zchf: Contract;
+  let tradeReactor: TradeReactor;
+  let secondaryMarketFactory: SecondaryMarketFactory;
+  let secondaryMarket: SecondaryMarket;
+  let secondaryMarketWithRouter: SecondaryMarket;
+  let allowlistShares: AllowlistShares
+  let allowlistDraggableShares: AllowlistDraggableShares
+  let zchf: IERC20;
   const router = deployer; // Use an existing signer as router
 
   async function deployTestModuleFixture() {
@@ -220,18 +221,18 @@ describe("SecondaryMarket", function () {
     // First give full approval
     var allowance = ethers.parseUnits("100000", 0);
     await allowlistDraggableShares.connect(signer6).approve(tradeReactor, allowance);
-    var available = await secondaryMarket.getAvailableForExecution(sellerIntent);
+    var available = await secondaryMarket.executableAmount(sellerIntent);
     expect(available).to.equal(ethers.parseUnits("100", 0));
 
     // Then reduce balance
     await allowlistDraggableShares.connect(signer6).transfer(signer1.address, ethers.parseUnits("50", 0));
-    var available = await secondaryMarket.getAvailableForExecution(sellerIntent);
+    var available = await secondaryMarket.executableAmount(sellerIntent);
     expect(available).to.equal(ethers.parseUnits("50", 0));
 
     // Then reduce allowance
     var allowance = ethers.parseUnits("10", 0);
     await allowlistDraggableShares.connect(signer6).approve(tradeReactor, allowance);
-    var available = await secondaryMarket.getAvailableForExecution(sellerIntent);
+    var available = await secondaryMarket.executableAmount(sellerIntent);
     expect(available).to.equal(ethers.parseUnits("10", 0));
 
     // Does not check partially filled cases. Maybe to do later, maybe assume they are working.
@@ -247,18 +248,18 @@ describe("SecondaryMarket", function () {
     // First give full approval
     var allowance = ethers.parseUnits("100000", 18);
     await zchf.connect(signer7).approve(tradeReactor, allowance);
-    var available = await secondaryMarket.getAvailableForExecution(buyerIntent);
+    var available = await secondaryMarket.executableAmount(buyerIntent);
     expect(available).to.equal(ethers.parseUnits("100", 0));
 
     // Then reduce balance
     await zchf.connect(signer7).transfer(signer1.address, ethers.parseUnits("50", 18));
-    var available = await secondaryMarket.getAvailableForExecution(buyerIntent);
+    var available = await secondaryMarket.executableAmount(buyerIntent);
     expect(available).to.equal(ethers.parseUnits("50", 0));
 
     // Then reduce allowance
     var allowance = ethers.parseUnits("10", 18);
     await zchf.connect(signer7).approve(tradeReactor, allowance);
-    var available = await secondaryMarket.getAvailableForExecution(buyerIntent);
+    var available = await secondaryMarket.executableAmount(buyerIntent);
     expect(available).to.equal(ethers.parseUnits("10", 0));
   });
 

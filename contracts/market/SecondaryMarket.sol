@@ -11,7 +11,7 @@ contract SecondaryMarket is Ownable {
 
     uint16 public constant ALL = 10000;
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
-    uint160 public constant CANCELLED = 2**160 - 1;
+    uint256 public constant CANCELLED = type(uint256).max;
 
     address public immutable CURRENCY;
     address public immutable TOKEN;
@@ -29,8 +29,6 @@ contract SecondaryMarket is Ownable {
     error WrongRouter(address expected, address actual);
     error InvalidConfiguration();
     error MarketClosed();
-    error NoBalance(address token, address owner);
-    error NoAllowance(address token, address owner, address spender);
     error AlreadyFilled();
     error UserCancelled();
 
@@ -100,7 +98,7 @@ contract SecondaryMarket is Ownable {
     /**
      * Create an order intent that can be signed by the owner.
      */
-    function createBuyOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
+    function createBuyOrder(address owner, uint256 amountOut, uint256 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
         return Intent(owner, address(this), CURRENCY, amountOut, TOKEN, amountIn, block.timestamp, block.timestamp + validitySeconds, new bytes(0));
     }
 
@@ -108,7 +106,7 @@ contract SecondaryMarket is Ownable {
      * Create an order intent that can be signed by the owner.
      * The tokenIn amount is reduced by the trading fee, which is always charged to the seller.
      */
-    function createSellOrder(address owner, uint160 amountOut, uint160 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
+    function createSellOrder(address owner, uint256 amountOut, uint256 amountIn, uint24 validitySeconds) public view returns (Intent memory) {
         return Intent(owner, address(this), TOKEN, amountOut, CURRENCY, amountIn, block.timestamp, block.timestamp + validitySeconds, new bytes(0));
     }
 
@@ -143,16 +141,48 @@ contract SecondaryMarket is Ownable {
     }
 
     /**
+     * Check if an order can be executed and if yes, returns the maximum amount of the tokenOut.
+     */
+    function validateOrder(Intent calldata intent, bytes calldata sig) external view returns (uint256 unfilled, uint256 balance, uint256 allowance) {
+        verifySignature(intent, sig);
+        require((intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY) || (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN), WrongTokens());
+
+        balance = IERC20(intent.tokenOut).balanceOf(intent.owner);
+        allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
+
+        uint256 amountTokens = (intent.tokenOut == TOKEN) ? intent.amountOut : intent.amountIn;
+        uint256 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
+        if (alreadyFilled == CANCELLED) revert UserCancelled();
+        if (amountTokens <= alreadyFilled) revert AlreadyFilled();
+        uint256 remaining = amountTokens - alreadyFilled;
+
+        return (remaining, balance, allowance);
+    }
+
+    /**
+     * Returns multiple order book entries for an array of intents, avoiding multiple calls.
+     * The returned numbers are to be used directly in the order book.
+     * Therefore, this function doesn't revert, it returns 0 for unexecutable entries instead.
+     */
+    function executableAmounts(Intent[] calldata intents) public view returns (uint256[] memory) {
+        uint256[] memory available = new uint256[](intents.length);
+        for (uint256 i = 0; i < intents.length; i++) {
+            available[i] = executableAmount(intents[i]);
+        }
+        return available;
+    }
+
+    /**
      * Check if an order can be executed and if yes, returns the maximum amount in TOKENS that can be executed immediately.
      * Considers the unfilled amount, and also the actual balance and allowance of the intent owner.
      * This is useful for user interfaces to show how much can be traded right now.
      * This function should never return zero. It should either revert or return a non-zero value.
      */
-    function getAvailableForExecution(Intent calldata intent) external view returns (uint160) {
+    function executableAmount(Intent calldata intent) public view returns (uint256) {
         if (intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY) {
-            return getAvailableToSell(intent);
+            return executableSellAmount(intent);
         } else if (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN) {
-            return getAvailableToBuy(intent);
+            return executableBuyAmount(intent);
         } else {
             revert WrongTokens();
         }
@@ -162,19 +192,16 @@ contract SecondaryMarket is Ownable {
      * Internal counterpart of getAvailableForExecution for selling.
      * This is straightforward as we can directly check the token balance and allowance.
      */
-    function getAvailableToSell(Intent calldata intent) internal view returns (uint160) {
-        uint160 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
-        uint160 balance = uint160(IERC20(intent.tokenOut).balanceOf(intent.owner));
-        uint160 allowance = uint160(IERC20(intent.tokenOut).allowance(intent.owner, REACTOR));
+    function executableSellAmount(Intent calldata intent) internal view returns (uint256) {
+        uint256 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
+        uint256 balance = IERC20(intent.tokenOut).balanceOf(intent.owner);
+        uint256 allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
 
-        if (alreadyFilled == CANCELLED) revert UserCancelled();
-        if (intent.amountOut <= alreadyFilled) revert AlreadyFilled();
-        if (balance == 0) revert NoBalance(intent.tokenOut, intent.owner);
-        if (allowance == 0) revert NoAllowance(intent.tokenOut, intent.owner, REACTOR);
+        if (intent.amountOut <= alreadyFilled) return 0;
 
-        uint160 unfilled = intent.amountOut - alreadyFilled;
-        uint160 availableInWallet = (balance < allowance) ? balance : allowance;
-        uint160 finalAvailable = (unfilled < availableInWallet) ? unfilled : availableInWallet;
+        uint256 unfilled = intent.amountOut - alreadyFilled;
+        uint256 availableInWallet = (balance < allowance) ? balance : allowance;
+        uint256 finalAvailable = (unfilled < availableInWallet) ? unfilled : availableInWallet;
 
         return finalAvailable;
     }
@@ -184,20 +211,17 @@ contract SecondaryMarket is Ownable {
      * This is slightly more tricky, as we need to check balance/allowance in CURRENCY 
      * but return available amount in TOKENS, so getBid() is used to get the conversion rate.
      */
-    function getAvailableToBuy(Intent calldata intent) internal view returns (uint160) {
-        uint160 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
+    function executableBuyAmount(Intent calldata intent) internal view returns (uint256) {
+        uint256 alreadyFilled = IReactor(REACTOR).getFilledAmount(intent);
         uint256 bid = IReactor(REACTOR).getBid(intent, 1);
         uint256 balanceInShares = IERC20(intent.tokenOut).balanceOf(intent.owner) / bid;
         uint256 allowanceInShares = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR) / bid;
 
-        if (alreadyFilled == CANCELLED) revert UserCancelled();
-        if (intent.amountIn <= alreadyFilled) revert AlreadyFilled();
-        if (balanceInShares == 0) revert NoBalance(intent.tokenOut, intent.owner);
-        if (allowanceInShares == 0) revert NoAllowance(intent.tokenOut, intent.owner, REACTOR);
+        if (intent.amountIn <= alreadyFilled) return 0;
 
-        uint160 unfilled = intent.amountIn - alreadyFilled;
-        uint160 availableInShares = (balanceInShares < allowanceInShares) ? uint160(balanceInShares) : uint160(allowanceInShares);
-        uint160 finalAvailable = (unfilled < availableInShares) ? unfilled : availableInShares;
+        uint256 unfilled = intent.amountIn - alreadyFilled;
+        uint256 availableInShares = (balanceInShares < allowanceInShares) ? balanceInShares : allowanceInShares;
+        uint256 finalAvailable = (unfilled < availableInShares) ? unfilled : availableInShares;
 
         return finalAvailable;
     }

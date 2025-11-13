@@ -17,7 +17,7 @@ contract TradeReactor is IReactor, IntentVerifier {
     using IntentHash for Intent;
     using SafeERC20 for IERC20;
 
-    mapping(bytes32 => uint160) public filledAmount;
+    mapping(bytes32 => uint256) public filledAmount;
 
     /// @dev Emitted when an intent to trade is signaled.
     /// @param owner The address of the intent owner.
@@ -30,7 +30,7 @@ contract TradeReactor is IReactor, IntentVerifier {
     /// @param expiration The expiration time of the intent.
     /// @param data Additional data that may be used in the trade execution.
     /// @param signature The signature of the owner authorizing the intent.
-    event IntentSignal(address owner, address filler, address tokenOut, uint160 amountOut, address tokenIn, uint160 amountIn, uint256 creation, uint256 expiration, bytes data, bytes signature);
+    event IntentSignal(address owner, address filler, address tokenOut, uint256 amountOut, address tokenIn, uint256 amountIn, uint256 creation, uint256 expiration, bytes data, bytes signature);
 
     error OfferTooLow();
     error InvalidFiller();
@@ -93,36 +93,9 @@ contract TradeReactor is IReactor, IntentVerifier {
         return executionPrice;
     }
 
-    function getFilledAmount(Intent calldata intent) external view returns (uint160) {
+    function getFilledAmount(Intent calldata intent) external view returns (uint256) {
         return filledAmount[intent.hash()];
-    }
-
-    /**
-     * @notice Determines the maximum valid amount that can be traded based on seller and buyer intents.
-     * @param sellerIntent The seller's trade intent.
-     * @param buyerIntent The buyer's trade intent.
-     * @return The maximum valid trade amount.
-     */
-    function getMaxValidAmount(Intent calldata sellerIntent, Intent calldata buyerIntent) public view returns (uint256) {
-        verifyPriceMatch(buyerIntent, sellerIntent);
-
-        uint256 sellerUnfilled = sellerIntent.amountOut - filledAmount[sellerIntent.hash()];
-        uint256 buyerUnfilled = buyerIntent.amountIn - filledAmount[buyerIntent.hash()];
-        uint256 maxAmount = (sellerUnfilled > buyerUnfilled) ? buyerUnfilled : sellerUnfilled;
-
-        return maxAmount;
-    }
-
-    /**
-     * @notice Processes a trade between a seller and a buyer with the maximum valid amount.
-     * @param sellerIntent The seller's trade intent.
-     * @param sellerSig The seller's signature.
-     * @param buyerIntent The buyer's trade intent.
-     * @param buyerSig The buyer's signature.
-     */    
-    function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 totalFee) external {
-        process(sellerIntent, sellerSig, buyerIntent, buyerSig, getMaxValidAmount(sellerIntent, buyerIntent), totalFee);
-    }
+    }    
 
     /**
      * @notice Processes a trade between a seller and a buyer for a specified amount.
@@ -140,8 +113,8 @@ contract TradeReactor is IReactor, IntentVerifier {
         if (tradedTokens > (sellerIntent.amountOut - filledAmount[sellerIntent.hash()])) revert OverFilled();
         if (tradedTokens > (buyerIntent.amountIn - filledAmount[buyerIntent.hash()])) revert OverFilled();
 
-        filledAmount[sellerIntent.hash()] += uint160(tradedTokens);
-        filledAmount[buyerIntent.hash()] += uint160(tradedTokens);
+        filledAmount[sellerIntent.hash()] += tradedTokens;
+        filledAmount[buyerIntent.hash()] += tradedTokens;
 
         uint256 totalExecutionPrice = getTotalExecutionPrice(buyerIntent, sellerIntent, tradedTokens);
 
@@ -166,7 +139,7 @@ contract TradeReactor is IReactor, IntentVerifier {
 
     function cancelIntent(Intent calldata intent) external {
         if (msg.sender != intent.owner && msg.sender != intent.filler) revert InvalidFiller();
-        filledAmount[intent.hash()] = type(uint160).max;
+        filledAmount[intent.hash()] = type(uint256).max;
     }
 
     function cleanupExpiredIntentData(Intent[] calldata intents) external {

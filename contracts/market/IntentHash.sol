@@ -15,16 +15,16 @@ struct Intent {
 	address owner;
 	address filler;
 	address tokenOut; // The ERC20 token sent out
-	uint160 amountOut; // The maximum amount
+	uint256 amountOut; // The maximum amount
 	address tokenIn; // The ERC20 token received
-	uint160 amountIn; // The amount received in exchange for the maximum of the sent token
+	uint256 amountIn; // The amount received in exchange for the maximum of the sent token
 	uint256 creation; // timestamp at which the intent was created
 	uint256 expiration; // timestamp at which the intent expires
 	bytes data;
 }
 
 library IntentHash {
-	bytes32 internal constant INTENT_TYPE_HASH = keccak256("Intent(address owner,address filler,address tokenOut,uint160 amountOut,address tokenIn,uint160 amountIn,uint256 creation,uint256 expiration,bytes data)");
+	bytes32 internal constant INTENT_TYPE_HASH = keccak256("Intent(address owner,address filler,address tokenOut,uint256 amountOut,address tokenIn,uint256 amountIn,uint256 creation,uint256 expiration,bytes data)");
 
 	function hash(Intent calldata intent) internal pure returns (bytes32) {
 		return

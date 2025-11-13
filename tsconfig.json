@@ -9,5 +9,7 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": ["./scripts", "./test", "./types"],
+  "files": ["./hardhat.config.ts"]
 }

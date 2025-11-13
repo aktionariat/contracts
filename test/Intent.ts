@@ -57,9 +57,9 @@ export function getEIP712Fields(intentStruct: Intent, verifyingContract: string)
       { name: 'owner', type: 'address' },
       { name: 'filler', type: 'address' },
       { name: 'tokenOut', type: 'address' },
-      { name: 'amountOut', type: 'uint160' },
+      { name: 'amountOut', type: 'uint256' },
       { name: 'tokenIn', type: 'address' },
-      { name: 'amountIn', type: 'uint160' },
+      { name: 'amountIn', type: 'uint256' },
       { name: 'creation', type: 'uint256' },
       { name: 'expiration', type: 'uint256' },
       { name: 'data', type: 'bytes' }
