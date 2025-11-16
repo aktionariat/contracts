@@ -7,6 +7,9 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true
-  }
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["./scripts", "./test", "./types"],
+  "files": ["./hardhat.config.ts"]
 }

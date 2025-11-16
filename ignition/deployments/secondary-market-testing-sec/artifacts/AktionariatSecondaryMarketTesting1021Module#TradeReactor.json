@@ -1,0 +1,1264 @@
+{
+  "_format": "hh3-artifact-1",
+  "contractName": "TradeReactor",
+  "sourceName": "contracts/market/TradeReactor.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        }
+      ],
+      "name": "Address_NotTransferNorContract",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "signatureDeadline",
+          "type": "uint256"
+        }
+      ],
+      "name": "IntentExpired",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidFiller",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidSignature",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidSignatureLength",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidSigner",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OfferTooLow",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OverFilled",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "SafeERC20FailedOperation",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "bid",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "ask",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint16",
+          "name": "minSpread",
+          "type": "uint16"
+        }
+      ],
+      "name": "SpreadTooLow",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "TokenMismatch",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "filler",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "tokenOut",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint160",
+          "name": "amountOut",
+          "type": "uint160"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "tokenIn",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint160",
+          "name": "amountIn",
+          "type": "uint160"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "creation",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "expiration",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "IntentSignal",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent[]",
+          "name": "intents",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "cleanupExpiredIntentData",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "filledAmount",
+      "outputs": [
+        {
+          "internalType": "uint160",
+          "name": "",
+          "type": "uint160"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "intent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "getAsk",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "intent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "getBid",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "intent",
+          "type": "tuple"
+        }
+      ],
+      "name": "getFilledAmount",
+      "outputs": [
+        {
+          "internalType": "uint160",
+          "name": "",
+          "type": "uint160"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "sellerIntent",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "buyerIntent",
+          "type": "tuple"
+        }
+      ],
+      "name": "getMaxValidAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "buyerIntent",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "sellerIntent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tradedAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "getTotalExecutionPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "sellerIntent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "sellerSig",
+          "type": "bytes"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "buyerIntent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "buyerSig",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tradedTokens",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalFee",
+          "type": "uint256"
+        }
+      ],
+      "name": "process",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "sellerIntent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "sellerSig",
+          "type": "bytes"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "buyerIntent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "buyerSig",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalFee",
+          "type": "uint256"
+        }
+      ],
+      "name": "process",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "intent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "signalIntent",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "intent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "verify",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "intent",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "sig",
+          "type": "bytes"
+        }
+      ],
+      "name": "verifyIntentSignature",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "buyerIntent",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "filler",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenOut",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountOut",
+              "type": "uint160"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenIn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint160",
+              "name": "amountIn",
+              "type": "uint160"
+            },
+            {
+              "internalType": "uint256",
+              "name": "creation",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Intent",
+          "name": "sellerIntent",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifyPriceMatch",
+      "outputs": [],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x600b60808190526a151c985919525b9d195b9d60aa1b60a052600160c0908152603160f81b60e052610100919091526a185add1a5bdb985c9a585d60aa1b610120527fd87cd6ef79d4e2b95e15ce8abf732db51ec771f1ca2edccf22a46c729ac564726101609081527f571b3d6aee8a3ba2e5b3d4db2b1078b45d0039e23097f7b7922d0144997e86c1610180527fc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc66101a052466101c052306101e0527fb6128aea051691c801ac365e40bc0164657b14041190034bd8a4bb5b1a6de64961020052610140829052610220604052205f553480156100fb575f5ffd5b506114e7806101095f395ff3fe608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c806351e1d62511610088578063a89ecc2011610063578063a89ecc20146101bc578063bebf01a3146101cf578063ca4ae7cc146101e2578063dca79cff146101f5575f5ffd5b806351e1d6251461018357806357ae4228146101965780638f644aca146101a9575f5ffd5b80630b20b7bc146100cf5780631a63a8f9146101145780633102510714610129578063371adba51461013c5780634770dcc91461015d5780634c49a8c114610170575b5f5ffd5b6100f76100dd366004610e40565b60016020525f90815260409020546001600160a01b031681565b6040516001600160a01b0390911681526020015b60405180910390f35b610127610122366004610eb2565b610208565b005b610127610137366004610f19565b6102a6565b61014f61014a366004610f7c565b6102e9565b60405190815260200161010b565b61014f61016b366004610f19565b610380565b61012761017e366004610eb2565b61043b565b6100f7610191366004610fbd565b610503565b6101276101a4366004610eb2565b61052f565b6101276101b7366004610ff6565b610690565b6101276101ca3660046110c4565b6109aa565b6101276101dd36600461118c565b6109cc565b61014f6101f03660046111fb565b610a3c565b61014f610203366004610f7c565b610a7c565b61021383838361052f565b8260e0013542111561024357604051631f4dca1560e21b815260e084013560048201526024015b60405180910390fd5b33610254604085016020860161127e565b6001600160a01b03161415801561028357505f610277604085016020860161127e565b6001600160a01b031614155b156102a15760405163017ae39960e11b815260040160405180910390fd5b505050565b5f6102b28260016102e9565b90505f6102c0846001610a7c565b9050818110156102e3576040516372351e5360e01b815260040160405180910390fd5b50505050565b5f6102fa608084016060850161127e565b6001600160a01b031682610314608086016060870161127e565b6001600160a01b031661032791906112ad565b61033760c0860160a0870161127e565b6001600160a01b031661034a91906112c0565b61035491906112d7565b61036460c0850160a0860161127e565b6001600160a01b031661037791906112ad565b90505b92915050565b5f61038b82846102a6565b5f60015f61039886610ac4565b815260208101919091526040015f20546001600160a01b03166103c1608086016060870161127e565b6103cb91906112f6565b6001600160a01b031690505f60015f6103e386610ac4565b815260208101919091526040015f20546001600160a01b031661040c60c0860160a0870161127e565b61041691906112f6565b6001600160a01b031690505f81831161042f5782610431565b815b9695505050505050565b610446838383610208565b7fa5b92da59feb79b972f253036a1d8d7cd7658e2048b5d4203457114f6fb077e5610474602085018561127e565b610484604086016020870161127e565b610494606087016040880161127e565b6104a4608088016060890161127e565b6104b460a0890160808a0161127e565b6104c460c08a0160a08b0161127e565b60c08a013560e08b01356104dc6101008d018d611315565b8c8c6040516104f69c9b9a9998979695949392919061137f565b60405180910390a1505050565b5f60015f61051084610ac4565b815260208101919091526040015f20546001600160a01b031692915050565b5f5f5461053b85610ac4565b60405161190160f01b6020820152602281019290925260428201526062016040516020818303038152906040528051906020012090505f5f5f6105b286868080601f0160208091040260200160405190810160405280939291908181526020018383808284375f92019190915250610bee92505050565b9250925092505f6001858585856040515f81526020016040526040516105f4949392919093845260ff9290921660208401526040830152606082015260800190565b6020604051602081039080840390855afa158015610614573d5f5f3e3d5ffd5b5050604051601f1901519150506001600160a01b03811661064857604051638baa579f60e01b815260040160405180910390fd5b610655602089018961127e565b6001600160a01b0316816001600160a01b03161461068657604051632057875960e21b815260040160405180910390fd5b5050505050505050565b61069b888888610208565b6106a6858585610208565b6106b660a086016080870161127e565b6001600160a01b03166106cf60608a0160408b0161127e565b6001600160a01b0316146106f65760405163936bb5ad60e01b815260040160405180910390fd5b610706606086016040870161127e565b6001600160a01b031661071f60a08a0160808b0161127e565b6001600160a01b0316146107465760405163936bb5ad60e01b815260040160405180910390fd5b60015f6107528a610ac4565b815260208101919091526040015f20546001600160a01b031661077b60808a0160608b0161127e565b61078591906112f6565b6001600160a01b03168211156107ae5760405163447f595960e11b815260040160405180910390fd5b60015f6107ba87610ac4565b815260208101919091526040015f20546001600160a01b03166107e360c0870160a0880161127e565b6107ed91906112f6565b6001600160a01b03168211156108165760405163447f595960e11b815260040160405180910390fd5b8160015f6108238b610ac4565b815260208101919091526040015f908120805490919061084d9084906001600160a01b0316611402565b92506101000a8154816001600160a01b0302191690836001600160a01b031602179055508160015f61087e88610ac4565b815260208101919091526040015f90812080549091906108a89084906001600160a01b0316611402565b92506101000a8154816001600160a01b0302191690836001600160a01b031602179055505f6108d8868a85610a3c565b905061090d6108ea60208b018b61127e565b30856108fc60608e0160408f0161127e565b6001600160a01b0316929190610c4d565b61092f61091d602088018861127e565b30836108fc60608b0160408c0161127e565b61096061093f602088018861127e565b8461095060608d0160408e0161127e565b6001600160a01b03169190610cb4565b61098a61097060208b018b61127e565b61097a84846112ad565b61095060a08d0160808e0161127e565b61099f338361095060a08d0160808e0161127e565b505050505050505050565b6109c38787878787876109bd8e8c610380565b88610690565b50505050505050565b5f5b818110156102a157368383838181106109e9576109e9611421565b90506020028101906109fb9190611435565b90508060e00135421115610a335760015f610a1583610ac4565b815260208101919091526040015f2080546001600160a01b03191690555b506001016109ce565b5f610a4784846102a6565b5f8460c001358460c001351015610a6757610a628584610a7c565b610a71565b610a7184846102e9565b9150505b9392505050565b5f610a8d60c0840160a0850161127e565b6001600160a01b031682610aa7608086016060870161127e565b6001600160a01b0316610aba91906112c0565b61037791906112d7565b5f7fb740f08c85178ce782948a1dd2f455abd2b48cdb282ff08174896a9ab1ac9399610af3602084018461127e565b610b03604085016020860161127e565b610b13606086016040870161127e565b610b23608087016060880161127e565b610b3360a088016080890161127e565b610b4360c0890160a08a0161127e565b60c089013560e08a0135610b5b6101008c018c611315565b604051610b69929190611454565b60408051918290038220602083019b909b526001600160a01b03998a16908201529688166060880152948716608087015292861660a086015290851660c085015290931660e083015261010082019290925261012081019190915261014081019190915261016001604051602081830303815290604052805190602001209050919050565b5f5f5f8351604103610c2d5750505060208101516040820151604183015160ff169190601b831015610c2857610c25601b84611463565b92505b610c46565b604051634be6321b60e01b815260040160405180910390fd5b9193909250565b6040516001600160a01b0384811660248301528381166044830152606482018390526102e39186918216906323b872dd906084015b604051602081830303815290604052915060e01b6020820180516001600160e01b038381831617835250505050610ce5565b6040516001600160a01b038381166024830152604482018390526102a191859182169063a9059cbb90606401610c82565b5f610cf96001600160a01b03841683610d46565b905080515f14158015610d1d575080806020019051810190610d1b919061147c565b155b156102a157604051635274afe760e01b81526001600160a01b038416600482015260240161023a565b606061037783835f606082515f14158015610d6957506001600160a01b0384163b155b15610d9257604051639eb1341360e01b81526001600160a01b038516600482015260240161023a565b5f5f856001600160a01b03168486604051610dad919061149b565b5f6040518083038185875af1925050503d805f8114610de7576040519150601f19603f3d011682016040523d82523d5f602084013e610dec565b606091505b50915091508115610e00579150610a759050565b805115610e0f57805160208201fd5b60405162461bcd60e51b815260206004820152600660248201526519985a5b195960d21b604482015260640161023a565b5f60208284031215610e50575f5ffd5b5035919050565b5f6101208284031215610e68575f5ffd5b50919050565b5f5f83601f840112610e7e575f5ffd5b5081356001600160401b03811115610e94575f5ffd5b602083019150836020828501011115610eab575f5ffd5b9250929050565b5f5f5f60408486031215610ec4575f5ffd5b83356001600160401b03811115610ed9575f5ffd5b610ee586828701610e57565b93505060208401356001600160401b03811115610f00575f5ffd5b610f0c86828701610e6e565b9497909650939450505050565b5f5f60408385031215610f2a575f5ffd5b82356001600160401b03811115610f3f575f5ffd5b610f4b85828601610e57565b92505060208301356001600160401b03811115610f66575f5ffd5b610f7285828601610e57565b9150509250929050565b5f5f60408385031215610f8d575f5ffd5b82356001600160401b03811115610fa2575f5ffd5b610fae85828601610e57565b95602094909401359450505050565b5f60208284031215610fcd575f5ffd5b81356001600160401b03811115610fe2575f5ffd5b610fee84828501610e57565b949350505050565b5f5f5f5f5f5f5f5f60c0898b03121561100d575f5ffd5b88356001600160401b03811115611022575f5ffd5b61102e8b828c01610e57565b98505060208901356001600160401b03811115611049575f5ffd5b6110558b828c01610e6e565b90985096505060408901356001600160401b03811115611073575f5ffd5b61107f8b828c01610e57565b95505060608901356001600160401b0381111561109a575f5ffd5b6110a68b828c01610e6e565b999c989b5096999598969760808701359660a0013595509350505050565b5f5f5f5f5f5f5f60a0888a0312156110da575f5ffd5b87356001600160401b038111156110ef575f5ffd5b6110fb8a828b01610e57565b97505060208801356001600160401b03811115611116575f5ffd5b6111228a828b01610e6e565b90975095505060408801356001600160401b03811115611140575f5ffd5b61114c8a828b01610e57565b94505060608801356001600160401b03811115611167575f5ffd5b6111738a828b01610e6e565b989b979a50959894979596608090950135949350505050565b5f5f6020838503121561119d575f5ffd5b82356001600160401b038111156111b2575f5ffd5b8301601f810185136111c2575f5ffd5b80356001600160401b038111156111d7575f5ffd5b8560208260051b84010111156111eb575f5ffd5b6020919091019590945092505050565b5f5f5f6060848603121561120d575f5ffd5b83356001600160401b03811115611222575f5ffd5b61122e86828701610e57565b93505060208401356001600160401b03811115611249575f5ffd5b61125586828701610e57565b93969395505050506040919091013590565b6001600160a01b038116811461127b575f5ffd5b50565b5f6020828403121561128e575f5ffd5b8135610a7581611267565b634e487b7160e01b5f52601160045260245ffd5b8181038181111561037a5761037a611299565b808202811582820484141761037a5761037a611299565b5f826112f157634e487b7160e01b5f52601260045260245ffd5b500490565b6001600160a01b03828116828216039081111561037a5761037a611299565b5f5f8335601e1984360301811261132a575f5ffd5b8301803591506001600160401b03821115611343575f5ffd5b602001915036819003821315610eab575f5ffd5b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b6001600160a01b038d811682528c811660208301528b811660408301528a811660608301528981166080830152881660a082015260c0810187905260e0810186905261014061010082018190525f906113db9083018688611357565b8281036101208401526113ef818587611357565b9f9e505050505050505050505050505050565b6001600160a01b03818116838216019081111561037a5761037a611299565b634e487b7160e01b5f52603260045260245ffd5b5f823561011e1983360301811261144a575f5ffd5b9190910192915050565b818382375f9101908152919050565b60ff818116838216019081111561037a5761037a611299565b5f6020828403121561148c575f5ffd5b81518015158114610a75575f5ffd5b5f82518060208501845e5f92019182525091905056fea2646970667358221220000677ea09f3a7eadecdbc6d646e6014f24aba0789bd8d6890cc6a1fe5f7a3b364736f6c634300081e0033",
+  "deployedBytecode": "0x608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c806351e1d62511610088578063a89ecc2011610063578063a89ecc20146101bc578063bebf01a3146101cf578063ca4ae7cc146101e2578063dca79cff146101f5575f5ffd5b806351e1d6251461018357806357ae4228146101965780638f644aca146101a9575f5ffd5b80630b20b7bc146100cf5780631a63a8f9146101145780633102510714610129578063371adba51461013c5780634770dcc91461015d5780634c49a8c114610170575b5f5ffd5b6100f76100dd366004610e40565b60016020525f90815260409020546001600160a01b031681565b6040516001600160a01b0390911681526020015b60405180910390f35b610127610122366004610eb2565b610208565b005b610127610137366004610f19565b6102a6565b61014f61014a366004610f7c565b6102e9565b60405190815260200161010b565b61014f61016b366004610f19565b610380565b61012761017e366004610eb2565b61043b565b6100f7610191366004610fbd565b610503565b6101276101a4366004610eb2565b61052f565b6101276101b7366004610ff6565b610690565b6101276101ca3660046110c4565b6109aa565b6101276101dd36600461118c565b6109cc565b61014f6101f03660046111fb565b610a3c565b61014f610203366004610f7c565b610a7c565b61021383838361052f565b8260e0013542111561024357604051631f4dca1560e21b815260e084013560048201526024015b60405180910390fd5b33610254604085016020860161127e565b6001600160a01b03161415801561028357505f610277604085016020860161127e565b6001600160a01b031614155b156102a15760405163017ae39960e11b815260040160405180910390fd5b505050565b5f6102b28260016102e9565b90505f6102c0846001610a7c565b9050818110156102e3576040516372351e5360e01b815260040160405180910390fd5b50505050565b5f6102fa608084016060850161127e565b6001600160a01b031682610314608086016060870161127e565b6001600160a01b031661032791906112ad565b61033760c0860160a0870161127e565b6001600160a01b031661034a91906112c0565b61035491906112d7565b61036460c0850160a0860161127e565b6001600160a01b031661037791906112ad565b90505b92915050565b5f61038b82846102a6565b5f60015f61039886610ac4565b815260208101919091526040015f20546001600160a01b03166103c1608086016060870161127e565b6103cb91906112f6565b6001600160a01b031690505f60015f6103e386610ac4565b815260208101919091526040015f20546001600160a01b031661040c60c0860160a0870161127e565b61041691906112f6565b6001600160a01b031690505f81831161042f5782610431565b815b9695505050505050565b610446838383610208565b7fa5b92da59feb79b972f253036a1d8d7cd7658e2048b5d4203457114f6fb077e5610474602085018561127e565b610484604086016020870161127e565b610494606087016040880161127e565b6104a4608088016060890161127e565b6104b460a0890160808a0161127e565b6104c460c08a0160a08b0161127e565b60c08a013560e08b01356104dc6101008d018d611315565b8c8c6040516104f69c9b9a9998979695949392919061137f565b60405180910390a1505050565b5f60015f61051084610ac4565b815260208101919091526040015f20546001600160a01b031692915050565b5f5f5461053b85610ac4565b60405161190160f01b6020820152602281019290925260428201526062016040516020818303038152906040528051906020012090505f5f5f6105b286868080601f0160208091040260200160405190810160405280939291908181526020018383808284375f92019190915250610bee92505050565b9250925092505f6001858585856040515f81526020016040526040516105f4949392919093845260ff9290921660208401526040830152606082015260800190565b6020604051602081039080840390855afa158015610614573d5f5f3e3d5ffd5b5050604051601f1901519150506001600160a01b03811661064857604051638baa579f60e01b815260040160405180910390fd5b610655602089018961127e565b6001600160a01b0316816001600160a01b03161461068657604051632057875960e21b815260040160405180910390fd5b5050505050505050565b61069b888888610208565b6106a6858585610208565b6106b660a086016080870161127e565b6001600160a01b03166106cf60608a0160408b0161127e565b6001600160a01b0316146106f65760405163936bb5ad60e01b815260040160405180910390fd5b610706606086016040870161127e565b6001600160a01b031661071f60a08a0160808b0161127e565b6001600160a01b0316146107465760405163936bb5ad60e01b815260040160405180910390fd5b60015f6107528a610ac4565b815260208101919091526040015f20546001600160a01b031661077b60808a0160608b0161127e565b61078591906112f6565b6001600160a01b03168211156107ae5760405163447f595960e11b815260040160405180910390fd5b60015f6107ba87610ac4565b815260208101919091526040015f20546001600160a01b03166107e360c0870160a0880161127e565b6107ed91906112f6565b6001600160a01b03168211156108165760405163447f595960e11b815260040160405180910390fd5b8160015f6108238b610ac4565b815260208101919091526040015f908120805490919061084d9084906001600160a01b0316611402565b92506101000a8154816001600160a01b0302191690836001600160a01b031602179055508160015f61087e88610ac4565b815260208101919091526040015f90812080549091906108a89084906001600160a01b0316611402565b92506101000a8154816001600160a01b0302191690836001600160a01b031602179055505f6108d8868a85610a3c565b905061090d6108ea60208b018b61127e565b30856108fc60608e0160408f0161127e565b6001600160a01b0316929190610c4d565b61092f61091d602088018861127e565b30836108fc60608b0160408c0161127e565b61096061093f602088018861127e565b8461095060608d0160408e0161127e565b6001600160a01b03169190610cb4565b61098a61097060208b018b61127e565b61097a84846112ad565b61095060a08d0160808e0161127e565b61099f338361095060a08d0160808e0161127e565b505050505050505050565b6109c38787878787876109bd8e8c610380565b88610690565b50505050505050565b5f5b818110156102a157368383838181106109e9576109e9611421565b90506020028101906109fb9190611435565b90508060e00135421115610a335760015f610a1583610ac4565b815260208101919091526040015f2080546001600160a01b03191690555b506001016109ce565b5f610a4784846102a6565b5f8460c001358460c001351015610a6757610a628584610a7c565b610a71565b610a7184846102e9565b9150505b9392505050565b5f610a8d60c0840160a0850161127e565b6001600160a01b031682610aa7608086016060870161127e565b6001600160a01b0316610aba91906112c0565b61037791906112d7565b5f7fb740f08c85178ce782948a1dd2f455abd2b48cdb282ff08174896a9ab1ac9399610af3602084018461127e565b610b03604085016020860161127e565b610b13606086016040870161127e565b610b23608087016060880161127e565b610b3360a088016080890161127e565b610b4360c0890160a08a0161127e565b60c089013560e08a0135610b5b6101008c018c611315565b604051610b69929190611454565b60408051918290038220602083019b909b526001600160a01b03998a16908201529688166060880152948716608087015292861660a086015290851660c085015290931660e083015261010082019290925261012081019190915261014081019190915261016001604051602081830303815290604052805190602001209050919050565b5f5f5f8351604103610c2d5750505060208101516040820151604183015160ff169190601b831015610c2857610c25601b84611463565b92505b610c46565b604051634be6321b60e01b815260040160405180910390fd5b9193909250565b6040516001600160a01b0384811660248301528381166044830152606482018390526102e39186918216906323b872dd906084015b604051602081830303815290604052915060e01b6020820180516001600160e01b038381831617835250505050610ce5565b6040516001600160a01b038381166024830152604482018390526102a191859182169063a9059cbb90606401610c82565b5f610cf96001600160a01b03841683610d46565b905080515f14158015610d1d575080806020019051810190610d1b919061147c565b155b156102a157604051635274afe760e01b81526001600160a01b038416600482015260240161023a565b606061037783835f606082515f14158015610d6957506001600160a01b0384163b155b15610d9257604051639eb1341360e01b81526001600160a01b038516600482015260240161023a565b5f5f856001600160a01b03168486604051610dad919061149b565b5f6040518083038185875af1925050503d805f8114610de7576040519150601f19603f3d011682016040523d82523d5f602084013e610dec565b606091505b50915091508115610e00579150610a759050565b805115610e0f57805160208201fd5b60405162461bcd60e51b815260206004820152600660248201526519985a5b195960d21b604482015260640161023a565b5f60208284031215610e50575f5ffd5b5035919050565b5f6101208284031215610e68575f5ffd5b50919050565b5f5f83601f840112610e7e575f5ffd5b5081356001600160401b03811115610e94575f5ffd5b602083019150836020828501011115610eab575f5ffd5b9250929050565b5f5f5f60408486031215610ec4575f5ffd5b83356001600160401b03811115610ed9575f5ffd5b610ee586828701610e57565b93505060208401356001600160401b03811115610f00575f5ffd5b610f0c86828701610e6e565b9497909650939450505050565b5f5f60408385031215610f2a575f5ffd5b82356001600160401b03811115610f3f575f5ffd5b610f4b85828601610e57565b92505060208301356001600160401b03811115610f66575f5ffd5b610f7285828601610e57565b9150509250929050565b5f5f60408385031215610f8d575f5ffd5b82356001600160401b03811115610fa2575f5ffd5b610fae85828601610e57565b95602094909401359450505050565b5f60208284031215610fcd575f5ffd5b81356001600160401b03811115610fe2575f5ffd5b610fee84828501610e57565b949350505050565b5f5f5f5f5f5f5f5f60c0898b03121561100d575f5ffd5b88356001600160401b03811115611022575f5ffd5b61102e8b828c01610e57565b98505060208901356001600160401b03811115611049575f5ffd5b6110558b828c01610e6e565b90985096505060408901356001600160401b03811115611073575f5ffd5b61107f8b828c01610e57565b95505060608901356001600160401b0381111561109a575f5ffd5b6110a68b828c01610e6e565b999c989b5096999598969760808701359660a0013595509350505050565b5f5f5f5f5f5f5f60a0888a0312156110da575f5ffd5b87356001600160401b038111156110ef575f5ffd5b6110fb8a828b01610e57565b97505060208801356001600160401b03811115611116575f5ffd5b6111228a828b01610e6e565b90975095505060408801356001600160401b03811115611140575f5ffd5b61114c8a828b01610e57565b94505060608801356001600160401b03811115611167575f5ffd5b6111738a828b01610e6e565b989b979a50959894979596608090950135949350505050565b5f5f6020838503121561119d575f5ffd5b82356001600160401b038111156111b2575f5ffd5b8301601f810185136111c2575f5ffd5b80356001600160401b038111156111d7575f5ffd5b8560208260051b84010111156111eb575f5ffd5b6020919091019590945092505050565b5f5f5f6060848603121561120d575f5ffd5b83356001600160401b03811115611222575f5ffd5b61122e86828701610e57565b93505060208401356001600160401b03811115611249575f5ffd5b61125586828701610e57565b93969395505050506040919091013590565b6001600160a01b038116811461127b575f5ffd5b50565b5f6020828403121561128e575f5ffd5b8135610a7581611267565b634e487b7160e01b5f52601160045260245ffd5b8181038181111561037a5761037a611299565b808202811582820484141761037a5761037a611299565b5f826112f157634e487b7160e01b5f52601260045260245ffd5b500490565b6001600160a01b03828116828216039081111561037a5761037a611299565b5f5f8335601e1984360301811261132a575f5ffd5b8301803591506001600160401b03821115611343575f5ffd5b602001915036819003821315610eab575f5ffd5b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b6001600160a01b038d811682528c811660208301528b811660408301528a811660608301528981166080830152881660a082015260c0810187905260e0810186905261014061010082018190525f906113db9083018688611357565b8281036101208401526113ef818587611357565b9f9e505050505050505050505050505050565b6001600160a01b03818116838216019081111561037a5761037a611299565b634e487b7160e01b5f52603260045260245ffd5b5f823561011e1983360301811261144a575f5ffd5b9190910192915050565b818382375f9101908152919050565b60ff818116838216019081111561037a5761037a611299565b5f6020828403121561148c575f5ffd5b81518015158114610a75575f5ffd5b5f82518060208501845e5f92019182525091905056fea2646970667358221220000677ea09f3a7eadecdbc6d646e6014f24aba0789bd8d6890cc6a1fe5f7a3b364736f6c634300081e0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "immutableReferences": {},
+  "inputSourceName": "project/contracts/market/TradeReactor.sol",
+  "buildInfoId": "solc-0_8_30-52687eb72132d298b356e6b06f88be3d1215335c"
+}
