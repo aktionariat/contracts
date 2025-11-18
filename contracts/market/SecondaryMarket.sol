@@ -267,7 +267,7 @@ contract SecondaryMarket is Ownable {
     }
 
     function cancelIntent(Intent calldata intent) external {
-        if (msg.sender != router) revert WrongRouter(msg.sender, router);
+        if (msg.sender != router && msg.sender != owner) revert WrongRouter(msg.sender, router);
         IReactor(REACTOR).cancelIntent(intent);
     }
 
