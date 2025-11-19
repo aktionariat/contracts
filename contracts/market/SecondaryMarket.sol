@@ -52,7 +52,6 @@ contract SecondaryMarket is Ownable {
 
     address public router; // null for any, 20B
     uint16 public tradingFeeBips; // 2B
-    uint16 public routerShare; // Share of the trading fee that goes to the router in bips
     uint16 public licenseShare; // Share of the trading fee that goes to the router in bips
     bool public isOpen;
 
@@ -60,9 +59,9 @@ contract SecondaryMarket is Ownable {
         CURRENCY = currency;
         TOKEN = token;
         REACTOR = _reactor;
-        licenseShare = 5000; // default license fee is 50% of fees
+        tradingFeeBips = 190; // default trading fee is 1.9%
+        licenseShare = 5000; // default license share is 50% of trading fee
         router = _router;
-        routerShare = 0;
         isOpen = true;
     }
 
@@ -90,19 +89,16 @@ contract SecondaryMarket is Ownable {
      * Having a trusted router helps with the prevention of front-running attacks as no
      * one else can front the router with a different matching of the submitted orders.
      */
-    function setRouter(address router_, uint16 routerShare_) onlyOwner external {
-        if (uint256(routerShare_) + licenseShare > ALL) revert InvalidConfiguration();
+    function setRouter(address router_) onlyOwner external {
         router = router_;
-        routerShare = routerShare_;
     }
 
     /**
      * Configures the software license fee as agreed with the copyright owners.
      */
     function setLicenseFee(uint16 licenseShare_) onlyOwner external {
-        if (uint256(licenseShare_) + routerShare > ALL) revert InvalidConfiguration();
+        if (uint256(licenseShare_) > ALL) revert InvalidConfiguration();
         licenseShare = licenseShare_;
-
     }
 
     function setTradingFee(uint16 tradingFeeBips_) onlyOwner external {
