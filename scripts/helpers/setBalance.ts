@@ -24,6 +24,10 @@ async function setERC20Balance(contractAddress: string, address: string, slot: n
     setStorageAt(contractAddress, index, amountBytesStr);
 }
 
+export async function getStorageAt(address: string, position: bigint) {
+    return await provider.request({method: "eth_getStorageAt", params: [address, "0x" + position.toString(16), "latest"]});
+};
+
 const setStorageAt = async (address: string, index: string, value: string) => {
     await provider.request({method: "hardhat_setStorageAt", params: [address, index, value]});
     await provider.request({method: "hardhat_mine"}); // Just mines to the next block
