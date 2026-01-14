@@ -1,0 +1,45 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_30-ebddc879f449d275c1e069bdb11d7ab075aaa525",
+  "solcVersion": "0.8.30",
+  "solcLongVersion": "0.8.30+commit.73712a01",
+  "userSourceNameMap": {
+    "contracts/EIP7702/AuthorizedExecutor.sol": "project/contracts/EIP7702/AuthorizedExecutor.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "prague",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/EIP7702/AuthorizedCall.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity >=0.8.0 <0.9.0;\r\n\r\n/**\r\n * @title AuthorizedCall\r\n * @author Murat Ögat, murat@aktionariat.com\r\n *\r\n * The struct to be signed for AuthorizedExecutor execution and its hashing per EIP-712.\r\n */\r\n\r\nstruct AuthorizedCall {\r\n\tuint256 nonce;\r\n\taddress to;\r\n\tstring functionSignature;\r\n\tuint256 value;\r\n\tbytes data;\r\n}\r\n\r\nlibrary AuthorizedCallHash {\r\n\tbytes32 internal constant INTENT_TYPE_HASH = keccak256(\"AuthorizedCall(uint256 nonce,address to,string functionSignature,uint256 value,bytes data)\");\r\n\r\n\tfunction hash(AuthorizedCall calldata call) internal pure returns (bytes32) {\r\n\t\treturn\r\n\t\t\tkeccak256(\r\n\t\t\t\tabi.encode(\r\n\t\t\t\t\tINTENT_TYPE_HASH,\r\n\t\t\t\t\tcall.nonce,\r\n\t\t\t\t\tcall.to,\r\n\t\t\t\t\tkeccak256(bytes(call.functionSignature)),\r\n\t\t\t\t\tcall.value,\r\n\t\t\t\t\tkeccak256(call.data)\r\n\t\t\t\t)\r\n\t\t\t);\r\n\t}\r\n}\r\n"
+      },
+      "project/contracts/EIP7702/AuthorizedCallVerifier.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity >=0.8.0 <0.9.0;\r\n\r\nimport {AuthorizedCall, AuthorizedCallHash} from \"./AuthorizedCall.sol\";\r\n\r\n/**\r\n * @title AuthorizedCallVerifier\r\n * @author Murat Ögat, murat@aktionariat.com\r\n *\r\n * EIP-712 verifier, intended to be used with AuthorizedExecutor.sol to separate verifying logic from execution.\r\n * Recovers the signer from the signature of AuthorizedCall and compares it to address(this).\r\n * Therefore, only the EOA owner is accepted as a signer.\r\n */\r\n\r\ncontract AuthorizedCallVerifier {\r\n\r\n    using AuthorizedCallHash for AuthorizedCall;\r\n    \r\n    error InvalidSignatureLength();\r\n    error InvalidSignature();\r\n    error InvalidSigner();\r\n\r\n    // EIP-712 Domain Properties\r\n    // Name: \"AuthorizedCall\"\r\n    // Version: \"1\"\r\n    // Chain ID: current chain id\r\n    // Verifying Contract: this contract\r\n    // Salt: hash of \"aktionariat\" as bytes32\r\n    // \r\n    // IMPORTANT:\r\n    // This can't be an instance variable. \r\n    // It remains uninitialized in the context of the EOA since the contract is not deployed   \r\n    function getDomainSeparator() private view returns (bytes32) {\r\n        return keccak256(abi.encode(\r\n            keccak256(\"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)\"),\r\n            keccak256(bytes(\"AuthorizedCall\")),\r\n            keccak256(bytes(\"1\")),\r\n            block.chainid,\r\n            address(this),\r\n            keccak256(bytes(\"aktionariat\"))\r\n        ));\r\n    }\r\n\r\n    function verifyAuthorizedCallSignature(AuthorizedCall calldata call, bytes calldata sig) public view {\r\n        bytes32 digest = keccak256(abi.encodePacked(\"\\x19\\x01\", getDomainSeparator(), call.hash()));\r\n        (uint8 v, bytes32 r, bytes32 s) = signatureToVRS(sig);\r\n        \r\n        address recoveredAddress = ecrecover(digest, v, r, s);\r\n\r\n        if (recoveredAddress == address(0)) revert InvalidSignature();\r\n        if (recoveredAddress != address(this)) revert InvalidSigner();\r\n    }\r\n\r\n    function signatureToVRS(bytes memory signature) private pure returns (uint8 v, bytes32 r, bytes32 s) {\r\n        if (signature.length == 65) {\r\n            assembly {\r\n                r := mload(add(signature, 32))\r\n                s := mload(add(signature, 64))\r\n                v := and(mload(add(signature, 65)), 255)\r\n            }\r\n            if (v < 27) v += 27;\r\n        } else {\r\n            revert InvalidSignatureLength();\r\n        }\r\n    }\r\n}"
+      },
+      "project/contracts/EIP7702/AuthorizedExecutor.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity >=0.8.0 <0.9.0;\r\n\r\nimport {AuthorizedCall, AuthorizedCallHash} from \"./AuthorizedCall.sol\";\r\nimport {AuthorizedCallVerifier} from \"./AuthorizedCallVerifier.sol\";\r\n\r\n/**\r\n * @title AuthorizedExecutor\r\n * @author Murat Ögat, murat@aktionariat.com\r\n *\r\n * A \"Smart Account\" contract, intended to be used for execution delegation per EIP-7702.\r\n * If an authorization to this contract is set, calls can be executed by passing a signature.\r\n * The expected signature is the signTypedData signature over the AuthorizedCall object.\r\n */\r\n\r\ncontract AuthorizedExecutor layout at 971071161051111109711410597116 is AuthorizedCallVerifier {\r\n    using AuthorizedCallHash for AuthorizedCall;\r\n    \r\n    uint256 public contractNonce;\r\n\r\n    event CallExecuted(address indexed sender, address indexed to, uint256 value, bytes data, uint256 nonce);\r\n\r\n    error InvalidNonce();\r\n    error FunctionSignatureMismatch();\r\n    error CallReverted();\r\n\r\n    /**\r\n     * @notice Executes a call using an off–chain signature.\r\n     * @param call A Call struct containing destination, ETH value, and calldata.\r\n     * @param signature The typed data signature over call, which also includes the nonce.\r\n     */\r\n    function execute(AuthorizedCall calldata call, bytes calldata signature) external payable {\r\n        require(call.nonce == contractNonce, InvalidNonce());\r\n        verifyAuthorizedCallSignature(call, signature);\r\n        verifyAuthorizedCallFunction(call);\r\n\r\n        contractNonce++;\r\n\r\n        _executeCall(call);\r\n    }\r\n\r\n    /**\r\n     * @notice Compares the function signature the user has seen during signing against what will actually be executed.\r\n     */\r\n    function verifyAuthorizedCallFunction(AuthorizedCall calldata call) internal pure {\r\n        bytes4 signedFunctionSignature = bytes4(keccak256(bytes(call.functionSignature)));\r\n        require(signedFunctionSignature == bytes4(call.data), FunctionSignatureMismatch());\r\n    }\r\n\r\n    /**\r\n     * @dev Internal function to execute a single call.\r\n     * @param call The Call struct containing destination, value, and calldata.\r\n     */\r\n    function _executeCall(AuthorizedCall calldata call) internal {\r\n        (bool success,) = call.to.call{value: call.value}(call.data);\r\n        require(success, CallReverted());\r\n        emit CallExecuted(msg.sender, call.to, call.value, call.data, call.nonce);\r\n    }\r\n\r\n    fallback() external payable {}\r\n    receive() external payable {}\r\n}"
+      }
+    }
+  }
+}
