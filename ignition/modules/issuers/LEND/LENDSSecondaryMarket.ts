@@ -9,6 +9,7 @@ const config = {
 }
 
 const LENDSSecondaryMarket260115Module = buildModule("LENDSSecondaryMarket260115Module", (m) => {
+  // Transferred to multisig after deployment
   const backendOwner = m.getAccount(0);
 
   const secondaryMarketFactory = m.contractAt("SecondaryMarketFactory", config.secondaryMarketFactoryAddress);

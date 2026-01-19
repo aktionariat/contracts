@@ -11,6 +11,7 @@ const config = {
 // (address owner, address currency, address token, address reactor, address router)
 
 const SHOWSSecondaryMarket251121Module = buildModule("SHOWSSecondaryMarket251121Module", (m) => {
+  // Transferred to multisig after deployment
   const backendOwner = m.getAccount(0);
 
   const secondaryMarketFactory = m.contractAt("SecondaryMarketFactory", config.secondaryMarketFactoryAddress);

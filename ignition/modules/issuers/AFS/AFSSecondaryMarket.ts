@@ -9,6 +9,7 @@ const config = {
 }
 
 const AFSSecondaryMarket260116Module = buildModule("AFSSecondaryMarket260116Module", (m) => {
+  // Transferred to multisig after deployment
   const backendOwner = m.getAccount(0);
 
   const secondaryMarketFactory = m.contractAt("SecondaryMarketFactory", config.secondaryMarketFactoryAddress);

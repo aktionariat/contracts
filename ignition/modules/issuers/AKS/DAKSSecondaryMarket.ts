@@ -8,7 +8,8 @@ const config = {
   daksAddress: "0x6f38e0f1a73c96cb3f42598613ea3474f09cb200"
 }
 
-const DAKSSecondaryMarket251121Module = buildModule("DAKSSecondaryMarket251121Module", (m) => {
+const DAKSSecondaryMarket251121Module = buildModule("DAKSSecondaryMarket251121Module", (m) => {  
+  // Transferred to multisig after deployment
   const backendOwner = m.getAccount(0);
 
   const secondaryMarketFactory = m.contractAt("SecondaryMarketFactory", config.secondaryMarketFactoryAddress);
