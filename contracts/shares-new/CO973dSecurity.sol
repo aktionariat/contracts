@@ -147,7 +147,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     function migrate(uint256 amount) public {
         _transfer(msg.sender, address(successor), amount);
         _burn(address(successor), amount);
-        ISuccessorToken(successor).notifyBurnedOnArrival(msg.sender, amount);
+        ISuccessorToken(successor).notifyBurned(msg.sender, amount);
     }
 
     /**
@@ -219,7 +219,7 @@ interface ISuccessorToken {
      * tokens for the indicated beneficiary, ensuring that the beneficiary retains control
      * over the tokens.
      */
-    function notifyBurnedOnArrival(address beneficiary, uint256 amount) external;
+    function notifyBurned(address beneficiary, uint256 amount) external;
 }
 
 /**
