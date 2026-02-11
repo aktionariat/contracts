@@ -1,7 +1,7 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const config = {
-  tradeReactorAddress: "0x25ABF1feC6a89796e61107917b5C235557657ddD",
+  tradeReactorAddress: "0x699B77B40bEF9eBA25C39B480c20c38cF7AbaD81",
   secondaryMarketFactoryAddress: "0x08C2cb730dC666Dd6487667B1D66BA9eF5Fe71D4",
   zchfAddress: "0xB58E61C3098d85632Df34EecfB899A1Ed80921cB",
   backendRouterAddress: "0x59f0941e75f2F77cA4577E48c3c5333a3F8D277b",
