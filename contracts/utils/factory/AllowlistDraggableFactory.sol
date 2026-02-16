@@ -47,7 +47,6 @@ contract AllowlistDraggableFactory is Ownable {
         );
 
         return new AllowlistDraggableShares{salt: salt}(
-            tokenConfig.terms,
             params, 
             manager.recoveryHub(),
             manager.offerFactory(),
@@ -65,7 +64,7 @@ contract AllowlistDraggableFactory is Ownable {
             tokenConfig.votePeriod
         );
 
-        bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistDraggableShares).creationCode, abi.encode(tokenConfig.terms, params, manager.recoveryHub(), manager.offerFactory(), tokenOwner, manager.permit2Hub())));
+        bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistDraggableShares).creationCode, abi.encode(params, manager.recoveryHub(), manager.offerFactory(), tokenOwner, manager.permit2Hub())));
         bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, initCodeHash));
         return address(uint160(uint256(hashResult)));
     }

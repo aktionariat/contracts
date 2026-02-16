@@ -41,7 +41,7 @@ contract MultichainSharesMaster is AllowlistDraggableShares, CCIPAdministrable {
     Permit2Hub _permit2Hub,
     address _ccipAdmin
   )
-    AllowlistDraggableShares(_terms, _params, _recoveryHub, _offerFactory, _owner, _permit2Hub)
+    AllowlistDraggableShares(_params, _recoveryHub, _offerFactory, _owner, _permit2Hub)
     CCIPAdministrable(_ccipAdmin)
   {
 

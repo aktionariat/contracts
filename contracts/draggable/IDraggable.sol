@@ -32,12 +32,8 @@ interface IDraggable is IERC20 {
     function drag(address buyer, IERC20 currency) external;
     function notifyOfferEnded() external;
     function votingPower(address voter) external returns (uint256);
-    function totalVotingTokens() external view returns (uint256);
     function notifyVoted(address voter) external;
-    function migrate() external;
     function setOracle(address newOracle) external;
-    function migrateWithExternalApproval(address successor, uint256 additionalVotes) external;
-    function setTerms(string calldata _terms) external;
-
-
+    function migrate(uint256 totalVotes) external;
+    function migrateWithExternalApproval(address successor, uint256 additionalVotes, uint256 totalVotes) external;
 }
