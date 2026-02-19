@@ -10,8 +10,9 @@ pragma solidity >=0.8.0 <0.9.0;
 contract MultichainWalletArgumentSource {
 
     // Router
-    // Mainnet: 0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D
-    // Polygon: 0x849c5ED5a80F5B408Dd4969b78c2C8fdf0565Bfe
+    // Mainnet  : 0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D
+    // Optimism : 0x3206695CaE29952f4b0c22a169725a865bc8Ce0f
+    // Polygon  : 0x849c5ED5a80F5B408Dd4969b78c2C8fdf0565Bfe
 
     // See https://docs.chain.link/ccip/directory/mainnet
 
