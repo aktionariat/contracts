@@ -15,14 +15,12 @@ Generally, there are four types of addresses:
 
 Below is a summary table of the implemented ruleset. Rows represent the "to", colummns represent the "from" address.
 
-+------------+-----+-----+-----+-----+
 |            | Fre | Alw | Res | Adm |
-+------------+-----+-----+-----+-----+
+|------------|-----|-----|-----|-----|
 | Free       |  Y  |  Y  |  N  |  Y  |
 | Allowed    |  N  |  Y  |  N  |  Y  |
 | Restricted |  N  |  N  |  N  |  Y  |
 | Admin      |  Y  |  Y  |  N  |  Y  |
-+------------+-----+-----+-----+-----+
 
 ## Token Types
 
