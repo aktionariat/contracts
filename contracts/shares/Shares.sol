@@ -55,23 +55,19 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
     // 2: added mintMany and mintManyAndCall, added VERSION field
     // 3: added permit
     // 4: refactor to custom errors, added allowance for permit2
-    uint8 public constant VERSION = 4;
-
+    // 5: removed totalShares
+    uint8 public constant VERSION = 5;
     string public terms;
-
-    uint256 public override totalShares; // total number of shares, maybe not all tokenized
     uint256 public invalidTokens;
 
     event Announcement(string message);
     event TokensDeclaredInvalid(address indexed holder, uint256 amount, string message);
     event ChangeTerms(string terms);
-    event ChangeTotalShares(uint256 total);
 
     constructor(
         string memory _symbol,
         string memory _name,
         string memory _terms,
-        uint256 _totalShares,
         address _owner,
         IRecoveryHub _recoveryHub,
         Permit2Hub _permit2Hub
@@ -80,7 +76,6 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
         ERC20Recoverable(_recoveryHub)
         ERC20Permit2(_permit2Hub)
     {
-        totalShares = _totalShares;
         terms = _terms;
         invalidTokens = 0;
         _recoveryHub.setRecoverable(false); 
@@ -89,22 +84,6 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
     function setTerms(string memory _terms) external onlyOwner {
         terms = _terms;
         emit ChangeTerms(_terms);
-    }
-
-    /**
-     * Declares the number of total shares, including those that have not been tokenized and those
-     * that are held by the company itself. This number can be substiantially higher than totalSupply()
-     * in case not all shares have been tokenized. Also, it can be lower than totalSupply() in case some
-     * tokens have become invalid.
-     */
-    function setTotalShares(uint256 _newTotalShares) external onlyOwner() {
-        uint256 _totalValidSupply = totalValidSupply();
-        if (_newTotalShares < _totalValidSupply) {
-            revert Shares_InvalidTotalShares(_totalValidSupply, _newTotalShares);
-            
-        }
-        totalShares = _newTotalShares;
-        emit ChangeTotalShares(_newTotalShares);
     }
 
     /**
@@ -144,7 +123,7 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
 
     /**
      * The total number of valid tokens in circulation. In case some tokens have been declared invalid, this
-     * number might be lower than totalSupply(). Also, it will always be lower than or equal to totalShares().
+     * number might be lower than totalSupply().
      */
     function totalValidSupply() public view returns (uint256) {
         return totalSupply() - invalidTokens;
@@ -152,7 +131,6 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
 
     /**
      * Allows the company to tokenize shares and transfer them e.g to the draggable contract and wrap them.
-     * If these shares are newly created, setTotalShares must be called first in order to adjust the total number of shares.
      */
     function mintAndCall(address shareholder, address callee, uint256 amount, bytes calldata data) external {
         mint(callee, amount);
@@ -193,10 +171,6 @@ contract Shares is ERC20Recoverable, ERC20Named, ERC20PermitLight, ERC20Permit2,
     }
 
     function _mint(address account, uint256 amount) internal virtual override {
-        uint256 newValidSupply = totalValidSupply() + amount;
-        if (newValidSupply > totalShares) {
-            revert Shares_InsufficientTotalShares(totalShares, newValidSupply);
-        }
         super._mint(account, amount);
     }
 

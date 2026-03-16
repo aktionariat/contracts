@@ -91,7 +91,7 @@ contract TokenFactory is Ownable {
 
   function predictTokenAddress(TokenConfig calldata tokenConfig, address tokenOwner, string calldata salt) external view returns (address baseToken, address draggableToken) {
     bytes32 saltHash = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol, salt))));
-    bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistShares).creationCode, abi.encode(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub())));
+    bytes32 initCodeHash = keccak256(abi.encodePacked(type(AllowlistShares).creationCode, abi.encode(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, manager.recoveryHub(), tokenOwner, manager.permit2Hub())));
     bytes32 hashResult = keccak256(abi.encodePacked(bytes1(0xff), address(this), saltHash, initCodeHash));
     address baseTokenAddress = address(uint160(uint256(hashResult)));
 
@@ -139,7 +139,7 @@ contract TokenFactory is Ownable {
 
   function _createBaseToken(TokenConfig calldata tokenConfig, address tokenOwner, string calldata _salt) internal returns (IERC20Permit token) {
     bytes32 salt = bytes32(uint256(keccak256(abi.encodePacked(tokenConfig.symbol, _salt))));
-    token = new AllowlistShares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, tokenConfig.numberOfShares, manager.recoveryHub(), tokenOwner, manager.permit2Hub());
+    token = new AllowlistShares{salt: salt}(tokenConfig.symbol, tokenConfig.name, tokenConfig.terms, manager.recoveryHub(), tokenOwner, manager.permit2Hub());
     _sharesSet.add(address(token));
     emit BaseTokenCreated(token, tokenOwner, true);
     return token;
