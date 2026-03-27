@@ -97,7 +97,7 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
      * different form or on a different blockchain.
      */
     function proposeCancellation() external returns (Migration memory) {
-        return _propose(baseToken(), TYPE_TERMINATION);
+        return _propose(baseToken(), TYPE_CANCELLATION);
     }
 
     /**

@@ -126,7 +126,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
         if (recovery.timestamp == 0) revert RecoveryNotFound(lostAddress);
         uint256 deadline = recovery.timestamp + RECOVERY_DELAY;
         if (block.timestamp < deadline) revert RecoveryTooEarly(deadline);
-        delete recoveries[lostAddress]; // TODO: check that we can still access recovery.recipient after deletion
+        delete recoveries[lostAddress];
         return recovery.recipient;
     }
 

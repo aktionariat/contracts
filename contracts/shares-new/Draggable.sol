@@ -122,7 +122,7 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
     }
     
     function acceptOffer() public offerPresent {
-        if (latestOffer.timestamp + DRAG_PROPOSAL_DELAY < block.timestamp) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
+        if (block.timestamp < latestOffer.timestamp + DRAG_PROPOSAL_DELAY) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
         IERC20 wrappedToken = baseToken();
         IBuyerContract buyer = latestOffer.buyer;
 

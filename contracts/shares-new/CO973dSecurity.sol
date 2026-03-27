@@ -71,6 +71,8 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      */
     string public terms;
 
+    bool public paused;
+
     /**
      * A reference to a successor token (if any), allowing the token holders to convert their tokens into successor tokens.
      * This can for example be useful to perform an upgrade of a token with additional functionality.
@@ -83,6 +85,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         terms = _terms;
+        paused = false;
     }
 
     /**
@@ -105,6 +108,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      */
     function pause(address[] calldata accounts) external onlyOwner {
         setType(accounts, TYPE_RESTRICTED);
+        paused = true;
     }
 
     /**
@@ -112,6 +116,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      */
     function unpause(address[] calldata accounts, uint8 defaultType) external onlyOwner {
         setType(accounts, defaultType);
+        paused = false;
     }
 
     /**
@@ -165,7 +170,10 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      * 
      * See mint for more information.
      */
+    error ArrayLengthMismatch();
+
     function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
+        if (target.length != amount.length) revert ArrayLengthMismatch();
         uint256 len = target.length;
         for (uint256 i = 0; i < len; i++) {
             _mint(target[i], amount[i]);
@@ -176,7 +184,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      * Mints the amount of tokens to the shareholder and instructs the wrapped contract to fetch and wrap them.
      * The necessary allowance is set automatically.
      */
-    function mintAndWrap(address shareholder, address wrapper, uint256 amount) public {
+    function mintAndWrap(address shareholder, address wrapper, uint256 amount) public onlyOwner {
         mint(shareholder, amount);
         _approve(shareholder, wrapper, amount);
         IWrapper(wrapper).mintFromBase(shareholder, amount);
@@ -187,7 +195,8 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      * 
      * See mintAndWrap for more information.
      */
-    function mintAndWrapMany(address[] calldata target, address wrapper, uint256[] calldata amount) external {
+    function mintAndWrapMany(address[] calldata target, address wrapper, uint256[] calldata amount) external onlyOwner {
+        if (target.length != amount.length) revert ArrayLengthMismatch();
         uint256 len = target.length;
         for (uint256 i = 0; i < len; i++) {
             mintAndWrap(target[i], wrapper, amount[i]);

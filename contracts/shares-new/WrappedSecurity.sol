@@ -79,7 +79,7 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
     error TooManyDecimals();
 
     constructor(IERC20 base_, string memory _terms, uint8 _decimals, address _owner)
-        ERC20Named(string.concat(base_.name(), " SHA"), string.concat(base_.symbol(), "S"), _decimals, _owner)
+        ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner)
         ERC20Allowlistable()
         DeterrenceFee(0.01 ether) {
         base = base_;
@@ -146,8 +146,8 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
         // To unwrap 'unwrappedAmount' tokens, we only need to burn requiredBurn tokens.
         uint256 requiredBurn = unwrappedAmount * totalSupply() / base.balanceOf(address(this));
         assert(convertToBase(requiredBurn) == unwrappedAmount);
-        _burn(owner, requiredBurn);
-        base.transfer(owner, unwrappedAmount);
+        _burn(msg.sender, requiredBurn);
+        base.transfer(msg.sender, unwrappedAmount);
     }
 
     function convertToBase(uint256 amount) public view returns (uint256) {
@@ -160,8 +160,8 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
      * Often done in combination with a termination.
      */
     function replaceBase(IERC20 wrapped_) internal override(Draggable, Migratable) {
-        base = wrapped_;
         emit BaseTokenReplaced(base, wrapped_);
+        base = wrapped_;
     }
 
     /**
@@ -176,7 +176,7 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
         // Name should no longer imply that there is a shareholder agreement
         string memory newName = string.concat("Wrapped ", base.name());
         string memory newSymbol = string.concat("W", base.symbol());
-        setNameInternal(newName, newSymbol);
+        setNameInternal(newSymbol, newName);
         emit Terminated();
     }
 
@@ -198,12 +198,12 @@ contract WrappedSecurity is ERC20Named, ERC20Allowlistable, Recoverable, Draggab
     }
 
     modifier requireBinding() {
-        if (binding) revert ContractBinding();
+        if (!binding) revert ContractNotBinding();
         _;
     }
 
     modifier requireNonBinding() {
-        if (!binding) revert ContractNotBinding();
+        if (binding) revert ContractBinding();
         _;
     }
 
