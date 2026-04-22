@@ -5,15 +5,15 @@ node_modules
 /cache
 /artifacts
 
+# Ignition deployments
+/ignition
+
 # TypeChain files
 /types
 
 # solidity-coverage files
 /coverage
 /coverage.json
-
-# Hardhat Ignition default folder for deployments against a local node
-ignition/deployments/chain-31337
 
 # Sensitive Files
 KEYS.ts
