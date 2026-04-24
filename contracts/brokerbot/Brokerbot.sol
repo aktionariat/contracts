@@ -31,12 +31,6 @@ contract Brokerbot is IBrokerbot, Ownable {
     uint256 private price; // current offer price in base currency, without drift
     uint256 public increment; // increment step the price in/decreases when buying/selling
 
-    // Note that these settings might be hard-coded in various places, so better not change these values.
-    uint8 private constant BUYING_ENABLED = 0x1;
-    uint8 private constant SELLING_ENABLED = 0x2;
-    // note that in the UI, we call the setting "convert ether", which is the opposite
-    uint8 private constant KEEP_ETHER = 0x4;
-
     // Version history
     // Version 2: added ability to process bank orders even if buying disabled
     // Version 3: added various events, removed license fee
@@ -46,19 +40,16 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version 7: added withdraw eth event
     // Version 8: use SafeERC20
     // Version 9: fixed price bug, removed drift
-    uint8 public constant VERSION = 0x9;
+    // Version 10: removed selling back and keeping ETH, payable, related events
+    uint8 public constant VERSION = 0xA;
 
-    // more bits to be used by payment hub
-    uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
+    bool public buyingEnabled = true;
 
     event Trade(IERC20Permit indexed token, address who, bytes ref, int amount, IERC20 base, uint totPrice, uint fee, uint newprice);
     event PaymentHubUpdate(address indexed paymentHub);
     event PriceSet(uint256 price, uint256 increment);
-    event DriftSet(uint256 timeToDrift, int256 driftIncrement);
+
     event SettingsChange(uint256 setting);
-    // ETH in/out events
-    event Received(address indexed from, uint amountETH, uint amountBase);
-    event Withdrawn(address indexed target, uint amountETH);
     
     constructor(
         IERC20Permit _token,
@@ -75,8 +66,6 @@ contract Brokerbot is IBrokerbot, Ownable {
         price = _price;
         increment = _increment;
         paymenthub = _paymentHub;
-        // Should we disabled recoverability in the recovery hub here?
-        // No, if someone attacks us, we can always trigger a transfer and recover the tokens as well as the collateral.
     }
 
     function setPrice(uint256 _price, uint256 _increment) external onlyOwner {
@@ -85,22 +74,13 @@ contract Brokerbot is IBrokerbot, Ownable {
         emit PriceSet(_price, _increment);
     }
 
-    function hasDrift() public view returns (bool) {
-        return false;
-    }
-
     function getPrice() public view returns (uint256) {
         return price;
     }
 
-    function getPriceAtTime(uint256 timestamp) public view returns (uint256) {
-        return getPrice()  ;
-    }
-
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
-        if (!hasSetting(BUYING_ENABLED)) {
-            revert Brokerbot_BuyingDisabled();
-        }
+        require(buyingEnabled, Brokerbot_BuyingDisabled());
+
         uint shares = getShares(paid);
         uint costs = getBuyPrice(shares);
         notifyTraded(from, shares, costs, ref);
@@ -142,74 +122,23 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     /**
-     * @notice Payment hub might actually have sent another accepted token, including Ether.
      * @dev Is either called from payment hub or from transferAndCall of the share token (via onTokenTransfer).
-     * @param incomingAsset the erc20 address of either base currency or the share token.
-     * @param from Who iniciated the sell/buy.
-     * @param amount The amount of shares the are sold / The base amount paid to buy sharees.
+     * @param incomingAsset the erc20 address of base currency.
+     * @param from Who iniciated the buy.
+     * @param amount The amount of shares the are bought
      * @param ref Reference data blob.
-     * @return The amount of shares bought / The amount received for selling the shares. 
+     * @return The amount of shares bought
      */
-    function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override payable returns (uint256) {
-        if (msg.sender != address(incomingAsset) && msg.sender != paymenthub) {
-            revert Brokerbot_InvalidSender(msg.sender);
-        }
-        if(msg.value > 0) {
-            emit Received(from, msg.value, amount);
-        }
-        if (incomingAsset == token){
-            return sell(from, amount, ref);
-        } else if (incomingAsset == base){
-            return buy(from, amount, ref);
-        } else {
-            revert("invalid token");
-        }
+    function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override returns (uint256) {
+        require(msg.sender != address(incomingAsset) && msg.sender != paymenthub, Brokerbot_InvalidSender(msg.sender));
+        require(incomingAsset == base, Brokerbot_InvalidBaseCurrency());
+        return buy(from, amount, ref);
     }
 
     // ERC-677 recipient
     function onTokenTransfer(address from, uint256 amount, bytes calldata ref) external returns (bool) {
         processIncoming(IERC20(msg.sender), from, amount, ref);
         return true;
-    }
-
-    function hasSetting(uint256 setting) private view returns (bool) {
-        return settings & setting == setting;
-    }
-
-    /**
-     * ref 0x01 or old format sells shares for base currency.
-     * ref 0x02 indicates a sell via bank transfer.
-     */
-    function isDirectSale(bytes calldata ref) internal pure returns (bool) {
-        if (ref.length == 0 || ref.length == 20) {
-            return true; // old format
-        } else {
-            if (ref[0] == bytes1(0x01)){
-                return true;
-            } else if (ref[0] == bytes1(0x02)) {
-                return false;
-            } else {
-                revert("unknown ref");
-            }
-        }
-    }
-
-
-    function sell(address recipient, uint256 amount, bytes calldata ref) internal returns (uint256) {
-        if (!hasSetting(SELLING_ENABLED)) {
-            revert Brokerbot_SellingDisabled();
-        }
-        uint256 totPrice = getSellPrice(amount);
-        price -= amount * increment;
-        if (isDirectSale(ref)){
-            base.safeTransfer(recipient, totPrice);
-        }
-        emit Trade(token, recipient, ref, -int256(amount), base, totPrice, 0, getPrice());
-        return totPrice;
-    }
-
-    function getSellPrice(uint256 shares) public view override returns (uint256) {
-        return getPrice(getPrice() - (shares * increment), shares);
     }
 
     function getBuyPrice(uint256 shares) public view override returns (uint256) {
@@ -241,18 +170,6 @@ contract Brokerbot is IBrokerbot, Ownable {
         return min;
     }
 
-    function withdrawEther(address target, uint256 amount) public ownerOrHub() {
-        (bool success, ) = payable(target).call{value:amount}("");
-        if (!success) {
-            revert Brokerbot_WithdrawFailed(target, amount);
-        }
-        emit Withdrawn(target, amount);
-    }
-
-    function withdrawEther(uint256 amount) external ownerOrHub() {
-        withdrawEther(msg.sender, amount);
-    }
-
     function approve(address erc20, address who, uint256 amount) external onlyOwner() {
         IERC20(erc20).approve(who, amount);
     }
@@ -266,20 +183,9 @@ contract Brokerbot is IBrokerbot, Ownable {
         emit PaymentHubUpdate(paymenthub);
     }
 
-    function setSettings(uint256 _settings) public onlyOwner() {
-        settings = _settings;
-        emit SettingsChange(_settings);
-    }
-
-    function setEnabled(bool _buyingEnabled, bool _sellingEnabled) external onlyOwner() {
-        uint256 _settings = settings;
-        if (_buyingEnabled != hasSetting(BUYING_ENABLED)){
-            _settings ^= BUYING_ENABLED;
-        }
-        if (_sellingEnabled != hasSetting(SELLING_ENABLED)){
-            _settings ^= SELLING_ENABLED;
-        }
-        setSettings(_settings);
+    function setEnabled(bool _buyingEnabled) public onlyOwner() {
+        buyingEnabled = _buyingEnabled;
+        emit SettingsChange(buyingEnabled ? 0x1 : 0x0);
     }
     
     modifier ownerOrHub() {
@@ -287,5 +193,32 @@ contract Brokerbot is IBrokerbot, Ownable {
             revert Brokerbot_NotAuthorized(msg.sender);
         }
         _;
+    }
+
+    // Functions only for backwards compatibility
+    function getPriceAtTime(uint256) public view returns (uint256) {
+        return getPrice();
+    }
+
+    function hasDrift() public pure returns (bool) {
+        return false;
+    }
+
+    function setEnabled(bool _buyingEnabled, bool _sellingEnabled) external onlyOwner() {
+        require(!_sellingEnabled, Brokerbot_InvalidSettings());
+        setEnabled(_buyingEnabled);
+    }
+
+    function settings() external view override returns (uint256) {
+        return buyingEnabled ? 0x1 : 0x0;
+    }
+
+    function setSettings(uint256 _settings) public onlyOwner() {
+        require(_settings & 0x1 == _settings, Brokerbot_InvalidSettings());
+        setEnabled(_settings & 0x1 == 0x1);
+    }
+
+    function hasSetting(uint256 setting) private view returns (bool) {
+        return setting == 0x1 && buyingEnabled;
     }
 }
