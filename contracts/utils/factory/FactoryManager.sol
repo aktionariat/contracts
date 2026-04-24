@@ -10,7 +10,7 @@ import { Permit2Hub } from "../Permit2Hub.sol";
 import { RecoveryHub } from "../../recovery/RecoveryHub.sol";
 
 /**
- * @title Factory Mangager for common contracts
+ * @title Factory Manager for common contracts
  * @author muratogat
  * 
  */
@@ -26,7 +26,7 @@ contract FactoryManager is Ownable {
   event OfferFactoryUpdated(IOfferFactory indexed offerFactory);
   event RecoveryHubUpdated(RecoveryHub indexed recoveryHub);
   event Permit2HubUpdated(Permit2Hub indexed permit2Hub);
-  event MultiSigCloneFactoryUpdated(MultiSigCloneFactory indexed MultiSigCloneFactory);
+  event MultiSigCloneFactoryUpdated(MultiSigCloneFactory indexed multisigFactory);
 
   constructor(address _owner) Ownable(_owner) {}
 
