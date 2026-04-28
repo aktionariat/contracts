@@ -59,6 +59,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     mapping (address => mapping (address => uint256)) private _allowances;
 
+    uint256 private _settings;
     uint256 private _totalSupply;
 
     uint8 public immutable override decimals;
@@ -102,6 +103,18 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     function hasFlagInternal(address account, uint8 number) internal view returns (bool) {
         uint256 flag = 0x1 << (number + 224);
         return _balances[account] & flag == flag;
+    }
+
+    function hasGlobalFlag(uint8 index) internal view returns (bool) {
+        uint256 flagMask = 1 << index;
+        return (_settings & flagMask) == flagMask;
+    }
+
+    function setGlobalFlag(uint8 index, bool value) internal {
+        uint256 flagMask = 1 << index;
+        if (( _settings & flagMask == flagMask) != value) {
+            _settings = _settings ^ flagMask;
+        }
     }
 
     /**
