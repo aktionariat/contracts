@@ -4,20 +4,20 @@
 * Proprietary License
 *
 * This code cannot be used without an explicit permission from the copyright holder.
-* If you wish to use the Aktionariat Brokerbot, you can either use the open version
-* named Brokerbot.sol that can be used under an MIT License with Automated License Fee Payments,
-* or you can get in touch with use to negotiate a license to use LicensedBrokerbot.sol .
+* If you wish to use the Aktionariat Direct Investment Contract, you can either use the open version
+* named DirectInvestment.sol that can be used under an MIT License with Automated License Fee Payments,
+* or you can get in touch with use to negotiate a license.
 *
 * Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
 */
 pragma solidity >=0.8.0 <0.9.0;
 
-import "./IBrokerbot.sol";
+import "./IDirectInvestment.sol";
 import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";
 import "../utils/SafeERC20.sol";
 
-contract Brokerbot is IBrokerbot, Ownable {
+contract DirectInvestment is IDirectInvestment, Ownable {
 
     using SafeERC20 for IERC20;
 
@@ -84,7 +84,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Can be called by the owner multisig or the PaymentHub.abi
     // PaymentHub must make sure that the payment is sent before calling this function and the exact correct amount has been paid.
     function deliverShares(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) internal {
-        require(buyingEnabled, Brokerbot_BuyingDisabled());
+        require(buyingEnabled, DirectInvestment_BuyingDisabled());
 
         IERC20(token).safeTransfer(buyer, amountShares);
         price = price + (amountShares * increment);
@@ -111,7 +111,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     // This needs to be called with the exact amount of base currency paid.
     function processIncoming(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) public override onlyPaymentHub {
         uint256 executionPrice = getBuyPrice(amountShares);
-        require(amountBaseCurrency == executionPrice, Brokerbot_InsufficientPayment(executionPrice, amountBaseCurrency));
+        require(amountBaseCurrency == executionPrice, DirectInvestment_InsufficientPayment(executionPrice, amountBaseCurrency));
 
         deliverShares(buyer, amountShares, amountBaseCurrency, ref);
     }
@@ -131,9 +131,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
     
     modifier onlyPaymentHub() {
-        if (paymenthub != msg.sender) {
-            revert Brokerbot_NotAuthorized(msg.sender);
-        }
+        require(msg.sender == paymenthub, DirectInvestment_NotPaymentHub(msg.sender));
         _;
     }
 
@@ -151,7 +149,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     function setEnabled(bool _buyingEnabled, bool _sellingEnabled) external onlyOwner() {
-        require(!_sellingEnabled, Brokerbot_InvalidSettings());
+        require(!_sellingEnabled, DirectInvestment_InvalidSettings());
         setEnabled(_buyingEnabled);
     }
 
@@ -160,7 +158,7 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     function setSettings(uint256 _settings) public onlyOwner() {
-        require(_settings & 0x1 == _settings, Brokerbot_InvalidSettings());
+        require(_settings & 0x1 == _settings, DirectInvestment_InvalidSettings());
         setEnabled(_settings & 0x1 == 0x1);
     }
 
