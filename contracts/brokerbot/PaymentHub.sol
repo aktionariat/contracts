@@ -62,21 +62,7 @@ contract PaymentHub is Ownable, ReentrancyGuard {
     IQuoter private immutable uniswapV3Quoter;
     ISwapRouter private immutable uniswapV3SwapRouter;
 
-
-	/*//////////////////////////////////////////////////////////////
-                            Custom errors
-    //////////////////////////////////////////////////////////////*/
-    /// Failguard when an ERC20 transfer returns false. 
     error PaymentHub_TransferFailed();
-    /// Sender not trusted.
-    /// @param sender The msg.sender of this transaction.
-    error PaymentHub_InvalidSender(address sender);
-    /// Swap with less base token as required.
-    /// @param amountBase Required amount.
-    /// @param swappedAmount Swapped amount.
-    error PaymentHub_SwapError(uint256 amountBase, uint256 swappedAmount);
-
-    error InsufficientPayment(uint256 required, uint256 provided);
 
     constructor(address _owner, IQuoter _uniswapV3Quoter, ISwapRouter _uniswapV3SwapRouter) Ownable(_owner) {
         uniswapV3Quoter = _uniswapV3Quoter;
