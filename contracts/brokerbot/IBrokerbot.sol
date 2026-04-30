@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "../ERC20/IERC20.sol";
-import "../ERC20/IERC20Permit.sol";
 
 interface IBrokerbot {
 
@@ -26,16 +25,10 @@ interface IBrokerbot {
   error Brokerbot_NotAuthorized(address sender);
   error Brokerbot_InsufficientPayment(uint256 required, uint256 provided);
 
+  function base() external view returns (IERC20);
+  function token() external view returns (IERC20);
   function paymenthub() external view returns (address);
 
-  function base() external view returns (IERC20);
-
-  function token() external view returns (IERC20Permit);
-  
-  function settings() external view returns (uint256);
-
-  // @return The amount of shares bought on buying or how much in the base currency is transfered on selling
-  function processIncoming(IERC20 token_, address from, uint256 amount, bytes calldata ref) external returns (uint256);
-
   function getBuyPrice(uint256 shares) external view returns (uint256);
+  function processIncoming(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) external;
 }

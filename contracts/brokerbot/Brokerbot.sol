@@ -12,11 +12,9 @@
 */
 pragma solidity >=0.8.0 <0.9.0;
 
+import "./IBrokerbot.sol";
 import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";
-import "../ERC20/IERC20Permit.sol";
-import "../ERC20/IERC677Receiver.sol";
-import "./IBrokerbot.sol";
 import "../utils/SafeERC20.sol";
 
 contract Brokerbot is IBrokerbot, Ownable {
@@ -26,10 +24,10 @@ contract Brokerbot is IBrokerbot, Ownable {
     address public override paymenthub;
 
     IERC20 public override immutable base;  // ERC-20 currency
-    IERC20Permit public override immutable token; // ERC-20 share token
+    IERC20 public override immutable token; // ERC-20 share token
 
-    uint256 private price; // current offer price in base currency, without drift
-    uint256 public increment; // increment step the price in/decreases when buying/selling
+    uint256 public price;       // current offer price in base currency
+    uint256 public increment;   // increment step the price in/decreases when buying/selling
 
     // Version history
     // Version 2: added ability to process bank orders even if buying disabled
@@ -41,18 +39,17 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version 8: use SafeERC20
     // Version 9: fixed price bug, removed drift
     // Version 10: removed selling back and keeping ETH, payable, related events
-    uint8 public constant VERSION = 0xA;
+    uint8 public constant VERSION = 10;
 
     bool public buyingEnabled = true;
 
-    event Trade(IERC20Permit indexed token, address who, bytes ref, int amount, IERC20 base, uint totPrice, uint fee, uint newprice);
+    event Trade(IERC20 indexed token, address who, bytes ref, uint256 amount, IERC20 base, uint256 totalPrice, uint256 fee, uint256 newprice);
     event PaymentHubUpdate(address indexed paymentHub);
     event PriceSet(uint256 price, uint256 increment);
-
     event SettingsChange(uint256 setting);
     
     constructor(
-        IERC20Permit _token,
+        IERC20 _token,
         uint256 _price,
         uint256 _increment,
         IERC20 _base,
@@ -74,107 +71,52 @@ contract Brokerbot is IBrokerbot, Ownable {
         emit PriceSet(_price, _increment);
     }
 
-    function getPrice() public view returns (uint256) {
-        return price;
-    }
-
-    function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
-        require(buyingEnabled, Brokerbot_BuyingDisabled());
-
-        uint shares = getShares(paid);
-        uint costs = getBuyPrice(shares);
-        notifyTraded(from, shares, costs, ref);
-        if (costs < paid){
-            base.safeTransfer(from, paid - costs);
-        }
-        IERC20(token).safeTransfer(from, shares);
-        return shares;
-    }
-
-    // Callers must verify that (hasSetting(BUYING_ENABLED) || msg.sender == owner) holds!
-    function notifyTraded(address from, uint256 shares, uint256 costs, bytes calldata ref) internal returns (uint256) {
-        // disabling the requirement below for efficiency as this always holds once we reach this point
-        // require(hasSetting(BUYING_ENABLED) || msg.sender == owner, "buying disabled");
-        price = price + (shares * increment);
-        emit Trade(token, from, ref, int256(shares), base, costs, 0, getPrice());
-        return costs;
-    }
-
-    function notifyTrade(address buyer, uint256 shares, uint256 costs, bytes calldata ref) external onlyOwner {
-        notifyTraded(buyer, shares, costs, ref);
-    }
-
-    function notifyTradeAndTransfer(address buyer, uint256 shares, uint256 costs, bytes calldata ref) public onlyOwner {
-        notifyTraded(buyer, shares, costs, ref);
-        IERC20(token).safeTransfer(buyer, shares);
-    }
-
-    function notifyTrades(address[] calldata buyers, uint256[] calldata shares, uint256[] calldata costs, bytes[] calldata ref) external onlyOwner {
-        for (uint i = 0; i < buyers.length; i++) {
-            notifyTraded(buyers[i], shares[i], costs[i], ref[i]);
-        }
-    }
-
-    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata shares, uint256[] calldata costs, bytes[] calldata ref) external onlyOwner {
-        for (uint i = 0; i < buyers.length; i++) {
-            notifyTradeAndTransfer(buyers[i], shares[i], costs[i], ref[i]);
-        }
-    }
-
-    /**
-     * @dev Is either called from payment hub or from transferAndCall of the share token (via onTokenTransfer).
-     * @param incomingAsset the erc20 address of base currency.
-     * @param from Who iniciated the buy.
-     * @param amount The amount of shares the are bought
-     * @param ref Reference data blob.
-     * @return The amount of shares bought
-     */
-    function processIncoming(IERC20 incomingAsset, address from, uint256 amount, bytes calldata ref) public override returns (uint256) {
-        require(msg.sender != address(incomingAsset) && msg.sender != paymenthub, Brokerbot_InvalidSender(msg.sender));
-        require(incomingAsset == base, Brokerbot_InvalidBaseCurrency());
-        return buy(from, amount, ref);
-    }
-
-    // ERC-677 recipient
-    function onTokenTransfer(address from, uint256 amount, bytes calldata ref) external returns (bool) {
-        processIncoming(IERC20(msg.sender), from, amount, ref);
-        return true;
-    }
-
     function getBuyPrice(uint256 shares) public view override returns (uint256) {
-        return getPrice(getPrice(), shares);
-    }
-
-    function getPrice(uint256 lowest, uint256 shares) internal view returns (uint256){
         if (shares == 0) {
             return 0;
         } else {
-            uint256 highest = lowest + (shares - 1) * increment;
-            return (lowest + highest) * shares / 2;
+            uint256 highest = price + (shares - 1) * increment;
+            return (price + highest) * shares / 2;
         }
     }
 
-    function getShares(uint256 money) public view returns (uint256) {
-        uint256 currentPrice = getPrice();
-        uint256 min = 0;
-        uint256 max = money / currentPrice;
-        while (min < max){
-            uint256 middle = (min + max + 1)/2;
-            uint256 totalPrice = getPrice(currentPrice, middle);
-            if (money > totalPrice){
-                min = middle;
-            } else {
-                max = middle - 1;
-            }
+    // Delivers the shares to the buyer.
+    // Can be called by the owner multisig or the PaymentHub.abi
+    // PaymentHub must make sure that the payment is sent before calling this function and the exact correct amount has been paid.
+    function deliverShares(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) internal {
+        require(buyingEnabled, Brokerbot_BuyingDisabled());
+
+        IERC20(token).safeTransfer(buyer, amountShares);
+        price = price + (amountShares * increment);
+
+        emit Trade(token, buyer, ref, amountShares, base, amountBaseCurrency, 0, price);
+    }
+    
+    /// The actual methods calling deliverShares.
+
+    // notifyTradeAndTransfer can be used by the owner multisig to deliver shares for off-chain payments, e.g. bank transfers. 
+    // The issuer needs to make sure that the payment is received before calling this function through the multisig.
+    // This can be called with any amountBaseCurrency, as the issuer checks the money received, and to avoid errors with increment
+    function notifyTradeAndTransfer(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) public onlyOwner {
+        deliverShares(buyer, amountShares, amountBaseCurrency, ref);
+    }
+
+    function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata amountShares, uint256[] calldata amountBaseCurrency, bytes[] calldata ref) external onlyOwner {
+        for (uint i = 0; i < buyers.length; i++) {
+            deliverShares(buyers[i], amountShares[i], amountBaseCurrency[i], ref[i]);
         }
-        return min;
     }
 
-    function approve(address erc20, address who, uint256 amount) external onlyOwner() {
-        IERC20(erc20).approve(who, amount);
+    // processIncoming can be called only by the PaymentHub, after making sure the payment has been transferred to this contract.
+    // This needs to be called with the exact amount of base currency paid.
+    function processIncoming(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) public override onlyPaymentHub {
+        uint256 executionPrice = getBuyPrice(amountShares);
+        require(amountBaseCurrency == executionPrice, Brokerbot_InsufficientPayment(executionPrice, amountBaseCurrency));
+
+        deliverShares(buyer, amountShares, amountBaseCurrency, ref);
     }
 
-    function withdraw(IERC20 ercAddress, address to, uint256 amount) external ownerOrHub() {
+    function withdraw(IERC20 ercAddress, address to, uint256 amount) external onlyOwner() {
         ercAddress.safeTransfer(to, amount);
     }
 
@@ -188,16 +130,20 @@ contract Brokerbot is IBrokerbot, Ownable {
         emit SettingsChange(buyingEnabled ? 0x1 : 0x0);
     }
     
-    modifier ownerOrHub() {
-        if (owner != msg.sender && paymenthub != msg.sender) {
+    modifier onlyPaymentHub() {
+        if (paymenthub != msg.sender) {
             revert Brokerbot_NotAuthorized(msg.sender);
         }
         _;
     }
 
+    // TODO - Migration functions
+
+
+
     // Functions only for backwards compatibility
     function getPriceAtTime(uint256) public view returns (uint256) {
-        return getPrice();
+        return price;
     }
 
     function hasDrift() public pure returns (bool) {
@@ -209,7 +155,7 @@ contract Brokerbot is IBrokerbot, Ownable {
         setEnabled(_buyingEnabled);
     }
 
-    function settings() external view override returns (uint256) {
+    function settings() external view returns (uint256) {
         return buyingEnabled ? 0x1 : 0x0;
     }
 
