@@ -25,7 +25,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import "../utils/Ownable.sol";
+import "./Ownable.sol";
 
 pragma solidity >=0.8.0 <0.9.0;
 

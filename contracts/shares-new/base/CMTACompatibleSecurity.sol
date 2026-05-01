@@ -27,12 +27,9 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
-import "../ERC20/ERC20Named.sol";
-import "../ERC20/ERC20Allowlistable.sol";
-import "../ERC20/IERC677Receiver.sol";
+import "../../ERC20/ERC20Named.sol";
+import "../../ERC20/ERC20Allowlistable.sol";
 import "./Recoverable.sol";
-import "../shares/IShares.sol";
-import "../utils/SafeERC20.sol";
 
 /**
  * @title CompanyName AG Shares
@@ -54,15 +51,18 @@ import "../utils/SafeERC20.sol";
  * permissible. The intended use of the contract functionality is defined in the accompanying registration agreement.
  * In particular, the issuer must not use any administrative functions in violation of the registration agreement.
  */
-contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
+contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     // Version history:
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
     // 3: added permit
     // 4: refactor to custom errors, added allowance for permit2
-    // 5: Complete revistion, CMTA compatibility
-    uint8 public constant VERSION = 5;
+    // 5: Complete revision, CMTA compatibility
+    // 6: pause/cancellation lifecycle, successor migration, mintAndWrap
+    uint8 public constant VERSION = 6;
+
+    uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
 
     /**
      * A link to the registration agreement in accordance with the Swiss Code of Obligations, fulfilling the linking
@@ -71,9 +71,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      */
     string public terms;
 
-    bool public paused;
-
-    /**
+        /**
      * A reference to a successor token (if any), allowing the token holders to convert their tokens into successor tokens.
      * This can for example be useful to perform an upgrade of a token with additional functionality.
      */
@@ -82,10 +80,16 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     event Announcement(string message);
     event ChangeTerms(string terms);
     event ChangeTotalShares(uint256 total);
+    event SuccessorDefined(ISuccessorToken successor);
+    event Paused();
+    event Unpaused();
+    event Deactivated();
+
+    error Paused();
+    error Cancelled();
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         terms = _terms;
-        paused = false;
     }
 
     /**
@@ -104,29 +108,62 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     }
 
     /**
-     * Can be used to pause the contract when called with all addresses that are currently in use as an argument.
+     * Pauses the contract globally. While paused, all transfers (including mints, burns, migrations,
+     * and recoveries) revert with Paused(). Reversible via 'unpause'.
      */
-    function pause(address[] calldata accounts) external onlyOwner {
-        setType(accounts, TYPE_RESTRICTED);
-        paused = true;
+    function pause() external onlyOwner {
+        setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, true);
+        emit Paused();
     }
 
     /**
-     * Unpauses accounts previously paused with the 'pause' function, resetting the given addresses to the given default type (e.g. TYPE_FREE).
+     * Lifts the global pause set via 'pause'.
      */
-    function unpause(address[] calldata accounts, uint8 defaultType) external onlyOwner {
-        setType(accounts, defaultType);
-        paused = false;
+    function unpause() external onlyOwner {
+        setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, false);
+        emit Unpaused();
+    }
+
+    /**
+     * Irreversibly cancels the contract. Once deactivated, the only permitted transfers are
+     * burns (to address(0)) and migrations to the configured successor; all other transfers,
+     * including mints and Recoverable.recover to a regular target, revert with Cancelled().
+     *
+     * It is the responsibility of the issuer to ensure that all legal preconditions for the
+     * cancellation of the contract have been met before calling this function.
+     */
+    function deactivateContract() external onlyOwner {
+        setGlobalFlag(GLOBAL_FLAG_INDEX_CANCELLED, true);
+        emit Deactivated();
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) override(ERC20Allowlistable, ERC20Flaggable) virtual internal {
+        if (hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert Paused();
+        if (hasGlobalFlag(GLOBAL_FLAG_INDEX_CANCELLED)){
+            if (to == address(0)){
+                // burning is ok even when cancelled
+            } else if (to == address(successor)){
+                // migrating to successor is ok even when cancelled
+            } else {
+                revert Cancelled();
+            }
+        }
+        super._beforeTokenTransfer(from, to, amount);
     }
 
     /**
      * Set a successor contract such that holders can migrate to a new version of this token.
      *
-     * The success must implement IERC677Receiver and mint new tokens to the sender when
-     * receiving this token. Immediately after, the transferred tokens will be burned.
+     * The successor must implement ISuccessorToken.notifyBurned. When a holder calls 'migrate',
+     * their tokens are transferred to the successor and burned, and the successor is notified
+     * so it can mint replacement tokens for the holder.
      */
     function setSuccessor(ISuccessorToken successor_) external onlyOwner {
         successor = successor_;
+        if (address(successor_).code.length > 0) {
+            successor.notifyBurned(address(0), 0); // sanity check that successor implements the interface
+        }
+        emit SuccessorDefined(successor_);
     }
 
     /**
@@ -172,7 +209,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      */
     error ArrayLengthMismatch();
 
-    function mintMany(address[] calldata target, uint256[] calldata amount) public onlyOwner {
+    function batchMint(address[] calldata target, uint256[] calldata amount) public onlyOwner {
         if (target.length != amount.length) revert ArrayLengthMismatch();
         uint256 len = target.length;
         for (uint256 i = 0; i < len; i++) {
@@ -195,7 +232,7 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      * 
      * See mintAndWrap for more information.
      */
-    function mintAndWrapMany(address[] calldata target, address wrapper, uint256[] calldata amount) external onlyOwner {
+    function batchMintAndWrap(address[] calldata target, address wrapper, uint256[] calldata amount) external onlyOwner {
         if (target.length != amount.length) revert ArrayLengthMismatch();
         uint256 len = target.length;
         for (uint256 i = 0; i < len; i++) {
@@ -204,7 +241,8 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     }
 
     /**
-     * Transfers _amount tokens to the company and burns them.
+     * Transfers _amount tokens to the owner and burns them.
+     * 
      * The meaning of this operation depends on the circumstances and the fate of the shares does
      * not necessarily follow the fate of the tokens. For example, the company itself might call
      * this function to implement a formal decision to destroy some of the outstanding shares.
@@ -214,8 +252,8 @@ contract CO973dSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      * having agreed with the company on the further fate of the shares in question.
      */
     function burn(uint256 _amount) external {
-        _transfer(msg.sender, address(this), _amount);
-        _burn(address(this), _amount);
+        _transfer(msg.sender, owner, _amount);
+        _burn(owner, _amount);
     }
 }
 
@@ -241,5 +279,5 @@ interface IWrapper {
      * from the holder and mint the corresponding amount of wrapped tokens to the holder. The
      * wrapper contract can assume to have the necessary allowance.
      */
-    function mintFromBase(address holder, uint256 baseTokens) external;
+    function mintFromBase(address holder, uint256 baseTokens) external returns (uint256);
 }

@@ -37,8 +37,8 @@ pragma solidity >=0.8.0 <0.9.0;
  * It can be cancelled by the contract owner or the owner of the "lost" address at any time before execution.
  */
 
-import "./DeterrenceFee.sol";
-import "../ERC20/ERC20Flaggable.sol";
+import "../../utils/DeterrenceFee.sol";
+import "../../ERC20/ERC20Flaggable.sol";
 
 abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
 

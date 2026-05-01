@@ -39,12 +39,14 @@ pragma solidity >=0.8.0 <0.9.0;
  * Sellers get paid in the specified currency token directly from the buyer.
  */
 
-import "../ERC20/ERC20Named.sol";
-import "../ERC20/ERC20Flaggable.sol";
-import "../utils/Ownable.sol";
-import "./DeterrenceFee.sol";
+import "../../utils/Ownable.sol";
+import "../../utils/SafeERC20.sol";
+import "../../utils/DeterrenceFee.sol";
+import "../../ERC20/ERC20Flaggable.sol";
 
-abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
+abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
+
+    using SafeERC20 for IERC20;
 
     struct Offer {
         IBuyerContract buyer; // 160 Bits
@@ -53,7 +55,6 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
 	}
 
     uint64 public constant DRAG_PROPOSAL_DELAY = uint64(60 days);
-    uint64 public constant DRAG_PROPOSAL_EXPIRATION = uint64(90 days);
 
     Offer public latestOffer;
     
@@ -74,6 +75,10 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
      * If the acquisition offer is not denied by the issuer or someone with 10% of the outstanding tokens,
      * the offer can be executed. The buyer contract must implement the IBuyerContract.notifyTokensReceived
      * function as specified.
+     * 
+     * The ability to execute an acquisition does not necessarily mean that you are also legally allowed to.
+     * It is the responsibility of the caller to ensure that all contractual preconditions for the execution of the acquisition have been met,
+     * as typically laid out in a shareholder agreement.
      */
     function offerAcquisition(IBuyerContract buyerContract, string calldata message) external payable deter(100) returns (Offer memory) {
         if (address(latestOffer.buyer) != address(0)) revert OfferPending(); 
@@ -90,8 +95,6 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
     /**
      * Cancels the current offer.
      * 
-     * This can be called by the issuer, the owner of the offer, or anyone with 10% of the tokens.
-     * 
      * Being able to cancel an offer does not mean that you are also legally allowed to.
      */
     function cancelOffer(string calldata message) external offerPresent {
@@ -106,8 +109,6 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
     function canCancelOffer(address holder) public view offerPresent returns (bool) {
         if (holder == owner){
             return true; // issuer can cancel
-        } else if (latestOffer.timestamp + DRAG_PROPOSAL_EXPIRATION < block.timestamp){
-            return true; // offer expired, anyone can cancel
         } else if (balanceOf(holder) > totalSupply() / 10) {
             return true; // anyone with 10% of the tokens can cancel
         } else {
@@ -121,8 +122,14 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
         }
     }
     
+    /**
+     * Accepts the current offer once the proposal delay has passed.
+     * 
+     * Even after the proposal delay
+     */
     function acceptOffer() public offerPresent {
         if (block.timestamp < latestOffer.timestamp + DRAG_PROPOSAL_DELAY) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
+
         IERC20 wrappedToken = baseToken();
         IBuyerContract buyer = latestOffer.buyer;
 
@@ -140,12 +147,13 @@ abstract contract Draggable is ERC20Flaggable, Ownable, DeterrenceFee {
         // get the money from the buyer, requires buyer approval
         IERC20 currency = buyer.offeredCurrency();
         uint256 priceE18 = buyer.offeredPrice();
-        currency.transferFrom(address(buyer), address(this), totalSupply() * priceE18 / 10**18);
+        currency.safeTransferFrom(address(buyer), address(this), totalSupply() * priceE18 / 10**18);
 
         replaceBase(currency);  // make the purchase proceeds the new base
         terminate(); // allow token holders to unwrap and collect proceeds
+        delete latestOffer; // clear the offer
 
-        emit OfferAccepted(msg.sender, latestOffer.buyer, balance, address(currency), priceE18);
+        emit OfferAccepted(msg.sender, buyer, balance, address(currency), priceE18);
     }
 
     function baseToken() internal virtual returns (IERC20);

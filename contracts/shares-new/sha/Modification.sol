@@ -41,10 +41,10 @@ pragma solidity >=0.8.0 <0.9.0;
  * replaced by a shell contract, such as ERC20Cancelled.
  */
 
-import "../ERC20/ERC20Flaggable.sol";
-import "../utils/Ownable.sol";
+import "../../utils/Ownable.sol";
+import "../../ERC20/ERC20Flaggable.sol";
 
-abstract contract Migratable is ERC20Flaggable, Ownable {
+abstract contract Modification is ERC20Flaggable, Ownable {
 
     uint8 public constant TYPE_DEFAULT = 0x1;
     uint8 public constant TYPE_INTERNAL = 0x2;
@@ -60,9 +60,9 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
     uint256 public constant MIGRATION_PROPOSAL_DELAY = 20 days;
     Migration public migration;
 
+    error NotQualified();
     error MigrationNotFound();
-    error MigrationNoVetoPower();
-    error MigrationTooEearly(uint256 earliest, uint256 timenow);
+    error MigrationTooEarly(uint256 earliest, uint256 timenow);
 
     event MigrationProposed(address sender, IERC20 successor, uint8 migrationType);
     event MigrationCancelled(address sender);
@@ -76,7 +76,7 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
     }
 
     function _propose(IERC20 successor, uint8 migrationType) internal returns (Migration memory) {
-        if (!canCancelMigration(msg.sender)) revert MigrationNoVetoPower();
+        if (!isQualified(msg.sender)) revert NotQualified();
         migration = Migration({ successor: successor, timestamp: uint64(block.timestamp), migrationType: migrationType });
         emit MigrationProposed(msg.sender, successor, migrationType);
         return migration;
@@ -110,11 +110,11 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
     }
 
     /**
-     * The issuer or holders with 10% of the tokens can cancal a proposed migration.
+     * The issuer or holders with 10% of the tokens can cancel a proposed migration.
      */
     function cancelMigration() public {
         if (migration.migrationType == 0) revert MigrationNotFound(); 
-        if (!canCancelMigration(msg.sender)) revert MigrationNoVetoPower();
+        if (!isQualified(msg.sender)) revert NotQualified();
         emit MigrationCancelled(msg.sender);
         delete migration;
     }
@@ -122,7 +122,7 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
     /**
      * Returns whether the given address can cancel the current offer.
      */
-    function canCancelMigration(address holder) public view returns (bool) {
+    function isQualified(address holder) public view returns (bool) {
         return holder == owner || (balanceOf(holder) > totalSupply() / 10);
     }
     
@@ -130,10 +130,12 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
      * Anyone can execute the migration once it has passed the veto process.
      */
     function executeMigration() public {
-        if (block.timestamp < migration.timestamp + MIGRATION_PROPOSAL_DELAY) revert MigrationTooEearly(migration.timestamp + MIGRATION_PROPOSAL_DELAY, block.timestamp); 
+        if (block.timestamp < migration.timestamp + MIGRATION_PROPOSAL_DELAY) revert MigrationTooEarly(migration.timestamp + MIGRATION_PROPOSAL_DELAY, block.timestamp); 
         if (migration.migrationType == TYPE_DEFAULT){
             // This is a normal migration, move all base tokens to the successor contract
-            baseToken().transfer(address(migration.successor), baseToken().balanceOf(address(this)));
+            uint256 balance = baseToken().balanceOf(address(this));
+            baseToken().approve(address(migration.successor), balance);
+            ISuccessor(address(migration.successor)).wrap(balance); // sends all base tokens to the successor and we get successor tokens in return
             replaceBase(migration.successor);
             terminate();
         } else if (migration.migrationType == TYPE_TERMINATION){
@@ -142,9 +144,9 @@ abstract contract Migratable is ERC20Flaggable, Ownable {
         } else if (migration.migrationType == TYPE_INTERNAL){
             // This is an internal update of the base token
             (IMigratableBase(address(baseToken()))).migrate(); // obtain the new base token
+            replaceBase(migration.successor);
         } else if (migration.migrationType == TYPE_CANCELLATION) {
             IMigratableBase(address(baseToken())).burn(baseToken().balanceOf(address(this)));
-            replaceBase(migration.successor);
             terminate();
         } else {
             revert MigrationNotFound();
@@ -165,4 +167,8 @@ interface IMigratableBase {
     function successor() external returns (IERC20);
     function migrate() external;
     function burn(uint256 amount) external;
+}
+
+interface ISuccessor {
+    function wrap(uint256 amount) external;
 }
