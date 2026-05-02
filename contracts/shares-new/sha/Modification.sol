@@ -106,7 +106,7 @@ abstract contract Modification is ERC20Flaggable, Ownable {
      * Internal migrations do not terminate the contract. It remains bindings.
      */
     function proposeInternalMigration() external returns (Migration memory) {
-        return _propose(IMigratableBase(address(baseToken())).successor(), TYPE_INTERNAL);
+        return _propose(address(0), TYPE_INTERNAL);
     }
 
     /**
@@ -130,29 +130,35 @@ abstract contract Modification is ERC20Flaggable, Ownable {
      * Anyone can execute the migration once it has passed the veto process.
      */
     function executeMigration() public {
-        if (block.timestamp < migration.timestamp + MIGRATION_PROPOSAL_DELAY) revert MigrationTooEarly(migration.timestamp + MIGRATION_PROPOSAL_DELAY, block.timestamp); 
-        if (migration.migrationType == TYPE_DEFAULT){
+        Migration memory mig = prepareExecution(); // reverts if migration not found or too early
+        if (mig.migrationType == TYPE_DEFAULT){
             // This is a normal migration, move all base tokens to the successor contract
             uint256 balance = baseToken().balanceOf(address(this));
-            baseToken().approve(address(migration.successor), balance);
-            ISuccessor(address(migration.successor)).wrap(balance); // sends all base tokens to the successor and we get successor tokens in return
-            replaceBase(migration.successor);
+            baseToken().approve(address(mig.successor), balance);
+            ISuccessor(address(mig.successor)).wrap(balance); // sends all base tokens to the successor and we get successor tokens in return
+            replaceBase(mig.successor);
             terminate();
-        } else if (migration.migrationType == TYPE_TERMINATION){
+        } else if (mig.migrationType == TYPE_TERMINATION){
             // This is a termination, not a migration. Don't move any tokens.
             terminate();
-        } else if (migration.migrationType == TYPE_INTERNAL){
+        } else if (mig.migrationType == TYPE_INTERNAL){
             // This is an internal update of the base token
-            (IMigratableBase(address(baseToken()))).migrate(); // obtain the new base token
-            replaceBase(migration.successor);
-        } else if (migration.migrationType == TYPE_CANCELLATION) {
+            IMgratableBase base = IMigratableBase(address(baseToken()));
+            base.migrate(); // tells the old base to migrate to the new base
+            replaceBase(base.successor()); // replace the base with the new base
+        } else if (mig.migrationType == TYPE_CANCELLATION) {
             IMigratableBase(address(baseToken())).burn(baseToken().balanceOf(address(this)));
             terminate();
-        } else {
-            revert MigrationNotFound();
         }
-        emit MigrationExecuted(msg.sender, migration.successor, migration.migrationType);
+        emit MigrationExecuted(msg.sender, mig.successor, mig.migrationType);
+    }
+
+    function prepareMigration() internal returns (Migration memory) {
+        Migration memory mig = migration;
+        if (mig.migrationType == 0) revert MigrationNotFound();
+        if (block.timestamp < mig.timestamp + MIGRATION_PROPOSAL_DELAY) revert MigrationTooEarly(mig.timestamp + MIGRATION_PROPOSAL_DELAY, block.timestamp); 
         delete migration;
+        return mig;
     }
 
     function baseToken() internal virtual returns (IERC20);

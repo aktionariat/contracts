@@ -87,6 +87,7 @@ contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recov
 
     error Paused();
     error Cancelled();
+    error NoSuccessorDefined();
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         terms = _terms;
@@ -187,6 +188,7 @@ contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recov
      * mint a new token or other form of security as a replacement.
      */
     function migrate(uint256 amount) public {
+        if (address(successor) == address(0)) revert NoSuccessorDefined();
         _transfer(msg.sender, address(successor), amount);
         _burn(address(successor), amount);
         ISuccessorToken(successor).notifyBurned(msg.sender, amount);

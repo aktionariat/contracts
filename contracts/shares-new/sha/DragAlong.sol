@@ -33,12 +33,10 @@ pragma solidity >=0.8.0 <0.9.0;
  * @author Murat Ögat, murat@aktionariat.com
  *
  * Executed a drag-along clause, fording minority shareholders to sell their shares to a buyer.
- * The drag-along has to be proposed by the contract owner and can then be executed with a 20 day delay.
+ * The drag-along can be proposed by anyone and can be executed after a 20 day delay.
  * It can be cancelled by the contract owner or any shareholder with 10% of the shares at any time before execution.
- * It can be executed by the contract owner or any shareholder with 90% of the shares without a delay.
  * Sellers get paid in the specified currency token directly from the buyer.
  */
-
 import "../../utils/Ownable.sol";
 import "../../utils/SafeERC20.sol";
 import "../../utils/DeterrenceFee.sol";
@@ -49,41 +47,39 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
     using SafeERC20 for IERC20;
 
     struct Offer {
-        IBuyerContract buyer; // 160 Bits
+        address buyer; // 160 Bits
         uint64 timestamp; // 64 Bits
-        // 32 Bit left
+        IERC20 currency; // 160 Bits
+        uint256 totalPrice; // 256 Bits
 	}
 
-    uint64 public constant DRAG_PROPOSAL_DELAY = uint64(60 days);
+    uint64 public constant DRAG_PROPOSAL_DELAY = uint64(20 days);
 
     Offer public latestOffer;
     
-    error InvalidOffer();
     error NoOfferFound();
     error OfferPending();
-    error DragAlongNotFound();
     error CannotCancel();
     error DragAlongTooEarly(uint256 earliest, uint256 timeNow);
 
-    event OfferMade(address sender, IBuyerContract buyerContract, string message);
+    event OfferMade(address sender, IERC20 currency, uint256 totalPrice, string message);
     event OfferDenied(address sender, string message);
-    event OfferAccepted(address sender, IBuyerContract offer, uint256 tokens, address currency, uint256 pricePerTokenE18);
+    event OfferAccepted(address sender, address buyer, uint256 tokens, address currency, uint256 totalPrice);
 
     /**
      * Make an acquisition offer for all underlying tokens.
      * 
      * If the acquisition offer is not denied by the issuer or someone with 10% of the outstanding tokens,
-     * the offer can be executed. The buyer contract must implement the IBuyerContract.notifyTokensReceived
-     * function as specified.
+     * the offer can be executed.
      * 
      * The ability to execute an acquisition does not necessarily mean that you are also legally allowed to.
      * It is the responsibility of the caller to ensure that all contractual preconditions for the execution of the acquisition have been met,
      * as typically laid out in a shareholder agreement.
      */
-    function offerAcquisition(IBuyerContract buyerContract, string calldata message) external payable deter(100) returns (Offer memory) {
+    function offerAcquisition(IERC20 currency, uint256 totalPrice, string calldata message) external payable deter(100) returns (Offer memory) {
         if (address(latestOffer.buyer) != address(0)) revert OfferPending(); 
-        latestOffer = Offer({ buyer: buyerContract, timestamp: uint64(block.timestamp) });
-        emit OfferMade(msg.sender, buyerContract, message);
+        latestOffer = Offer({ buyer: msg.sender, timestamp: uint64(block.timestamp), currency: currency, totalPrice: totalPrice });
+        emit OfferMade(msg.sender, currency, totalPrice, message);
         return latestOffer;
 	}
 
@@ -107,19 +103,11 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
      * Returns whether the given address can cancel the current offer.
      */
     function canCancelOffer(address holder) public view offerPresent returns (bool) {
-        if (holder == owner){
-            return true; // issuer can cancel
-        } else if (balanceOf(holder) > totalSupply() / 10) {
-            return true; // anyone with 10% of the tokens can cancel
-        } else {
-            try Ownable(address(latestOffer.buyer)).owner() returns (address offerOwner) {
-                // owner of offer can cancel
-                return offerOwner == holder;
-            } catch {
-                // offer does not implement Ownable
-                return false;
-            }
-        }
+        return holder == owner || balanceOf(holder) > totalSupply() / 10 || latestOffer.buyer == holder;
+    }
+
+    function checkExecution() public view offerPresent {
+        if (block.timestamp < latestOffer.timestamp + DRAG_PROPOSAL_DELAY) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
     }
     
     /**
@@ -128,32 +116,20 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
      * Even after the proposal delay
      */
     function acceptOffer() public offerPresent {
-        if (block.timestamp < latestOffer.timestamp + DRAG_PROPOSAL_DELAY) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
+        checkExecution(); // reverts if sender is not allowed to execute yet
 
         IERC20 wrappedToken = baseToken();
-        IBuyerContract buyer = latestOffer.buyer;
+        Offer memory offer = latestOffer;
+        delete latestOffer; // clear the offer to prevent reentrancy
 
-        // send full base balance to the buyer
+        offer.currency.safeTransferFrom(address(offer.buyer), address(this), offer.totalPrice);
         uint256 balance = wrappedToken.balanceOf(address(this));
-        wrappedToken.transfer(address(buyer), balance);
+        wrappedToken.transfer(address(offer.buyer), balance);
 
-        // Notify the buyer that the tokens have been transferred
-        // Also the last chance for the buyer to set the approval
-        uint256 buyerTokensToBurn = buyer.notifyTokensReceived(balance);
-
-        // burn the indicated amount of buyer owned tokens to make the purchase cheaper
-        _burn(address(buyer), buyerTokensToBurn);
-
-        // get the money from the buyer, requires buyer approval
-        IERC20 currency = buyer.offeredCurrency();
-        uint256 priceE18 = buyer.offeredPrice();
-        currency.safeTransferFrom(address(buyer), address(this), totalSupply() * priceE18 / 10**18);
-
-        replaceBase(currency);  // make the purchase proceeds the new base
+        replaceBase(offer.currency);  // make the purchase proceeds the new base
         terminate(); // allow token holders to unwrap and collect proceeds
-        delete latestOffer; // clear the offer
 
-        emit OfferAccepted(msg.sender, buyer, balance, address(currency), priceE18);
+        emit OfferAccepted(msg.sender, offer.buyer, balance, address(offer.currency), offer.totalPrice);
     }
 
     function baseToken() internal virtual returns (IERC20);
@@ -161,26 +137,5 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
     function replaceBase(IERC20 wrapped) internal virtual;
 
     function terminate() internal virtual;
-
-}
-
-interface IBuyerContract {
-
-    function offeredCurrency() external view returns (IERC20);
-
-    /**
-     * Conversion price with 18 decimals.
-     */
-    function offeredPrice() external view returns (uint256);
-
-    /**
-     * When this is called on the buyer contract, the payment should be made back to the calling contract.
-     * 
-     * The buyer contract can also indicate how many of their own tokens should be burned in order to reduce the
-     * acquisition costs. For example, if the buyer contract already has 2000 out of 10'000 wrapper tokens and
-     * the price is 3 per share, they can indicate that 2000 wrapper token should be burned so they only need
-     * to pay 24'000 to finance the acquisition of the 10'000 wrapped tokens.
-     */
-    function notifyTokensReceived(uint256 amount) external returns (uint256 ownTokensToBurn);
 
 }

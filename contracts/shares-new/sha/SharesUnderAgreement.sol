@@ -69,6 +69,8 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      */
     string public terms;
 
+    uint256 public defaultFactorE18;
+
     event ChangeTerms(string terms);
     event Terminated();
     event BaseTokenReplaced(IERC20 old, IERC20 neu);
@@ -77,12 +79,13 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     error ContractNotBinding();
     error TooManyDecimals();
 
-    constructor(IERC20 base_, string memory _terms, uint8 _decimals, address _owner)
+    constructor(IERC20 base_, string memory _terms, uint8 _decimals, uint256 initialWrappFactorE18, address _owner)
         ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner)
         ERC20Allowlistable()
         DeterrenceFee(0.01 ether) {
         base = base_;
         terms = _terms;
+        defaultFactorE18 = initialWrappFactorE18;
         if (base.decimals() > decimals) revert TooManyDecimals();
     }
 
@@ -96,12 +99,6 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     function setTerms(string calldata _terms) external onlyOwner {
         terms = _terms;
         emit ChangeTerms(terms);
-    }
-
-    function initialWrap(uint256 baseIn, uint256 wrappedOut) external returns (uint256) {
-        if (totalSupply() > 0) revert("Initial wrap only allowed when total supply is zero");
-        if (wrappedOut % baseIn != 0) revert("Wrapped output must be a whole multiple of base input");
-        return wrap(msg.sender, msg.sender, baseIn, wrappedOut);
     }
 
     /**
@@ -147,9 +144,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      */
     function unwrap(uint256 amount) requireNonBinding external {
         uint256 baseAmount = convertToBase(amount); // rounds down
-        uint256 wrapperAmount = convertToWrapped(baseAmount); // exact, wrapperAmount might be less than amount
-        assert(wrapperAmount <= amount);
-        _burn(msg.sender, wrapperAmount);
+        _burn(msg.sender, amount);
         base.safeTransfer(msg.sender, baseAmount);
     }
 
@@ -158,7 +153,12 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     }
 
     function convertToWrapped(uint256 baseTokenAmount) public view returns (uint256) {
-        return baseTokenAmount * totalSupply() / base.balanceOf(address(this));
+        uint256 supply = totalSupply();
+        if (supply == 0) {
+            return baseTokenAmount * defaultFactorE18 / 1e18;
+        } else {
+            return baseTokenAmount * supply / base.balanceOf(address(this));
+        }
     }
 
     /**
