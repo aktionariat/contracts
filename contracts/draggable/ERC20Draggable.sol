@@ -135,13 +135,13 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 		address from, 
 		uint256 amount, 
 		bytes calldata
-	) external override onlyWrappedToken returns (bool) {
+	) external override onlyWrappedToken checkBinding(true) returns (bool) {
 		_mint(from, amount);
 		return true;
 	}
 
 	/** Wraps additional tokens, thereby creating more ERC20Draggable tokens. */
-	function wrap(address shareholder, uint256 amount) external {
+	function wrap(address shareholder, uint256 amount) external checkBinding(true) {
 		wrapped.safeTransferFrom(msg.sender, address(this), amount);
 		_mint(shareholder, amount);
 	}
