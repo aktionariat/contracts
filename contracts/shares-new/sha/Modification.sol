@@ -3,7 +3,7 @@
 *
 * MIT License with Automated License Fee Payments
 *
-* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
+* Copyright (c) 2026 Aktionariat AG (aktionariat.com)
 *
 * Permission is hereby granted to any person obtaining a copy of this software
 * and associated documentation files (the "Software"), to deal in the Software
@@ -96,7 +96,7 @@ abstract contract Modification is ERC20Flaggable, Ownable {
      * This can be useful if the issuer wants to reissue the underlying securities in a
      * different form or on a different blockchain.
      */
-    function proposeCancellation() external returns (Migration memory) {
+    function proposeCancellation() external onlyOwner returns (Migration memory) {
         return _propose(baseToken(), TYPE_CANCELLATION);
     }
 
@@ -105,7 +105,7 @@ abstract contract Modification is ERC20Flaggable, Ownable {
      * 
      * Internal migrations do not terminate the contract. It remains binding.
      */
-    function proposeInternalMigration() external returns (Migration memory) {
+    function proposeInternalMigration() external onlyOwner returns (Migration memory) {
         return _propose(IMigratableBase(address(baseToken())).successor(), TYPE_INTERNAL);
     }
 
@@ -144,7 +144,7 @@ abstract contract Modification is ERC20Flaggable, Ownable {
         } else if (mig.migrationType == TYPE_INTERNAL){
             // This is an internal update of the base token
             IMigratableBase base = IMigratableBase(address(baseToken()));
-            if (base.successor() != address(mig.successor)) revert MigrationNotFound(); // make sure the proposed successor is the actual successor of the base token
+            if (address(base.successor()) != address(mig.successor)) revert MigrationNotFound(); // make sure the proposed successor is the actual successor of the base token
             base.migrate(); // tells the old base to migrate to the new base
             replaceBase(mig.successor); // replace the base with the new base
         } else if (mig.migrationType == TYPE_CANCELLATION) {

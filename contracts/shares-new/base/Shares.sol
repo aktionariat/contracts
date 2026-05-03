@@ -3,7 +3,7 @@
  *
  * MIT License with Automated License Fee Payments
  *
- * Copyright (c) 2022 Aktionariat AG (aktionariat.com)
+ * Copyright (c) 2026 Aktionariat AG (aktionariat.com)
  *
  * Permission is hereby granted to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software
@@ -62,9 +62,6 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     // 6: pause/cancellation lifecycle, successor migration, mintAndWrap
     uint8 public constant VERSION = 6;
 
-    uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
-    uint8 private constant GLOBAL_FLAG_INDEX_CANCELLED = 101;
-
     /**
      * A link to the registration agreement in accordance with the Swiss Code of Obligations, fulfilling the linking
      * requirement from article 973d paragraph 2 clause 3.
@@ -89,12 +86,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     event ChangeTokenId(string tokenId);
     event ChangeTotalShares(uint256 total);
     event SuccessorDefined(ISuccessorToken successor);
-    event Paused();
-    event Unpaused();
-    event Deactivated();
 
-    error Cancelled();
-    error TransfersPaused();
     error NoSuccessorDefined();
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
@@ -122,52 +114,6 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      */
     function announcement(string calldata message) external onlyOwner {
         emit Announcement(message);
-    }
-
-    /**
-     * Pauses the contract globally. While paused, all transfers (including mints, burns, migrations,
-     * and recoveries) revert with Paused(). Reversible via 'unpause'.
-     */
-    function pause() external onlyOwner {
-        setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, true);
-        emit Paused();
-    }
-
-    /**
-     * Lifts the global pause set via 'pause'.
-     */
-    function unpause() external onlyOwner {
-        setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, false);
-        emit Unpaused();
-    }
-
-    /**
-     * Irreversibly cancels the contract. Once deactivated, the only permitted transfers are
-     * burns (to address(0)) and migrations to the configured successor; all other transfers,
-     * including mints and Recoverable.recover to a regular target, revert with Cancelled().
-     *
-     * It is the responsibility of the issuer to ensure that all legal preconditions for the
-     * cancellation of the contract have been met before calling this function.
-     */
-    function deactivateContract() external onlyOwner {
-        setGlobalFlag(GLOBAL_FLAG_INDEX_CANCELLED, true);
-        emit Deactivated();
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 amount) override(ERC20Allowlistable, ERC20Flaggable) virtual internal {
-        if (hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert TransfersPaused();
-        if (hasGlobalFlag(GLOBAL_FLAG_INDEX_CANCELLED)){
-            if (to == owner){
-                // returning to issuer is ok even when cancelled
-            } else if (to == address(0)){
-                // burning is ok even when cancelled
-            } else if (to == address(successor)){
-                // migrating to successor is ok even when cancelled
-            } else {
-                revert Cancelled();
-            }
-        }
-        super._beforeTokenTransfer(from, to, amount);
     }
 
     /**
