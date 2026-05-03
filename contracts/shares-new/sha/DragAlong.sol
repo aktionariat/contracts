@@ -106,14 +106,13 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
         return holder == owner || balanceOf(holder) > totalSupply() / 10 || latestOffer.buyer == holder;
     }
 
+
     function checkExecution() public view offerPresent {
         if (block.timestamp < latestOffer.timestamp + DRAG_PROPOSAL_DELAY) revert DragAlongTooEarly(latestOffer.timestamp + DRAG_PROPOSAL_DELAY, block.timestamp);
     }
     
     /**
      * Accepts the current offer once the proposal delay has passed.
-     * 
-     * Even after the proposal delay
      */
     function acceptOffer() public offerPresent {
         checkExecution(); // reverts if sender is not allowed to execute yet
@@ -122,9 +121,9 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
         Offer memory offer = latestOffer;
         delete latestOffer; // clear the offer to prevent reentrancy
 
-        offer.currency.safeTransferFrom(address(offer.buyer), address(this), offer.totalPrice);
         uint256 balance = wrappedToken.balanceOf(address(this));
-        wrappedToken.transfer(address(offer.buyer), balance);
+        offer.currency.safeTransferFrom(address(offer.buyer), address(this), offer.totalPrice);
+        wrappedToken.safeTransfer(address(offer.buyer), balance);
 
         replaceBase(offer.currency);  // make the purchase proceeds the new base
         terminate(); // allow token holders to unwrap and collect proceeds
@@ -132,7 +131,7 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
         emit OfferAccepted(msg.sender, offer.buyer, balance, address(offer.currency), offer.totalPrice);
     }
 
-    function baseToken() internal virtual returns (IERC20);
+    function baseToken() internal virtual view returns (IERC20);
 
     function replaceBase(IERC20 wrapped) internal virtual;
 

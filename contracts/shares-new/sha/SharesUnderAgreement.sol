@@ -69,24 +69,19 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      */
     string public terms;
 
-    uint256 public defaultFactorE18;
-
     event ChangeTerms(string terms);
     event Terminated();
     event BaseTokenReplaced(IERC20 old, IERC20 neu);
 
     error ContractBinding();
     error ContractNotBinding();
-    error TooManyDecimals();
 
-    constructor(IERC20 base_, string memory _terms, uint8 _decimals, uint256 initialWrappFactorE18, address _owner)
+    constructor(IERC20 base_, string memory _terms, uint8 _decimals, address _owner)
         ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner)
         ERC20Allowlistable()
         DeterrenceFee(0.01 ether) {
         base = base_;
         terms = _terms;
-        defaultFactorE18 = initialWrappFactorE18;
-        if (base.decimals() > decimals) revert TooManyDecimals();
     }
 
     function baseToken() internal view override(DragAlong, Modification) returns (IERC20) {
@@ -107,7 +102,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      * Convenience method for wrap(msg.sender, amount)
      */
     function wrap(uint256 amount) external returns (uint256) {
-        return wrap(msg.sender, msg.sender, amount, convertToWrapped(amount));
+        return wrap(msg.sender, msg.sender, amount);
     }
 
     /**
@@ -118,13 +113,13 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      * Requires the sender to have approved the transfer of the base shares to this contract.
      */
     function wrap(address recipient, uint256 amount) external returns (uint256) {
-        return wrap(msg.sender, recipient, amount, convertToWrapped(amount));
+        return wrap(msg.sender, recipient, amount);
     }
 
-    function wrap(address sender, address recipient, uint256 baseIn, uint256 wrappedOut) requireBinding internal returns(uint256) {
-        base.transferFrom(sender, address(this), baseIn);
-        _mint(recipient, wrappedOut);
-        return wrappedOut;
+    function wrap(address sender, address recipient, uint256 amount) requireBinding internal returns(uint256) {
+        base.safeTransferFrom(sender, address(this), amount);
+        _mint(recipient, amount);
+        return amount;
     }
 
     /**
@@ -133,14 +128,11 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      * Only works as long as the contract is binding.
      */
     function mintFromBase(address holder, uint256 baseTokens) requireBinding baseOnly public returns (uint256) {
-        return wrap(holder, holder, baseTokens, convertToWrapped(baseTokens));
+        return wrap(holder, holder, baseTokens);
     }
 
     /**
-     * Unwraps wrapped shares into base shares.
-     * 
-     * This function automatically rounds down the amount of wrapped shares that are burned to the nearest
-     * amount necessary to unwrap the same number of base shares.
+     * Unwraps wrapped shares into base shares (rounded down if not exact).
      */
     function unwrap(uint256 amount) requireNonBinding external {
         uint256 baseAmount = convertToBase(amount); // rounds down
@@ -150,15 +142,6 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
 
     function convertToBase(uint256 amount) public view returns (uint256) {
         return amount * base.balanceOf(address(this)) / totalSupply();
-    }
-
-    function convertToWrapped(uint256 baseTokenAmount) public view returns (uint256) {
-        uint256 supply = totalSupply();
-        if (supply == 0) {
-            return baseTokenAmount * defaultFactorE18 / 1e18;
-        } else {
-            return baseTokenAmount * supply / base.balanceOf(address(this));
-        }
     }
 
     /**
