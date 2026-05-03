@@ -55,6 +55,8 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     // ERCAllowlistable: uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
     // ERCAllowlistable: uint8 private constant FLAG_INDEX_POWERLIST = 22;
 
+    // ERCAllowlistable: uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
+
     mapping (address => uint256) private _balances; // upper 32 bits reserved for flags
 
     mapping (address => mapping (address => uint256)) private _allowances;

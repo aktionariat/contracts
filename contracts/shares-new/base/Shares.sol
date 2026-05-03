@@ -59,7 +59,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     // 3: added permit
     // 4: refactor to custom errors, added allowance for permit2
     // 5: Complete revision, CMTA compatibility, dropped permit
-    // 6: pause/cancellation lifecycle, successor migration, mintAndWrap
+    // 6: pause, successor migration, mintAndWrap
     uint8 public constant VERSION = 6;
 
     /**
