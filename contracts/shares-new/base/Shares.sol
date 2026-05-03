@@ -51,14 +51,14 @@ import "./Recoverable.sol";
  * permissible. The intended use of the contract functionality is defined in the accompanying registration agreement.
  * In particular, the issuer must not use any administrative functions in violation of the registration agreement.
  */
-contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
+contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     // Version history:
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
     // 3: added permit
     // 4: refactor to custom errors, added allowance for permit2
-    // 5: Complete revision, CMTA compatibility
+    // 5: Complete revision, CMTA compatibility, dropped permit
     // 6: pause/cancellation lifecycle, successor migration, mintAndWrap
     uint8 public constant VERSION = 6;
 

@@ -11,14 +11,14 @@
 
 ### Metadata
 - Implementation language: Solidity (`>=0.8.0 <0.9.0`)
-- Version: `CMTACompatibleSecurity` v6 (`VERSION = 6`)
+- Version: `Shares` v6 (`VERSION = 6`)
 
 ### Mandatory Attributes
 | ID | Requirement | CMTAT Solidity corresponding feature | Notes | Present in implementation being approved (`y/n`) | Implementation details |
 |---|---|---|---|---|---|
 | 1.a | Name attribute | ERC20 `name` |  | y | `string public name` in `ERC20Named`, set in constructor, mutable via `setName(symbol, name)` (onlyOwner). |
 | 1.b | Ticker symbol attribute | ERC20 `symbol` |  | y | `string public symbol` in `ERC20Named`, set in constructor, mutable via `setName(symbol, name)` (onlyOwner). |
-| 1.c | Token ID attribute | `tokenId` |  | n | Not implemented. The contract exposes no on-chain `tokenId`; identity is by contract address only. `VERSION` is a contract-level revision marker, not a token identifier. |
+| 1.c | Token ID attribute | `tokenId` |  | y | `string public tokenId` in `Shares`, mutable via `setTokenId(id)` (onlyOwner) |
 | 1.d | Reference to legally required documentation | `terms` |  | y | `string public terms` set in constructor, updatable via `setTerms` (onlyOwner). Linked URL fulfills the article 973d para 2 clause 3 requirement. `ChangeTerms` event on update. |
 | 1.e | No fractions | ERC20 `decimals` | Decimals must be set to zero unless governing law permits fractions. | y | `decimals` is hardcoded to `0` in the constructor (`ERC20Named(_symbol, _name, 0, _owner)`). |
 
