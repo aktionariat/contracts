@@ -50,7 +50,7 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
         address buyer; // 160 Bits
         uint64 timestamp; // 64 Bits
         IERC20 currency; // 160 Bits
-        uint256 totalPrice; // 256 Bits
+        uint256 pricePerShareE18; // 256 Bits — currency units paid per wrapped unit at execution
 	}
 
     uint64 public constant DRAG_PROPOSAL_DELAY = uint64(20 days);
@@ -62,24 +62,30 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
     error CannotCancel();
     error DragAlongTooEarly(uint256 earliest, uint256 timeNow);
 
-    event OfferMade(address sender, IERC20 currency, uint256 totalPrice, string message);
+    event OfferMade(address sender, IERC20 currency, uint256 pricePerShareE18, string message);
     event OfferDenied(address sender, string message);
-    event OfferAccepted(address sender, address buyer, uint256 tokens, address currency, uint256 totalPrice);
+    event OfferAccepted(address sender, address buyer, uint256 tokens, address currency, uint256 pricePerShareE18, uint256 totalPrice);
 
     /**
-     * Make an acquisition offer for all underlying tokens.
-     * 
+     * Make an acquisition offer for the underlying tokens.
+     *
+     * The buyer commits to paying 'pricePerShareE18' currency units per wrapped unit. The total price
+     * is computed at execution time as 'pricePerShareE18 * totalSupply() / 10**18'. If new shares are tokenized
+     * during the proposal delay, the buyer pays proportionally more so existing holders are not
+     * diluted in their per-share proceeds. The buyer must approve enough currency to cover the
+     * worst-case total they are willing to pay.
+     *
      * If the acquisition offer is not denied by the issuer or someone with 10% of the outstanding tokens,
      * the offer can be executed.
-     * 
+     *
      * The ability to execute an acquisition does not necessarily mean that you are also legally allowed to.
      * It is the responsibility of the caller to ensure that all contractual preconditions for the execution of the acquisition have been met,
      * as typically laid out in a shareholder agreement.
      */
-    function offerAcquisition(IERC20 currency, uint256 totalPrice, string calldata message) external payable deter(100) returns (Offer memory) {
-        if (address(latestOffer.buyer) != address(0)) revert OfferPending(); 
-        latestOffer = Offer({ buyer: msg.sender, timestamp: uint64(block.timestamp), currency: currency, totalPrice: totalPrice });
-        emit OfferMade(msg.sender, currency, totalPrice, message);
+    function offerAcquisition(IERC20 currency, uint256 pricePerShareE18, string calldata message) external payable deter(100) returns (Offer memory) {
+        if (address(latestOffer.buyer) != address(0)) revert OfferPending();
+        latestOffer = Offer({ buyer: msg.sender, timestamp: uint64(block.timestamp), currency: currency, pricePerShareE18: pricePerShareE18 });
+        emit OfferMade(msg.sender, currency, pricePerShareE18, message);
         return latestOffer;
 	}
 
@@ -122,13 +128,14 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
         delete latestOffer; // clear the offer to prevent reentrancy
 
         uint256 balance = wrappedToken.balanceOf(address(this));
-        offer.currency.safeTransferFrom(address(offer.buyer), address(this), offer.totalPrice);
+        uint256 totalPrice = offer.pricePerShareE18 * totalSupply() / 10**18; // priced at execution time so new tokenizations during the delay do not dilute per-share proceeds
+        offer.currency.safeTransferFrom(address(offer.buyer), address(this), totalPrice);
         wrappedToken.safeTransfer(address(offer.buyer), balance);
 
         replaceBase(offer.currency);  // make the purchase proceeds the new base
         terminate(); // allow token holders to unwrap and collect proceeds
 
-        emit OfferAccepted(msg.sender, offer.buyer, balance, address(offer.currency), offer.totalPrice);
+        emit OfferAccepted(msg.sender, offer.buyer, balance, address(offer.currency), offer.pricePerShareE18, totalPrice);
     }
 
     function baseToken() internal virtual view returns (IERC20);
