@@ -72,6 +72,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     event ChangeTerms(string terms);
     event Terminated();
     event BaseTokenReplaced(IERC20 old, IERC20 neu);
+    event Wrapped(address base, address sender, address recipient, uint256 amount);
 
     error ContractBinding();
     error ContractNotBinding();
@@ -119,6 +120,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     function wrap(address sender, address recipient, uint256 amount) requireBinding internal returns(uint256) {
         base.safeTransferFrom(sender, address(this), amount);
         _mint(recipient, amount);
+        emit Wrapped(address(base), sender, recipient, amount);
         return amount;
     }
 

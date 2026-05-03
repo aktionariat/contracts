@@ -43,7 +43,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     // as Documented in /doc/infiniteallowance.md
     // 0x8000000000000000000000000000000000000000000000000000000000000000
-    uint256 constant private INFINITE_ALLOWANCE = 2**255;
+    uint256 constant public INFINITE_ALLOWANCE = 2**255;
 
     uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
 

@@ -63,6 +63,7 @@ contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recov
     uint8 public constant VERSION = 6;
 
     uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
+    uint8 private constant GLOBAL_FLAG_INDEX_CANCELLED = 101;
 
     /**
      * A link to the registration agreement in accordance with the Swiss Code of Obligations, fulfilling the linking
@@ -85,8 +86,8 @@ contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recov
     event Unpaused();
     event Deactivated();
 
-    error Paused();
     error Cancelled();
+    error TransfersPaused();
     error NoSuccessorDefined();
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
@@ -139,9 +140,11 @@ contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recov
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) override(ERC20Allowlistable, ERC20Flaggable) virtual internal {
-        if (hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert Paused();
+        if (hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert TransfersPaused();
         if (hasGlobalFlag(GLOBAL_FLAG_INDEX_CANCELLED)){
-            if (to == address(0)){
+            if (to == owner){
+                // returning to issuer is ok even when cancelled
+            } else if (to == address(0)){
                 // burning is ok even when cancelled
             } else if (to == address(successor)){
                 // migrating to successor is ok even when cancelled
@@ -225,7 +228,11 @@ contract CMTACompatibleSecurity is IERC20, ERC20Named, ERC20Allowlistable, Recov
      */
     function mintAndWrap(address shareholder, address wrapper, uint256 amount) public onlyOwner {
         mint(shareholder, amount);
-        _approve(shareholder, wrapper, amount);
+        uint256 allowance = allowance(shareholder, wrapper);
+        if (allowance < INFINITE_ALLOWANCE){
+            // set allowance of shareholder such that is is not changed in the process of minting and wrapping
+            _approve(shareholder, wrapper, allowance + amount);
+        }
         IWrapper(wrapper).mintFromBase(shareholder, amount);
     }
 

@@ -63,6 +63,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
     event RecoveryDeleted(address lostAddress);
     event Recovered(address lost, address target, uint256 amount);
     event Burned(address lost, uint256 amount);
+    error InvalidRecipient(address lostAddress);
 
     function initBurn(address target) external onlyOwner returns (Recovery memory) {
         return initRecovery(target, address(0x0));
@@ -74,6 +75,7 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
     
 	function initRecovery(address lostAddress, address recipient) public payable deter(1) returns (Recovery memory) {
         if (balanceOf(lostAddress) == 0) revert RecoveryNoBalance(lostAddress);
+        if (recipient == address(0x0)) revert InvalidRecipient(lostAddress);
         if (recoveries[lostAddress].timestamp != 0) revert RecoveryInProgress(lostAddress);
 
         Recovery memory recovery = Recovery({ recipient: recipient, timestamp: uint40(block.timestamp) });
