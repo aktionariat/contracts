@@ -6,7 +6,7 @@ node_modules
 /artifacts
 
 # Ignition deployments
-/ignition
+/ignition/deployments
 
 # TypeChain files
 /types
