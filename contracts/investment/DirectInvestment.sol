@@ -86,8 +86,8 @@ contract DirectInvestment is IDirectInvestment, Ownable {
     function deliverShares(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) internal {
         require(buyingEnabled, DirectInvestment_BuyingDisabled());
 
-        IERC20(token).safeTransfer(buyer, amountShares);
         price = price + (amountShares * increment);
+        IERC20(token).safeTransfer(buyer, amountShares);
 
         emit Trade(token, buyer, ref, amountShares, base, amountBaseCurrency, 0, price);
     }

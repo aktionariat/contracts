@@ -27,14 +27,11 @@
 */
 pragma solidity >=0.8.0 <0.9.0;
 
-import "../utils/Address.sol";
 import "../ERC20/IERC20.sol";
 import "../utils/SafeERC20.sol";
 import "../utils/Ownable.sol";
 import "./IDirectInvestment.sol";
 import "./IUniswapV3.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
 
 /**
  * A hub for payments, to be used with the DirectInvestment contract. 
@@ -44,7 +41,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * ETH payments are handled similar to WETH, by submitting the same path but sending msg.value instead of allowing WETH to be used.
  */
 
-contract PaymentHub is Ownable, ReentrancyGuard {
+contract PaymentHub is Ownable {
 
     using SafeERC20 for IERC20;
 
@@ -57,72 +54,84 @@ contract PaymentHub is Ownable, ReentrancyGuard {
     // Version 9: Change payFromEther to include a swap path
     // Version 10: Added checkAmount to prevent underpayment of shares, removed keep ether
     // Version 11: Cleanup unused permit, remove selling, replace forwarder with owner
+    // Version 12: Cleanup and rewrite for DirectInvestment v10. Remove handling ETH refunds.
 
-    uint256 public constant VERSION = 11;
+    uint256 public constant VERSION = 12;
 
     IQuoter private immutable uniswapV3Quoter;
     ISwapRouter private immutable uniswapV3SwapRouter;
 
-    error PaymentHub_InvalidPath(IDirectInvestment directInvestment, IERC20 paymentCurrency, bytes calldata path);
-    error PaymentHub_TransferFailed();
+    error PaymentHub_InvalidAmount();
+    error PaymentHub_InvalidPath(IDirectInvestment directInvestment, IERC20 paymentCurrency, bytes path);
 
     constructor(address _owner, IQuoter _uniswapV3Quoter, ISwapRouter _uniswapV3SwapRouter) Ownable(_owner) {
         uniswapV3Quoter = _uniswapV3Quoter;
         uniswapV3SwapRouter = _uniswapV3SwapRouter;
     }
 
-    // View functions for getting price
-
-    function getPrice(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, bytes calldata path) public returns (uint256) {
-        if (paymentCurrency == directInvestment.base()) {
-            return getPriceInBaseCurrency(directInvestment, amountShares);
-        } else {
-            return getPriceInOtherCurrency(directInvestment, amountShares, paymentCurrency, path);
-        }
-    }
-
+    /// @notice Quote the buy price in base currency for `amountShares`.
     function getPriceInBaseCurrency(IDirectInvestment directInvestment, uint256 amountShares) public view returns (uint256) {
         return directInvestment.getBuyPrice(amountShares);
     }
 
-    function getPriceInOtherCurrency(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, bytes calldata path) public returns (uint256) {
-        uint256 priceInBase = getPriceInBaseCurrency(directInvestment, amountShares);
+    /// @notice Quote the buy price for `amountShares` denominated in `paymentCurrency`.
+    /// @dev Not view: routes through the Uniswap V3 quoter.
+    function getPriceInPaymentCurrency(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, bytes calldata path) public returns (uint256) {
         checkPath(directInvestment, paymentCurrency, path);
+
+        uint256 priceInBase = getPriceInBaseCurrency(directInvestment, amountShares);
         return uniswapV3Quoter.quoteExactOutput(path, priceInBase);
     }
 
-    // Payment functions
-    function payAndNotify(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, bytes calldata path, bytes calldata ref) external payable {
+    /// @notice Buy `amountShares` by paying directly in the base currency.
+    /// @dev Caller must have approved this contract for the base currency.
+    function payFromBaseCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, bytes calldata ref) public {
+        require(amountShares > 0, PaymentHub_InvalidAmount());
+
         uint256 priceInBaseCurrency = directInvestment.getBuyPrice(amountShares);
 
-        if (paymentCurrency == directInvestment.base()) {
-            payFromBaseCurrencyAndNotify(directInvestment, amountShares, priceInBaseCurrency, ref);
-        } else {
-            checkPath(directInvestment, paymentCurrency, path);
-            payFromOtherCurrencyAndNotify(directInvestment, amountShares, priceInBaseCurrency, paymentCurrency, path, ref);
-        }
+        directInvestment.base().safeTransferFrom(msg.sender, address(directInvestment), priceInBaseCurrency);
+        directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);
     }
 
-    // Transfer base tokens to the DirectInvestment contract and call it to deliver shares.
-    // DirectInvestment contract will check that the amountBaseCurrency corresponds correctly to the amountShares and the current price, and revert if not.
-    function payFromBaseCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) public {
-        directInvestment.base().safeTransferFrom(msg.sender, address(directInvestment), amountBaseCurrency);
-        directInvestment.processIncoming(msg.sender, amountShares, amountBaseCurrency, ref);
+    /// @notice Buy `amountShares` by paying in any ERC20, swapped to base via Uniswap.
+    /// @dev Caller must have approved this contract for `amountInMaximum` of `paymentCurrency`. Unused remainder is refunded.
+    function payFromOtherCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, uint256 amountInMaximum, bytes calldata path, bytes calldata ref) public {
+        require(amountShares > 0, PaymentHub_InvalidAmount());
+
+        checkPath(directInvestment, paymentCurrency, path);
+        
+        uint256 priceInBaseCurrency = directInvestment.getBuyPrice(amountShares);
+        
+        paymentCurrency.safeTransferFrom(msg.sender, address(this), amountInMaximum);
+        swapToBaseCurrencyAndPay(directInvestment, priceInBaseCurrency, paymentCurrency, amountInMaximum, path);
+        directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);
     }
 
-    function payFromOtherCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, uint256 amountBaseCurrency, IERC20 paymentCurrency, bytes calldata path, bytes calldata ref) public returns (uint256) {
-        swapToBaseCurrencyAndPay(directInvestment, amountBaseCurrency, paymentCurrency, amountBaseCurrency, path);
-        directInvestment.processIncoming(msg.sender, amountShares, amountBaseCurrency, ref);
+    /// @notice Buy `amountShares` by paying in ETH, wrapped to WETH and swapped to base via Uniswap.
+    /// @dev Unused ETH is refunded as WETH.
+    function payFromEtherAndNotify(IDirectInvestment directInvestment, uint256 amountShares, bytes calldata path, bytes calldata ref) public payable {
+        require(amountShares > 0, PaymentHub_InvalidAmount());
+        
+        IWETH9 weth = IWETH9(uniswapV3Quoter.WETH9());
+        checkPath(directInvestment, weth, path);
+
+        uint256 priceInBaseCurrency = directInvestment.getBuyPrice(amountShares);
+
+        weth.deposit{value: msg.value}();
+        swapToBaseCurrencyAndPay(directInvestment, priceInBaseCurrency, weth, msg.value, path);
+        directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);
     }
 
-    // Check that the path is valid for given DirectInvestment contract, its base currency and given payment currency.
+    /// @dev Validates a V3 exactOutput path: starts with base currency, ends with `paymentCurrency`.
     function checkPath(IDirectInvestment directInvestment, IERC20 paymentCurrency, bytes calldata path) internal view {
         require(path.length >= 43 && (path.length - 20) % 23 == 0, PaymentHub_InvalidPath(directInvestment, paymentCurrency, path));
-        require(address(bytes20(path[0:20])) == address(paymentCurrency), PaymentHub_InvalidPath(directInvestment, paymentCurrency, path));
-        require(address(bytes20(path[path.length - 20:])) == address(directInvestment.base()), PaymentHub_InvalidPath(directInvestment, paymentCurrency, path));
+        require(address(bytes20(path[0:20])) == address(directInvestment.base()), PaymentHub_InvalidPath(directInvestment, paymentCurrency, path));
+        require(address(bytes20(path[path.length - 20:])) == address(paymentCurrency), PaymentHub_InvalidPath(directInvestment, paymentCurrency, path));
     }
 
-    function swapToBaseCurrencyAndPay(IDirectInvestment directInvestment, uint256 amountBaseCurrency, IERC20 paymentCurrency, uint256 amountInMaximum, bytes memory path) internal returns (uint256) {
+    /// @dev Executes the exactOutput swap into `directInvestment` and refunds unused `paymentCurrency` to the caller.
+    function swapToBaseCurrencyAndPay(IDirectInvestment directInvestment, uint256 amountBaseCurrency, IERC20 paymentCurrency, uint256 amountInMaximum, bytes memory path) internal {
         ISwapRouter.ExactOutputParams memory params =
             ISwapRouter.ExactOutputParams({
                 path: path,
@@ -134,51 +143,33 @@ contract PaymentHub is Ownable, ReentrancyGuard {
 
         uint256 amountIn = uniswapV3SwapRouter.exactOutput(params);
 
-        // If the swap did not require the full amountInMaximum to achieve the exact amountOut then we refund msg.sender
         if (amountIn < amountInMaximum) {
-            if (msg.value > amountIn) {
-                uniswapV3SwapRouter.refundETH();
-                safeTransferETH(msg.sender, msg.value - amountIn);
-            } else {
-                IERC20(paymentCurrency).safeTransfer(msg.sender, amountInMaximum - amountIn);
-            }
+            IERC20(paymentCurrency).safeTransfer(msg.sender, amountInMaximum - amountIn);
         }
     }
 
-    function safeTransferETH(address recipient, uint256 amount) internal nonReentrant {
-        (bool success, ) = recipient.call{value:amount}("");
-        if (!success) {
-            revert PaymentHub_TransferFailed();
+    /// @notice Grant infinite Uniswap allowance for the listed payment currencies. Must be called once per new currency.
+    /// @dev Permissionless; the hub holds no token balance between transactions.
+    function approvePaymentCurrencies(IERC20[] calldata erc20In) external {
+        for (uint i=0; i<erc20In.length; i++) {
+            approveERC20(erc20In[i]);
         }
     }
 
-    ///This function appoves infinite allowance for Uniswap, this is safe as the paymenthub should never hold any token (see also recover() ).
-    ///@dev This function needs to be called before using the PaymentHub the first time with a new ERC20 token.
-    ///@param erc20In The erc20 addresse to approve.
-    function approveERC20(address erc20In) external {
+    /// @notice Grant infinite Uniswap allowance for a single payment currency.
+    function approveERC20(IERC20 erc20In) public {
         IERC20(erc20In).approve(address(uniswapV3SwapRouter), type(uint256).max);
     }
 
-    // Withdraw tokens that were accidentally sent to this contract.
+    /// @notice Owner rescue for tokens accidentally sent to the hub.
     function withdrawToken(IERC20 tokenAddress, address to, uint256 amount) external onlyOwner {
         tokenAddress.safeTransfer(to, amount);
     }
 
-    // Withdraw ETH that were accidentally sent to this contract.
-    function withdrawEther(address to, uint256 amount) external onlyOwner {
-        safeTransferETH(to, amount);
-    }
-
-    // This has nothing to to with share payment. 
-    // It is just a convenience function to allow the caller to make multiple payments in one transaction, e.g. for dividends.
+    /// @notice Pay multiple recipients in one tx, e.g. for dividends. Unrelated to share purchases.
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         for (uint i=0; i<recipients.length; i++) {
             IERC20(token).safeTransferFrom(msg.sender, recipients[i], amounts[i]);
         }
-    }
-
-    // solhint-disable-next-line no-empty-blocks
-    receive() external payable {
-        // Important to receive ETH refund from Uniswap
     }
 }
