@@ -33,7 +33,6 @@ import "../utils/SafeERC20.sol";
 import "../utils/Ownable.sol";
 import "./IDirectInvestment.sol";
 import "./IUniswapV3.sol";
-import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 

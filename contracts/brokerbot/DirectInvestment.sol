@@ -135,9 +135,12 @@ contract DirectInvestment is IDirectInvestment, Ownable {
         _;
     }
 
-    // TODO - Migration functions
-
-
+    // Migration functions
+    function migrate(address directInvestmentContract) external onlyOwner() {
+        IERC20(token).safeTransfer(directInvestmentContract, token.balanceOf(address(this)));
+        IERC20(base).safeTransfer(directInvestmentContract, base.balanceOf(address(this)));
+        buyingEnabled = false;
+    }
 
     // Functions only for backwards compatibility
     function getPriceAtTime(uint256) public view returns (uint256) {
