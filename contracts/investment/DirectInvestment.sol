@@ -131,19 +131,17 @@ contract DirectInvestment is IDirectInvestment, Ownable {
         emit SettingsChange(buyingEnabled ? 0x1 : 0x0);
     }
 
-    /// @dev Restricts access to the configured PaymentHub.
-    modifier onlyPaymentHub() {
-        require(msg.sender == paymenthub, DirectInvestment_NotPaymentHub(msg.sender));
-        _;
-    }
-
-    // Migration functions
-
     /// @notice Move all token and base balances to a successor contract and disable buying.
     function migrate(address directInvestmentContract) external onlyOwner() {
         IERC20(token).safeTransfer(directInvestmentContract, token.balanceOf(address(this)));
         IERC20(base).safeTransfer(directInvestmentContract, base.balanceOf(address(this)));
         buyingEnabled = false;
+    }
+
+    /// @dev Restricts access to the configured PaymentHub.
+    modifier onlyPaymentHub() {
+        require(msg.sender == paymenthub, DirectInvestment_NotPaymentHub(msg.sender));
+        _;
     }
 
     // Functions only for backwards compatibility
