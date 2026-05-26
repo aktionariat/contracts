@@ -47,7 +47,7 @@ import "../ERC20/IERC20.sol";
 import "../ERC20/IERC677Receiver.sol";
 import "./IOffer.sol";
 import "./IOfferFactory.sol";
-import "../shares/IShares.sol";
+import "../participation-certificates/IParticipationCertificates.sol";
 import "../utils/SafeERC20.sol";
 
 struct DraggableParams {
@@ -163,7 +163,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	function name() public view override returns (string memory) {
 		string memory wrappedName = wrapped.name();
 		if (isBinding()) {
-			return string(abi.encodePacked(wrappedName, " SHA"));
+			return string(abi.encodePacked(wrappedName, " PCHA"));
 		} else {
 			return string(abi.encodePacked(wrappedName, " (Wrapped)"));
 		}
@@ -171,7 +171,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 
 	function symbol() public view override returns (string memory) {
 		// ticker should be less dynamic than name
-		return string(abi.encodePacked(wrapped.symbol(), "S"));
+		return string(abi.encodePacked(wrapped.symbol(), "P"));
 	}
 
 	/**
@@ -205,7 +205,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	 */
 	function burn(uint256 amount) external {
 		_burn(msg.sender, amount);
-		IShares(address(wrapped)).burn(isBinding() ? amount : amount * unwrapConversionFactor);
+		IParticipationCertificates(address(wrapped)).burn(isBinding() ? amount : amount * unwrapConversionFactor);
 	}
 
 	function makeAcquisitionOffer(
@@ -283,7 +283,7 @@ abstract contract ERC20Draggable is IERC677Receiver, IDraggable, ERC20Flaggable 
 	}
 
 	function totalVotingTokens() public view override returns (uint256) {
-		return IShares(address(wrapped)).totalShares();
+		return IParticipationCertificates(address(wrapped)).totalShares();
 	}
 
 	function _hasVoted(address voter) internal view returns (bool) {

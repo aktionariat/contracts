@@ -34,11 +34,11 @@ import "./ERC20Draggable.sol";
 contract ERC20Cancelled is ERC20Flaggable {
 
     ERC20Draggable public immutable SHA;
-    IShares public immutable BASE;
+    IParticipationCertificates public immutable BASE;
 
     constructor(address shaToken) ERC20Flaggable(0) {
         SHA = ERC20Draggable(shaToken);
-        BASE = IShares(address(SHA.wrapped()));
+        BASE = IParticipationCertificates(address(SHA.wrapped()));
     }
 
     function name() external view returns (string memory) {
