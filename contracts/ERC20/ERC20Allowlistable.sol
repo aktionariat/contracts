@@ -78,6 +78,26 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
         }
     }
 
+    function freeze(address account) public onlyOwner {
+        setTypeInternal(account, TYPE_RESTRICTED);
+    }
+
+    function unfreeze(address account) public onlyOwner {
+        setTypeInternal(account, defaultType());
+    }
+
+    /**
+     * The default type assigned to empty addresses that receive newly minted tokens.
+     * Also used as the neutral type when unfreezing an address.
+     */
+    function defaultType() public view returns (uint8) {
+        if (hasFlagInternal(address(0x0), FLAG_INDEX_ADMIN)) {
+            return TYPE_ALLOWED;
+        } else {
+            return TYPE_FREE;
+        }
+    }
+
     function setType(address account, uint8 typeNumber) public onlyOwner {
         setTypeInternal(account, typeNumber);
     }
