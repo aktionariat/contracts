@@ -70,12 +70,6 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     string public terms;
 
     /**
-     * An optional token identifier to help identifying the security behind the token.
-     * Could for example be an ISIN.
-     */
-    string public tokenId;
-
-        /**
      * A reference to a successor token (if any), allowing the token holders to convert their tokens into successor tokens.
      * This can for example be useful to perform an upgrade of a token with additional functionality.
      */
@@ -83,7 +77,6 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     event Announcement(string message);
     event ChangeTerms(string terms);
-    event ChangeTokenId(string tokenId);
     event ChangeTotalShares(uint256 total);
     event SuccessorDefined(ISuccessorToken successor);
 
@@ -99,14 +92,6 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     function setTerms(string memory _terms) external onlyOwner {
         terms = _terms;
         emit ChangeTerms(_terms);
-    }
-
-    /**
-     * Updates the link to the registration agreement.
-     */
-    function setTokenId(string memory _tokenId) external onlyOwner {
-        tokenId = _tokenId;
-        emit ChangeTokenId(_tokenId);
     }
 
     /**
