@@ -65,20 +65,12 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     error Allowlist_ReceiverNotAllowlisted(address receiver);
 
     /**
-     * Configures whether the allowlisting is applied.
-     * Also sets the powerlist and allowlist flags on the null address accordingly.
-     * It is recommended to also deactivate the powerlist flag on other addresses.
+     * Configures newly minted shares to be subject to transfer restrictions, whereas the first
+     * recipient is automatically allowlisted.
+     * 
+     * In the background, this is achieved by configuring the null address as ADMIN.
      */
     function setApplicable(bool transferRestrictionsApplicable) external onlyOwner {
-        setApplicableInternal(transferRestrictionsApplicable);
-    }
-
-    /**
-     * Sets the 0x0 address to ADMIN, to apply restrictions to newly minted shares.
-     * The issuer should decide if existing shares are freely transferable or not.
-     * If not, existing holders need to be converted to ALLOWED as well
-     */
-    function setApplicableInternal(bool transferRestrictionsApplicable) internal {
         if (transferRestrictionsApplicable) {
             setTypeInternal(address(0x0), TYPE_ADMIN);
         } else {
