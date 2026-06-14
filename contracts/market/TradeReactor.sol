@@ -24,7 +24,8 @@ contract TradeReactor is IReactor, IntentVerifier {
     
     // Version
     // 1: initial version
-    uint16 public constant VERSION = 1;
+    // 3: get correct execution price
+    uint16 public constant VERSION = 3;
 
     mapping(bytes32 => uint256) public filledAmount;
 
@@ -98,7 +99,7 @@ contract TradeReactor is IReactor, IntentVerifier {
 
     function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedAmount) public pure returns (uint256) {
         verifyPriceMatch(buyerIntent, sellerIntent);
-        uint256 executionPrice = (sellerIntent.creation >= buyerIntent.creation) ? getAsk(sellerIntent, tradedAmount) : getBid(buyerIntent, tradedAmount);
+        uint256 executionPrice = (sellerIntent.creation >= buyerIntent.creation) ? getBid(buyerIntent, tradedAmount) : getAsk(sellerIntent, tradedAmount);
         return executionPrice;
     }
 

@@ -16,6 +16,7 @@ contract MultiSigWallet is Nonce {
   // Version 6: fixed potential reentrancy in execute
   // Version 7: support authorizations, moved initialization to subclass, enable itself as signer
   // Version 8: multichain synchronization with CCIP
+  // Version 9: removes setSigner isContract check
   uint8 public constant VERSION = 0x8;
 
   mapping (address signer => uint8 power) internal power; // The addresses that can co-sign transactions and the number of signatures needed
@@ -201,7 +202,7 @@ contract MultiSigWallet is Nonce {
   }
 
   function _setSigner(address signer, uint8 signaturesNeeded) internal {
-    if (Address.isContract(signer) || signer == address(0x0) || signer == address(this)) {
+    if (signer == address(0x0) || signer == address(this)) {
       revert Multisig_InvalidSigner(signer);
     }
     uint8 prevValue = power[signer];

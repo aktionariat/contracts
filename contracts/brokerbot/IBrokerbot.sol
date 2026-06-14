@@ -21,6 +21,7 @@ interface IBrokerbot {
   /// Sender(msg.sender) needs to be owner or paymenthub.
   /// @param sender The msg.sender.
   error Brokerbot_NotAuthorized(address sender);
+  error Brokerbot_InsufficientPayment(uint256 required, uint256 provided);
 
   function paymenthub() external view returns (address);
 

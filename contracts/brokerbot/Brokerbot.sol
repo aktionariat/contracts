@@ -31,10 +31,6 @@ contract Brokerbot is IBrokerbot, Ownable {
     uint256 private price; // current offer price in base currency, without drift
     uint256 public increment; // increment step the price in/decreases when buying/selling
 
-    uint256 public driftStart;
-    uint256 public timeToDrift; // seconds until drift pushes price by one drift increment
-    int256 public driftIncrement;
-
     // Note that these settings might be hard-coded in various places, so better not change these values.
     uint8 private constant BUYING_ENABLED = 0x1;
     uint8 private constant SELLING_ENABLED = 0x2;
@@ -49,7 +45,8 @@ contract Brokerbot is IBrokerbot, Ownable {
     // Version 6: added costs field to notifyTrade
     // Version 7: added withdraw eth event
     // Version 8: use SafeERC20
-    uint8 public constant VERSION = 0x8;
+    // Version 9: fixed price bug, removed drift
+    uint8 public constant VERSION = 0x9;
 
     // more bits to be used by payment hub
     uint256 public override settings = BUYING_ENABLED | SELLING_ENABLED;
@@ -83,49 +80,21 @@ contract Brokerbot is IBrokerbot, Ownable {
     }
 
     function setPrice(uint256 _price, uint256 _increment) external onlyOwner {
-        anchorPrice(_price);
+        price = _price;
         increment = _increment;
         emit PriceSet(_price, _increment);
     }
 
     function hasDrift() public view returns (bool) {
-        return timeToDrift != 0;
-    }
-
-    // secondsPerStep should be negative for downwards drift
-    function setDrift(uint256 secondsPerStep, int256 _driftIncrement) external onlyOwner {
-        anchorPrice(getPrice());
-        timeToDrift = secondsPerStep;
-        driftIncrement = _driftIncrement;
-        emit DriftSet(secondsPerStep, _driftIncrement);
-    }
-
-    function anchorPrice(uint256 currentPrice) private {
-        price = currentPrice;
-        // rely on time stamp is ok, no exact time stamp needed
-        // solhint-disable-next-line not-rely-on-time
-        driftStart = block.timestamp;
+        return false;
     }
 
     function getPrice() public view returns (uint256) {
-        // rely on time stamp is ok, no exact time stamp needed
-        // solhint-disable-next-line not-rely-on-time
-        return getPriceAtTime(block.timestamp);
+        return price;
     }
 
     function getPriceAtTime(uint256 timestamp) public view returns (uint256) {
-        if (hasDrift()){
-            uint256 passed = timestamp - driftStart;
-            int256 drifted = int256(passed / timeToDrift) * driftIncrement;
-            int256 driftedPrice = int256(price) + drifted;
-            if (driftedPrice < 0){
-                return 0;
-            } else {
-                return uint256(driftedPrice);
-            }
-        } else {
-            return price;
-        }
+        return getPrice()  ;
     }
 
     function buy(address from, uint256 paid, bytes calldata ref) internal returns (uint256) {
@@ -261,12 +230,12 @@ contract Brokerbot is IBrokerbot, Ownable {
         uint256 min = 0;
         uint256 max = money / currentPrice;
         while (min < max){
-            uint256 middle = (min + max)/2;
+            uint256 middle = (min + max + 1)/2;
             uint256 totalPrice = getPrice(currentPrice, middle);
-            if (money > totalPrice){
-                min = middle + 1;
+            if (money >= totalPrice){
+                min = middle;
             } else {
-                max = middle;
+                max = middle - 1;
             }
         }
         return min;

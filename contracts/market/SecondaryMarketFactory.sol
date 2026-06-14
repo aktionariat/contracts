@@ -5,7 +5,7 @@ import "./SecondaryMarket.sol";
 
 contract SecondaryMarketFactory {
 
-    bytes32 public constant SALT = bytes32(uint256(20251020));
+    bytes32 public constant SALT = bytes32(uint256(20251119));
 
     event SecondaryMarketDeployed(address indexed owner, address market);
 
