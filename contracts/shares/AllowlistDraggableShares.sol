@@ -43,7 +43,7 @@ contract AllowlistDraggableShares is DraggableShares, ERC20Allowlistable {
     DraggableShares(_terms, _params, _recoveryHub, _offerFactory, _oracle, _permit2Hub)
     Ownable(_oracle)
   {
-    // initialization is done in ERC20Allowlistbale and DraggableShares
+    // Initialization is done in ERC20Allowlistable and DraggableShares
   }
 
   function transfer(address to, uint256 value) virtual override(ERC20Flaggable, DraggableShares) public returns (bool) {

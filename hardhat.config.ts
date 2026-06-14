@@ -59,6 +59,15 @@ const config: HardhatUserConfig = {
                 mnemonic: KEYS.mnemonics.base
             }
         },
+        sepolia: {
+            type: "http",
+            chainId: 11155111,
+            chainType: "l1",
+            url: KEYS.alchemy.sepolia,
+            accounts: {
+                mnemonic: KEYS.mnemonics.sepolia
+            }
+        },
 
         // Simulated Networks
         default: {

@@ -5,7 +5,6 @@ pragma solidity >=0.8.0 <0.9.0;
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import { Brokerbot } from "../../brokerbot/Brokerbot.sol";
-import { BrokerbotRegistry } from "../../brokerbot/BrokerbotRegistry.sol";
 import { BrokerbotConfig } from "./FactoryStructs.sol";
 import { FactoryManager } from "./FactoryManager.sol";
 import { IERC20Permit } from "../../ERC20/IERC20Permit.sol";
