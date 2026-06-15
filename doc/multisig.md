@@ -2,9 +2,9 @@
 
 ![multi-signature](https://hub.aktionariat.com/images/contracts/old-keys.jpg)
 
-Aktionariat uses a custom [Multisignature Contract](../src/multisig/MultiSigWalletMaster.sol) for its corporate clients. The purpose of the multisignature contract is to reflect the real signatory powers of the board members and to guard against losses or theft of the private key of an individual board member.
+Aktionariat uses a custom [Multisignature Contract](../contracts/multisig/MultiSigWalletMaster.sol) for its corporate clients. The purpose of the multisignature contract is to reflect the real signatory powers of the board members and to guard against losses or theft of the private key of an individual board member.
 
-Our multisignature contract is designed to be used with the standard transaction signing mechanism. For example, if 100 XCHF shall be moved from the corporate multisig contract of Aktionariat, the two board members each sign an according ERC‑20 transfer transaction. But instead of sending the signed transactions to the network, they are stored in our database. Once there are enough signatures to execute the transaction, our server reads the signatures from the database and sends all of them along with the signed transaction data to the multisig contract. The multisig contract verifies the signatures and executes the actual transaction like other multisignature scheme.
+Our multisignature contract is designed to be used with the standard transaction signing mechanism. For example, if 100 ZCHF shall be moved from the corporate multisig contract of Aktionariat, the two board members each sign an according ERC‑20 transfer transaction. But instead of sending the signed transactions to the network, they are stored in our database. Once there are enough signatures to execute the transaction, our server reads the signatures from the database and sends all of them along with the signed transaction data to the multisig contract. The multisig contract verifies the signatures and executes the actual transaction like other multisignature scheme.
 
 Our approach comes with a number of advantages:
 

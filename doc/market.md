@@ -1,27 +1,26 @@
-# Brokerbot
+# Direct Investment
 
 ![bazaar marketplace](https://hub.aktionariat.com/images/contracts/bazaar.jpg)
 
-Documentation for the Brokerbot smart contract implemented in [Brokerbot.sol](../src/brokerbot/Brokerbot.sol).
+Documentation for the [DirectInvestment](../contracts/investment/DirectInvestment.sol) contract, the successor of the Brokerbot.
 
 ## Purpose
 
-The Brokerbot provides mechanisms for the selling and repurchasing of shares with automated price adjustments. The liquidity pool is provided by a single operator, usually the issuer itself.
+The Direct Investment contract lets the issuer sell shares directly to investors at a price it controls, with the share inventory and the proceeds held by the contract. It is the on-chain equivalent of a primary issuance counter. Unlike the old Brokerbot, it only sells — it does not buy shares back. Shareholders who want to sell use the [secondary market](secondarymarket.md) instead.
 
-## Price Adjustment
+## Price
 
-While the operator is free to close the market or to set the price at any time, it is recommended to refrain from doing so too often and to instead rely on the more transparent and automated price adjustment mechanisms.
+The issuer sets a base `price` and a linear `increment`. The first share costs `price`, and each further share in the same purchase costs `increment` more than the previous one, so the price rises with demand. `getBuyPrice(n)` returns the total cost of the next `n` shares as the sum of this arithmetic series. The issuer can change the price at any time with `setPrice`, and open or close the counter with `setEnabled`. There is no automatic time-based drift; price changes are always explicit.
 
-There are two freely configurable price adjustment rules:
+## Paying
 
-* A linear price increment per share traded
-* Time based automatic drift
+A purchase always settles for the exact computed price. There are two ways to pay:
 
-The increment per traded share allows the Brokerbot to respond to supply and demand, symmetrically increasing the price as shares are sold to investors and decreasing it again as they are bought back from shareholders.
+- **On-chain, through the [PaymentHub](../contracts/investment/PaymentHub.sol).** The hub lets an investor pay in the contract's base currency, or in any other ERC-20 token or in ETH, routing the payment through a Uniswap v3 swap into the base currency before settling. A single allowance to the hub works across all Direct Investment contracts. The hub computes the exact base amount needed and refunds any unused remainder.
+- **Off-chain, settled by the issuer.** For bank transfers and other off-chain payments, the issuer calls `notifyTradeAndTransfer` (or its batch variant) to deliver the shares once the payment has been confirmed.
 
-The time based drift can be used to reflect expected organic growth or to have implicit pay-outs. For example, a company that has no growth but makes 100k CHF in profits per year could set the drift such that the drift exactly cancels out the price change from buying back 100k CHF worth of shares per year.
+The contract verifies that the base currency received matches `getBuyPrice` exactly, so an investor can never be under- or over-charged for a given number of shares.
 
-## Example use case
+## Administration
 
-The Brokerbot contract is the basis of the [Brokerbot widget](https://www.aktionariat.com/our-products/brokerbot#details), which can be seen in action on the [Aktionariat AG Investor Relations](https://www.aktionariat.com/investor-relations#brokerbot) page, for instance.
-
+The issuer can withdraw accumulated proceeds with `withdraw`, and move the entire inventory and balance to a successor contract with `migrate` (which also disables buying). The `PaymentHub` additionally exposes `multiPay`, a convenience method to pay many recipients in one transaction, for example to distribute a dividend.

@@ -8,7 +8,7 @@ Small companies often have statutory transfer restrictions in place. As they gro
 
 Generally, there are four types of addresses:
 
-- "Allowed" addresses that can receive tokens from anyone, but only send to allowlisted or powerlisted addresses.
+- "Allowed" addresses that can receive tokens from anyone, but only send to allowlisted or admin addresses.
 - "Admin" addresses are like Allowed addresses, but implicitly turn target addresses into Allowed addresses, such that they can de facto transfer to anyone. If newly minted tokens need to be transfer restricted by default, the null address can be set set as "Admin", converting all new recipients to "Allowed" status during minting automatically.
 - "Restricted" addresses cannot send tokens to or receive tokens from anyone, except that they can transfer tokens to "Admin" addresses.
 - "Free" addresses that can send to Free, Allowed, and Admin addresses, but can only receive from other Free addresses. This is the default for new addresses.
@@ -38,3 +38,9 @@ The use-case of having a limited free float is somewhat extraordinary and of spe
 - To make tokens freely transferable by default again, simply remove the Admin status from the 0x0 address.
 - Additional addresses, such as the issuer multisig, can be made Admin to also distribute shares with transfer restrictions.
 - "Restricted" should be used for entirely blocked tokens, such as in cases of theft or loss.
+
+All type changes go through `setType(account, type)` (with an array overload for batches). For the common case of blocking and unblocking a single holder, there are the convenience methods `freeze(account)` (sets it to Restricted) and `unfreeze(account)` (restores the default type), matching the CMTA freeze/unfreeze naming.
+
+## Pause
+
+Independently of the per-address types, the issuer can `pause()` the whole token. While paused, every transfer reverts — including mints, burns, recoveries and migrations — until `unpause()` is called. This is a global on/off switch held in a single settings flag and is meant for emergencies, not for day-to-day transfer control, which is what the allowlist is for.

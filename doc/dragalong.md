@@ -8,7 +8,7 @@ Typical shareholder agreements contain “drag-along” and “tag-along” clau
 
 ## Drag-Along Process
 
-This section describes the automatic enforcement of the drag-along clause implemented by the [DragAlong smart contract](../contracts/shares-new/sha/DragAlong.sol).
+This section describes the automatic enforcement of the drag-along clause implemented by the [DragAlong smart contract](../contracts/shares/sha/DragAlong.sol).
 
 The on-chain process is veto-based rather than vote-based. A buyer publishes a binding offer, which sits open for 20 days. During that window, the issuer or any holder with more than 10% of the supply can deny the offer. If no one denies it, anyone can execute it: the buyer pays the agreed price and receives all underlying shares, and the wrapper contract switches its base from the share token to the currency the buyer paid in, so token holders can unwrap to collect their proceeds.
 
