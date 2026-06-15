@@ -76,7 +76,6 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
     
 	function initRecovery(address lostAddress, address recipient) public payable deter(1) returns (Recovery memory) {
         if (balanceOf(lostAddress) == 0) revert RecoveryNoBalance(lostAddress);
-        if (recipient == address(0x0)) revert InvalidRecipient(lostAddress);
         if (recoveries[lostAddress].timestamp != 0) revert RecoveryInProgress(lostAddress);
 
         Recovery memory recovery = Recovery({ recipient: recipient, timestamp: uint40(block.timestamp) });

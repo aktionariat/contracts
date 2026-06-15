@@ -1,17 +1,17 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
-import TestModule, { TestModuleConfig } from "../ignition/modules/TestModule.ts";
+import { deployFixture, ZCHF_ADDRESS } from "./Fixtures.ts";
 import { AuthorizedCallStruct } from "../types/ethers-contracts/EIP7702/AuthorizedCallVerifier.sol/AuthorizedCallVerifier.ts";
 
 describe("AuthorizedExecutor", function () {
-    
+
     let authorizedExecutor: Contract;
     let tradeReactor: Contract;
     let zchf: Contract;
 
     beforeEach(async function() {
-        ({ authorizedExecutor, tradeReactor, zchf } = await connection.ignition.deploy(TestModule));
+        ({ authorizedExecutor, tradeReactor, zchf } = await deployFixture());
     });
 
     it("Should deploy", async function () {
@@ -41,7 +41,7 @@ describe("AuthorizedExecutor", function () {
         const contractNonce = await signer1AsContract["contractNonce"]({type: 4, authorizationList: [auth]});
 
         // Signing the AuthorizedCall for what we want to call
-        const authorizedCall: AuthorizedCallStruct = {nonce: contractNonce, to: TestModuleConfig.zchfAddress, functionSignature: "approve(address,uint256)", value: 0n, data: encodedCall };
+        const authorizedCall: AuthorizedCallStruct = {nonce: contractNonce, to: ZCHF_ADDRESS, functionSignature: "approve(address,uint256)", value: 0n, data: encodedCall };
         const signature = await getSignature(signer1, authorizedCall, signer1.address)
         
         // Store initial state for comparison
