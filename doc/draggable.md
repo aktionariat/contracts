@@ -1,58 +1,44 @@
-# Drag-Along Mechanism 1.0.1
+# Shares Under Agreement
 
 ![drag-along](https://hub.aktionariat.com/images/contracts/draggable.jpg)
 
-## Version History
-
-Versions prior to 1.0.1 are found it the git history.
-| Version | Changes |
-|---|---|
-| [1.0](https://github.com/aktionariat/contracts/blob/916aaeef64f30d1c6536e5946fd24de3f9c9d178/doc/draggable.md) | Initial version |
-| 1.0.1 | Quorum is defined in the SHA, migration has own quorum |
-
-Internal note: this document is referred to from various places, including legal documents. In case of material changes, we need to bump the version number and provide a link to old version. Furthermore, the DNS entry of [dragdoc.aktionariat.com](http://dragdoc.aktionariat.com/) should always redirect to this document and needs to be updated in case this document is moved.
+Documentation for the [SharesUnderAgreement](../contracts/shares/sha/SharesUnderAgreement.sol) token, which wraps a base [Shares](../contracts/shares/base/Shares.sol) token and binds it to a shareholder agreement (SHA). It composes two modules: [DragAlong](../contracts/shares/sha/DragAlong.sol) for acquisitions (documented separately in [dragalong.md](dragalong.md)) and [Modification](../contracts/shares/sha/Modification.sol) for migrations and termination.
 
 ## Overview and Motivation
 
-Typical shareholder agreements contain “drag-along” and “tag-along” clauses. If someone makes an acquisition offer and a majority of shareholders wants to sell, the drag-along clause allows them to force the rest of the shareholders to join them in selling their shares at the same price. This is useful because an acquirer often wants to either buy a company completely or not at all. This is similar to a squeeze-out on the stock market, which allows someone owning 98% of a company to buy the remaining 2%. In contrast, a drag-along clause is often already enforceable when 75% or so of the shareholders agree. However, enforcing a drag-along clause can be time consuming in practice as all involved parties need to be contacted, need to sign a transfer agreement, and need to be paid. Our draggable smart contract fully automates this process for tokenized shares, thereby allowing companies to have thousands of shareholders without losing the strategic option of an exit.
+A bare share token confers ownership but says nothing about a shareholder agreement. To bind shares to an SHA, holders wrap their base tokens into a SharesUnderAgreement token. Think of this as taking a paper certificate and putting it into a sealed envelope: for each wrapped token, the contract holds exactly one base token as backing, and the wrapped token legally represents that base token bound to the agreement. The wrapper enforces the parts of the agreement that can be automated — most importantly the drag-along clause — while the tokens remain freely tradable.
 
-## Drag-Along Process
-This section describes the automatic enforcement of the Drag-Along clause implemented by the [SHA smart contract](../src/draggable/ERC20Draggable.sol).
+## Wrapping and Unwrapping
 
-### Initiation
-The Offering Party can initiate an offer to acquire all (but not less than all) SHA Tokens (the "Offering Party") from the other SHA Token Holders (the "Selling Parties") for a specific price per Share (the "Offering Price", together with the further terms, the "Acquisition Offer") through interaction with the SHA Contract, subject to a non-reimbursable software licence fee payable as defined in section *License Fee*. By doing so, a smart contract governing the acquisition ("Offer Contract") is created and an "OfferCreated" event is emitted on the Blockchain. It is the responsibility of each Token Holder to monitor the Blockchain for such events or to use a service to do so on her or his behalf.
+Anyone holding base tokens can `wrap` them at any time, escrowing the base 1:1 and receiving wrapped tokens. The issuer can mint and wrap in one step via `Shares.mintAndWrap`.
 
-### Voting
-After the initiation of an offer, the Voting Period starts. During the Voting Period any SHA Token Holder (including the Offering Party) may call the functions 'voteYes' and 'voteNo' to vote on the Drag-Along Offer. This only affects the tokens residing on the calling address and the vote count is automatically adjusted as additional tokens arrive at this address or as tokens leave the address again during the Voting Period. Note that the total supply of SHA Tokens may increase during the Voting Period as additional shareholders wrap newly tokenized shares or existing Base Tokens. Holders of other forms of shares can report their vote to the Oracle, which shall in turn report these votes to the Offer Contract within three business days. The Oracle can invoice the transaction fees for reporting the votes to the respective voters. After the end of the Voting Period, the Execution Period starts. After this point in time, no new votes are accepted anymore, but the Oracle can still report votes it received before the end of the Voting Period to the Offer Contract. 
+Unwrapping is only possible once the agreement is no longer `binding`, which happens after a termination, migration, or executed acquisition (see below). At that point holders call `unwrap` to break the seal and receive their share of whatever the wrapper now holds — either the original base tokens, or, after an acquisition, the sales proceeds. The amount returned is computed proportionally (`convertToBase`), so the rule works the same whether the backing is one base token per wrapped token or a pool of acquisition proceeds.
 
-### Execution
-Anyone can trigger the 'execution' function on the Offer Contract to enforce the acquisition at any time during the Voting Period or the Execution Period, given that all necessary conditions are met, namely that the Acquisition Quorum is reached and the required funding is available. Executing the Acquisition Offer assigns all wrapped Base Tokens to the Offering Party and replaces them with the sales proceeds. At the same time, this Agreement ceases to be contractually binding, allowing the SHA Token Holders to unwrap the sales proceeds in proportion to their tokens.
+## Drag-Along
 
-The Acquisition Quorum, as specified in the SHA and typically set at 75%, is achieved when more than this percentage of all shares approved the acquisition. Once the Voting Period ends, the shares for which no vote was cast are assumed to have voted yes and no in the same proportion as those shares that did vote. The votes of the shares not represented by SHA Tokens are reported through the Oracle.
+The drag-along clause lets a buyer acquire all wrapped shares once the agreed conditions are met, forcing minority holders to sell at the same price. The on-chain process is veto-based: a buyer publishes a binding offer, and if neither the issuer nor any holder above 10% denies it within 20 days, anyone can execute it. Execution pays the holders, hands all shares to the buyer, and terminates the agreement. The full mechanism is documented in [dragalong.md](dragalong.md).
 
-### Cancellation
-The Offering Party can cancel the offer at any time, calling the respective function on the Offer Contract. Furthermore, anyone can contest the Acquisition Offer, calling the respective function on the Offer Contract. This results in the Acquisition Offer being cancelled if the Offering Party did not make enough funds available, if the Execution Period has passed, or if the Acquisition Quorum has become unreachable under the assumption that the number of "no" votes will not decrease.
-Further, anyone can make a higher counteroffer using the same acquisition currency as the current offer. Making such an offer cancels the old offer.
+## Migration, Termination and Cancellation
 
-## Further Notes
+The `Modification` module governs structural changes to the agreement. Any qualified party — the issuer, or any holder with more than 10% of the supply — can propose one, and each proposal is subject to a 20-day veto window (`MIGRATION_PROPOSAL_DELAY`) during which a qualified party can cancel it with `cancelMigration`. After the delay, anyone can `executeMigration`.
 
-- Anyone owning base tokens can wrap them at any time, thereby converting these base tokens into draggable tokens. The base tokens still exist, but are now under control of the draggable contract. Think of this process as taking a traditional paper certificate and putting it into a sealed envelope. For each outstanding draggable token, the draggable contract holds exactly one base token as backing. A draggable token legally represents a base token that is bound to a shareholder agreement.
-- A majority of shareholders, holding at least the percentage of shares required for the migration quorum as outlined in SHA (e.g. 75%), have the authority to transfer all the base tokens to a new contract that represents a different shareholder agreement or even terminate the existing shareholder agreement entirely. Once the agreement has ended, token holders are free to unwrap their base tokens again – or to break the seal and open the envelope when thinking in terms of the paper analogy.
-- Anyone can make an acquisition offer at any time. When doing so, the full acquisition amount must be available in a currency of choice (for example 10 million DAI, if the company is valued that highly). If a given quorum (e.g. 75%) of all votes cast within a given timeframe (e.g. 60 days) approve the acquisition, all base tokens are sent to the acquirer and replaced with the according amount of money. From now on, the draggable tokens do not represent a share anymore, but the according amount of the acquisition currency (e.g. 100 DAI per token). Token holders are free to unwrap their DAI at any time. In the paper analogy, the shareholders can now open their sealed envelopes as the shareholder agreement has ended, but instead of finding a certificate inside, they magically find a bundle of bank notes.
-- In case not all shares are tokenized, an external oracle can report the votes of the other shareholders to the token contract
-- If the offer has expired or the offer is not well funded anymore, anyone can kill the current offer by calling `contest` on the offer contract.
-- The person who made the offer can cancel the offer at any point in time.
-- Counteroffers can be made, but the price needs to be higher than the previous offer and in the same currency.
-- The offer can be ended early if it is clear that the remaining votes cannot make a difference anymore.
+| Proposal | Who | Effect on execution |
+|---|---|---|
+| `proposeMigration(successor)` | issuer or >10% holder | Moves all base tokens into a successor contract (a new SHA) and terminates this one, so holders unwrap into the successor. |
+| `proposeTermination()` | issuer or >10% holder | Lifts the binding without moving anything. Holders can unwrap back into the plain base token. |
+| `proposeCancellation()` | issuer only | Burns the escrowed base tokens, e.g. to re-issue the underlying securities in a different form or on another chain. |
+| `proposeInternalMigration()` | issuer only | Updates the base token to its own successor without terminating the agreement. |
+
+Migrating to a new contract is how the functionality of an SHA token is upgraded: rather than making the existing token mutable, holders consent to the change by being moved (or by unwrapping and re-wrapping) into a new contract whose terms they can inspect.
 
 ## Attack Vectors
 
-A majority of shareholders could abuse the smart contract to acquire the shares of the remaining shareholders at a very small price by making a cheap acquisition offer and approving it. Doing so would likely constitute a violation of the shareholder agreement and the minority shareholder would have to hold the majority accountable using the traditional legal system. The assumption is that it is possible to identify some of the majority shareholder in such a case so they can be taken to court or everything settled bilaterally.
+A majority of shareholders could abuse the drag-along to acquire the minority's shares at an unfairly low price by making a cheap offer and not denying it. Doing so would violate the shareholder agreement, and the minority would hold the majority accountable through the ordinary legal system. The assumption is that at least some of the majority shareholders are identifiable, so they can be taken to court or the matter settled bilaterally.
 
 ## Why no tag-along?
 
-While it is relatively easy to implement a drag-along clause in a smart contract, there is no straightforward way to implement a tag-along clause. This illustrates that smart contracts are actually not that smart. A tag-along clause allows a shareholder to sell shares at the same price if other shareholders sell a large package of shares to a buyer. This is difficult to automatically enforce because a transfer of shares (which could easily be detected) does not necessarily imply a sale of shares and even if it does represent a sale, it is unclear what the price was. For example, if someone moves 1′000 shares from address 0x123.. to address 0x345.., it is not clear whether the 1′000 shares changed their owner. Maybe the holder just moved them to a more secure wallet or a different custodian? Furthermore, it would also be possible to sell the shares without moving them to a new address, for example when they are held by an intermediary and assigned to the new owner contractually. But even if we could reliably detect transfers of ownership, there is no guarantee that the according payment is visible on the blockchain and that there were no side-agreements between buyer and seller. Therefore, the enforcing of a tag-along term necessarily requires human intervention and cannot be automated. The same holds for a large number of other contractual clauses. We are fortunate that the most important one, the drag-along, can be represented with a relatively simple smart contract.
+While a drag-along clause is straightforward to enforce in a smart contract, a tag-along clause is not. A tag-along lets a shareholder sell at the same price when others sell a large package. This is hard to automate because a token transfer does not necessarily imply a sale, and even when it does, the price and any side-agreements are not visible on-chain. Shares can even change owner without moving, for example when held by an intermediary and reassigned contractually. Enforcing a tag-along therefore requires human judgement and cannot be automated — as is the case for most contractual clauses. We are fortunate that the most important one, the drag-along, reduces to a relatively simple smart contract.
 
-## License Fee
+## Deterrence Fee
 
-For this smart contract, we created a new type of software license, the “[MIT License with Automated License Fee Payments](https://github.com/aktionariat/contracts/blob/master/LICENSE)”. Anyone is free to reuse the code as long as the built-in license fee, paid to [Aktionariat AG](https://aktionariat.com/), is preserved. The license fee of three Ether is due whenever a new acquisition offer is made and is to be paid by the prospective buyer. This has the nice side-effect of ensuring that the offer is serious.
+Making an acquisition offer requires a deterrence fee paid in the chain's native currency and forwarded to the issuer. It carries no economic upside for Aktionariat; its only purpose is to make frivolous or malicious offers costly. The issuer is exempt. The same mechanism guards the recovery proposals (see [recoverable.md](recoverable.md)).

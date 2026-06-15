@@ -1,7 +1,7 @@
-import TestModule from "../ignition/modules/TestModule.ts";
 import { Contract, getAddress } from "ethers";
 import { expect } from "chai";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
+import { deployFixture } from "./Fixtures.ts";
 
 interface Intent { 
   owner: string,
@@ -81,13 +81,13 @@ describe("Intents and Signing", function () {
   let secondaryMarketFactory: Contract;
   let secondaryMarket: Contract;
   let secondaryMarketWithRouter: Contract;
-  let allowlistDraggableShares: Contract
+  let sharesUnderAgreement: Contract  // SharesUnderAgreement, the traded token (replaces old allowlistDraggableShares)
   let zchf: Contract;
 
   before(async function() {
-    ({ secondaryMarketFactory, zchf, allowlistDraggableShares, tradeReactor } = await connection.ignition.deploy(TestModule));
-    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, allowlistDraggableShares, tradeReactor, ethers.ZeroAddress);
-    await secondaryMarketFactory.deploy(owner, zchf, allowlistDraggableShares, tradeReactor, ethers.ZeroAddress);
+    ({ secondaryMarketFactory, zchf, sharesUnderAgreement, tradeReactor } = await deployFixture());
+    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, tradeReactor, ethers.ZeroAddress);
+    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, tradeReactor, ethers.ZeroAddress);
     secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
   });
 

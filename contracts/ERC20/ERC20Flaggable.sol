@@ -43,7 +43,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     // as Documented in /doc/infiniteallowance.md
     // 0x8000000000000000000000000000000000000000000000000000000000000000
-    uint256 constant private INFINITE_ALLOWANCE = 2**255;
+    uint256 constant public INFINITE_ALLOWANCE = 2**255;
 
     uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
 
@@ -55,15 +55,16 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     // ERCAllowlistable: uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
     // ERCAllowlistable: uint8 private constant FLAG_INDEX_POWERLIST = 22;
 
+    // ERCAllowlistable: uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
+
     mapping (address => uint256) private _balances; // upper 32 bits reserved for flags
 
     mapping (address => mapping (address => uint256)) private _allowances;
 
+    uint256 private _settings;
     uint256 private _totalSupply;
 
     uint8 public immutable override decimals;
-
-    event NameChanged(string name, string symbol);
 
     /// Overflow on minting, transfer. 
     /// @param receiver The address were the balance overflows. 
@@ -104,6 +105,18 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     function hasFlagInternal(address account, uint8 number) internal view returns (bool) {
         uint256 flag = 0x1 << (number + 224);
         return _balances[account] & flag == flag;
+    }
+
+    function hasGlobalFlag(uint8 index) internal view returns (bool) {
+        uint256 flagMask = 1 << index;
+        return (_settings & flagMask) == flagMask;
+    }
+
+    function setGlobalFlag(uint8 index, bool value) internal {
+        uint256 flagMask = 1 << index;
+        if (( _settings & flagMask == flagMask) != value) {
+            _settings = _settings ^ flagMask;
+        }
     }
 
     /**
@@ -184,8 +197,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     // ERC-677 functionality, can be useful for swapping and wrapping tokens
     function transferAndCall(address recipient, uint amount, bytes calldata data) external virtual returns (bool) {
-        return transfer (recipient, amount) 
-            && IERC677Receiver (recipient).onTokenTransfer (msg.sender, amount, data);
+        return transfer(recipient, amount) && IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
@@ -268,18 +280,17 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      *
      * Calling conditions:
      *
-     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-     * will be to transferred to `to`.
+     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens will be to transferred to `to`.
      * - when `from` is zero, `amount` tokens will be minted for `to`.
      * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
      * - `from` and `to` are never both zero.
      *
-     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     * This function is intentionally left blank. By default ERC20Flaggable does not take any actions on its own, 
+     * but derived contracts may override it to implement custom logic. For example, allowlisting.
      */
-     // solhint-disable-next-line no-empty-blocks
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal {
-        // intentionally left blank
-    }
+
+    // solhint-disable-next-line no-empty-blocks
+    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal;
 
     /**
      * Checks if msg.sender is an authorized address.
