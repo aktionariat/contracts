@@ -18,3 +18,5 @@ node_modules
 # Sensitive Files
 KEYS.ts
 /.deps
+
+.claude
