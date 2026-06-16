@@ -39,7 +39,7 @@ import "./IERC677Receiver.sol";
  * allowances. See `IERC20.approve`.
  */
 
-abstract contract ERC20Flaggable is IERC20, ERC20Errors {
+abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
 
     // as Documented in /doc/infiniteallowance.md
     // 0x8000000000000000000000000000000000000000000000000000000000000000
