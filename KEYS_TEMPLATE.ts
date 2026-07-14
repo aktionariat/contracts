@@ -6,6 +6,7 @@ const KEYS_TEMPLATE = {
         optimism: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
         polygon: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
         base: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
+        sepolia: "amount marine slide ugly weather pet couch muscle brain energy rare obscure"
     },
 
     // Etherscan Keys by Network
@@ -14,13 +15,15 @@ const KEYS_TEMPLATE = {
         optimism: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338",
         polygon: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338",
         base: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338",
+        sepolia: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338"
     },
 
     alchemy: {
         mainnet: "https://eth-mainnet.g.alchemy.com/v2/demo",
         optimism: "https://opt-mainnet.g.alchemy.com/v2/demo",
         polygon: "https://polygon-mainnet.g.alchemy.com/v2/demo",
-        base: "https://base-mainnet.g.alchemy.com/v2/demo"
+        base: "https://base-mainnet.g.alchemy.com/v2/demo",
+        sepolia: "https://sepolia.g.alchemy.com/v2/demo"
     }
 }
 
