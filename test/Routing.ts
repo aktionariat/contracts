@@ -587,6 +587,37 @@ describe("Routing on forked Mainnet", () => {
     );
   });
 
+  it("Incorrect path should throw", async function () {
+    let ethers = connection.ethers;
+    const base = await zchf.getAddress();
+    const weth = await WETH9.getAddress();
+    const validPath = ethers.solidityPacked(["address", "uint24", "address"], [base, 3000, weth]);
+
+    const badPaths = {
+      "too short": ethers.solidityPacked(["address"], [base]),
+      "bad length modulo": validPath + "00",
+      "wrong base": ethers.solidityPacked(
+        ["address", "uint24", "address"],
+        [weth, 3000, weth]),
+      "wrong payment currency": ethers.solidityPacked(
+        ["address", "uint24", "address", "uint24", "address"],
+        [base, 3000, base, 100, base]
+      ),
+    };
+
+    for (const [reason, path] of Object.entries(badPaths)) {
+      await expect(
+        aktSuite.paymentHub.getPriceInPaymentCurrency.staticCall(
+          await aktSuite.directInvestment.getAddress(),
+          1,
+          weth,
+          path
+        ),
+        reason
+      ).to.be.revertedWithCustomError(aktSuite.paymentHub, "PaymentHub_InvalidPath");
+    }
+  });
+
   it("should be able to pay with native ETH", async function () {
     let ethers = connection.ethers;
 
@@ -613,12 +644,6 @@ describe("Routing on forked Mainnet", () => {
     const USDT_ZCHF_V3POOL_ADDRESS =
       "0x8E4318E2cb1ae291254B187001a59a1f8ac78cEF";
 
-    const pools: Address[] = [
-      "0x8E4318E2cb1ae291254B187001a59a1f8ac78cEF",
-      "0x4e68Ccd3E89f51C3074ca5072bbAC773960dFa36",
-    ];
-    // true: direction is correct, else price has to be inverted
-    // const pools_direction = [true, false]
     const path: V3Path[] = [
       ZCHF_ADDRESS,
       "100",
@@ -863,8 +888,6 @@ describe("Routing on forked Mainnet", () => {
       } else {
         await aktSuite.paymentHub.approveERC20(externalToken_ADDRESS);
       }
-      // await aktSuite.paymentHub
-      //   .approveERC20(externalToken_ADDRESS);
 
       // we swap external token for shares
       const ref = ethers.hexlify(ethers.toUtf8Bytes("my-ref"));
