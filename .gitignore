@@ -20,3 +20,4 @@ KEYS.ts
 /.deps
 
 .DS_Store
+.claude
