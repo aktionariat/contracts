@@ -15,6 +15,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import "./IERC20.sol";
 import "./ERC20Errors.sol";
 import "./IERC677Receiver.sol";
+
 /**
  * @dev Implementation of the `IERC20` interface.
  *
@@ -39,11 +40,10 @@ import "./IERC677Receiver.sol";
  * allowances. See `IERC20.approve`.
  */
 
-abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
-
+abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     // as Documented in /doc/infiniteallowance.md
     // 0x8000000000000000000000000000000000000000000000000000000000000000
-    uint256 constant public INFINITE_ALLOWANCE = 2**255;
+    uint256 public constant INFINITE_ALLOWANCE = 2 ** 255;
 
     uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
 
@@ -57,19 +57,19 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
 
     // ERCAllowlistable: uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
 
-    mapping (address => uint256) private _balances; // upper 32 bits reserved for flags
+    mapping(address => uint256) private _balances; // upper 32 bits reserved for flags
 
-    mapping (address => mapping (address => uint256)) private _allowances;
+    mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _settings;
     uint256 private _totalSupply;
 
     uint8 public immutable override decimals;
 
-    /// Overflow on minting, transfer. 
-    /// @param receiver The address were the balance overflows. 
-    /// @param balance The current balance of the receiver. 
-    /// @param amount The amount added, which result in the overflow. 
+    /// Overflow on minting, transfer.
+    /// @param receiver The address were the balance overflows.
+    /// @param balance The current balance of the receiver.
+    /// @param amount The amount added, which result in the overflow.
     error ERC20BalanceOverflow(address receiver, uint256 balance, uint256 amount);
 
     constructor(uint8 _decimals) {
@@ -87,7 +87,7 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
      * @dev See `IERC20.balanceOf`.
      */
     function balanceOf(address account) public view override returns (uint256) {
-        return uint224 (_balances [account]);
+        return uint224(_balances[account]);
     }
 
     function hasFlag(address account, uint8 number) external view returns (bool) {
@@ -96,9 +96,9 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
 
     function setFlag(address account, uint8 index, bool value) internal {
         uint256 flagMask = 1 << (index + 224);
-        uint256 balance = _balances [account];
+        uint256 balance = _balances[account];
         if ((balance & flagMask == flagMask) != value) {
-            _balances [account] = balance ^ flagMask;
+            _balances[account] = balance ^ flagMask;
         }
     }
 
@@ -114,7 +114,7 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
 
     function setGlobalFlag(uint8 index, bool value) internal {
         uint256 flagMask = 1 << index;
-        if (( _settings & flagMask == flagMask) != value) {
+        if ((_settings & flagMask == flagMask) != value) {
             _settings = _settings ^ flagMask;
         }
     }
@@ -166,7 +166,7 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
     function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _transfer(sender, recipient, amount);
         uint256 currentAllowance = allowance(sender, msg.sender);
-        if (currentAllowance < INFINITE_ALLOWANCE){
+        if (currentAllowance < INFINITE_ALLOWANCE) {
             // Only decrease the allowance if it was not set to 'infinite'
             // Documented in /doc/infiniteallowance.md
             _allowances[sender][msg.sender] = currentAllowance - amount;
@@ -228,7 +228,7 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
         _balances[recipient] = newBalance;
     }
 
-     /**
+    /**
      * @dev Destroys `amount` tokens from `account`, reducing the
      * total supply.
      *
@@ -285,12 +285,12 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
      * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
      * - `from` and `to` are never both zero.
      *
-     * This function is intentionally left blank. By default ERC20Flaggable does not take any actions on its own, 
+     * This function is intentionally left blank. By default ERC20Flaggable does not take any actions on its own,
      * but derived contracts may override it to implement custom logic. For example, allowlisting.
      */
 
     // solhint-disable-next-line no-empty-blocks
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal;
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual;
 
     /**
      * Checks if msg.sender is an authorized address.
@@ -301,5 +301,4 @@ abstract contract ERC20Flaggable is IERC20, IERC677, ERC20Errors {
             revert ERC20InvalidSender(msg.sender);
         }
     }
-
 }

@@ -48,7 +48,6 @@ import "../ERC20/ERC20Named.sol";
  * to it, but governance actions are executed on the home chain only.
  */
 contract BridgedSharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable {
-
     // Matches the security version number of the home-chain token family.
     uint8 public constant VERSION = 5;
 
@@ -70,10 +69,16 @@ contract BridgedSharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recovera
 
     error NotPool(address sender);
 
-    constructor(string memory _symbol, string memory _name, string memory _terms, address _owner)
+    constructor(
+        string memory _symbol,
+        string memory _name,
+        string memory _terms,
+        address _owner
+    )
         ERC20Named(_symbol, _name, 0, _owner) // decimals are always 0, like the home-chain shares
         ERC20Allowlistable()
-        DeterrenceFee(0.01 ether) {
+        DeterrenceFee(0.01 ether)
+    {
         terms = _terms;
     }
 
@@ -125,5 +130,4 @@ contract BridgedSharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recovera
         terms = _terms;
         emit ChangeTerms(_terms);
     }
-
 }

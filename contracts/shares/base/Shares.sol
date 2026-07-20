@@ -46,13 +46,12 @@ import "./Recoverable.sol";
  * themselves. For example, in case the company pays out a dividend to a previous shareholder because
  * the current shareholder did not register, the company cannot be held liable for paying the dividend to
  * the "wrong" shareholder. In relation to the company, only the registered shareholders count as such.
- * 
+ *
  * The presence of a function in this contract does not imply that the corresponding action is also legally
  * permissible. The intended use of the contract functionality is defined in the accompanying registration agreement.
  * In particular, the issuer must not use any administrative functions in violation of the registration agreement.
  */
 contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
-
     // Version history:
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
@@ -118,7 +117,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     /**
      * Convenience function to migrate the full balance.
-     * 
+     *
      * See migrate(uint256 amount) for more information.
      */
     function migrate() external {
@@ -155,7 +154,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     /**
      * Mints tokens to multiple addresses in one transaction.
-     * 
+     *
      * See mint for more information.
      */
     error ArrayLengthMismatch();
@@ -175,7 +174,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     function mintAndWrap(address shareholder, address wrapper, uint256 amount) public onlyOwner {
         mint(shareholder, amount);
         uint256 allowance = allowance(shareholder, wrapper);
-        if (allowance < INFINITE_ALLOWANCE){
+        if (allowance < INFINITE_ALLOWANCE) {
             // set allowance of shareholder such that is is not changed in the process of minting and wrapping
             _approve(shareholder, wrapper, allowance + amount);
         }
@@ -184,7 +183,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     /**
      * All-in-one function to mint and wrap tokens for multiple shareholders in one transaction.
-     * 
+     *
      * See mintAndWrap for more information.
      */
     function batchMintAndWrap(address[] calldata target, address wrapper, uint256[] calldata amount) external onlyOwner {
@@ -197,7 +196,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     /**
      * Transfers _amount tokens to the owner and burns them.
-     * 
+     *
      * The meaning of this operation depends on the circumstances and the fate of the shares does
      * not necessarily follow the fate of the tokens. For example, the company itself might call
      * this function to implement a formal decision to destroy some of the outstanding shares.
