@@ -144,7 +144,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     }
 
     function convertToBase(uint256 amount) public view returns (uint256) {
-        return (amount * base.balanceOf(address(this))) / totalSupply();
+        return amount * base.balanceOf(address(this)) / totalSupply();
     }
 
     /**
