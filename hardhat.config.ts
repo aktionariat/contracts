@@ -1,9 +1,22 @@
 import type { HardhatUserConfig } from "hardhat/config";
+
 import HardhatIgnitionEthersPlugin from "@nomicfoundation/hardhat-ignition-ethers";
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import hardhatVerify from "@nomicfoundation/hardhat-verify";
 import hardhatNetworkHelpersPlugin from "@nomicfoundation/hardhat-network-helpers";
+
 import KEYS from "./KEYS.ts";
+
+import {
+  // CCIP tasks
+  allowTokenPoolOnBridgedSHATask,
+  bridgeTokensTask,
+  deployCCIPContractsInfrastructureTask,
+  estimateCCIPDeploymentGasTask,
+
+  // Shares task
+  mintWrapSharesTask,
+} from "./tasks/index.ts";
 
 const config: HardhatUserConfig = {
   plugins: [
@@ -11,6 +24,14 @@ const config: HardhatUserConfig = {
     hardhatToolboxMochaEthers,
     hardhatVerify,
     hardhatNetworkHelpersPlugin,
+  ],
+
+  tasks: [
+    allowTokenPoolOnBridgedSHATask,
+    bridgeTokensTask,
+    deployCCIPContractsInfrastructureTask,
+    estimateCCIPDeploymentGasTask,
+    mintWrapSharesTask,
   ],
 
   solidity: {
@@ -34,6 +55,12 @@ const config: HardhatUserConfig = {
       "@chainlink/contracts-ccip/contracts/pools/LockReleaseTokenPool.sol",
       "@chainlink/contracts-ccip/contracts/pools/BurnMintTokenPool.sol",
       "@chainlink/contracts-ccip/contracts/interfaces/IRouter.sol",
+      "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol",
+      // for deployment, also IRouter
+      "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol",
+      "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenAdminRegistry.sol",
+      "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/RegistryModuleOwnerCustom.sol",
+      // rmnproxy?
     ],
   },
 
@@ -82,6 +109,15 @@ const config: HardhatUserConfig = {
       url: KEYS.alchemy.sepolia,
       accounts: {
         mnemonic: KEYS.mnemonics.sepolia,
+      },
+    },
+    fuji: {
+      type: "http",
+      chainId: 43113,
+      chainType: "l1",
+      url: KEYS.alchemy.fuji,
+      accounts: {
+        mnemonic: KEYS.mnemonics.fuji,
       },
     },
 

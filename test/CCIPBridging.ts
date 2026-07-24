@@ -17,7 +17,9 @@
  * Along with local testing we aim to provide also live testnet tests. To ensure
  * that code is functioning correctly, since Chainlink Local does simulate the
  * source and destination infrastructure on a single chain. Testnet tests will
- * mimic current local tests.
+ * mimic current local tests. Tests have to be run manually, they are supported
+ * by utils within `tasks`, see `docs/CCIP.md` for more information about implemented
+ * tasks.
  */
 
 import { expect } from "chai";
