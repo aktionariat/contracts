@@ -4,7 +4,7 @@
 
 import type { HardhatRuntimeEnvironment } from "hardhat/types/hre";
 import type { Result } from "hardhat/types/utils";
-import { successfulResult, errorResult } from "hardhat/utils/result";
+import { successfulResult } from "hardhat/utils/result";
 import type { Address, Shares } from "../../types/ethers-contracts/index.ts";
 
 import readCCIPIgnitionAddresses from "../ccip/lib/CCIPIgnitionDeployments.ts";

@@ -40,3 +40,11 @@ export type RemoteTokenPoolInfo = {
 
   rateLimiterConfig: RateLimiterConfig;
 };
+
+export type ChainUpdate = {
+  remoteChainSelector: RuntimeValue<bigint>;
+  remotePoolAddresses: RuntimeValue<string>[]; // Address of the remote pool, ABI encoded: bytez
+  remoteTokenAddress: RuntimeValue<string>; // Address of the remote token, ABI encoded: bytes
+  outboundRateLimiterConfig: RateLimiterConfig; // Outbound rate limited config, meaning the rate limits for all of the onRamps for the given chain
+  inboundRateLimiterConfig: RateLimiterConfig; // Inbound rate limited config, meaning the rate limits for all of the offRamps for the given chain
+};

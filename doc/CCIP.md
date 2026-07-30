@@ -22,8 +22,8 @@ Here a list of actions that can be performed over the CCIP infrastructure and di
 ## Testnet Tests
 
 To run testnet tests we provided utilities to interact with networks, deploy tokens and manage contracts.
-The following Hardhat tasks are designed for the CCIP testing infrastructure, as such the default network used are `sepolia` and `fuji` for RPCs (read only tasks) and `ccip_sepolia` and `ccip_fuji` for Hardhat networks (write tasks).
-To change them, we provide CLI flags, custom defined for RPCs, and common `--network` provided by Hardhat to manage the network.
+The following Hardhat tasks are designed for the CCIP testing infrastructure, as such the default network used are `sepolia` and `fuji`.
+To change them, we provide CLI flags, custom defined for RPCs, and the common `--network` provided by Hardhat to manage the network.
 
 To get help with an hardhat tasks, run `npx hardhat help <task-name>`.
 
@@ -84,3 +84,5 @@ npx hardhat mint-wrap-shares
 ```
 
 Fields such as `shares`, `sha` and `to` are mandatory. While `to`, `amount` and `network` are optional, if omitted the script uses the signer address as `to`, 100 as sha `amount` and op simulated as `network`, you probably want to change `network` depending on deployment.
+
+You can find the pool address at "ChainSettingsModule#IOwnable" within the source chain ingition deployment folder

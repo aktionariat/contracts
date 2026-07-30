@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^1.5.0",
-    "@chainlink/contracts-ccip": "^1.6.2",
+    "@chainlink/contracts-ccip": "^1.6.0",
     "@chainlink/local": "^0.2.9",
     "@openzeppelin/contracts": "^5.4.0",
     "ethers": "^6.15.0"

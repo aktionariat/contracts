@@ -56,8 +56,8 @@ export const bridgeTokensTask = task(
   .addOption({
     name: "source",
     description: "Network Source chain to bridge tokens from",
-    type: ArgumentType.STRING_WITHOUT_DEFAULT,
-    defaultValue: undefined,
+    type: ArgumentType.STRING,
+    defaultValue: "sepolia",
   })
   .addOption({
     name: "destination",
@@ -112,22 +112,79 @@ export const deployCCIPContractsInfrastructureTask = task(
     defaultValue: "MSTR",
   })
   .addOption({
-    name: "reset",
-    description: "Reset ignition deployments",
-    type: ArgumentType.BOOLEAN,
-    defaultValue: false,
-  })
-  .addOption({
     name: "source",
     description: "Source chain network",
+    type: ArgumentType.STRING,
     defaultValue: "sepolia",
   })
   .addOption({
     name: "destination",
     description: "Destination chain network",
+    type: ArgumentType.STRING,
     defaultValue: "fuji",
   })
+  .addOption({
+    name: "reset",
+    description: "Reset ignition deployments",
+    type: ArgumentType.FLAG,
+    defaultValue: false,
+  })
   .setAction(() => import("./ccip/deployCCIPContractsInfrastructureTask.ts"))
+  .build();
+
+export const addDestinationChainTask = task(
+  "ccip-add",
+  "Deploy CCIP contracts Infrastructure and setup to a new destination chain from an already deployed source infrastructure"
+)
+  .addOption({
+    name: "source",
+    description: "Source chain network",
+    type: ArgumentType.STRING,
+    defaultValue: "sepolia",
+  })
+  .addOption({
+    name: "destination",
+    description: "Destination chain network",
+    type: ArgumentType.STRING,
+    defaultValue: "baseSepolia",
+  })
+  .addOption({
+    name: "stkp",
+    description: "Source chain TokenPool address",
+    type: ArgumentType.STRING_WITHOUT_DEFAULT,
+    defaultValue: undefined,
+  })
+  .addOption({
+    name: "sha",
+    description: "SharesUnderAgreement token contract address of source chain",
+    type: ArgumentType.STRING_WITHOUT_DEFAULT,
+    defaultValue: undefined,
+  })
+  .addOption({
+    name: "terms",
+    description: "Bridged Shares Under Agreement terms",
+    type: ArgumentType.STRING,
+    defaultValue: "T&C",
+  })
+  .addOption({
+    name: "name",
+    description: "Bridged Shares Under Agreement name",
+    type: ArgumentType.STRING,
+    defaultValue: "Microstrategy Shares",
+  })
+  .addOption({
+    name: "symbol",
+    description: "Bridged Shares Under Agreement symbol",
+    type: ArgumentType.STRING,
+    defaultValue: "MSTR",
+  })
+  .addOption({
+    name: "reset",
+    description: "Reset ignition deployments",
+    type: ArgumentType.FLAG,
+    defaultValue: false,
+  })
+  .setAction(() => import("./ccip/addDestinationChainTask.ts"))
   .build();
 
 export const estimateCCIPDeploymentGasTask = task(

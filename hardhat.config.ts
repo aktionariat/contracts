@@ -13,6 +13,7 @@ import {
   bridgeTokensTask,
   deployCCIPContractsInfrastructureTask,
   estimateCCIPDeploymentGasTask,
+  addDestinationChainTask,
 
   // Shares task
   mintWrapSharesTask,
@@ -31,6 +32,7 @@ const config: HardhatUserConfig = {
     bridgeTokensTask,
     deployCCIPContractsInfrastructureTask,
     estimateCCIPDeploymentGasTask,
+    addDestinationChainTask,
     mintWrapSharesTask,
   ],
 
@@ -51,16 +53,29 @@ const config: HardhatUserConfig = {
       "@chainlink/local/src/ccip/CCIPLocalSimulator.sol",
       "@chainlink/local/src/vendor/chainlink-ccip/test/mocks/MockRouter.sol",
 
+      // contracts
+      "@chainlink/contracts/src/v0.8/shared/interfaces/IOwnable.sol",
+
       // contracts-ccip
       "@chainlink/contracts-ccip/contracts/pools/LockReleaseTokenPool.sol",
       "@chainlink/contracts-ccip/contracts/pools/BurnMintTokenPool.sol",
+      "@chainlink/contracts-ccip/contracts/pools/TokenPool.sol",
+
+      "@chainlink/contracts-ccip/contracts/Router.sol",
       "@chainlink/contracts-ccip/contracts/interfaces/IRouter.sol",
       "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol",
-      // for deployment, also IRouter
+
+      "@chainlink/contracts-ccip/contracts/offRamp/OffRamp.sol",
+      "@chainlink/contracts-ccip/contracts/onRamp/OnRamp.sol",
+
+      // ITokenPoolFactory that you find in contracts/multichain/ccip
+      // differs from package signatures and is the correct onchain
+      // representation
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol",
+
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenAdminRegistry.sol",
+
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/RegistryModuleOwnerCustom.sol",
-      // rmnproxy?
     ],
   },
 
@@ -73,6 +88,15 @@ const config: HardhatUserConfig = {
       url: KEYS.alchemy.mainnet,
       accounts: {
         mnemonic: KEYS.mnemonics.mainnet,
+      },
+    },
+    sepolia: {
+      type: "http",
+      chainId: 11155111,
+      chainType: "l1",
+      url: KEYS.alchemy.sepolia,
+      accounts: {
+        mnemonic: KEYS.mnemonics.sepolia,
       },
     },
     optimism: {
@@ -102,13 +126,13 @@ const config: HardhatUserConfig = {
         mnemonic: KEYS.mnemonics.base,
       },
     },
-    sepolia: {
+    baseSepolia: {
       type: "http",
-      chainId: 11155111,
+      chainId: 84532,
       chainType: "l1",
-      url: KEYS.alchemy.sepolia,
+      url: KEYS.alchemy.baseSepolia,
       accounts: {
-        mnemonic: KEYS.mnemonics.sepolia,
+        mnemonic: KEYS.mnemonics.baseSepolia,
       },
     },
     fuji: {
@@ -118,6 +142,15 @@ const config: HardhatUserConfig = {
       url: KEYS.alchemy.fuji,
       accounts: {
         mnemonic: KEYS.mnemonics.fuji,
+      },
+    },
+    amoy: {
+      type: "http",
+      chainId: 80002,
+      chainType: "l1",
+      url: KEYS.alchemy.amoy,
+      accounts: {
+        mnemonic: KEYS.mnemonics.amoy,
       },
     },
 
@@ -144,6 +177,18 @@ const config: HardhatUserConfig = {
       },
       accounts: {
         mnemonic: KEYS.mnemonics.mainnet,
+      },
+    },
+    hardhatSepolia: {
+      type: "edr-simulated",
+      chainId: 11155111,
+      chainType: "l1",
+      forking: {
+        url: KEYS.alchemy.baseSepolia,
+        enabled: true,
+      },
+      accounts: {
+        mnemonic: KEYS.mnemonics.baseSepolia,
       },
     },
     hardhatOptimism: {
@@ -180,6 +225,39 @@ const config: HardhatUserConfig = {
       },
       accounts: {
         mnemonic: KEYS.mnemonics.base,
+      },
+    },
+    hardhatBaseSepolia: {
+      type: "edr-simulated",
+      chainId: 84532,
+      chainType: "l1",
+      forking: {
+        url: KEYS.alchemy.baseSepolia,
+        enabled: true,
+      },
+      accounts: {
+        mnemonic: KEYS.mnemonics.baseSepolia,
+      },
+    },
+    hardhatFuji: {
+      type: "edr-simulated",
+      chainId: 43113,
+      chainType: "l1",
+      forking: {
+        url: KEYS.alchemy.fuji,
+        enabled: true,
+      },
+      accounts: {
+        mnemonic: KEYS.mnemonics.fuji,
+      },
+    },
+    hardhatAmoy: {
+      type: "http",
+      chainId: 80002,
+      chainType: "l1",
+      url: KEYS.alchemy.amoy,
+      accounts: {
+        mnemonic: KEYS.mnemonics.amoy,
       },
     },
   },

@@ -5,30 +5,49 @@ const IGNITION_DEPLOYMENTS_JSON = "deployed_addresses.json";
 const IGNITION_DEPLOYMENTS_BASE_PATH = "ignition/deployments";
 
 // TODO check correctness, we moved shares to different deplyment
+// TODO add also project name to deployment since there can be multiple ones
+// Ask if path is correct, or if need to move another direction
+
+// unused
 export function getDeploymentName(name: string) {
   return `ccip-testnet-${name}`;
 }
 
+// sha deployed
 export function getSharesDeploymentName(name: string) {
   return `ccip-testnet-shares-${name}`;
 }
 
+// bsha deployed
 export function getBridgedSharesDeploymentName(name: string) {
   return `ccip-testnet-bridged-shares-${name}`;
 }
 
-export function getFactoryDeploymentName(name: string) {
-  return `ccip-testnet-${name}`;
+// bsha set pool
+export function getBridgedSharesSetpoolDeploymentName(name: string) {
+  return `ccip-testnet-bridged-shares-setpool-${name}`;
 }
 
+// factory deployment
+export function getFactoryDeploymentName(name: string) {
+  return `ccip-testnet-factory-${name}`;
+}
+
+// settings
 export function getSettingsDeploymentName(name: string) {
   return `ccip-testnet-setting-${name}`;
+}
+
+// settings
+export function getUpdateSourceChainName(name: string) {
+  return `ccip-testnet-update-source-${name}`;
 }
 
 const deployments = [
   getDeploymentName,
   getSharesDeploymentName,
   getBridgedSharesDeploymentName,
+  getBridgedSharesSetpoolDeploymentName,
   getFactoryDeploymentName,
   getSettingsDeploymentName,
 ];

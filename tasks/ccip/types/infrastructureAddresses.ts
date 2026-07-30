@@ -7,7 +7,14 @@ export type CCIPInfrastructureAddresses = {
   remoteChainSelector: bigint;
 };
 
-export type CCIPNetwork = "fuji" | "sepolia";
+export type BaseCCIPNetwork = "fuji" | "sepolia" | "amoy" | "baseSepolia";
+
+type Capitalize<T extends string> = T extends `${infer First}${infer Rest}`
+  ? `${Uppercase<First>}${Rest}`
+  : T;
+export type CCIPNetwork =
+  | BaseCCIPNetwork
+  | `hardhat${Capitalize<BaseCCIPNetwork>}`;
 
 export type CCIPInfrastructureAddressesStorage = {
   [network in CCIPNetwork]: CCIPInfrastructureAddresses;

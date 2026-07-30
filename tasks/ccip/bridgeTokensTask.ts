@@ -11,7 +11,7 @@ import type { Result } from "hardhat/types/utils";
 import { successfulResult } from "hardhat/utils/result";
 import { AbiCoder, ethers } from "ethers";
 
-import { CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE } from "./const/CCIPAddresses.ts";
+import CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE from "./const/CCIPAddresses.ts";
 
 import readCCIPIgnitionAddresses from "./lib/CCIPIgnitionDeployments.ts";
 
@@ -19,11 +19,12 @@ import { printAndReturnErrorResult } from "../utils/error.ts";
 
 import type { EVM2AnyMessage } from "./types/Messages.ts";
 import { CCIPNetwork } from "./types/infrastructureAddresses.ts";
+import { IERC20 } from "../../types/ethers-contracts/index.ts";
 
 export interface BridgeTokenTasks {
   sha?: string;
   amount: string;
-  source?: string;
+  source: string;
   destination: string;
   to?: string;
   ccipIgnition: boolean;
@@ -33,17 +34,24 @@ export default async function (
   _taskArguments: BridgeTokenTasks,
   _hre: HardhatRuntimeEnvironment
 ): Promise<Result<string[], string>> {
-  const connection = await _hre.network.create();
+  // we need a way to be sure about block being published
+  // before calling anything
+  // only if running in simulated?
 
   let sha = _taskArguments.sha;
   let source = _taskArguments.source;
   let amount = _taskArguments.amount;
-  const decimals = 0; //hardcoded, but could be made into decimals call
+  const decimals = 0; // hardcoded, but could be made into decimals call
   let destination = _taskArguments.destination;
+
+  console.log(`\nFrom netwrok source: ${source}`);
+  const sourceConnection = await _hre.network.create({
+    network: source,
+  });
 
   if (_taskArguments.ccipIgnition) {
     // load from ignition module
-    const addresses = readCCIPIgnitionAddresses(connection.networkName);
+    const addresses = readCCIPIgnitionAddresses(sourceConnection.networkName);
 
     if (!addresses || !addresses.source.sha) {
       return printAndReturnErrorResult(
@@ -52,7 +60,7 @@ export default async function (
     }
 
     sha = addresses.source.sha;
-    source = connection.networkName;
+    source = sourceConnection.networkName;
   }
 
   if (!sha) {
@@ -73,7 +81,7 @@ export default async function (
   }
 
   // get sender by first account
-  const [sender] = await connection.ethers.getSigners();
+  const [sender] = await sourceConnection.ethers.getSigners();
 
   // Router address
   const router =
@@ -84,24 +92,46 @@ export default async function (
   if (!receiverAddress) {
     receiverAddress = await sender.getAddress();
   }
-
-  // direct call: we skip CCIPSender entirely
+  console.log(`\nSender: ${await sender.getAddress()}`);
+  console.log(`Router: ${router}`);
+  console.log(`SHA: ${sha}`);
 
   // approval
-  const SHA = await connection.ethers.getContractAt(
-    "SharesUnderAgreement",
-    sha
+  const SHA: IERC20 = (await sourceConnection.ethers.getContractAt(
+    "contracts/ERC20/IERC20.sol:IERC20",
+    sha,
+    sender
+  )) as any as IERC20;
+  const senderBalance = await SHA.connect(sender).balanceOf(
+    await sender.getAddress()
   );
-  const approvalTxn = await SHA.approve(router, amount);
+  console.log(`\nSender balance of sha ${sha} = ${senderBalance}`);
+
+  const approvalTxn = await SHA.approve(
+    router,
+    ethers.parseUnits(amount, decimals)
+  );
+
   console.log(
-    `Approving ${router} to spend ${amount} tokens, transaction hash: ${approvalTxn.hash}`
+    `\nApproving ${router} to spend ${amount} tokens, transaction hash: ${approvalTxn.hash}`
   );
+
   await approvalTxn.wait();
   console.log(`Approved ${router} to spend ${amount} tokens`);
 
+  // drpc does not make the bridge transaction go through
+  // i suspect because they load balance, or something that
+  // makes the ccip request fail because I don't think it sees
+  // the approval
+  const allowance = await SHA.allowance(await sender.getAddress(), router);
+  console.log(
+    `Allowance of ${router} to spend ${amount}:`,
+    allowance.toString()
+  );
+
   // get Router
   // make call
-  const RouterClient = await connection.ethers.getContractAt(
+  const RouterClient = await sourceConnection.ethers.getContractAt(
     "IRouterClient",
     router
   );
@@ -113,8 +143,9 @@ export default async function (
   //   )
   // message
   const message: EVM2AnyMessage = {
+    // receiver: receiverAddress,
     receiver: AbiCoder.defaultAbiCoder().encode(["address"], [receiverAddress]),
-    data: "0x", // no datas
+    data: "0x", // no data
     tokenAmounts: [
       {
         token: sha!,
@@ -125,20 +156,24 @@ export default async function (
     extraArgs: "0x", // no extra arguments
   };
 
-  const feeTxn = await RouterClient.getFee(
+  const destinationChainSelector =
     CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[destination as CCIPNetwork]
-      .remoteChainSelector,
-    message
+      .remoteChainSelector;
+  const feeTxn = await RouterClient.getFee(destinationChainSelector, message);
+
+  console.log(
+    `\nSpending ${
+      Number(feeTxn) / 1e18
+    } gas in fees for transaction (raw: ${feeTxn})`
   );
 
-  console.log(`Spending ${feeTxn} in fees for transaction`);
-
-  const txn = await RouterClient.ccipSend(
+  console.log(`\nBridging tokens...`);
+  const txn = await RouterClient.connect(sender).ccipSend(
     CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[destination as CCIPNetwork]
       .remoteChainSelector,
     message,
     {
-      // should fetch native decimals, always 18?
+      // should fetch native decimals, always 18 on all networks?
       value: feeTxn.toString(),
     }
   );

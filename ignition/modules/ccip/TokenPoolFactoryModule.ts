@@ -1,5 +1,5 @@
 /**
- * Single Module to deploy a TokenPool within the CCIP Infrastructure through TokenPoolFactory
+ * Single Module to deploy a TokenPool within the CCIP Infrastructure through localTokenPoolFactory
  *
  * Does not feel correct to not be able to do so within a single ignition module, but the
  * inability to receiver and wait for a function to be executed makes it impossible for
@@ -11,36 +11,35 @@
 
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-import { CREATE2_SALT } from "./lib/config.ts";
-
 import { PoolType, RemoteTokenPoolInfo } from "./lib/types.ts";
 
 export default buildModule("TokenPoolFactoryModule", (m) => {
+  // salt
+  const salt = m.getParameter<string>("salt");
+
   // previous deployments
-  const sharesUnderAgreement = m.getParameter<number>("sharesUnderAgreement");
-  const decimals = m.getParameter<number>("decimals");
-  const remoteTokenAddress = m.getParameter<string>("remoteTokenAddress");
+  const localToken = m.getParameter<string>("localToken");
+  const localDecimals = m.getParameter<number>("localDecimals");
+  const remoteToken = m.getParameter<string>("remoteToken");
+  const remoteDecimals = m.getParameter<number>("remoteDecimals");
+
+  // pools
+  const localPoolType = m.getParameter<PoolType>("localPoolType");
+  const remoteTokenPool = m.getParameter<string>("remoteTokenPool");
+  const remotePoolType = m.getParameter<PoolType>("remotePoolType");
 
   // source addresses
-  const tokenPoolFactory = m.getParameter<string>("tokenPoolFactory");
+  const localTokenPoolFactory = m.getParameter<string>("localTokenPoolFactory");
 
   // destination addresses
-  const destinationChainSelector = m.getParameter<bigint>(
-    "destinationChainSelector"
-  );
-  const destinationPoolFactory = m.getParameter<string>(
-    "destinationPoolFactory"
-  );
-  const destinationRouter = m.getParameter<string>("destinationRouter");
-  const destinationRMNProxy = m.getParameter<string>("destinationRMNProxy");
+  const remoteChainSelector = m.getParameter<bigint>("remoteChainSelector");
+  const remotePoolFactory = m.getParameter<string>("remotePoolFactory");
+  const remoteRouter = m.getParameter<string>("remoteRouter");
+  const remoteRMNProxy = m.getParameter<string>("remoteRMNProxy");
 
   // bytecode
-  const lockReleaseTokenPoolBytecode = m.getParameter(
-    "lockReleaseTokenPoolBytecode"
-  );
-
-  const burnMintTokenPoolBytecode = m.getParameter<string>(
-    "burnMintTokenPoolBytecode"
+  const localTokenPoolBytecode = m.getParameter<string>(
+    "localTokenPoolBytecode"
   );
 
   // after:
@@ -58,27 +57,31 @@ export default buildModule("TokenPoolFactoryModule", (m) => {
   //   PoolType poolType
   // ) external returns (address poolAddress)
   // Returns token pool created
-  const TokenPoolFactory = m.contractAt("TokenPoolFactory", tokenPoolFactory);
+  const LocalTokenPoolFactory = m.contractAt(
+    "ITokenPoolFactory",
+    localTokenPoolFactory
+  );
 
   const remoteTokenPoolInfo: RemoteTokenPoolInfo = {
-    remoteChainSelector: destinationChainSelector,
+    // remote chain selector
+    remoteChainSelector: remoteChainSelector,
 
-    // remote pool
-    remotePoolAddress: "0x", // contract will guess it
-    remotePoolInitCode: burnMintTokenPoolBytecode,
+    // remote pool address
+    remotePoolAddress: remoteTokenPool,
+    remotePoolInitCode: "0x", // no need to guess it
 
     remoteChainConfig: {
-      remotePoolFactory: destinationPoolFactory,
-      remoteRouter: destinationRouter,
-      remoteRMNProxy: destinationRMNProxy,
-      remoteTokenDecimals: decimals,
+      remotePoolFactory: remotePoolFactory,
+      remoteRouter: remoteRouter,
+      remoteRMNProxy: remoteRMNProxy,
+      remoteTokenDecimals: remoteDecimals,
     },
 
     // remote is burn/mint
-    poolType: PoolType.BURN_MINT,
+    poolType: remotePoolType,
 
-    // remote token
-    remoteTokenAddress: remoteTokenAddress,
+    // remote token address
+    remoteTokenAddress: remoteToken,
     remoteTokenInitCode: "0x", // no need to guess it
 
     // disabled
@@ -90,14 +93,20 @@ export default buildModule("TokenPoolFactoryModule", (m) => {
   };
 
   // call deploying function
-  m.call(TokenPoolFactory, "deployTokenPoolWithExistingToken", [
-    sharesUnderAgreement,
-    decimals,
+  // v1.6.0
+  // address token,
+  // uint8 localTokenDecimals,
+  // RemoteTokenPoolInfo[] calldata remoteTokenPools,
+  // bytes calldata tokenPoolInitCode,
+  // bytes32 salt,
+  // PoolType poolType
+  m.call(LocalTokenPoolFactory, "deployTokenPoolWithExistingToken", [
+    localToken,
+    localDecimals,
     [remoteTokenPoolInfo],
-    lockReleaseTokenPoolBytecode,
-    CREATE2_SALT,
-    // PoolType.LOCK_RELEASE,
+    localTokenPoolBytecode,
+    salt,
+    localPoolType,
   ]);
-
   return {};
 });
