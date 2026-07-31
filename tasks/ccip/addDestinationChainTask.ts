@@ -1,23 +1,6 @@
-// TODO
-//
-// Function to be called on LockReleaseTokenPool:
-// works on any pool since it is implemented by general TokenPoolInterface
-//
-// Bridging
-//
-//   /// @notice Sets the permissions for a list of chains selectors. Actual senders for these chains
-//   /// need to be allowed on the Router to interact with this pool.
-//   /// @param remoteChainSelectorsToRemove A list of chain selectors to remove.
-//   /// @param chainsToAdd A list of chains and their new permission status & rate limits. Rate limits
-//   /// are only used when the chain is being added through `allowed` being true.
-//   /// @dev Only callable by the owner
-//   function applyChainUpdates(
-//     uint64[] calldata remoteChainSelectorsToRemove,
-//     ChainUpdate[] calldata chainsToAdd
-//   ) external virtual onlyOwner
-
 /**
- * CLI helper to allow TokenPoolAddress in a BridgedSharesUnderAgreement token
+ * CLI helper to deploy additional destination chain with an already deployed TokenPool
+ * on a source chain
  */
 
 import type { HardhatRuntimeEnvironment } from "hardhat/types/hre";
@@ -29,7 +12,6 @@ import {
   getFactoryDeploymentName,
   getSettingsDeploymentName,
   getUpdateSourceChainName,
-  resetAllCCIPIgnitionDeploymentFolder,
 } from "./lib/CCIPIgnitionDeployments.ts";
 import { CCIPNetwork } from "./types/infrastructureAddresses.ts";
 import { printAndReturnErrorResult } from "../utils/error.ts";
@@ -47,7 +29,6 @@ interface AddDestinationChainArguments {
   terms: string;
   name: string;
   symbol: string;
-  reset: boolean;
 }
 
 export default async function (
@@ -74,14 +55,6 @@ export default async function (
   // other passed in parameters, decimals are equal on bith side
   // can be dynamically fetched later if needed
   const decimals = 0;
-
-  if (_taskArguments.reset) {
-    console.log(
-      `\n\nResetting ignition deployments for source ${sourceNetworkName} and destination ${destinationNetworkName} network`
-    );
-    resetAllCCIPIgnitionDeploymentFolder(sourceNetworkName);
-    resetAllCCIPIgnitionDeploymentFolder(destinationNetworkName);
-  }
 
   console.log(`\n\nConnecting to networks...`);
   console.log(`To ${sourceNetworkName}...`);
@@ -352,7 +325,7 @@ export default async function (
             CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[destinationNetworkName]
               .remoteChainSelector,
           remotePoolAddress: lsbBytesPredictedBurnMintTokenPoolAddress,
-          remoteTokenAddress: lsbBytesSharesUnderAgreement,
+          remoteTokenAddress: lsbBytesBridgedSharesUnderAgreement,
         },
       },
 

@@ -31,8 +31,8 @@ const KEYS_TEMPLATE = {
         base: "https://base-mainnet.g.alchemy.com/v2/demo",
         sepolia: "https://eth-sepolia.g.alchemy.com/v2/demo",
         fuji: "https://avax-fuji.g.alchemy.com/v2/demo",
-        amoy: "https://avax-fuji.g.alchemy.com/v2/demo",
-        baseSepolia: "https://avax-fuji.g.alchemy.com/v2/demo"
+        amoy: "https://polygon-amoy.g.alchemy.com/v2/demo",
+        baseSepolia: "https://base-sepolia.g.alchemy.com/v2/demo"
     }
 }
 

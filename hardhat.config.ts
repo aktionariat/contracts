@@ -17,6 +17,10 @@ import {
 
   // Shares task
   mintWrapSharesTask,
+  removeDestinationChainPoolTask,
+  resetDestinationChainTask,
+  haltBridgeTask,
+  enableBridgeTask,
 } from "./tasks/index.ts";
 
 const config: HardhatUserConfig = {
@@ -33,6 +37,10 @@ const config: HardhatUserConfig = {
     deployCCIPContractsInfrastructureTask,
     estimateCCIPDeploymentGasTask,
     addDestinationChainTask,
+    removeDestinationChainPoolTask,
+    resetDestinationChainTask,
+    haltBridgeTask,
+    enableBridgeTask,
     mintWrapSharesTask,
   ],
 

@@ -87,4 +87,4 @@ Fields such as `shares`, `sha` and `to` are mandatory. While `to`, `amount` and 
 
 You can find the pool address at "ChainSettingsModule#IOwnable" within the source chain ingition deployment folder
 
-We can use `setChainRateLimiterConfig` for halting bridging without removing the infrastructure and touch allowlisting, and handling both outbound and inbound transactions
+We can use `addRemotePool` and `removeRemotePool`

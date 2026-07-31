@@ -3,10 +3,17 @@ import path from "node:path";
 
 const IGNITION_DEPLOYMENTS_JSON = "deployed_addresses.json";
 const IGNITION_DEPLOYMENTS_BASE_PATH = "ignition/deployments";
+const IGNITION_DEPLYMENTS_CCIP_FOLDER_PATH = "ccip";
+// better to add within a folder all ccip related deployments
+
+// something like ignition/deplyments/[partner-name]/[deplyment-name]/deployed_addresses.json and so on
 
 // TODO check correctness, we moved shares to different deplyment
 // TODO add also project name to deployment since there can be multiple ones
 // Ask if path is correct, or if need to move another direction
+
+// TODO some really need additional parameters to be
+//      correctly identified
 
 // unused
 export function getDeploymentName(name: string) {
@@ -38,9 +45,44 @@ export function getSettingsDeploymentName(name: string) {
   return `ccip-testnet-setting-${name}`;
 }
 
-// settings
+// update source chain
 export function getUpdateSourceChainName(name: string) {
   return `ccip-testnet-update-source-${name}`;
+}
+
+// remove from source chain a destination
+export function getRemoveDestinationChainPoolName(name: string) {
+  return `ccip-testnet-remove-destination-pool-${name}`;
+}
+// add for source chain a token
+export function getAddDestinationChainPoolName(name: string) {
+  return `ccip-testnet-remove-destination-pool-${name}`;
+}
+
+// reset source chain for destination
+export function getResetDestinationChainPoolName(name: string) {
+  return `ccip-testnet-remove-destination-pool-${name}`;
+}
+
+// reset source chain for destination
+export function getSetRateLimiterName(name: string) {
+  return `ccip-testnet-set-rate-limiter-${name}`;
+}
+
+export function addTimeToName(name: string): string {
+  const now = new Date();
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  const timestamp =
+    `${pad(now.getDate())}-` +
+    `${pad(now.getMonth() + 1)}-` +
+    `${now.getFullYear().toString().slice(-2)}-` +
+    `${pad(now.getHours())}-` +
+    `${pad(now.getMinutes())}-` +
+    `${pad(now.getSeconds())}`;
+
+  return `${name}-at-${timestamp}`;
 }
 
 const deployments = [

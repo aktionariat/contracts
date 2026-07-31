@@ -17,7 +17,7 @@ export default buildModule("AddDestinationChainModule", (m) => {
   // should check first if chain exists within pool, if so:
   //	-> use addRemotePool
   // else
-  // -> use applyChainUpdates
+  // 	-> use applyChainUpdates
 
   const LocalTokenPool = m.contractAt("TokenPool", localTokenPool);
   //   // uint64 remoteChainSelector,

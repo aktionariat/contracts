@@ -19,6 +19,12 @@ export type RemoteChainConfig = {
   remoteTokenDecimals: RuntimeValue<number>;
 };
 
+export type RateLimiterConfigSolidityParameter = {
+  isEnabled: boolean;
+  capacity: bigint;
+  rate: bigint;
+};
+
 export type RateLimiterConfig = {
   isEnabled: RuntimeValue<boolean>;
   capacity: RuntimeValue<bigint>;
