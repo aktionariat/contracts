@@ -14,6 +14,7 @@ import {
   deployCCIPContractsInfrastructureTask,
   estimateCCIPDeploymentGasTask,
   addDestinationChainTask,
+  factoryDeployInfrastructureCCIPTask,
 
   // Shares task
   mintWrapSharesTask,
@@ -34,6 +35,7 @@ const config: HardhatUserConfig = {
   tasks: [
     allowTokenPoolOnBridgedSHATask,
     bridgeTokensTask,
+    factoryDeployInfrastructureCCIPTask,
     deployCCIPContractsInfrastructureTask,
     estimateCCIPDeploymentGasTask,
     addDestinationChainTask,

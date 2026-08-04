@@ -2,6 +2,49 @@ import { task } from "hardhat/config";
 import { ArgumentType } from "hardhat/types/arguments";
 
 // ccip
+export const factoryDeployInfrastructureCCIPTask = task(
+  "ccip-factory-deploy",
+  "Deploys Shares, SHA and bSHA tokens, adds them to the CCIP infrastructure. If needed deploys also factories on both source and destination."
+)
+  .addOption({
+    name: "source",
+    description: "Source Chain to operate in",
+    type: ArgumentType.STRING,
+    defaultValue: "sepolia",
+  })
+  .addOption({
+    name: "destination",
+    description: "Destination Chain to operate in",
+    type: ArgumentType.STRING,
+    defaultValue: "baseSepolia",
+  })
+  .addOption({
+    name: "sourceFactory",
+    description: "Aktionariat source chain Factory contract address",
+    type: ArgumentType.STRING_WITHOUT_DEFAULT,
+    defaultValue: undefined,
+  })
+  .addOption({
+    name: "destinationFactory",
+    description: "Aktionariat destination chain Factory contract address",
+    type: ArgumentType.STRING_WITHOUT_DEFAULT,
+    defaultValue: undefined,
+  })
+  .addOption({
+    name: "sha",
+    description: "Soruce chain SahresUnderAgreement Contract",
+    type: ArgumentType.STRING_WITHOUT_DEFAULT,
+    defaultValue: undefined,
+  })
+  .addOption({
+    name: "bsha",
+    description: "Destination chain BridgedSharesUnderAgreement Contract",
+    type: ArgumentType.STRING_WITHOUT_DEFAULT,
+    defaultValue: undefined,
+  })
+  .setAction(() => import("./ccip/factoryDeployInfrastructureCCIPTask.ts"))
+  .build();
+
 export const allowTokenPoolOnBridgedSHATask = task(
   "ccip-allow-tkp-bsha",
   "Allowlist TokenPoolAddress to BridgedSharesUnderAgreement"

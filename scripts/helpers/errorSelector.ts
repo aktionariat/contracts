@@ -13,10 +13,39 @@ const targetSelectors = [
   "0x24eb47e5",
   "0x4e487b71",
   "0xae9b4ce9",
+  "0xc454d182",
+  "0x2b5c74de",
 ];
 
 // Add your custom errors here
 const errors = [
+  "TestError()",
+
+  // Ownable2Owner chainlink
+  "OwnerCannotBeZero()",
+  "MustBeProposedOwner()",
+  "CannotTransferToSelf()",
+  "OnlyCallableByOwner()",
+
+  "Ownable_NotOwner(address)",
+
+  "NotPool(address)",
+
+  // openzeppelin Errors
+  "InsufficientBalance(uint256,uint256)",
+  "FailedCall()",
+  "FailedDeployment()",
+  "MissingPrecompile(address)",
+
+  // openzeppelin Create2
+  "Create2EmptyBytecode()",
+
+  //
+  "UnableToPerformSetupCCIP_CanOnlySelfRegister(address,address)",
+  "MissingDeploymentData()",
+  "DeploymentFailed()",
+  "InvalidAddress()",
+
   //
   "Panic(uint256)",
 
@@ -122,7 +151,7 @@ const errors = [
   "DisabledNonZeroRateLimit(Config)",
   "RateLimitMustBeDisabled()",
 
-  //   library
+  // library
   "PriceNotFoundForToken(address)",
 
   // AggregateRateLimiter
