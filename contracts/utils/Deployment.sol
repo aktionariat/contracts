@@ -27,6 +27,7 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 
 library Deployment {
@@ -40,15 +41,35 @@ library Deployment {
     }
 
     /**
-     * Given a generic Deplyment data, if needed deploys the contract, ultimately
+     * Given a generic Logic address, if needed deploys the proxy contract, ultimately
+     * returns the contract address
+     *
+     * @param candidate candidate address
+     * @param implementation address that holds the implementation contract to be proxied
+     * @param salt deployment salt
+     * @return address the address of the deployed or known contract
+     * @return bool if the contract has been actually deployed
+     */
+    function _resolveAddressOrDeploy(address candidate, address implementation, bytes32 salt) internal returns (address, bool) {
+        if (candidate != address(0)) {
+            return (candidate, false);
+        }
+
+        if (implementation == address(0)) revert MissingDeploymentData();
+        address proxyDeployed = Clones.cloneDeterministic(implementation, salt);
+        return (proxyDeployed, true);
+    }
+
+    /**
+     * Given a generic Deployment data, if needed deploys the contract, ultimately
      * returns the contract address
      *
      * @param data deployment data
      * @param salt deployment salt
-     * @return resolved the address of the deployed or known contract
-     * @return wasDeployed if the contract has been actually deployed
+     * @return address the address of the deployed or known contract
+     * @return bool if the contract has been actually deployed
      */
-    function _resolveAddressOrDeploy(DeploymentData memory data, bytes32 salt) internal returns (address resolved, bool wasDeployed) {
+    function _resolveAddressOrDeploy(DeploymentData memory data, bytes32 salt) internal returns (address, bool) {
         if (data.candidate != address(0)) {
             return (data.candidate, false);
         }
@@ -69,5 +90,19 @@ library Deployment {
     function _create2(bytes memory initCode, bytes32 salt) internal returns (address deployed) {
         deployed = Create2.deploy(0, salt, initCode);
         if (deployed == address(0)) revert DeploymentFailed();
+    }
+
+    /**
+     * Predicts address of contract to be deployed
+     *
+     * @param deployer the address of contract deployer
+     * @param contractBytecode the bytecode of the contract
+     * @param constructorArgumentsBytecode bytecode constructor arguments
+     * @param salt salt
+     * @return address of to be deployed contract
+     */
+    function predictCreate2Address(address deployer, bytes memory contractBytecode, bytes memory constructorArgumentsBytecode, bytes32 salt) public pure returns (address) {
+        bytes32 initCodeHash = keccak256(bytes.concat(contractBytecode, constructorArgumentsBytecode));
+        return Create2.computeAddress(salt, initCodeHash, deployer);
     }
 }

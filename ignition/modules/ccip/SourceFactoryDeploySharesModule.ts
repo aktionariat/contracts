@@ -26,7 +26,7 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
 
   const futureOwner = m.getParameter<string>("futureOwner");
 
-  const FactorySource = m.contractAt("CCIPFactorySource", factorySource);
+  const FactorySource = m.contractAt("FactorySource", factorySource);
 
   const sourceParams: SourceParams = {
     shares: sharesTokenDeploymentData,

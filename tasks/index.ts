@@ -6,5 +6,6 @@
  * To print help `npx hardhat <task-name> --help`
  */
 
+export * from "./deployment.ts";
 export * from "./ccip.ts";
 export * from "./shares.ts";

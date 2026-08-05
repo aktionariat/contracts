@@ -6,8 +6,9 @@
 // - Replaced Context._msgSender() with msg.sender
 // - Made leaner
 // - Extracted interface
-
 pragma solidity >=0.8.0 <0.9.0;
+
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -21,8 +22,7 @@ pragma solidity >=0.8.0 <0.9.0;
  * `onlyOwner`, which can be applied to your functions to restrict their use to
  * the owner.
  */
-contract Ownable {
-
+contract Ownable is Initializable {
     address public owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -32,7 +32,17 @@ contract Ownable {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor (address initialOwner) {
+    constructor(address initialOwner) {
+        owner = initialOwner;
+        emit OwnershipTransferred(address(0), owner);
+    }
+
+    /**
+     * Proxy constructor.
+     *
+     * @param initialOwner token owner
+     */
+    function __Ownable_init(address initialOwner) internal onlyInitializing {
         owner = initialOwner;
         emit OwnershipTransferred(address(0), owner);
     }

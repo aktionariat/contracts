@@ -29,7 +29,7 @@ export default buildModule(
     const futureOwner = m.getParameter<string>("futureOwner");
 
     const FactoryDestination = m.contractAt(
-      "CCIPFactoryDestination",
+      "FactoryDestination",
       factoryDestination
     );
 

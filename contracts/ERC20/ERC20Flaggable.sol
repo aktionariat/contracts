@@ -9,8 +9,9 @@
 // - infinite allowance support, with 2^255 and above considered infinite
 // - use upper 32 bits of balance for flags
 // - add a global settings variable
-
 pragma solidity >=0.8.0 <0.9.0;
+
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./IERC20.sol";
 import "./ERC20Errors.sol";
@@ -40,7 +41,7 @@ import "./IERC677Receiver.sol";
  * allowances. See `IERC20.approve`.
  */
 
-abstract contract ERC20Flaggable is IERC20, ERC20Errors {
+abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     // as Documented in /doc/infiniteallowance.md
     // 0x8000000000000000000000000000000000000000000000000000000000000000
     uint256 public constant INFINITE_ALLOWANCE = 2 ** 255;
@@ -64,7 +65,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     uint256 private _settings;
     uint256 private _totalSupply;
 
-    uint8 public immutable override decimals;
+    uint8 public override decimals;
 
     /// Overflow on minting, transfer.
     /// @param receiver The address were the balance overflows.
@@ -73,6 +74,15 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     error ERC20BalanceOverflow(address receiver, uint256 balance, uint256 amount);
 
     constructor(uint8 _decimals) {
+        decimals = _decimals;
+    }
+
+    /**
+     * Proxy constructor.
+     *
+     * @param _decimals token decimals
+     */
+    function __ERC20Flaggable_init(uint8 _decimals) internal onlyInitializing {
         decimals = _decimals;
     }
 

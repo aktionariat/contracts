@@ -4,6 +4,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 export default buildModule("DestinationFactoryModule", (m) => {
-  const FactoryDestination = m.contract("CCIPFactoryDestination");
+  const FactoryDestination = m.contract("FactoryDestination");
   return { FactoryDestination };
 });

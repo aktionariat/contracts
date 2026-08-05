@@ -8,20 +8,23 @@ import hardhatNetworkHelpersPlugin from "@nomicfoundation/hardhat-network-helper
 import KEYS from "./KEYS.ts";
 
 import {
-  // CCIP tasks
+  // deployment
+  deployFactoryShareTask,
+
+  // CCIP
   allowTokenPoolOnBridgedSHATask,
   bridgeTokensTask,
   deployCCIPContractsInfrastructureTask,
   estimateCCIPDeploymentGasTask,
   addDestinationChainTask,
   factoryDeployInfrastructureCCIPTask,
-
-  // Shares task
-  mintWrapSharesTask,
   removeDestinationChainPoolTask,
   resetDestinationChainTask,
   haltBridgeTask,
   enableBridgeTask,
+
+  // Shares
+  mintWrapSharesTask,
 } from "./tasks/index.ts";
 
 const config: HardhatUserConfig = {
@@ -33,6 +36,10 @@ const config: HardhatUserConfig = {
   ],
 
   tasks: [
+    // deployment
+    deployFactoryShareTask,
+
+    // CCIP
     allowTokenPoolOnBridgedSHATask,
     bridgeTokensTask,
     factoryDeployInfrastructureCCIPTask,
@@ -43,6 +50,8 @@ const config: HardhatUserConfig = {
     resetDestinationChainTask,
     haltBridgeTask,
     enableBridgeTask,
+
+    // Shares
     mintWrapSharesTask,
   ],
 
@@ -59,10 +68,6 @@ const config: HardhatUserConfig = {
 
     // explicit list of files to compile
     npmFilesToBuild: [
-      // local
-      "@chainlink/local/src/ccip/CCIPLocalSimulator.sol",
-      "@chainlink/local/src/vendor/chainlink-ccip/test/mocks/MockRouter.sol",
-
       // contracts
       "@chainlink/contracts/src/v0.8/shared/interfaces/IOwnable.sol",
 
@@ -81,11 +86,9 @@ const config: HardhatUserConfig = {
       // ITokenPoolFactory that you find in contracts/multichain/ccip
       // differs from package signatures and is the correct onchain
       // representation
-      "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol",
-
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenAdminRegistry.sol",
-
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/RegistryModuleOwnerCustom.sol",
+      "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol",
     ],
   },
 

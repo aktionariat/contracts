@@ -1,4 +1,6 @@
 /**
+ * Old, unstable non-proxy factory deployment
+ *
  * Script deployment that deploys factory on source and destinationnetwork,
  * if needed, then deploys shares contracts if needed and token pools to enable
  * CCIP Bridging
@@ -20,7 +22,7 @@ import {
 } from "../../ignition/modules/ccip/lib/types.ts";
 import { CREATE2_SALT } from "../../ignition/modules/ccip/lib/config.ts";
 import { predictTokenPoolAddress } from "../../ignition/modules/ccip/lib/tokenPool.ts";
-import { predictBridgedSharesAddress } from "./lib/predictions.ts";
+import { predictBridgedSharesAddress } from "../utils/predictions.ts";
 import { prettyStringifyObject } from "../utils/json.ts";
 
 interface FactoryDeployInfrastructureCCIPArguments {
@@ -292,7 +294,7 @@ export default async function (
     futureOwner,
   };
 
-  // const artifact = await _hre.artifacts.readArtifact("CCIPFactorySource");
+  // const artifact = await _hre.artifacts.readArtifact("FactorySource");
   // const deployFn = artifact.abi.find((f: any) => f.name === "deploy");
   // console.log(JSON.stringify(deployFn.inputs, null, 2));
 

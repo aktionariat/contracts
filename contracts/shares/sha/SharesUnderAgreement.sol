@@ -27,6 +27,8 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "../base/Recoverable.sol";
 import "./DragAlong.sol";
 import "./Modification.sol";
@@ -42,7 +44,7 @@ import "../../utils/SafeERC20.sol";
  * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
  * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
  */
-contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, DragAlong, Modification {
+contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, Recoverable, DragAlong, Modification {
     using SafeERC20 for IERC20;
 
     // Version history:
@@ -83,6 +85,22 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
         address _owner
     ) ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         base = base_;
+        terms = _terms;
+    }
+
+    /**
+     * Constructor style initialization. Used to enable the proxy pattern.
+     *
+     * @param base_ the base Shares token address
+     * @param _terms terms
+     * @param _decimals decmials of the token
+     * @param _owner the owner of the token
+     */
+    function initialize(IERC20 base_, string memory _terms, uint8 _decimals, address _owner) public initializer {
+        __ERC20Named_init(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner);
+        // __ERC20Allowlistable_init();
+        __DeterrenceFee_init(0.01 ether);
+
         terms = _terms;
     }
 
@@ -144,7 +162,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     }
 
     function convertToBase(uint256 amount) public view returns (uint256) {
-        return amount * base.balanceOf(address(this)) / totalSupply();
+        return (amount * base.balanceOf(address(this))) / totalSupply();
     }
 
     /**

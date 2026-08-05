@@ -27,6 +27,8 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "../shares/base/Recoverable.sol";
 import "../ERC20/ERC20Allowlistable.sol";
 import "../ERC20/ERC20Named.sol";
@@ -47,7 +49,7 @@ import "../ERC20/ERC20Named.sol";
  * locked in the home-chain pool. The shareholder agreement still governs these tokens; 'terms' links
  * to it, but governance actions are executed on the home chain only.
  */
-contract BridgedSharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable {
+contract BridgedSharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, Recoverable {
     // Matches the security version number of the home-chain token family.
     uint8 public constant VERSION = 5;
 
@@ -79,6 +81,22 @@ contract BridgedSharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recovera
         ERC20Allowlistable()
         DeterrenceFee(0.01 ether)
     {
+        terms = _terms;
+    }
+
+    /**
+     * Constructor style initialization. Used to enable the proxy pattern.
+     *
+     * @param _symbol the symbol of the token
+     * @param _name the name of the token
+     * @param _terms the terms of the token
+     * @param _owner the owner of the token
+     */
+    function initialize(string calldata _symbol, string calldata _name, string calldata _terms, address _owner) public initializer {
+        __ERC20Named_init(_symbol, _name, 0, _owner);
+        // __ERC20Allowlistable_init();
+        __DeterrenceFee_init(0.01 ether);
+
         terms = _terms;
     }
 

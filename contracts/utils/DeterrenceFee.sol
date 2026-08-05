@@ -25,29 +25,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import "./Ownable.sol";
-
 pragma solidity >=0.8.0 <0.9.0;
 
-// abstract because it does not initiate Ownable
-abstract contract DeterrenceFee is Ownable {
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+import "./Ownable.sol";
+
+// abstract because it does not initiate Ownable
+abstract contract DeterrenceFee is Initializable, Ownable {
     uint96 public deterrenceFee;
 
     event DeterrenceFeePaid(address payer, uint256 fee);
 
     error FeeMissing(uint256 required, uint256 found);
 
-    constructor(uint96 deterrenceFee_){
+    constructor(uint96 deterrenceFee_) {
+        deterrenceFee = deterrenceFee_;
+    }
+
+    /**
+     * Proxy construtor.
+     *
+     * @param deterrenceFee_ the deterrence Fee
+     */
+    function __DeterrenceFee_init(uint96 deterrenceFee_) internal onlyInitializing {
         deterrenceFee = deterrenceFee_;
     }
 
     modifier deter(uint16 multiple) {
         // Pay the deterrence fee to the Aktionariat ledger
-        if (deterrenceFee > 0 && msg.sender != owner){
+        if (deterrenceFee > 0 && msg.sender != owner) {
             uint256 fee = deterrenceFee * multiple;
             if (msg.value < fee) revert FeeMissing(fee, msg.value);
-            (bool success, ) = payable(owner).call{value:fee}("");
+            (bool success, ) = payable(owner).call{value: fee}("");
             emit DeterrenceFeePaid(msg.sender, fee);
         }
         _;
@@ -56,5 +66,4 @@ abstract contract DeterrenceFee is Ownable {
     function setDeterrenceFee(uint96 fee) external onlyOwner {
         deterrenceFee = fee;
     }
-
 }
