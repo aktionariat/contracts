@@ -31,7 +31,7 @@ import {Shares} from "../shares/base/Shares.sol";
 // import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SharesUnderAgreement, IERC20} from "../shares/sha/SharesUnderAgreement.sol";
 import {Deployment} from "../utils/Deployment.sol";
-import {TokenPoolInitialization} from "../multichain/lib/TokenPoolInitialization.sol";
+// import {TokenPoolInitialization} from "../multichain/lib/TokenPoolInitialization.sol";
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -55,12 +55,11 @@ contract FactorySource is Ownable {
     struct ChainlinkAddresses {
         address tokenAdminRegistry;
         address registryModuleOwner;
-        // needed for proxy token pool
-        address rmnProxy;
-        address router;
-
+        // // needed for proxy token pool
+        // address rmnProxy;
+        // address router;
         // needed for CCIP factory token pool: Only if not applicable
-        // address tokenPoolFactory;
+        address tokenPoolFactory;
     }
 
     struct SharesDeploymentData {
@@ -83,8 +82,7 @@ contract FactorySource is Ownable {
         SharesUnderAgreementDeploymentData sharesUnderAgreement;
         ChainlinkAddresses chainlink;
         // Token Pool Bytecode: Only if not applicable
-        // bytes lockReleaseTokenPoolBytecode;
-
+        bytes lockReleaseTokenPoolBytecode;
         TokenPoolFactory.RemoteTokenPoolInfo[] remoteTokenPools;
         bytes32 salt;
     }
@@ -102,7 +100,7 @@ contract FactorySource is Ownable {
     constructor(
         Deployment.DeploymentData memory sharesLogicContract,
         Deployment.DeploymentData memory shaLogicContract,
-        Deployment.DeploymentData memory tokenPoolAktLogicContract,
+        // Deployment.DeploymentData memory tokenPoolAktLogicContract,
         bytes32 salt
     ) Ownable(msg.sender) {
         bool wasDeployed;
@@ -118,10 +116,10 @@ contract FactorySource is Ownable {
         SHA_IMPLEMENTATION = deploymentAddress;
         emit SourceSharesUnderAgreementResolved(deploymentAddress, wasDeployed);
 
-        // Deploys Token Pool business logic: Only if applicable
-        (deploymentAddress, wasDeployed) = Deployment._resolveAddressOrDeploy(tokenPoolAktLogicContract, salt);
-        TOKEN_POOL_AKT_IMPLEMENTATION = deploymentAddress;
-        emit SourceTokenPoolAktionariatResolved(deploymentAddress, wasDeployed);
+        // // Deploys Token Pool business logic: Only if applicable
+        // (deploymentAddress, wasDeployed) = Deployment._resolveAddressOrDeploy(tokenPoolAktLogicContract, salt);
+        // TOKEN_POOL_AKT_IMPLEMENTATION = deploymentAddress;
+        // emit SourceTokenPoolAktionariatResolved(deploymentAddress, wasDeployed);
     }
 
     /**
@@ -187,49 +185,41 @@ contract FactorySource is Ownable {
             revert UnableToPerformSetupCCIP_CanOnlySelfRegister(shaOwner, address(this));
         }
 
-        // // Proxy Pool Deployment
-        // Proxy also pool? Do it, but do not remove the current vanilla Chainlink initialization
-        // // Pool Proxy Deployment
-        // Deploys Token Pool Proxy: Only if applicable
-        deployment.lockReleaseTokenPool = TokenPoolInitialization._deployProxyTokenPool(
-            TOKEN_POOL_AKT_IMPLEMENTATION,
-            deployment.sharesUnderAgreement,
-            IERC20Metadata(deployment.sharesUnderAgreement).decimals(),
-            TokenPoolFactory.PoolType.LOCK_RELEASE,
-            params.chainlink.rmnProxy,
-            params.chainlink.router,
-            params.salt
-        );
-        TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.lockReleaseTokenPool, params.remoteTokenPools, address(this));
-        emit SourceTokenPoolDeployed(deployment.lockReleaseTokenPool);
-
-        // // // Factory Pool Deployment
-        // // Note that salt will be computed as:
-        // // salt = keccak256(abi.encodePacked(salt, msg.sender));
-        // // Within factory
-
-        // // Remote token pool HAS to be predicted
-        // // Also token decimals have to be 0 also for bridged tokens
-        // // remote token address must is to be predicted too
-
-        // // LockRelease Pool Deployment through Chainlink Factory Deployment
-        // // address token,
-        // // uint8 localTokenDecimals,
-        // // RemoteTokenPoolInfo[] calldata remoteTokenPools,
-        // // bytes calldata tokenPoolInitCode,
-        // // bytes32 salt,
-        // // PoolType poolType
-        // deployment.lockReleaseTokenPool = TokenPoolFactory(params.chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
+        // // // Proxy Pool Deployment
+        // // Proxy also pool? Do it, but do not remove the current vanilla Chainlink initialization
+        // // // Pool Proxy Deployment
+        // // Deploys Token Pool Proxy: Only if applicable
+        // deployment.lockReleaseTokenPool = TokenPoolInitialization._deployProxyTokenPool(
+        //     TOKEN_POOL_AKT_IMPLEMENTATION,
         //     deployment.sharesUnderAgreement,
         //     IERC20Metadata(deployment.sharesUnderAgreement).decimals(),
-        //     params.remoteTokenPools,
-        //     params.lockReleaseTokenPoolBytecode,
-        //     params.salt,
-        //     TokenPoolFactory.PoolType.LOCK_RELEASE
+        //     TokenPoolFactory.PoolType.LOCK_RELEASE,
+        //     params.chainlink.rmnProxy,
+        //     params.chainlink.router,
+        //     params.salt
         // );
+        // TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.lockReleaseTokenPool, params.remoteTokenPools, address(this));
         // emit SourceTokenPoolDeployed(deployment.lockReleaseTokenPool);
-        // // now factory owns the pool, and it is deployed
-        // // Ownership of TokenPool in is now pending for Factory in LockReleaseTokenPool
+
+        // // Factory Pool Deployment
+        // LockRelease Pool Deployment through Chainlink Factory Deployment
+        // address token,
+        // uint8 localTokenDecimals,
+        // RemoteTokenPoolInfo[] calldata remoteTokenPools,
+        // bytes calldata tokenPoolInitCode,
+        // bytes32 salt,
+        // PoolType poolType
+        deployment.lockReleaseTokenPool = TokenPoolFactory(params.chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
+            deployment.sharesUnderAgreement,
+            IERC20Metadata(deployment.sharesUnderAgreement).decimals(),
+            params.remoteTokenPools,
+            params.lockReleaseTokenPoolBytecode,
+            params.salt,
+            TokenPoolFactory.PoolType.LOCK_RELEASE
+        );
+        emit SourceTokenPoolDeployed(deployment.lockReleaseTokenPool);
+        // now factory owns the pool, and it is deployed
+        // Ownership of TokenPool in is now pending for Factory in LockReleaseTokenPool
 
         // // Settings: not deployment aware, need only SHA and Token Pool addresses
         // Ownership of TokenPool in TokenPool is pending: Accept ownership for Factory of TokenPool

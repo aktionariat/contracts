@@ -29,7 +29,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {BridgedSharesUnderAgreement} from "../multichain/BridgedSharesUnderAgreement.sol";
 import {Deployment} from "../utils/Deployment.sol";
-import {TokenPoolInitialization} from "../multichain/lib/TokenPoolInitialization.sol";
+// import {TokenPoolInitialization} from "../multichain/lib/TokenPoolInitialization.sol";
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -52,12 +52,12 @@ contract FactoryDestination is Ownable {
     struct ChainlinkAddresses {
         address tokenAdminRegistry;
         address registryModuleOwner;
-        // needed for proxy token pool
-        address rmnProxy;
-        address router;
+        // // needed for proxy token pool
+        // address rmnProxy;
+        // address router;
 
         // needed for CCIP factory token pool: Only if not applicable
-        // address tokenPoolFactory;
+        address tokenPoolFactory;
     }
 
     struct BridgedSharesUnderAgreementDeploymentData {
@@ -72,8 +72,7 @@ contract FactoryDestination is Ownable {
         BridgedSharesUnderAgreementDeploymentData bridgedSharesUnderAgreement;
         ChainlinkAddresses chainlink;
         // Token Pool Bytecode: Only if not applicable
-        // bytes burnMintTokenPoolBytecode;
-
+        bytes burnMintTokenPoolBytecode;
         TokenPoolFactory.RemoteTokenPoolInfo[] remoteTokenPools;
         bytes32 salt;
     }
@@ -97,7 +96,7 @@ contract FactoryDestination is Ownable {
      * @param bshaLogicContract the BSHA logic contract deployment data
      * @param salt deployment salt
      */
-    constructor(Deployment.DeploymentData memory bshaLogicContract, Deployment.DeploymentData memory tokenPoolAktLogicContract, bytes32 salt) Ownable(msg.sender) {
+    constructor(Deployment.DeploymentData memory bshaLogicContract, bytes32 salt) Ownable(msg.sender) {
         bool wasDeployed;
         address deploymentAddress;
 
@@ -108,10 +107,10 @@ contract FactoryDestination is Ownable {
         BSHA_IMPLEMENTATION = deploymentAddress;
         emit DestinationBridgedSharesUnderAgreementLogicResolved(deploymentAddress, wasDeployed);
 
-        // Deploys Token Pool Logic: Only if applicable
-        (deploymentAddress, wasDeployed) = Deployment._resolveAddressOrDeploy(tokenPoolAktLogicContract, salt);
-        TOKEN_POOL_AKT_IMPLEMENTATION = deploymentAddress;
-        emit DestinationBridgedSharesUnderAgreementLogicResolved(deploymentAddress, wasDeployed);
+        // // Deploys Token Pool Logic: Only if applicable
+        // (deploymentAddress, wasDeployed) = Deployment._resolveAddressOrDeploy(tokenPoolAktLogicContract, salt);
+        // TOKEN_POOL_AKT_IMPLEMENTATION = deploymentAddress;
+        // emit DestinationBridgedSharesUnderAgreementLogicResolved(deploymentAddress, wasDeployed);
     }
 
     /**
@@ -145,20 +144,8 @@ contract FactoryDestination is Ownable {
                 address(this)
             );
         }
-
         // emit
         emit DestinationBridgedSharesUnderAgreementResolved(deployment.bridgedSharesUnderAgreement, wasDeployed);
-
-        // // // Token Deployment
-        // // Bridged Shares Under Agreement
-        // Deployment.DeploymentData memory bshaDeploymentData = Deployment.DeploymentData({
-        //     candidate: params.bridgedSharesUnderAgreement.candidate,
-        //     contractBytecode: params.bridgedSharesUnderAgreement.contractBytecode,
-        //     constructorArgumentsBytecode: abi.encode(params.bridgedSharesUnderAgreement.symbol, params.bridgedSharesUnderAgreement.name, params.bridgedSharesUnderAgreement.terms, address(this))
-        // });
-        // (deployment.bridgedSharesUnderAgreement, wasDeployed) = Deployment._resolveAddressOrDeploy(bshaDeploymentData, params.salt);
-        // if (deployment.bridgedSharesUnderAgreement == address(0)) revert InvalidAddress();
-        // emit DestinationBridgedSharesUnderAgreementResolved(deployment.bridgedSharesUnderAgreement, wasDeployed);
 
         // Ensure the deployer is the owner
         address bshaOwner = IOwnable(deployment.bridgedSharesUnderAgreement).owner();
@@ -166,46 +153,42 @@ contract FactoryDestination is Ownable {
             revert UnableToPerformSetupCCIP_CanOnlySelfRegister(bshaOwner, address(this));
         }
 
-        // Proxy also pool? Do it, but do not remove the current vanilla Chainlink initialization
-        // // Pool Proxy Deployment
-        // Deploys Token Pool Proxy: Only if applicable
-        deployment.brunMintTokenPool = TokenPoolInitialization._deployProxyTokenPool(
-            TOKEN_POOL_AKT_IMPLEMENTATION,
-            deployment.bridgedSharesUnderAgreement,
-            IERC20Metadata(deployment.bridgedSharesUnderAgreement).decimals(),
-            TokenPoolFactory.PoolType.BURN_MINT,
-            params.chainlink.rmnProxy,
-            params.chainlink.router,
-            params.salt
-        );
-        TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.brunMintTokenPool, params.remoteTokenPools, address(this));
-        emit DestinationTokenPoolDeployed(deployment.brunMintTokenPool);
-
-        // // // Factory Pool Deployment
-        // // Note that salt will be computed as:
-        // // salt = keccak256(abi.encodePacked(salt, msg.sender));
-        // // Within factory
-
-        // // LockRelease Pool Deployment through Chainlink Factory Deployment
-        // // address token,
-        // // uint8 localTokenDecimals,
-        // // RemoteTokenPoolInfo[] calldata remoteTokenPools,
-        // // bytes calldata tokenPoolInitCode,
-        // // bytes32 salt,
-        // // PoolType poolType
-        // deployment.brunMintTokenPool = TokenPoolFactory(params.chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
+        // // Proxy also pool? Do it, but do not remove the current vanilla Chainlink initialization
+        // // // Pool Proxy Deployment
+        // // Deploys Token Pool Proxy: Only if applicable
+        // deployment.brunMintTokenPool = TokenPoolInitialization._deployProxyTokenPool(
+        //     TOKEN_POOL_AKT_IMPLEMENTATION,
         //     deployment.bridgedSharesUnderAgreement,
         //     IERC20Metadata(deployment.bridgedSharesUnderAgreement).decimals(),
-        //     params.remoteTokenPools,
-        //     params.burnMintTokenPoolBytecode,
-        //     params.salt,
-        //     TokenPoolFactory.PoolType.BURN_MINT
+        //     TokenPoolFactory.PoolType.BURN_MINT,
+        //     params.chainlink.rmnProxy,
+        //     params.chainlink.router,
+        //     params.salt
         // );
+        // TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.brunMintTokenPool, params.remoteTokenPools, address(this));
         // emit DestinationTokenPoolDeployed(deployment.brunMintTokenPool);
-        // // now factory owns the pool, and it is deployed
-        // // Ownership of TokenPool in is now pending for Factory in LockReleaseTokenPool
 
-        // // // Further Pool settings that do require only BSHA and Pool addresses
+        // // Factory Pool Deployment
+        // LockRelease Pool Deployment through Chainlink Factory Deployment
+        // address token,
+        // uint8 localTokenDecimals,
+        // RemoteTokenPoolInfo[] calldata remoteTokenPools,
+        // bytes calldata tokenPoolInitCode,
+        // bytes32 salt,
+        // PoolType poolType
+        deployment.brunMintTokenPool = TokenPoolFactory(params.chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
+            deployment.bridgedSharesUnderAgreement,
+            IERC20Metadata(deployment.bridgedSharesUnderAgreement).decimals(),
+            params.remoteTokenPools,
+            params.burnMintTokenPoolBytecode,
+            params.salt,
+            TokenPoolFactory.PoolType.BURN_MINT
+        );
+        emit DestinationTokenPoolDeployed(deployment.brunMintTokenPool);
+        // now factory owns the pool, and it is deployed
+        // Ownership of TokenPool in is now pending for Factory in LockReleaseTokenPool
+
+        // // // Further Pool settings do require only BSHA and Pool addresses
 
         // set pool as minter and burner in bSHA
         BridgedSharesUnderAgreement(deployment.bridgedSharesUnderAgreement).setPool(deployment.brunMintTokenPool);
