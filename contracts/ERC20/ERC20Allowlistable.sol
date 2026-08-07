@@ -35,7 +35,6 @@ import "../utils/Ownable.sol";
  * See ../../doc/allowlist.md for more information.
  */
 abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
-
     uint8 public constant TYPE_FREE = 0x0;
     uint8 public constant TYPE_ALLOWED = 0x1;
     uint8 public constant TYPE_RESTRICTED = 0x2;
@@ -67,7 +66,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     /**
      * Configures newly minted shares to be subject to transfer restrictions, whereas the first
      * recipient is automatically allowlisted.
-     * 
+     *
      * In the background, this is achieved by configuring the null address as ADMIN.
      */
     function setApplicable(bool transferRestrictionsApplicable) external onlyOwner {

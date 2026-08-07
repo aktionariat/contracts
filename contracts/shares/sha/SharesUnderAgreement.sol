@@ -52,7 +52,7 @@ contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, 
     // 2: includes permit
     // 3: added permit2 allowance, VERSION field
     // 5 New token standard, skipping 4 to match base security version number
-    uint8 public constant VERSION = 5;
+    uint8 public VERSION = 5;
 
     // Base security token
     IERC20 public base;
@@ -101,7 +101,11 @@ contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, 
         // __ERC20Allowlistable_init();
         __DeterrenceFee_init(0.01 ether);
 
+        base = base_;
         terms = _terms;
+
+        // const
+        binding = true;
     }
 
     function baseToken() internal view override(DragAlong, Modification) returns (IERC20) {
@@ -162,7 +166,7 @@ contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, 
     }
 
     function convertToBase(uint256 amount) public view returns (uint256) {
-        return (amount * base.balanceOf(address(this))) / totalSupply();
+        return amount * base.balanceOf(address(this)) / totalSupply();
     }
 
     /**
