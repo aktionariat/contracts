@@ -17,16 +17,14 @@
  *
  */
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { RateLimiterConfigSolidityParameter } from "./lib/types.ts";
+import { RateLimiterConfig } from "./lib/types.ts";
 
 export default buildModule("SetRateLimiterModule", (m) => {
   const localTokenPool = m.getParameter<string>("localTokenPool");
 
   const remoteChainSelectors = m.getParameter<bigint[]>("remoteChainSelectors");
-  const outboundConfig =
-    m.getParameter<RateLimiterConfigSolidityParameter[]>("outboundConfig");
-  const inboundConfigs =
-    m.getParameter<RateLimiterConfigSolidityParameter[]>("inboundConfigs");
+  const outboundConfig = m.getParameter<RateLimiterConfig[]>("outboundConfig");
+  const inboundConfigs = m.getParameter<RateLimiterConfig[]>("inboundConfigs");
 
   const tokenPool = m.contractAt("TokenPool", localTokenPool);
 

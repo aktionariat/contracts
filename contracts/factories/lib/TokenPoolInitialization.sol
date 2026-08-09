@@ -105,9 +105,9 @@ library TokenPoolInitialization {
      *      implementation contracts, the token contract and the token pool, respectively.
      * @param poolAddress the token pool address it is deployed to
      * @param remoteTokenPools the RemoteTokenPoolInfo configurations
-     * @param proposedPoolOwner the proposed owner of the pool
+     * @param salt the destination chain deployment salt
      */
-    function _applyChainUpdatesTokenPool(address poolAddress, TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools, address proposedPoolOwner, bytes32 salt) internal {
+    function _applyChainUpdatesTokenPool(address poolAddress, TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools, bytes32 salt) internal {
         // Create an array of chain updates to apply to the token pool
         TokenPool.ChainUpdate[] memory chainUpdates = new TokenPool.ChainUpdate[](remoteTokenPools.length);
 
@@ -142,9 +142,9 @@ library TokenPoolInitialization {
         // Apply the chain updates to the token pool
         TokenPool(poolAddress).applyChainUpdates(new uint64[](0), chainUpdates);
 
-        // Begin the 2 step ownership transfer of the proposed owner
-        Ownable(poolAddress).transferOwnership(proposedPoolOwner); // 2 step ownership transfer
-        // it will have to IOwnable(poolAddress).acceptOwnerhip()
+        // Here we don't need transferOwnership, since we are not passing throught the
+        // chainlink's factory deployment. We can directly move to set up the pool.
+        // See lib/FactoryCCIP.sol
     }
 
     /**

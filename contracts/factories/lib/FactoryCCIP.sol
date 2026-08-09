@@ -34,8 +34,11 @@ import {RegistryModuleOwnerCustom} from "@chainlink/contracts-ccip/contracts/tok
 library FactoryCCIP {
     function _applySettingToChainlinkCCIPInfrastructure(address tokenPool, address token, address futureOwner, address registryModuleOwner, address tokenAdminRegistry) internal {
         // // Settings: not deployment aware, need only SHA and Token Pool addresses
-        // Ownership of TokenPool in TokenPool is pending: Accept ownership for Factory of TokenPool
-        IOwnable(tokenPool).acceptOwnership();
+
+        // Ownership of TokenPool in TokenPool is NOT pending: We deployed the pool
+        // personally without passing through chainlink's factory, as such we already
+        // own the pool
+        // IOwnable(tokenPool).acceptOwnership();
 
         // Uses IOwner(token).owner() to set owner in the registry module
         // and checks that msg.sender is the token owner, that is only after accepting ownership

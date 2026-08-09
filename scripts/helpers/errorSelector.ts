@@ -15,11 +15,33 @@ const targetSelectors = [
   "0xae9b4ce9",
   "0xc454d182",
   "0x2b5c74de",
+  "0x15dbd825",
+  "0x96c6fd1e",
+  "0xdad89dca",
 ];
 
 // Add your custom errors here
 const errors = [
   "TestError()",
+
+  "TransfersPaused()",
+  "Allowlist_ReceiverIsForbidden(address)",
+  "Allowlist_SenderIsForbidden(address)",
+  "Allowlist_ReceiverNotAllowlisted(address)",
+  "NoSuccessorDefined()",
+  "InvalidInitialization()",
+  "NotInitializing()",
+  "ERC20BalanceOverflow(address,uint256,uint256)",
+  "FeeMissing(uint256,uint256)",
+  "NoOfferFound()",
+  "OfferPending()",
+  "CannotCancel()",
+  "DragAlongTooEarly(uint256,uint256)",
+  "NotQualified()",
+  "MigrationNotFound()",
+  "MigrationTooEarly(uint256,uint256)",
+  "ContractBinding()",
+  "ContractNotBinding()",
 
   // Ownable2Owner chainlink
   "OwnerCannotBeZero()",

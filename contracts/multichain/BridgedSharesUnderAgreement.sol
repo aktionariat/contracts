@@ -92,7 +92,7 @@ contract BridgedSharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlis
      * @param _terms the terms of the token
      * @param _owner the owner of the token
      */
-    function initialize(string calldata _symbol, string calldata _name, string calldata _terms, address _owner) public initializer {
+    function initialize(string memory _symbol, string memory _name, string memory _terms, address _owner) public initializer {
         __ERC20Named_init(_symbol, _name, 0, _owner);
         // __ERC20Allowlistable_init();
         __DeterrenceFee_init(0.01 ether);

@@ -44,7 +44,7 @@ contract FactoryDestination is Ownable {
     error InvalidAddress();
 
     event BridgedSharesUnderAgreementLogicResolved(address indexed sourceWrapper);
-    event TokenPoolLogicResolved(address indexed sourceWrapper);
+    event TokenPoolLogicResolved(address indexed sourcePool);
 
     event BridgedSharesUnderAgreementDeployed(address indexed proxyWrapper, string symbol);
     event TokenPoolDeployed(address indexed proxyPool);
@@ -95,6 +95,7 @@ contract FactoryDestination is Ownable {
         BSHA_IMPLEMENTATION = bshaLogicContract;
         emit BridgedSharesUnderAgreementLogicResolved(bshaLogicContract);
 
+        // BurnMintTokenPool Logic
         TOKEN_POOL_IMPLEMENTATION = tokenPoolLogicContract;
         emit TokenPoolLogicResolved(tokenPoolLogicContract);
     }
@@ -110,23 +111,18 @@ contract FactoryDestination is Ownable {
      * @param params deployment parameters.
      * @return deployment deployed addresses struct, comprehends bSHA and the burn mint pool.
      */
-    function deploy(DestinationParams calldata params, address futureOwner) external onlyOwner returns (DestinationDeployment memory deployment) {
+    function deploy(DestinationParams calldata params, address futureOwner, bytes32 salt) external onlyOwner returns (DestinationDeployment memory deployment) {
         // Move admin to deployer for all contracts
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;
         }
 
-        // we already compute the salt over token symbol (which should be an unique identifier)
-        // and msg sender
-        bytes32 salt = keccak256(abi.encodePacked(params.bridgedSharesUnderAgreement.symbol, msg.sender));
-
         // // Proxy Token Deployment
-        // deploys a minimal proxy (EIP-1167) with BSHA_IMPLEMENTATION business logic
         if (params.bridgedSharesUnderAgreement.candidate != address(0)) {
             // use existing token to initialize it
             deployment.bridgedSharesUnderAgreement = params.bridgedSharesUnderAgreement.candidate;
         } else {
-            // deploy proxy
+            // deploys a minimal proxy (EIP-1167) with BSHA_IMPLEMENTATION business logic
             deployment.bridgedSharesUnderAgreement = Clones.cloneDeterministic(BSHA_IMPLEMENTATION, salt);
 
             // initialize
@@ -157,7 +153,7 @@ contract FactoryDestination is Ownable {
             params.chainlink.router,
             salt
         );
-        TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.brunMintTokenPool, params.remoteTokenPools, address(this), salt);
+        TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.brunMintTokenPool, params.remoteTokenPools, salt);
         emit TokenPoolDeployed(deployment.brunMintTokenPool);
 
         // set pool as minter and burner in bSHA

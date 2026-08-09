@@ -17,7 +17,6 @@ import {
   deployCCIPContractsInfrastructureTask,
   estimateCCIPDeploymentGasTask,
   addDestinationChainTask,
-  factoryDeployInfrastructureCCIPTask,
   removeDestinationChainPoolTask,
   resetDestinationChainTask,
   haltBridgeTask,
@@ -42,7 +41,6 @@ const config: HardhatUserConfig = {
     // CCIP
     allowTokenPoolOnBridgedSHATask,
     bridgeTokensTask,
-    factoryDeployInfrastructureCCIPTask,
     deployCCIPContractsInfrastructureTask,
     estimateCCIPDeploymentGasTask,
     addDestinationChainTask,

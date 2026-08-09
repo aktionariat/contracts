@@ -3,7 +3,7 @@
  * contracts to add a chainlink CCIP chain destination
  */
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { ChainUpdate } from "./lib/types.ts";
+import { ChainUpdateRuntimeValue } from "./lib/types.ts";
 
 export default buildModule("AddDestinationChainModule", (m) => {
   // destination addresses
@@ -42,7 +42,7 @@ export default buildModule("AddDestinationChainModule", (m) => {
   // for now straight up call
   // uint64[] calldata remoteChainSelectorsToRemove,
   // ChainUpdate[] calldata chainsToAdd
-  const chainUpdate: ChainUpdate = {
+  const chainUpdate: ChainUpdateRuntimeValue = {
     remoteChainSelector,
     remotePoolAddresses: [remotePoolAddress],
     remoteTokenAddress,

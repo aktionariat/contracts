@@ -3,7 +3,7 @@
  * token pool destination chain settings
  */
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { ChainUpdate } from "./lib/types.ts";
+import { ChainUpdateRuntimeValue } from "./lib/types.ts";
 
 export default buildModule("ResetDestinationChainModule", (m) => {
   // destination addresses
@@ -15,7 +15,7 @@ export default buildModule("ResetDestinationChainModule", (m) => {
   const remoteTokenAddress = m.getParameter<string>("remoteTokenAddress");
 
   const LocalTokenPool = m.contractAt("TokenPool", localTokenPool);
-  const chainUpdate: ChainUpdate = {
+  const chainUpdate: ChainUpdateRuntimeValue = {
     remoteChainSelector,
     remotePoolAddresses: [remotePoolAddress],
     remoteTokenAddress,

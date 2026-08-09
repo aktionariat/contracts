@@ -2,9 +2,9 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import {
   BridgedSharesUnderAgreementDeploymentData,
   ChainlinkAddresses,
-  DestinationParams,
-  RemoteTokenPoolInfoSolidityParameter,
 } from "./lib/types.ts";
+import { RemoteTokenPoolInfo } from "../ccip/lib/types.ts";
+import { DestinationParamsRuntimeValue } from "./lib/types.ts";
 
 export default buildModule(
   "DestinationFactoryDeployBridgedSharesModule",
@@ -17,28 +17,22 @@ export default buildModule(
       );
     const chainlinkAddresses =
       m.getParameter<ChainlinkAddresses>("chainlinkAddresses");
-    const burnMintTokenPoolBytecode = m.getParameter<string>(
-      "burnMintTokenPoolBytecode"
-    );
     const remoteTokenPools =
-      m.getParameter<RemoteTokenPoolInfoSolidityParameter[]>(
-        "remoteTokenPools"
-      );
-    const salt = m.getParameter<string>("salt");
+      m.getParameter<RemoteTokenPoolInfo[]>("remoteTokenPools");
 
     const futureOwner = m.getParameter<string>("futureOwner");
+
+    const salt = m.getParameter<string>("salt");
 
     const FactoryDestination = m.contractAt(
       "FactoryDestination",
       factoryDestination
     );
 
-    const destinationParams: DestinationParams = {
+    const destinationParams: DestinationParamsRuntimeValue = {
       bridgedSharesUnderAgreement: bridgedSharesUnderAgreementDeploymentData,
       chainlink: chainlinkAddresses,
-      burnMintTokenPoolBytecode,
       remoteTokenPools,
-      salt,
     };
     // DeploymentData bridgedSharesUnderAgreement;
     // DeploymentData brunMintTokenPool;
@@ -51,7 +45,7 @@ export default buildModule(
     const deployTx = m.call(
       FactoryDestination,
       "deploy",
-      [destinationParams, futureOwner],
+      [destinationParams, futureOwner, salt],
       {
         after: [FactoryDestination],
       }
@@ -59,20 +53,20 @@ export default buildModule(
 
     const sourceWrapper = m.readEventArgument(
       deployTx,
-      "DestinationBridgedSharesUnderAgreementResolved",
-      "sourceWrapper"
+      "BridgedSharesUnderAgreementDeployed",
+      "proxyWrapper"
     );
     const pool = m.readEventArgument(
       deployTx,
-      "DestinationTokenPoolDeployed",
-      "pool"
+      "TokenPoolDeployed",
+      "proxyPool"
     );
     return {
       BridgedSharesUnderAgreement: m.contractAt(
         "BridgedSharesUnderAgreement",
         sourceWrapper
       ),
-      BurnMintTokenPool: m.contractAt("BurnMintTokenPool", pool),
+      BurnMintTokenPool: m.contractAt("BurnMintTokenPoolProxy", pool),
     };
   }
 );

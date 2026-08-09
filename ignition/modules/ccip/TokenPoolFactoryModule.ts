@@ -11,7 +11,7 @@
 
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-import { PoolType, RemoteTokenPoolInfo } from "./lib/types.ts";
+import { PoolType, RemoteTokenPoolInfoRuntimeValue } from "./lib/types.ts";
 
 export default buildModule("TokenPoolFactoryModule", (m) => {
   // salt
@@ -62,7 +62,7 @@ export default buildModule("TokenPoolFactoryModule", (m) => {
     localTokenPoolFactory
   );
 
-  const remoteTokenPoolInfo: RemoteTokenPoolInfo = {
+  const remoteTokenPoolInfo: RemoteTokenPoolInfoRuntimeValue = {
     // remote chain selector
     remoteChainSelector: remoteChainSelector,
 

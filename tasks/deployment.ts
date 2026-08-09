@@ -31,5 +31,11 @@ export const deployFactoryShareTask = task(
     type: ArgumentType.STRING_WITHOUT_DEFAULT,
     defaultValue: undefined,
   })
+  .addOption({
+    name: "nonce",
+    description: "Whether to increase the salt's nonce",
+    type: ArgumentType.FLAG,
+    defaultValue: false,
+  })
   .setAction(() => import("./deployment/aktionariatSharesInfrastructure.ts"))
   .build();

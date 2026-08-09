@@ -135,14 +135,10 @@ contract FactorySource is Ownable {
      * @param params deployment parameters.
      * @return deployment deployed addresses struct, comprehends Shares, SHA and LockReleaseTokenPool addresses.
      */
-    function deploy(SourceParams calldata params, address futureOwner) external onlyOwner returns (SourceDeployment memory deployment) {
+    function deploy(SourceParams calldata params, address futureOwner, bytes32 salt) external onlyOwner returns (SourceDeployment memory deployment) {
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;
         }
-
-        // we already compute the salt over token symbol (which should be an unique identifier)
-        // and msg sender
-        bytes32 salt = keccak256(abi.encodePacked(params.shares.symbol, msg.sender));
 
         // // Token Deployment
         if (params.sharesUnderAgreement.candidate != address(0)) {
@@ -203,7 +199,7 @@ contract FactorySource is Ownable {
             params.chainlink.router,
             salt
         );
-        TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.lockReleaseTokenPool, params.remoteTokenPools, address(this), salt);
+        TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.lockReleaseTokenPool, params.remoteTokenPools, salt);
         emit TokenPoolDeployed(deployment.lockReleaseTokenPool);
 
         // // // Further Pool settings do require only SHA and Pool addresses
