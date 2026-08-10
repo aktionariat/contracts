@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import { ArgumentType } from "hardhat/types/arguments";
 
-// shares
+// Core Shares and SHA tasks
 export const mintWrapSharesTask = task(
   "mint-wrap-shares",
   "Mint and Wrap Shares under Agreement token on network. Assumes Network singer is the contract owner"

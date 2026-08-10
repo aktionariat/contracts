@@ -14,13 +14,10 @@ import {
   // CCIP
   allowTokenPoolOnBridgedSHATask,
   bridgeTokensTask,
-  deployCCIPContractsInfrastructureTask,
   estimateCCIPDeploymentGasTask,
-  addDestinationChainTask,
-  removeDestinationChainPoolTask,
+  manageDestinationChainPoolTask,
   resetDestinationChainTask,
-  haltBridgeTask,
-  enableBridgeTask,
+  manageBridgeTask,
 
   // Shares
   mintWrapSharesTask,
@@ -41,13 +38,10 @@ const config: HardhatUserConfig = {
     // CCIP
     allowTokenPoolOnBridgedSHATask,
     bridgeTokensTask,
-    deployCCIPContractsInfrastructureTask,
     estimateCCIPDeploymentGasTask,
-    addDestinationChainTask,
-    removeDestinationChainPoolTask,
+    manageDestinationChainPoolTask,
     resetDestinationChainTask,
-    haltBridgeTask,
-    enableBridgeTask,
+    manageBridgeTask,
 
     // Shares
     mintWrapSharesTask,

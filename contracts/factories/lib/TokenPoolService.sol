@@ -35,6 +35,7 @@ import {TokenPool} from "@chainlink/contracts-ccip/contracts/pools/TokenPool.sol
 
 import {BurnMintTokenPoolProxy, IBurnMintERC20} from "../../vendor/@chainlink/contracts-ccip/contracts/pools/BurnMintTokenPoolProxy.sol";
 import {LockReleaseTokenPoolProxy, IERC20} from "../../vendor/@chainlink/contracts-ccip/contracts/pools/LockReleaseTokenPoolProxy.sol";
+import {RateLimiter} from "../../vendor/@chainlink/contracts-ccip/contracts/libraries/RateLimiter.sol";
 
 /**
  * Two custom TokenPools initializations
@@ -46,8 +47,13 @@ import {LockReleaseTokenPoolProxy, IERC20} from "../../vendor/@chainlink/contrac
  *      plus constructor parameters. Indeed, they must hold the address of the
  *      implementation contracts, the token contract and the token pool respectively.
  */
-library TokenPoolInitialization {
+library TokenPoolService {
     error BytesNotAddressSize(bytes data);
+
+    struct RemotePool {
+        uint64 remoteChainSelector;
+        bytes remotePoolAddress;
+    }
 
     /**
      * It deploys the Token Pool logic via Proxy and initializes it.
@@ -96,7 +102,9 @@ library TokenPoolInitialization {
      * Based on RemoteTokenPoolInfo it computes values for the remote token and remote token pool.
      * Which should be added directly to the local TokenPool for CCT message broadcasting.
      * Since we use proxies in both source and destination, the computation does not make sense in our case.
-     * As such we discard the computation and introduce a firm check that all remote addresses have been passed.
+     * As such we discard the computation and introduce our computation through our encoding of remoteTokenInitCode
+     * and remotePoolInitCode, which hold the implementation addresses of the token and token pool, respectively,
+     * on destination chain.
      * Then we apply standard settings to the pool, independently from which pool it is.
      *
      * @dev note that if you want to predict addresses within the code, `bytes remoteTokenInitCode`
@@ -108,6 +116,32 @@ library TokenPoolInitialization {
      * @param salt the destination chain deployment salt
      */
     function _applyChainUpdatesTokenPool(address poolAddress, TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools, bytes32 salt) internal {
+        _applyChainUpdatesTokenPool(poolAddress, new uint64[](0), remoteTokenPools, salt);
+    }
+
+    /**
+     * Slightly modified _createTokenPool of Chainlink TokenPoolFactory.
+     * We modify it so that we can use proxy also for TokenPool.
+     *
+     * It does nothing related to a specific type of pool.
+     * Based on RemoteTokenPoolInfo it computes values for the remote token and remote token pool.
+     * Which should be added directly to the local TokenPool for CCT message broadcasting.
+     * Since we use proxies in both source and destination, the computation does not make sense in our case.
+     * As such we discard the computation and introduce our computation through our encoding of remoteTokenInitCode
+     * and remotePoolInitCode, which hold the implementation addresses of the token and token pool, respectively,
+     * on destination chain.
+     * Then we apply standard settings to the pool, independently from which pool it is.
+     *
+     * @dev note that if you want to predict addresses within the code, `bytes remoteTokenInitCode`
+     *      and `bytes remotePoolInitCode` differs from the standard initialization code
+     *      plus constructor parameters. Indeed, they must hold the address of the
+     *      implementation contracts, the token contract and the token pool, respectively.
+     * @param poolAddress the token pool address it is deployed to
+     * @param chainsToBeRemoved destination chains to be removed
+     * @param remoteTokenPools the RemoteTokenPoolInfo configurations
+     * @param salt the destination chain deployment salt
+     */
+    function _applyChainUpdatesTokenPool(address poolAddress, uint64[] memory chainsToBeRemoved, TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools, bytes32 salt) internal {
         // Create an array of chain updates to apply to the token pool
         TokenPool.ChainUpdate[] memory chainUpdates = new TokenPool.ChainUpdate[](remoteTokenPools.length);
 
@@ -140,11 +174,28 @@ library TokenPoolInitialization {
         }
 
         // Apply the chain updates to the token pool
-        TokenPool(poolAddress).applyChainUpdates(new uint64[](0), chainUpdates);
+        TokenPool(poolAddress).applyChainUpdates(chainsToBeRemoved, chainUpdates);
+    }
 
-        // Here we don't need transferOwnership, since we are not passing throught the
-        // chainlink's factory deployment. We can directly move to set up the pool.
-        // See lib/FactoryCCIP.sol
+    /**
+     * Utility to manage multiple. token pools removal and addition
+     *
+     * @param poolAddress the token pool to apply changes to
+     * @param remotePoolsToRemove remote destination pools to be removed
+     * @param remotePoolsToAdd remote destination pools to be added
+     */
+    function _removeAddTokenPool(address poolAddress, RemotePool[] calldata remotePoolsToRemove, RemotePool[] calldata remotePoolsToAdd) internal {
+        // Remove token pools
+        for (uint256 i = 0; i < remotePoolsToRemove.length; i++) {
+            RemotePool calldata remotePool = remotePoolsToRemove[i];
+            TokenPool(poolAddress).removeRemotePool(remotePool.remoteChainSelector, remotePool.remotePoolAddress);
+        }
+
+        // Add token pools
+        for (uint256 i = 0; i < remotePoolsToAdd.length; i++) {
+            RemotePool calldata remotePool = remotePoolsToAdd[i];
+            TokenPool(poolAddress).addRemotePool(remotePool.remoteChainSelector, remotePool.remotePoolAddress);
+        }
     }
 
     /**

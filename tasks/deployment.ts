@@ -1,6 +1,7 @@
 import { task } from "hardhat/config";
 import { ArgumentType } from "hardhat/types/arguments";
 
+// Core Deployment Tasks
 export const deployFactoryShareTask = task(
   "deploy-factory-share",
   "Deploys Shares, SHA and bSHA tokens, adds them to the CCIP infrastructure. If needed deploys also factories on both source and destinations."

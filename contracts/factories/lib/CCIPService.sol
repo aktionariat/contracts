@@ -31,14 +31,14 @@ import {ITokenAdminRegistry} from "@chainlink/contracts-ccip/contracts/interface
 import {IOwnable} from "@chainlink/contracts/src/v0.8/shared/interfaces/IOwnable.sol";
 import {RegistryModuleOwnerCustom} from "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/RegistryModuleOwnerCustom.sol";
 
-library FactoryCCIP {
+library CCIPService {
     function _applySettingToChainlinkCCIPInfrastructure(address tokenPool, address token, address futureOwner, address registryModuleOwner, address tokenAdminRegistry) internal {
         // // Settings: not deployment aware, need only SHA and Token Pool addresses
 
-        // Ownership of TokenPool in TokenPool is NOT pending: We deployed the pool
-        // personally without passing through chainlink's factory, as such we already
-        // own the pool
-        // IOwnable(tokenPool).acceptOwnership();
+        // // Ownership of TokenPool in TokenPool is NOT pending: We deployed the pool
+        // // personally without passing through chainlink's factory, as such we already
+        // // own the pool
+        // Skipping: IOwnable(tokenPool).acceptOwnership();
 
         // Uses IOwner(token).owner() to set owner in the registry module
         // and checks that msg.sender is the token owner, that is only after accepting ownership
@@ -61,10 +61,12 @@ library FactoryCCIP {
         IOwnable(tokenPool).transferOwnership(futureOwner);
         // Then deployer will have to accept it through call:
         // IOwnable(tokenPool).acceptOwnership();
+        // directly to the tokenPool contract
 
         // Transfer ownership of Token in TokenAdminRegistry to deployer (or address)
         ITokenAdminRegistry(tokenAdminRegistry).transferAdminRole(token, futureOwner);
         // Then deployer will have to accept Administration through call:
         // ITokenAdminRegistry(tokenAdminRegistry).acceptAdminRole(token);
+        // directly to the tokenAdminRegistry contract
     }
 }

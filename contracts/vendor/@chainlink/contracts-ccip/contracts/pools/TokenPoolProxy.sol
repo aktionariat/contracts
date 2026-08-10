@@ -8,7 +8,7 @@ import {IRMN} from "@chainlink/contracts-ccip/contracts/interfaces/IRMN.sol";
 import {IRouter} from "@chainlink/contracts-ccip/contracts/interfaces/IRouter.sol";
 
 import {Pool} from "@chainlink/contracts-ccip/contracts/libraries/Pool.sol";
-import {RateLimiter} from "@chainlink/contracts-ccip/contracts/libraries/RateLimiter.sol";
+import {RateLimiter} from "../libraries/RateLimiter.sol";
 
 import {Ownable2StepMsgSender} from "../../../../@chainlink/contracts/src/v0.8/shared/access/Ownable2StepMsgSender.sol";
 
@@ -532,6 +532,40 @@ abstract contract TokenPoolProxy is Initializable, IPoolV1, Ownable2StepMsgSende
     /// @return The token bucket.
     function getCurrentInboundRateLimiterState(uint64 remoteChainSelector) external view returns (RateLimiter.TokenBucket memory) {
         return s_remoteChainConfigs[remoteChainSelector].inboundRateLimiterConfig._currentTokenBucketState();
+    }
+
+    /// @notice Halts multiple chain bridging.
+    /// @param remoteChainSelectors The remote chain selector for which the halt applies.
+    function haltChains(uint64[] calldata remoteChainSelectors) external {
+        if (msg.sender != s_rateLimitAdmin && msg.sender != owner()) revert Unauthorized(msg.sender);
+
+        RateLimiter.Config[] memory outboundConfigs = new RateLimiter.Config[](remoteChainSelectors.length);
+        RateLimiter.Config[] memory inboundConfigs = new RateLimiter.Config[](remoteChainSelectors.length);
+        for (uint256 i = 0; i < remoteChainSelectors.length; ++i) {
+            outboundConfigs[i] = RateLimiter.Config({isEnabled: true, rate: 0, capacity: 0});
+            inboundConfigs[i] = RateLimiter.Config({isEnabled: false, rate: 0, capacity: 0});
+        }
+
+        for (uint256 i = 0; i < remoteChainSelectors.length; ++i) {
+            _setRateLimitConfig(remoteChainSelectors[i], outboundConfigs[i], inboundConfigs[i]);
+        }
+    }
+
+    /// @notice Activates multiple chain bridging.
+    /// @param remoteChainSelectors The remote chain selector for which the activation applies.
+    function activateChains(uint64[] calldata remoteChainSelectors) external {
+        if (msg.sender != s_rateLimitAdmin && msg.sender != owner()) revert Unauthorized(msg.sender);
+
+        RateLimiter.Config[] memory outboundConfigs = new RateLimiter.Config[](remoteChainSelectors.length);
+        RateLimiter.Config[] memory inboundConfigs = new RateLimiter.Config[](remoteChainSelectors.length);
+        for (uint256 i = 0; i < remoteChainSelectors.length; ++i) {
+            outboundConfigs[i] = RateLimiter.Config({isEnabled: false, rate: 0, capacity: 0});
+            inboundConfigs[i] = RateLimiter.Config({isEnabled: false, rate: 0, capacity: 0});
+        }
+
+        for (uint256 i = 0; i < remoteChainSelectors.length; ++i) {
+            _setRateLimitConfig(remoteChainSelectors[i], outboundConfigs[i], inboundConfigs[i]);
+        }
     }
 
     /// @notice Sets multiple chain rate limiter configs.

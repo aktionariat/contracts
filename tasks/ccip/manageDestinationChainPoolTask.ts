@@ -10,6 +10,8 @@ import { CCIPNetwork } from "./types/infrastructureAddresses.ts";
 import { printAndReturnErrorResult } from "../utils/error.ts";
 import CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE from "./const/CCIPAddresses.ts";
 
+// TODO complete for testing
+
 interface RemoveDestinationChainPoolArguments {
   source: string;
   destination: string;
@@ -78,7 +80,7 @@ export default async function (
   await sourceConnection.ignition.deploy(
     (
       await import(
-        "../../ignition/modules/ccip/RemoveDestinationChainPoolModule.ts"
+        "../../ignition/modules/ccip/AddRemoveDestinationChainModule.ts"
       )
     ).default,
     {

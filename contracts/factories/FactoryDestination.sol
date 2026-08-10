@@ -29,8 +29,8 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {BridgedSharesUnderAgreement} from "../multichain/BridgedSharesUnderAgreement.sol";
 import {Deployment} from "../utils/Deployment.sol";
-import {TokenPoolInitialization} from "./lib/TokenPoolInitialization.sol";
-import {FactoryCCIP} from "./lib/FactoryCCIP.sol";
+import {TokenPoolService} from "./lib/TokenPoolService.sol";
+import {CCIPService} from "./lib/CCIPService.sol";
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -144,7 +144,7 @@ contract FactoryDestination is Ownable {
 
         // // Pool Proxy Deployment
         // Deploys Token Pool Proxy: Only if applicable
-        deployment.brunMintTokenPool = TokenPoolInitialization._deployProxyTokenPool(
+        deployment.brunMintTokenPool = TokenPoolService._deployProxyTokenPool(
             TOKEN_POOL_IMPLEMENTATION,
             deployment.bridgedSharesUnderAgreement,
             IERC20Metadata(deployment.bridgedSharesUnderAgreement).decimals(),
@@ -153,14 +153,14 @@ contract FactoryDestination is Ownable {
             params.chainlink.router,
             salt
         );
-        TokenPoolInitialization._applyChainUpdatesTokenPool(deployment.brunMintTokenPool, params.remoteTokenPools, salt);
+        TokenPoolService._applyChainUpdatesTokenPool(deployment.brunMintTokenPool, params.remoteTokenPools, salt);
         emit TokenPoolDeployed(deployment.brunMintTokenPool);
 
         // set pool as minter and burner in bSHA
         BridgedSharesUnderAgreement(deployment.bridgedSharesUnderAgreement).setPool(deployment.brunMintTokenPool);
 
         // // // Further settings do require only BSHA and Pool addresses
-        FactoryCCIP._applySettingToChainlinkCCIPInfrastructure(
+        CCIPService._applySettingToChainlinkCCIPInfrastructure(
             deployment.brunMintTokenPool,
             deployment.bridgedSharesUnderAgreement,
             futureOwner,
