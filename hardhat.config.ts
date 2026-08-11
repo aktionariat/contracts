@@ -15,7 +15,6 @@ import {
   allowTokenPoolOnBridgedSHATask,
   bridgeTokensTask,
   estimateCCIPDeploymentGasTask,
-  manageDestinationChainPoolTask,
   resetDestinationChainTask,
   manageBridgeTask,
 
@@ -39,7 +38,6 @@ const config: HardhatUserConfig = {
     allowTokenPoolOnBridgedSHATask,
     bridgeTokensTask,
     estimateCCIPDeploymentGasTask,
-    manageDestinationChainPoolTask,
     resetDestinationChainTask,
     manageBridgeTask,
 
@@ -111,6 +109,15 @@ const config: HardhatUserConfig = {
       url: KEYS.alchemy.optimism,
       accounts: {
         mnemonic: KEYS.mnemonics.optimism,
+      },
+    },
+    optimismSepolia: {
+      type: "http",
+      chainId: 11155420,
+      chainType: "op",
+      url: KEYS.alchemy.optimismSepolia,
+      accounts: {
+        mnemonic: KEYS.mnemonics.optimismSepolia,
       },
     },
     polygon: {
@@ -206,6 +213,18 @@ const config: HardhatUserConfig = {
       },
       accounts: {
         mnemonic: KEYS.mnemonics.optimism,
+      },
+    },
+    hardhatOptimismSepolia: {
+      type: "edr-simulated",
+      chainId: 11155420,
+      chainType: "op",
+      forking: {
+        url: KEYS.alchemy.optimismSepolia,
+        enabled: true,
+      },
+      accounts: {
+        mnemonic: KEYS.mnemonics.optimismSepolia,
       },
     },
     hardhatPolygon: {

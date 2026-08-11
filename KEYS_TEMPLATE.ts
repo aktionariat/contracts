@@ -9,7 +9,8 @@ const KEYS_TEMPLATE = {
         sepolia: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
         fuji: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
         amoy: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
-        baseSepolia: "amount marine slide ugly weather pet couch muscle brain energy rare obscure"
+        baseSepolia: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
+        optimismSepolia: "amount marine slide ugly weather pet couch muscle brain energy rare obscure"
     },
 
     // Etherscan Keys by Network
@@ -22,6 +23,7 @@ const KEYS_TEMPLATE = {
         fuji: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338",
         amoy: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338",
         baseSepolia: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338",
+        optimismSepolia: "0x9186004a8121c27c9bdd465eab487e32bb8b9d0f3906305561e3ee086460d338"
     },
 
     alchemy: {
@@ -32,7 +34,8 @@ const KEYS_TEMPLATE = {
         sepolia: "https://eth-sepolia.g.alchemy.com/v2/demo",
         fuji: "https://avax-fuji.g.alchemy.com/v2/demo",
         amoy: "https://polygon-amoy.g.alchemy.com/v2/demo",
-        baseSepolia: "https://base-sepolia.g.alchemy.com/v2/demo"
+        baseSepolia: "https://base-sepolia.g.alchemy.com/v2/demo",
+        optimismSepolia: "https://optimism-sepolia.g.alchemy.com/v2/demo"
     }
 }
 

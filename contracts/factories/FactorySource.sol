@@ -226,48 +226,4 @@ contract FactorySource is Ownable {
         // no need to accept ownership here
         return deployment;
     }
-
-    /**
-     * Apply modification to destination chains and respective Token Pools.
-     * It allows to remove destination chains completely from the system by passing
-     * their remote chain selectors.
-     * Moreover, it allows to add new destination chains and respective Token Pools.
-     *
-     * @dev It assumes that, for added destination chain TokenPools the destination
-     * setup has been completed correctly.
-     *
-     * @param poolAddress address of local the token pool
-     * @param chainsToBeRemoved chain selectors of destination chains to be completely removed
-     * @param remoteTokenPools remote token pools configurations to be added
-     * @param salt the salt used for deployment on remote chain, used to predict addresses, if required to do so
-     */
-    function removeAddDestinationChains(
-        address poolAddress,
-        uint64[] memory chainsToBeRemoved,
-        TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools,
-        bytes32 salt
-    ) external onlyPoolOwner(poolAddress) {
-        TokenPoolService._applyChainUpdatesTokenPool(poolAddress, chainsToBeRemoved, remoteTokenPools, salt);
-    }
-
-    /**
-     * Apply changes to the Token Pool on destination chains that have been already added.
-     * It allows to remove and add single Token Pools on destination chains.
-     *
-     * @param poolAddress address of local token pool to be modifed
-     * @param remotePoolsToRemove remote token pools to be removed
-     * @param remotePoolsToAdd remote token pools to be added
-     */
-    function updateDestinationChains(
-        address poolAddress,
-        TokenPoolService.RemotePool[] calldata remotePoolsToRemove,
-        TokenPoolService.RemotePool[] calldata remotePoolsToAdd
-    ) external onlyPoolOwner(poolAddress) {
-        TokenPoolService._removeAddTokenPool(poolAddress, remotePoolsToRemove, remotePoolsToAdd);
-    }
-
-    modifier onlyPoolOwner(address pool) {
-        if (Ownable(pool).owner() != msg.sender) revert NotPoolOwner(msg.sender);
-        _;
-    }
 }

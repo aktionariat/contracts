@@ -55,6 +55,14 @@ const CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE_NETWORKS: CCIPInfrastructureAddresse
       router: "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
       remoteChainSelector: 10344971235874465080n,
     },
+    optimismSepolia: {
+      tokenAdminRegistry: "0x1d702b1FA12F347f0921C722f9D9166F00DEB67A",
+      registryModuleOwner: "0x6AfeDdaE519bA02985B4DD027b3f22298e1D828D",
+      tokenPoolFactory: "0x5546871845f84301fA6d9195d7abfEda20e7a155",
+      rmnProxy: "0xb40A3109075965cc09E93719e33E748abf680dAe",
+      router: "0x114A20A10b43D4115e5aeef7345a1A71d2a60C57",
+      remoteChainSelector: 5224473277236331295n,
+    },
   };
 
 const hardhatNetworks = Object.fromEntries(

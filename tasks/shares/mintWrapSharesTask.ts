@@ -7,8 +7,6 @@ import type { Result } from "hardhat/types/utils";
 import { successfulResult } from "hardhat/utils/result";
 import type { Address, Shares } from "../../types/ethers-contracts/index.ts";
 
-import readCCIPIgnitionAddresses from "../ccip/lib/CCIPIgnitionDeployments.ts";
-
 import { printAndReturnErrorResult } from "../utils/error.ts";
 
 export interface MintSharesTaskArguments {
@@ -16,7 +14,6 @@ export interface MintSharesTaskArguments {
   sha?: string;
   amount: string;
   to?: string;
-  ccipIgnition: boolean;
 }
 
 export default async function (
@@ -30,32 +27,6 @@ export default async function (
   // should fix ts somehow
   const connection = await _hre.network.create();
   const { ethers } = connection;
-
-  // maybe ccip-ignition
-  if (_taskArguments.ccipIgnition) {
-    // read
-    const bundle = readCCIPIgnitionAddresses(connection.networkName);
-    if (!bundle) {
-      return printAndReturnErrorResult(
-        "Network has not been used as source chain, do not use `--ccip-ignition` or change network with `--network`"
-      );
-    }
-
-    const bundles = bundle.source;
-    if (!bundles.sharesAddress) {
-      return printAndReturnErrorResult(
-        "Deployment did not deply Shares contract on Source chain"
-      );
-    }
-    if (!bundles.sha) {
-      return printAndReturnErrorResult(
-        "Deployment did not deply SharesUnderAgreement contract on Source chain"
-      );
-    }
-
-    sharesAddress = bundles.sharesAddress!;
-    shaAddress = bundles.sha!;
-  }
 
   if (!sharesAddress) {
     // maybe better address checks

@@ -27,18 +27,19 @@ export interface BridgeTokenTasks {
   source: string;
   destination: string;
   to?: string;
-  ccipIgnition: boolean;
 }
 
 export default async function (
   _taskArguments: BridgeTokenTasks,
   _hre: HardhatRuntimeEnvironment
 ): Promise<Result<string[], string>> {
-  // we need a way to be sure about block being published
-  // before calling anything
-  // only if running in simulated?
-
   let sha = _taskArguments.sha;
+  if (!sha) {
+    return printAndReturnErrorResult(
+      "You have to provide a SHA contract address through the `--sha` flag"
+    );
+  }
+
   let source = _taskArguments.source;
   let amount = _taskArguments.amount;
   const decimals = 0; // hardcoded, but could be made into decimals call
@@ -48,37 +49,6 @@ export default async function (
   const sourceConnection = await _hre.network.create({
     network: source,
   });
-
-  if (_taskArguments.ccipIgnition) {
-    // load from ignition module
-    const addresses = readCCIPIgnitionAddresses(sourceConnection.networkName);
-
-    if (!addresses || !addresses.source.sha) {
-      return printAndReturnErrorResult(
-        "No valid CCIP Ignition deployment or no BSHA address present"
-      );
-    }
-
-    sha = addresses.source.sha;
-    source = sourceConnection.networkName;
-  }
-
-  if (!sha) {
-    return printAndReturnErrorResult(
-      "Provide SharesUnderAgreement address or use `--ccipIgnition`"
-    );
-  }
-
-  if (!source || !(source in CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE)) {
-    return printAndReturnErrorResult(
-      "Soruce Network does not have an entry in CCIP Addresses table, change network with `--network`"
-    );
-  }
-  if (!(destination in CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE)) {
-    return printAndReturnErrorResult(
-      "Destination Network does not have an entry in CCIP Addresses table.\nNote, if you are using flag `--ccipIgnition` you still have to provide a valid Network destination chain"
-    );
-  }
 
   // get sender by first account
   const [sender] = await sourceConnection.ethers.getSigners();

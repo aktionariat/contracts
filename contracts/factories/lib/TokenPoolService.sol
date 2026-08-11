@@ -50,11 +50,6 @@ import {RateLimiter} from "../../vendor/@chainlink/contracts-ccip/contracts/libr
 library TokenPoolService {
     error BytesNotAddressSize(bytes data);
 
-    struct RemotePool {
-        uint64 remoteChainSelector;
-        bytes remotePoolAddress;
-    }
-
     /**
      * It deploys the Token Pool logic via Proxy and initializes it.
      * Assumes the Token Pool defines the custon initialize proxy function.
@@ -175,27 +170,6 @@ library TokenPoolService {
 
         // Apply the chain updates to the token pool
         TokenPool(poolAddress).applyChainUpdates(chainsToBeRemoved, chainUpdates);
-    }
-
-    /**
-     * Utility to manage multiple. token pools removal and addition
-     *
-     * @param poolAddress the token pool to apply changes to
-     * @param remotePoolsToRemove remote destination pools to be removed
-     * @param remotePoolsToAdd remote destination pools to be added
-     */
-    function _removeAddTokenPool(address poolAddress, RemotePool[] calldata remotePoolsToRemove, RemotePool[] calldata remotePoolsToAdd) internal {
-        // Remove token pools
-        for (uint256 i = 0; i < remotePoolsToRemove.length; i++) {
-            RemotePool calldata remotePool = remotePoolsToRemove[i];
-            TokenPool(poolAddress).removeRemotePool(remotePool.remoteChainSelector, remotePool.remotePoolAddress);
-        }
-
-        // Add token pools
-        for (uint256 i = 0; i < remotePoolsToAdd.length; i++) {
-            RemotePool calldata remotePool = remotePoolsToAdd[i];
-            TokenPool(poolAddress).addRemotePool(remotePool.remoteChainSelector, remotePool.remotePoolAddress);
-        }
     }
 
     /**

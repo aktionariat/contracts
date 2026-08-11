@@ -28,7 +28,7 @@ export const bridgeTokensTask = task(
     name: "destination",
     description: "Network Destination chain to bridge tokens to",
     type: ArgumentType.STRING,
-    defaultValue: "fuji",
+    defaultValue: "baseSepolia",
   })
   .addOption({
     name: "to",
@@ -37,45 +37,7 @@ export const bridgeTokensTask = task(
     type: ArgumentType.STRING_WITHOUT_DEFAULT,
     defaultValue: undefined,
   })
-  .addOption({
-    name: "ccipIgnition",
-    description:
-      "Collects information from ignition folder, for sha address and source addresses based on network used",
-    type: ArgumentType.FLAG,
-    defaultValue: false,
-  })
   .setAction(() => import("./ccip/bridgeTokensTask.ts"))
-  .build();
-
-export const manageDestinationChainPoolTask = task(
-  "ccip-manage-dpool",
-  "Removes a destination chain pool from a source chain pool"
-)
-  .addOption({
-    name: "source",
-    description: "Source chain network",
-    type: ArgumentType.STRING,
-    defaultValue: "sepolia",
-  })
-  .addOption({
-    name: "destination",
-    description: "Destination chain network",
-    type: ArgumentType.STRING,
-    defaultValue: "baseSepolia",
-  })
-  .addOption({
-    name: "dtkp",
-    description: "Source chain TokenPool address",
-    type: ArgumentType.STRING_WITHOUT_DEFAULT,
-    defaultValue: undefined,
-  })
-  .addOption({
-    name: "stkp",
-    description: "Source chain TokenPool address",
-    type: ArgumentType.STRING_WITHOUT_DEFAULT,
-    defaultValue: undefined,
-  })
-  .setAction(() => import("./ccip/manageDestinationChainPoolTask.ts"))
   .build();
 
 export const manageBridgeTask = task(
@@ -84,14 +46,14 @@ export const manageBridgeTask = task(
 )
   .addOption({
     name: "source",
-    description: "Source network to halt the bridge",
+    description: "Source network to manage the bridge",
     type: ArgumentType.STRING,
     defaultValue: "sepolia",
   })
   .addOption({
     name: "destination",
     description:
-      "Destination network(s) to enable bridge for, multiple inputs can be passed in by [net1]-[net2]. Length must match the one of dtkp",
+      "Destination network(s) to manage bridge for, multiple inputs can be passed in by [net1]-[net2]. Length must match the one of dtkp",
     type: ArgumentType.STRING,
     defaultValue: "baseSepolia",
   })
@@ -195,7 +157,7 @@ export const estimateCCIPDeploymentGasTask = task(
     name: "destination",
     description: "Destination network to deply destination contracts",
     type: ArgumentType.STRING,
-    defaultValue: "fuji",
+    defaultValue: "baseSepolia",
   })
   .setAction(() => import("./ccip/estimateCCIPDeploymentGasTask.ts"))
   .build();

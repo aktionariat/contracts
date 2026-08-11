@@ -30,11 +30,5 @@ export const mintWrapSharesTask = task(
     type: ArgumentType.STRING_WITHOUT_DEFAULT,
     defaultValue: undefined,
   })
-  .addOption({
-    name: "ccipIgnition",
-    description: "Use CCIP ignition deployment informations",
-    type: ArgumentType.FLAG,
-    defaultValue: false,
-  })
   .setAction(() => import("./shares/mintWrapSharesTask.ts"))
   .build();
