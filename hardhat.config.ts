@@ -196,11 +196,11 @@ const config: HardhatUserConfig = {
       chainId: 11155111,
       chainType: "l1",
       forking: {
-        url: KEYS.alchemy.baseSepolia,
+        url: KEYS.alchemy.sepolia,
         enabled: true,
       },
       accounts: {
-        mnemonic: KEYS.mnemonics.baseSepolia,
+        mnemonic: KEYS.mnemonics.sepolia,
       },
     },
     hardhatOptimism: {
@@ -276,10 +276,13 @@ const config: HardhatUserConfig = {
       },
     },
     hardhatAmoy: {
-      type: "http",
+      type: "edr-simulated",
       chainId: 80002,
       chainType: "l1",
-      url: KEYS.alchemy.amoy,
+      forking: {
+        url: KEYS.alchemy.amoy,
+        enabled: true,
+      },
       accounts: {
         mnemonic: KEYS.mnemonics.amoy,
       },

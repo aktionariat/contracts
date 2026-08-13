@@ -132,7 +132,6 @@ contract FactorySource is Ownable {
      *
      * For backward compatibility we accept also already deployed Shares and SHA to do the CCIP setup.
      * For those shares, owneship of shares should be given to the factory before calling this function.
-     * TODO Q: should it be removed?
      *
      * @notice onlyOwner is not strictly necessary.
      * @dev You need to make sure that the true owner has the ability to accept ownership of TokenPool and the
@@ -151,7 +150,6 @@ contract FactorySource is Ownable {
         if (params.sharesUnderAgreement.candidate != address(0)) {
             // SHA is deployed, so we can infer shares
             // we give the possibility to initialize standalone deployments
-            // TODO Q: should it be removed?
 
             // return type purposes only
             deployment.sharesUnderAgreement = params.sharesUnderAgreement.candidate;
@@ -166,7 +164,7 @@ contract FactorySource is Ownable {
 
             // SHA is not deployed, we try to deploy both, we leave possibility
             // to "deploy" (initialize) already deployed tokens
-            // Deploy Shares via Proxy
+            // Infer or Deploy Shares via Proxy
             (deployment.shares, wasDeployed) = Deployment._resolveAddressOrDeploy(params.shares.candidate, SHARES_IMPLEMENTATION, salt);
             // initialize Shares if it was deployed
             if (wasDeployed) {

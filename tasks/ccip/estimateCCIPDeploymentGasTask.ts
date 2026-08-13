@@ -224,7 +224,7 @@ export default async function (
 
   const destinationCost = await estimateDeploymentCostDestinationChain(
     _hre,
-    KEYS_TEMPLATE.alchemy[source as keyof typeof KEYS_TEMPLATE.alchemy]
+    KEYS_TEMPLATE.alchemy[destination as keyof typeof KEYS_TEMPLATE.alchemy]
   );
   if (!destinationCost) {
     return printAndReturnErrorResult(
