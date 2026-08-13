@@ -106,6 +106,9 @@ contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, 
 
         // const
         binding = true;
+
+        // disable logic contracts initializers
+        _disableInitializers();
     }
 
     function baseToken() internal view override(DragAlong, Modification) returns (IERC20) {

@@ -101,6 +101,9 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
         __DeterrenceFee_init(0.01 ether);
 
         terms = _terms;
+
+        // disable logic contracts initializers
+        _disableInitializers();
     }
 
     /**

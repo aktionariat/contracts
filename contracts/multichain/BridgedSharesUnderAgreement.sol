@@ -82,6 +82,9 @@ contract BridgedSharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlis
         DeterrenceFee(0.01 ether)
     {
         terms = _terms;
+
+        // disable initialze for logic contracts
+        _disableInitializers();
     }
 
     /**

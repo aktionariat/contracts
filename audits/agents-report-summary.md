@@ -4,35 +4,9 @@ Report summary of all agents reports and useful findings.
 Agents report are found in `audits/agents` folder.
 Tests to back those findings can be found at `test/audits/agents`.
 
-## Pashov
+## Important Issues
 
-### Filler-controlled `totalFee` lets anyone pocket 100% of a seller's proceeds
-
-```diff
-- TradeReactor.process
-- Valid Concern:    If intent are signed and sent to a malicious actor, it could drain the seller's
--                   tokenIn balance.
--					Those trades are usually run by a benevolent actor (backend).
-+ Solution:	Cap fees that can be collected. Could be capped to: transaction fee plus a maximum percentage.
-+			Or, since tokenIn is usually frankencoin, to a maximum percentage amount of the deller's balance.
-```
-
-See `TradeReactor.sol`.
-
-`TradeReactor.process`: A filler with both signed intents calls `process(seller, sig, buyer, sig, tradedTokens, totalExecutionPrice)` as `msg.sender`. The buyer pays full price, the seller receives `0`, the filler receives the whole trade value. A fair filler would set `totalFee` to a negotiated rate; nothing enforces that choice. Malicious front-runners can also grab publicly-signaled intents and force the max fee.
-
-Fix:
-
-- Derive `totalFee` inside `process` from a stored fee schedule (like `SecondaryMarket`'s `tradingFeeBips`) rather than trusting the caller (maybe also re-emit the `Trade` event with the actual fee)
-- Place a fixed cap that the caller can't exceede.
-
-```diff
-- function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 tradedTokens, uint256 totalFee) public {
-+ // totalFee must be derived on-chain, e.g. from a fee registry, or capped against the intent:
-+ // if (totalFee > totalExecutionPrice * MAX_FEE_BIPS / 10000) revert FeeTooHigh();
-```
-
-### `Shares.burn` auto-allowlists address(0), silently corrupting the registry's default type and bricking all future mints
+### `Shares.burn` auto-allowlists address(0), silently corrupting the registry's default type and blocking all future mints
 
 ```diff
 - True:	Admin address turns all transfered to addresses into Admin, and if an admin burns tokens, also address(0)
@@ -58,7 +32,11 @@ Fix:
               }
 ```
 
-### Stealing funds and the deterrence fee is silently swallowed when the owner cannot receive ETH
+#### Plan
+
+TODO Propose fix: See also CCIP router what could happen
+
+### Deterrence fee is silently swallowed when the owner cannot receive ETH
 
 ```diff
 - True:	If address can't receive ethers as payment txn still suceeds and fee is not delivered.
@@ -68,7 +46,7 @@ Fix:
 
 see `DeterrenceFee.sol`
 
-`Recoverable.initRecovery` / `Recoverable.recover` / `DeterrenceFee.deter`: `initRecovery(address)` (`Recoverable.sol:73`) is permissionless and requires no proof that the target address is actually lost — any caller can register a recovery of any address with a balance, naming themselves (or anyone) as recipient. `recover(lostAddress)` (`Recoverable.sol:126`) is also permissionless and pays the full balance to the stored recipient. A live holder who is dormant, does not monitor on-chain activity, or is legally barred from canceling within the window loses their entire position after `RECOVERY_DELAY`. The intended deterrent is a 0.01 ETH fee (`DeterrenceFee.sol:57-61`), but the payment is forwarded with an ignored return value — `(bool success, ) = payable(owner).call{value: fee}("")` — so if the owner cannot receive ETH (e.g. a contract without `receive()`/`fallback()`), the fee is silently dropped, enforcement is void, and the attacker's ETH is stranded instead of charged.
+The intended deterrent is a 0.01 ETH fee (`DeterrenceFee.sol:57-61`), but the payment is forwarded with an ignored return value — `(bool success, ) = payable(owner).call{value: fee}("")` — so if the owner cannot receive ETH (e.g. a contract without `receive()`/`fallback()`), the fee is silently dropped, enforcement is void, and the attacker's ETH is stranded instead of charged.
 
 Fix:
 
@@ -84,9 +62,11 @@ Fix:
 
 Additionally, gate `initRecovery` on an opt-in signal (e.g. the target address having registered as lost, or an on-chain proof-of-loss attestation) rather than any address, or require the proposer to stake a meaningful, forfeitable amount.
 
-## SCV
+#### Plan
 
-### `MultichainWallet.sync` reuses `msg.value` in a loop — the wallet's own ETH pays for other chains' fees
+Applied `msg.value` fix.
+
+### `MultichainWallet.sync` reuses `msg.value` in a loop: the wallet's own ETH pays for other chains' fees
 
 ```diff
 - True: When operating the send multiple times, the contract keeps using the msg.value, that is
@@ -134,6 +114,10 @@ Then apply different logic computation within each call: batch and single.
 
 This line: `uint256 fee =  IRouterClient(getRouter()).getFee(chain, message);` is the middle man between the two internal fucntions.
 
+#### Plan
+
+Apply fix
+
 ### Unprotected `initialize()` lets anyone seize ownership of the share-token family — unlimited mint, broken bridge peg
 
 ```diff
@@ -153,16 +137,47 @@ Fix:
 
 - Call `_disableInitializers` at the end of the constructor of logic proxied contracts
 
-## Signed Intent Integrity
+#### Plan
+
+Applied `_disableInitializers` fix.
+
+## Middle Ground Issue
+
+### Filler-controlled `totalFee` lets anyone pocket 100% of a seller's proceeds
+
+```diff
+- TradeReactor.process
+- Valid Concern:    If intent are signed and sent to a malicious actor, it could drain the seller's
+-                   tokenIn balance.
+-					Those trades are usually run by a benevolent actor (backend).
++ Solution:	Cap fees that can be collected. Could be capped to: transaction fee plus a maximum percentage.
++			Or, since tokenIn is usually frankencoin, to a maximum percentage amount of the deller's balance.
+```
+
+See `TradeReactor.sol`.
+
+`TradeReactor.process`: A filler with both signed intents calls `process(seller, sig, buyer, sig, tradedTokens, totalExecutionPrice)` as `msg.sender`. The buyer pays full price, the seller receives `0`, the filler receives the whole trade value. A fair filler would set `totalFee` to a negotiated rate; nothing enforces that choice. Malicious front-runners can also grab publicly-signaled intents and force the max fee.
+
+Fix:
+
+- Derive `totalFee` inside `process` from a stored fee schedule (like `SecondaryMarket`'s `tradingFeeBips`) rather than trusting the caller (maybe also re-emit the `Trade` event with the actual fee)
+- Place a fixed cap that the caller can't exceede.
+
+```diff
+- function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 tradedTokens, uint256 totalFee) public {
++ // totalFee must be derived on-chain, e.g. from a fee registry, or capped against the intent:
++ // if (totalFee > totalExecutionPrice * MAX_FEE_BIPS / 10000) revert FeeTooHigh();
+```
+
+#### Plan
+
+TODO Propose fix?
+
+## Not Important Issues
 
 ### `SecondaryMarket.process`: seller's signed minimum `amountIn` is never enforced
 
-```diff
-- True:		The fee might change after signer singed
-+ Still, it is not a direct "vulnerability"
-```
-
-**Files:** `contracts/market/SecondaryMarket.sol:254-262`, `contracts/market/TradeReactor.sol:137-138`
+See `contracts/market/SecondaryMarket.sol:254-262`, `contracts/market/TradeReactor.sol:137-138`
 
 ```solidity
 // SecondaryMarket.sol:258-259
@@ -178,18 +193,7 @@ IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, totalFee); // fee to fille
 
 Also if a user signs two intents, both can be executed.
 
-Probably shouldnt be fixed, but a fix could be:
-
-- Add fee on intent and revert if it is higher on execution
-
-## Market Shares Integrity
-
 ### `SecondaryMarket.process` clears off-pair trades that `validateOrder` rejects
-
-```diff
-- True, the secondary market does not check that when sending the actual transaction TOKEN and CURRENCY are the one used, then reactor only checks that.
--		I dont know how necessary the enforcment it should be. At the end the router is placed manually and has to solely right to execute it, that is is a trusted actor.
-```
 
 See `market/SecondaryMarket.sol`
 
@@ -242,8 +246,8 @@ Fix:
 
 ### Recovery
 
-On source chain people can call recovery for any contract: including the token pool, maybe
-to reduce efforts on monitoring could be good t have a blacklist of addresses which recovery is disallowed.
+On source chain people can call recovery for any contract: including the token pool, and a SHA which holds all shares that have been wrapped.
+Maybe to reduce efforts on monitoring could be good t have a blacklist of addresses which recovery is disallowed.
 For example the lock release token pool could be a blacklisted address.
 
 See `Recoverable.sol`
@@ -252,32 +256,6 @@ Fix:
 
 - Add blacklist mapping of address to bools and enforce blacklist on key address (especiall contracts) that hold tokens: TokenPool, SHA
 - Monitoring
-
-## State Invariant Detection
-
-### Permissionless recovery of the base token drains the wrapper escrow, breaking escrow == wrappedSupply
-
-Anyone can call recover for shares from the SHA token address, which is responsible to hold all base shares tokens, that is, remove the unbacking. Could be solved by a blacklist in the recovery instead of monitoring.
-
-Fix:
-
-- Add blacklist: TokenPool, SHA
-- Monitoring
-
-### Bridged pool role and allowlist flags are never reconciled; restrictions brick the whole bridge-out flow
-
-Source and Destination chain allowlist is out of sync, but this is not to be enforeced.
-
-The other problem is the automatically admin of zero address also on destination: if someone bridges back that is an admin, he will set the zero address to alllowed, making it revert on minting to free addresses (any free address that bridges to a destination will revert on minting).
-Same if an admin burns tokens in destination for any other reason.
-
-If zero address becomes admin, via set applicable (same as after a burn from an admin) any mint transfer to free will turn that address to allowed.
-
-Fix:
-
-- Discussed above, removing address(0) from possible updated addresses
-
-## Signature Replay Analysis
 
 ### MultichainWallet: out-of-order signer syncs resurrect removed signers
 
@@ -302,19 +280,7 @@ Proposed fixes are:
 - Add a per-owner (or per-owner/per-token) monotonically increasing nonce to the signed Intent, and reject fills of intents whose nonce is behind the owner's current one. Signing intent B then implicitly invalidates intent A.
 - At minimum, keep creation in the price path but document that getTotalExecutionPrice (TradeReactor.sol:100-104) trusts the signer-chosen creation ordering.
 
-## Proxy Upgrade Safety
-
-### Directly deployed initializer-enabled implementations can be taken over
-
-All logic contracts can be re-initialized by calling initialize.
-
-Fix:
-
-- Add a constructor to every implementation that calls \_disableInitializers() or otherwise consumes the initializer on the implementation address.
-
-## Oracle Flashloan Analysis
-
-### DragmAlong proposal
+### DragAlong proposal
 
 Anyone can submit an offer startign from a price per shares of 0, and with a base token that is worthless.
 
@@ -329,22 +295,3 @@ Fixes:
 No check that tokens have been transfered correctly.
 
 See `SecondaryMarket.withdrawFees` and `MultichainWallet.sync`
-
-## DoS Griefing
-
-### DeterrenceFee: excess msg.value is silently retained by the token contract
-
-In the `deter` modifier excees msg.value is swallowed, could be nice to send it back to caller or akt ledger.
-
-See `DeterrenceFee.sol`.
-
-## Defender
-
-### CCIP Local tests
-
-Add back CCIP local tests, even if with local it does not resemble the actual CCIP settings flow.
-
-### Rollout Salt
-
-Consider passing salt as a functiona rgument for deployment.
-Is rollout used?

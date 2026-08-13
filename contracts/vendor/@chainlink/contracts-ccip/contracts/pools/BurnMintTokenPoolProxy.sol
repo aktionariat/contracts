@@ -16,7 +16,10 @@ import {TokenPoolProxy} from "./TokenPoolProxy.sol";
 contract BurnMintTokenPoolProxy is BurnMintTokenPoolAbstract, ITypeAndVersion {
     string public constant override typeAndVersion = "BurnMintTokenPool 1.5.1";
 
-    constructor(IBurnMintERC20 token, uint8 localTokenDecimals, address[] memory allowlist, address rmnProxy, address router) TokenPoolProxy(token, localTokenDecimals, allowlist, rmnProxy, router) {}
+    constructor(IBurnMintERC20 token, uint8 localTokenDecimals, address[] memory allowlist, address rmnProxy, address router) TokenPoolProxy(token, localTokenDecimals, allowlist, rmnProxy, router) {
+        // disable logic contracts initializers
+        _disableInitializers();
+    }
 
     /// @inheritdoc BurnMintTokenPoolAbstract
     function _burn(uint256 amount) internal virtual override {

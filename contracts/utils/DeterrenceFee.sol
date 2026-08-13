@@ -57,7 +57,7 @@ abstract contract DeterrenceFee is Initializable, Ownable {
         if (deterrenceFee > 0 && msg.sender != owner) {
             uint256 fee = deterrenceFee * multiple;
             if (msg.value < fee) revert FeeMissing(fee, msg.value);
-            (bool success, ) = payable(owner).call{value: fee}("");
+            (bool success, ) = payable(owner).call{value: msg.value}("");
             emit DeterrenceFeePaid(msg.sender, fee);
         }
         _;

@@ -44,6 +44,9 @@ contract LockReleaseTokenPoolProxy is Initializable, TokenPoolProxy, ILiquidityC
         address router
     ) TokenPoolProxy(token, localTokenDecimals, allowlist, rmnProxy, router) {
         i_acceptLiquidity = acceptLiquidity;
+
+        // disable logic contracts initializers
+        _disableInitializers();
     }
 
     /**
