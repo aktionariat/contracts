@@ -34,10 +34,11 @@ Fix:
 
 #### Plan
 
-Fix:
+Fixes:
 
 - Lookup table of non-allowable addresses (always free addresses)
 - Allowed status is applied with a special transfer transerAndAllow instead of beforeTransfer and the lifecycle call only checks the table permissions without setting anything. This approach makes it easier to manage allowlistings and we discard all side effects of transfers.
+- Allowed status is applied only to EOA, i.e. no contracts, not address(0), as for their functionality to e used they must be free. Since all deployed contracts start with free allowlist it does not impose any problem or additonal behaviour that was alreeady present. If a user wants to restric a specific contracts it would have to apply restriced instead of allowed. Fix applied.
 
 ### Deterrence fee is silently swallowed when the owner cannot receive ETH
 
