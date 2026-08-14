@@ -34,7 +34,10 @@ Fix:
 
 #### Plan
 
-TODO Propose fix: See also CCIP router what could happen
+Fix:
+
+- Lookup table of non-allowable addresses (always free addresses)
+- Allowed status is applied with a special transfer transerAndAllow instead of beforeTransfer and the lifecycle call only checks the table permissions without setting anything. This approach makes it easier to manage allowlistings and we discard all side effects of transfers.
 
 ### Deterrence fee is silently swallowed when the owner cannot receive ETH
 
@@ -116,7 +119,7 @@ This line: `uint256 fee =  IRouterClient(getRouter()).getFee(chain, message);` i
 
 #### Plan
 
-Apply fix
+Applied abstraction of tasks and reduction of native on each call fix.
 
 ### Unprotected `initialize()` lets anyone seize ownership of the share-token family — unlimited mint, broken bridge peg
 
@@ -141,7 +144,7 @@ Fix:
 
 Applied `_disableInitializers` fix.
 
-## Middle Ground Issue
+## Middle Ground Issues
 
 ### Filler-controlled `totalFee` lets anyone pocket 100% of a seller's proceeds
 
@@ -171,7 +174,7 @@ Fix:
 
 #### Plan
 
-TODO Propose fix?
+Not of systematic concern.
 
 ## Not Important Issues
 
