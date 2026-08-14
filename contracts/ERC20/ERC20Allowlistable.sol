@@ -187,9 +187,9 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
             // Admin address always sets the recipient to ALLOWED
             // If this behaviour is not desired, set admin addresses to FREE instead
             if (
-                isAdmin(from) // admin
-                && address(to).code.length == 0  // not a contract
-                && to != address(0) // not address zero
+                isAdmin(from) // sender is admin
+                && address(to).code.length == 0  // receiver is not a contract
+                && to != address(0) // receiver is not address zero
             ) {
                 setFlag(to, FLAG_INDEX_ALLOWED, true);
                 emit AddressTypeUpdate(to, TYPE_ALLOWED);

@@ -79,6 +79,9 @@ const config: HardhatUserConfig = {
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenAdminRegistry.sol",
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/RegistryModuleOwnerCustom.sol",
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol",
+
+      // local CCIP simulation (tests)
+      "@chainlink/local/src/ccip/CCIPLocalSimulator.sol",
     ],
   },
 
