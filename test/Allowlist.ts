@@ -58,7 +58,7 @@ describe("Allowlist (ERC20Allowlistable)", function () {
     await shares.connect(owner).mintAndWrap(signer1, sha, 100n);
     expect(await sha.balanceOf(signer1)).to.equal(100n);
 
-    // Address zero is the "free" allowance sentinel before any burn.
+    // Address zero is the "free" allowlist before any burn.
     expect(await sha.isAllowed(ethers.ZeroAddress)).to.equal(false);
     expect(await sha.isAdmin(ethers.ZeroAddress)).to.equal(false);
     expect(await sha.isRestricted(ethers.ZeroAddress)).to.equal(false);
@@ -76,7 +76,7 @@ describe("Allowlist (ERC20Allowlistable)", function () {
     await sha.connect(owner)["burn(address,uint256)"](signer1, 40n);
     expect(await sha.balanceOf(signer1)).to.equal(60n);
 
-    // Address zero must still be a "free" allowance address after the burn.
+    // Address zero must still be a "free" allowlist address after the burn.
     expect(await sha.isAllowed(ethers.ZeroAddress)).to.equal(false);
     expect(await sha.isAdmin(ethers.ZeroAddress)).to.equal(false);
     expect(await sha.isRestricted(ethers.ZeroAddress)).to.equal(false);

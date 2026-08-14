@@ -176,6 +176,7 @@ Fix:
 #### Plan
 
 Not of systematic concern.
+We defer the problem to be managed benevolently by the router.
 
 ## Not Important Issues
 
@@ -196,6 +197,10 @@ IERC20(sellerIntent.tokenIn).safeTransfer(msg.sender, totalFee); // fee to fille
 **The fee is applied at execution time, not signing time.** `setTradingFee` (`SecondaryMarket.sol:104-107`) lets the owner raise the fee to 5% at any moment; every order signed and resting in the book is instantly re-priced below its signed floor without the seller's consent. The intent carries no fee term, so the seller's signature covers the pre-fee amount only.
 
 Also if a user signs two intents, both can be executed.
+
+#### Plan
+
+We defer any off chain invariants to be managed benevolently by the router.
 
 ### `SecondaryMarket.process` clears off-pair trades that `validateOrder` rejects
 
@@ -218,6 +223,10 @@ Fix:
 
       uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedAmount);
 ```
+
+#### Plan
+
+We fixed the issue by adding a `verifyTokenAndCurrency` before trades happen.
 
 ### `Modification._propose` silently overwrites a pending migration
 
@@ -248,6 +257,10 @@ Fix:
 
 (Maybe also emit a dedicated overwrite event)
 
+#### Plan
+
+We allow overriding.
+
 ### Recovery
 
 On source chain people can call recovery for any contract: including the token pool, and a SHA which holds all shares that have been wrapped.
@@ -261,6 +274,10 @@ Fix:
 - Add blacklist mapping of address to bools and enforce blacklist on key address (especiall contracts) that hold tokens: TokenPool, SHA
 - Monitoring
 
+#### Plan
+
+We monitor it.
+
 ### MultichainWallet: out-of-order signer syncs resurrect removed signers
 
 Do we really wnt to have out of sync messages? Problem is: desstinations could get out of sync if multiple messages are sent.
@@ -269,12 +286,22 @@ Fix:
 
 - (Basically bridge a piece of information that can track messages order, revert if older message is received) Add a monotonically increasing sync sequence (mainnet keeps lastSyncSeq; only messages with a strictly newer sequence are applied, and the sequence is included in the CCIP payload). Alternatively make ccipReceive a snapshot-based set replace keyed by a mainnet-maintained version number, and ignore stale versions.
 
+#### Plan
+
+We allow it.
+
 ### AuthorizedExecutor: AuthorizedCall has no deadline
 
 Calls maybe need a deadline field to prevent authorized transaction from being executed even after a long time.
 Is it something to be considered?
 
 Also the addition of a revocation function for the signature? (How could it be done?)
+
+#### Plan
+
+We defer the issue to clients that create and manage signature calls.
+That is, to market contracts.
+There we find a cancelIntent, which supposes the router will behave correctly and discard the intent.
 
 ### TradeReactor intents: no nonce; stale intent live for the whole window; cancelIntent is a race
 
@@ -283,6 +310,10 @@ Proposed fixes are:
 
 - Add a per-owner (or per-owner/per-token) monotonically increasing nonce to the signed Intent, and reject fills of intents whose nonce is behind the owner's current one. Signing intent B then implicitly invalidates intent A.
 - At minimum, keep creation in the price path but document that getTotalExecutionPrice (TradeReactor.sol:100-104) trusts the signer-chosen creation ordering.
+
+#### Plan
+
+We allow it, router is considered a benevolent actor.
 
 ### DragAlong proposal
 
@@ -293,6 +324,10 @@ Fixes:
 - Minimum price bound (pricePerShareE18 > 0, ideally a market-realistic floor)
 - Currency sanity (reject self-mintable/unknown ERC20s, or require the currency to be a known/allowlisted feed-backed asset)
 - Problem is also resolved by monitoring
+
+#### Plan
+
+We monitor it.
 
 ### SecondaryMarket.withdrawFees, MultichainWallet.sync
 

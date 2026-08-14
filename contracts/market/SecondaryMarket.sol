@@ -42,12 +42,12 @@ contract SecondaryMarket is Ownable {
 
     error LargerSpreadNeeded(uint256 feesCollected, uint256 requiredMinimum);
     error WrongFiller();
-    error WrongTokens();
     error WrongRouter(address expected, address actual);
     error InvalidConfiguration();
     error MarketClosed();
     error AlreadyFilled();
     error UserCancelled();
+    error IntentCurrencyOrTokenDoesNotMatch(address intentToken, address intentCurrency);
 
 
     address public router; // null for any, 20B
@@ -154,11 +154,22 @@ contract SecondaryMarket is Ownable {
     }
 
     /**
+     * Verifies that token in and out match TOKEN and CURRENCY
+     * 
+     * @param intent intent to be check tokens
+     */
+    function verifyTokenAndCurrency(Intent calldata intent) internal view {
+        if (!((intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY) || (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN))) {
+            revert IntentCurrencyOrTokenDoesNotMatch(intent.tokenOut, intent.tokenIn);
+        }
+    }
+
+    /**
      * Check if an order can be executed and if yes, returns the maximum amount of the tokenOut.
      */
     function validateOrder(Intent calldata intent, bytes calldata sig) external view returns (uint256 unfilled, uint256 balance, uint256 allowance) {
         verifySignature(intent, sig);
-        require((intent.tokenOut == TOKEN && intent.tokenIn == CURRENCY) || (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN), WrongTokens());
+        verifyTokenAndCurrency(intent);
 
         balance = IERC20(intent.tokenOut).balanceOf(intent.owner);
         allowance = IERC20(intent.tokenOut).allowance(intent.owner, REACTOR);
@@ -197,7 +208,7 @@ contract SecondaryMarket is Ownable {
         } else if (intent.tokenOut == CURRENCY && intent.tokenIn == TOKEN) {
             return executableBuyAmount(intent);
         } else {
-            revert WrongTokens();
+            revert IntentCurrencyOrTokenDoesNotMatch(intent.tokenOut, intent.tokenIn);
         }
     }
 
@@ -254,6 +265,10 @@ contract SecondaryMarket is Ownable {
     function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedAmount) external {
         if (!isOpen) revert MarketClosed();
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
+
+        // verify intents tokens in and out
+        verifyTokenAndCurrency(seller);
+        verifyTokenAndCurrency(buyer);
 
         uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedAmount);
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / 10000;
