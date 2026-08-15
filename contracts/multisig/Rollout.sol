@@ -8,9 +8,9 @@ contract Rollout {
 
   bytes32 private constant _salt = bytes32(uint256(42));
 
-  function rollout(address cciprouter) external returns (address) {
+  function rollout(address cciprouter, address link) external returns (address) {
     MultichainWalletArgumentSource source = new MultichainWalletArgumentSource{salt: _salt}();
-    source.initialize(cciprouter);
+    source.initialize(cciprouter, link);
     MultiSigWalletMaster master = new MultiSigWalletMaster{salt: _salt}(IArgumentSource(address(source)));
     MultiSigCloneFactory factory = new MultiSigCloneFactory{salt: _salt}(address(master));
     return address(factory);

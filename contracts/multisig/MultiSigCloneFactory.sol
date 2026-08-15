@@ -27,8 +27,20 @@ contract MultiSigCloneFactory {
     emit ContractCreated(instance, "MultiSigWallet", salt);
     return instance;
   }
+
+  function createWithSigners(address[] calldata signers, uint8[] calldata powers, bytes32 salt) external returns (address) {
+    address payable instance = payable(Clones.cloneDeterministic(IMPLEMENTATION, salt));
+    if (block.chainid == 1) {
+      IMultisig(instance).initializeWithSigners(signers, powers);
+    } else {
+      IMultisig(instance).initialize(address(0x0));
+    }
+    emit ContractCreated(instance, "MultiSigWallet", salt);
+    return instance;
+  }
 }
 
 interface IMultisig {
   function initialize(address owner) external;
+  function initializeWithSigners(address[] calldata signers, uint8[] calldata powers) external;
 }
