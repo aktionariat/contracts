@@ -1,4 +1,4 @@
-# Sumamry Report
+# Summary Report
 
 Report summary of all agents reports and useful findings.
 Agents report are found in `audits/agents` folder.
