@@ -1,4 +1,7 @@
-// SPDX-License-Identifier: LGPL-3.0-only
+/**
+ * SPDX-License-Identifier: MIT
+ */
+
 pragma solidity >=0.8.0 <0.9.0;
 
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
@@ -7,6 +10,7 @@ import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCI
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./MultiSigWallet.sol";
+import "./MultichainWalletArgumentSource.sol";
 
 contract MultichainWallet is CCIPReceiver, MultiSigWallet {
 
@@ -23,7 +27,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     event SyncSent(bytes32 msgId, uint64 chain, address signerList, uint8 power);
     event SyncReceived(bytes32 msgId, address signerList, uint8 power);
 
-    constructor(IArgumentSource args) CCIPReceiver(args.router()){
+    constructor(MultichainWalletArgumentSource args) CCIPReceiver(args.router()){
         // Must only be used to initialize immutables as clones won't inherit other state
         LINK = args.link();
     }
@@ -92,9 +96,4 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         }
     }
 
-}
-
-interface IArgumentSource {
-    function router() external returns (address);
-    function link() external returns (address);
 }

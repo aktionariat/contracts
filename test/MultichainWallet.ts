@@ -77,14 +77,14 @@ async function deployStack(eth: any, routerAddr: string, linkAddr: string) {
   await rollout.waitForDeployment();
   const factoryAddress = await rollout.rollout.staticCall(routerAddr, linkAddr);
   await (await rollout.rollout(routerAddr, linkAddr)).wait();
-  const factory = await eth.getContractAt("MultiSigCloneFactory", factoryAddress);
+  const factory = await eth.getContractAt("MultichainWalletFactory", factoryAddress);
   return { rollout, factory };
 }
 
 async function createWallet(eth: any, factory: Contract, ownerAddress: string, salt: string) {
   const walletAddress = await factory.predict(salt);
   await (await factory.create(ownerAddress, salt)).wait();
-  return eth.getContractAt("MultiSigWalletMaster", walletAddress);
+  return eth.getContractAt("MultichainWalletMaster", walletAddress);
 }
 
 describe("MultichainWallet LINK-only sync", function () {
@@ -191,7 +191,7 @@ describe("MultichainWallet LINK-only sync", function () {
   });
 });
 
-describe("MultiSigCloneFactory createWithSigners", function () {
+describe("MultichainWalletFactory createWithSigners", function () {
   this.timeout(600000);
 
   let factory: Contract;
@@ -206,7 +206,7 @@ describe("MultiSigCloneFactory createWithSigners", function () {
     const signerList = [signer1.address, signer2.address, signer3.address];
     const powers = [2, 2, 2];
     await (await factory.createWithSigners(signerList, powers, salt)).wait();
-    const wallet = await ethers.getContractAt("MultiSigWalletMaster", predicted);
+    const wallet = await ethers.getContractAt("MultichainWalletMaster", predicted);
     expect(await wallet.signerCount()).to.equal(3n);
     for (const signer of signerList) {
       expect(await wallet.signers(signer)).to.equal(2n);
@@ -215,13 +215,13 @@ describe("MultiSigCloneFactory createWithSigners", function () {
 
   it("should not allow initializing twice", async function () {
     const salt = ethers.encodeBytes32String("WITHSIGNERS");
-    const wallet = await ethers.getContractAt("MultiSigWalletMaster", await factory.predict(salt));
+    const wallet = await ethers.getContractAt("MultichainWalletMaster", await factory.predict(salt));
     await expect(wallet.initialize(signer1.address)).to.be.revertedWithCustomError(wallet, "Initializable_AlreadyInitalized");
     await expect(wallet.initializeWithSigners([signer1.address], [1])).to.be.revertedWithCustomError(wallet, "Initializable_AlreadyInitalized");
   });
 
   it("should reject an empty or mismatched signer list", async function () {
-    const master = await ethers.getContractAt("MultiSigWalletMaster", await factory.IMPLEMENTATION());
+    const master = await ethers.getContractAt("MultichainWalletMaster", await factory.IMPLEMENTATION());
     await expect(factory.createWithSigners([], [], ethers.encodeBytes32String("EMPTY")))
       .to.be.revertedWithCustomError(master, "Multisig_InsufficientSigners");
     await expect(factory.createWithSigners([signer1.address], [1, 1], ethers.encodeBytes32String("MISMATCH")))
@@ -262,7 +262,7 @@ describe("MultichainWallet on a forked L2 (polygon)", function () {
     const salt = ethers.encodeBytes32String("FRONTRUN");
     const predicted = await factory.predict(salt);
     await (await factory.createWithSigners([l2Deployer.address], [1], salt)).wait();
-    const wallet = await l2Ethers.getContractAt("MultiSigWalletMaster", predicted);
+    const wallet = await l2Ethers.getContractAt("MultichainWalletMaster", predicted);
     expect(await wallet.LINK()).to.equal(LINK.polygon);
     expect(await wallet.signerCount()).to.equal(0n);
     expect(await wallet.signers(l2Deployer.address)).to.equal(0n);
@@ -270,7 +270,7 @@ describe("MultichainWallet on a forked L2 (polygon)", function () {
 
   it("should accept a signer sync from mainnet via the router", async function () {
     const salt = ethers.encodeBytes32String("FRONTRUN");
-    const wallet = await l2Ethers.getContractAt("MultiSigWalletMaster", await factory.predict(salt));
+    const wallet = await l2Ethers.getContractAt("MultichainWalletMaster", await factory.predict(salt));
     const walletAddress = await wallet.getAddress();
 
     await l2Provider.request({ method: "hardhat_impersonateAccount", params: [ROUTER.polygon] });
@@ -320,8 +320,8 @@ describe("Rollout cross-chain determinism", function () {
     expect(factoryPolygon).to.equal(factoryMainnet);
 
     // The per-chain arguments live in storage, not in any address derivation
-    const factory = await l2Connection.ethers.getContractAt("MultiSigCloneFactory", factoryPolygon);
-    const master = await l2Connection.ethers.getContractAt("MultiSigWalletMaster", await factory.IMPLEMENTATION());
+    const factory = await l2Connection.ethers.getContractAt("MultichainWalletFactory", factoryPolygon);
+    const master = await l2Connection.ethers.getContractAt("MultichainWalletMaster", await factory.IMPLEMENTATION());
     expect(await master.LINK()).to.equal(LINK.polygon);
   });
 });
