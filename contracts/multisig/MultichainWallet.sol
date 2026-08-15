@@ -1,25 +1,35 @@
-// SPDX-License-Identifier: LGPL-3.0-only
+/**
+ * SPDX-License-Identifier: MIT
+ */
+
 pragma solidity >=0.8.0 <0.9.0;
 
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./MultiSigWallet.sol";
+import "./MultichainWalletArgumentSource.sol";
 
 contract MultichainWallet is CCIPReceiver, MultiSigWallet {
 
+    using SafeERC20 for IERC20;
+
     uint64 public constant MAINNET_CHAIN_SELECTOR = 5009297550715157269;
+
+    address public immutable LINK; // LINK token used as CCIP fee. Address differs per chain.
 
     error InvalidSourceChain(uint64 selector);
     error InvalidDestinationChain();
     error InvalidSender(address sender);
-    error InsufficientNativeFeeToken(uint256 found, uint256 required);
 
     event SyncSent(bytes32 msgId, uint64 chain, address signerList, uint8 power);
     event SyncReceived(bytes32 msgId, address signerList, uint8 power);
 
-    constructor(IArgumentSource args) CCIPReceiver(args.router()){
+    constructor(MultichainWalletArgumentSource args) CCIPReceiver(args.router()){
         // Must only be used to initialize immutables as clones won't inherit other state
+        LINK = args.link();
     }
 
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
@@ -27,7 +37,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         if (message.sourceChainSelector != MAINNET_CHAIN_SELECTOR) revert InvalidSourceChain(message.sourceChainSelector);
         address decodedSender = abi.decode(message.sender, (address));
         if (decodedSender != address(this)) revert InvalidSender(decodedSender);
-        
+
         (address[] memory signerList, uint8[] memory powers) = abi.decode(message.data, (address[], uint8[]));
         for (uint i=0; i<signerList.length; i++){
             _setSigner(signerList[i], powers[i]);
@@ -35,28 +45,32 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         }
     }
 
-    function sync(uint64[] calldata targets, address[] calldata signerList, address feeToken_) external payable {
+    function sync(uint64[] calldata targets, address[] calldata signerList) external {
+        uint8[] memory powers = _getPowers(signerList);
         for (uint i=0; i<targets.length; i++){
-            sync(targets[i], signerList, feeToken_);
+            _sync(targets[i], signerList, powers);
         }
     }
 
-    function sync(uint64 chain, address signer) public payable {
+    function sync(uint64 chain, address signer) external {
         address[] memory signerList = new address[](1);
         signerList[0] = signer;
-        sync(chain, signerList, address(0x0));
+        _sync(chain, signerList, _getPowers(signerList));
     }
 
-    function sync(uint64 chain, address[] calldata signerList) public payable {
-        sync(chain, signerList, address(0x0));
+    function sync(uint64 chain, address[] calldata signerList) external {
+        _sync(chain, signerList, _getPowers(signerList));
     }
 
-    function sync(uint64 chain, address[] memory signerList, address feeToken_) public payable {
-        uint8[] memory powers = new uint8[](signerList.length);
+    function _getPowers(address[] memory signerList) internal view returns (uint8[] memory powers) {
+        powers = new uint8[](signerList.length);
         for (uint i=0; i<signerList.length; i++){
             powers[i] = signers(signerList[i]);
         }
-        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
+    }
+
+    function _buildSyncMessage(address[] memory signerList, uint8[] memory powers) internal view returns (Client.EVM2AnyMessage memory) {
+        return Client.EVM2AnyMessage({
             receiver: abi.encode(address(this)), // ABI-encoded receiver address
             data: abi.encode(signerList, powers), // ABI-encoded string
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array indicating no tokens are being sent
@@ -66,33 +80,20 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
                     allowOutOfOrderExecution: true // Should always be possible according to CCIP support
                 })
             ),
-            // Set the feeToken  address, indicating LINK will be used for fees
-            feeToken: feeToken_
+            feeToken: LINK
         });
-        uint256 fee =  IRouterClient(getRouter()).getFee(chain, message);
-        bytes32 msgId;
-        if (feeToken_ != address(0x0)) {
-            IERC20(message.feeToken).transferFrom(msg.sender, address(this), fee);
-            IERC20(message.feeToken).approve(getRouter(), fee);
-            msgId = IRouterClient(getRouter()).ccipSend(chain, message);
-        } else {
-            if (msg.value < fee) revert InsufficientNativeFeeToken(msg.value, fee);
-            msgId = IRouterClient(getRouter()).ccipSend{value: fee}(chain, message);
-            // return overpaid fee to sender. We don't care about the success of this call.
-            if(msg.value - fee > 0) payable(msg.sender).call{value: msg.value - fee}("");
-        }
+    }
+
+    function _sync(uint64 chain, address[] memory signerList, uint8[] memory powers) internal {
+        Client.EVM2AnyMessage memory message = _buildSyncMessage(signerList, powers);
+        IRouterClient router = IRouterClient(getRouter());
+        uint256 fee = router.getFee(chain, message);
+        IERC20(LINK).safeTransferFrom(msg.sender, address(this), fee);
+        IERC20(LINK).forceApprove(address(router), fee);
+        bytes32 msgId = router.ccipSend(chain, message);
         for (uint i=0; i<signerList.length; i++){
             emit SyncSent(msgId, chain, signerList[i], powers[i]);
         }
     }
 
-}
-
-interface IERC20 {
-    function approve(address spender, uint256 amount) external returns (bool);
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-}
-
-interface IArgumentSource {
-    function router() external returns (address);
 }
