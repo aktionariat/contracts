@@ -9,8 +9,8 @@ import {
   signer1,
   signer2,
   signer3,
-} from "../../TestBase.ts";
-import { deployFixture, ZCHF_ADDRESS } from "../../Fixtures.ts";
+} from "../../../test/TestBase.ts";
+import { deployFixture, ZCHF_ADDRESS } from "../../../test/Fixtures.ts";
 import KEYS from "../../../KEYS.ts";
 
 // Signature-replay audit (2026-08-11) — proof-of-concept tests.

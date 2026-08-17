@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Contract, ContractFactory, Signer } from "ethers";
-import { ethers, owner, signer1, signer3 } from "../../TestBase.ts";
+import { ethers, owner, signer1, signer3 } from "../../../test/TestBase.ts";
 import { mockArtifacts } from "./lib/mockArtifacts.ts";
 
 // Proof-of-concept tests for unchecked / unsafe external calls in the `ai-audit` branch.

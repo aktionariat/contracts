@@ -1,7 +1,13 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { connection, ethers, owner, signer1, signer3 } from "../../TestBase.ts";
-import { deployFixture, mintAndWrap } from "../../Fixtures.ts";
+import {
+  connection,
+  ethers,
+  owner,
+  signer1,
+  signer3,
+} from "../../../test/TestBase.ts";
+import { deployFixture, mintAndWrap } from "../../../test/Fixtures.ts";
 import { setBalance } from "../../../scripts/helpers/setBalance.ts";
 
 // Oracle & flash-loan audit (2026-08-11) — DragAlong.acceptOffer PoC.

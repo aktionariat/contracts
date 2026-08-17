@@ -43,7 +43,9 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
             remainingNative -= _sync(targets[i], signerList, powers, feeToken_, remainingNative);
         }
 
-        _refundRemaining(remainingNative);
+        if (feeToken_ == address(0x0)) {
+            _refundRemaining(remainingNative);
+        }
     }
 
     function sync(uint64 chain, address signer) public payable {

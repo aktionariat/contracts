@@ -85,6 +85,9 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         terms = _terms;
+
+        // disable logic contracts initializers
+        _disableInitializers();
     }
 
     /**
@@ -101,9 +104,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
         __DeterrenceFee_init(0.01 ether);
 
         terms = _terms;
-
-        // disable logic contracts initializers
-        _disableInitializers();
     }
 
     /**

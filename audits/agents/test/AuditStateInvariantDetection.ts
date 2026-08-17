@@ -8,7 +8,7 @@ import {
   signer2,
   signer3,
   signer7,
-} from "../../TestBase.ts";
+} from "../../../test/TestBase.ts";
 import { setBalance } from "../../../scripts/helpers/setBalance.ts";
 
 // Proof-of-concept tests for the State Invariant Detection audit of branch `ai-audit`.

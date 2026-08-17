@@ -7,8 +7,8 @@ import {
   signer1,
   signer3,
   signer7,
-} from "../../TestBase.ts";
-import { mintAndWrap } from "../../Fixtures.ts";
+} from "../../../test/TestBase.ts";
+import { mintAndWrap } from "../../../test/Fixtures.ts";
 import { setBalance } from "../../../scripts/helpers/setBalance.ts";
 
 // Proof-of-concept tests for the DoS & Griefing audit of branch `ai-audit` @ 0064dfb.

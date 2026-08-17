@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { ethers, owner, signer1, signer3 } from "../../TestBase.ts";
+import { ethers, owner, signer1, signer3 } from "../../../test/TestBase.ts";
 import { setBalance } from "../../../scripts/helpers/setBalance.ts";
 
 // Proof-of-concept tests for the SCV audit on branch `ai-audit` @ 0064dfb.

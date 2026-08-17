@@ -7,9 +7,9 @@ import {
   signer1,
   signer2,
   signer3,
-} from "../../TestBase.ts";
-import { getSignature } from "../../Intent.ts";
-import { deployFixture, mintAndWrap } from "../../Fixtures.ts";
+} from "../../../test/TestBase.ts";
+import { getSignature } from "../../../test/Intent.ts";
+import { deployFixture, mintAndWrap } from "../../../test/Fixtures.ts";
 import { setBalance } from "../../../scripts/helpers/setBalance.ts";
 import { getImpersonatedSigner } from "../../../scripts/helpers/getImpersonatedSigner.ts";
 

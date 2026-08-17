@@ -86,6 +86,9 @@ contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, 
     ) ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         base = base_;
         terms = _terms;
+
+        // disable logic contracts initializers
+        _disableInitializers();
     }
 
     /**
@@ -106,9 +109,6 @@ contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, 
 
         // const
         binding = true;
-
-        // disable logic contracts initializers
-        _disableInitializers();
     }
 
     function baseToken() internal view override(DragAlong, Modification) returns (IERC20) {

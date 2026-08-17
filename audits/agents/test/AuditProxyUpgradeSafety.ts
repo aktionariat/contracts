@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { ethers, owner, signer1 } from "../../TestBase.ts";
+import { ethers, owner, signer1 } from "../../../test/TestBase.ts";
 
 describe("Proxy and upgrade safety", function () {
   it("EXPLOIT: a directly deployed initializer-enabled bridged implementation can be taken over", async function () {

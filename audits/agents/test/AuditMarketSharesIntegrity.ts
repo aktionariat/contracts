@@ -7,8 +7,8 @@ import {
   signer1,
   signer2,
   signer3,
-} from "../../TestBase.ts";
-import { deployFixture, mintAndWrap } from "../../Fixtures.ts";
+} from "../../../test/TestBase.ts";
+import { deployFixture, mintAndWrap } from "../../../test/Fixtures.ts";
 import { setBalance } from "../../../scripts/helpers/setBalance.ts";
 
 // Follow-up market & share-token integrity audit (2026-08-11), branch `ai-audit` @ 0064dfb.

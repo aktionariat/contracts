@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { ethers, owner, provider, signer4 } from "../../TestBase.ts";
+import { ethers, owner, provider, signer4 } from "../../../test/TestBase.ts";
 
 // Signed-intent integrity audit (2026-08-12) — proof-of-concept tests.
 //

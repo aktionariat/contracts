@@ -334,3 +334,7 @@ We monitor it.
 No check that tokens have been transfered correctly.
 
 See `SecondaryMarket.withdrawFees` and `MultichainWallet.sync`
+
+#### Plan
+
+Assummed that ERC20 reverts, which makes the contract call revert, if it is not succesfull.
