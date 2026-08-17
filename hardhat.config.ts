@@ -79,6 +79,9 @@ const config: HardhatUserConfig = {
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenAdminRegistry.sol",
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/RegistryModuleOwnerCustom.sol",
       "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol",
+
+      // CCIP local simulator
+      "@chainlink/local/src/ccip/CCIPLocalSimulator.sol",
     ],
   },
 
@@ -196,11 +199,11 @@ const config: HardhatUserConfig = {
       chainId: 11155111,
       chainType: "l1",
       forking: {
-        url: KEYS.alchemy.baseSepolia,
+        url: KEYS.alchemy.sepolia,
         enabled: true,
       },
       accounts: {
-        mnemonic: KEYS.mnemonics.baseSepolia,
+        mnemonic: KEYS.mnemonics.sepolia,
       },
     },
     hardhatOptimism: {
@@ -276,10 +279,13 @@ const config: HardhatUserConfig = {
       },
     },
     hardhatAmoy: {
-      type: "http",
+      type: "edr-simulated",
       chainId: 80002,
       chainType: "l1",
-      url: KEYS.alchemy.amoy,
+      forking: {
+        url: KEYS.alchemy.amoy,
+        enabled: true,
+      },
       accounts: {
         mnemonic: KEYS.mnemonics.amoy,
       },
