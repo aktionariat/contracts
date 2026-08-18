@@ -23,6 +23,7 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
  * the owner.
  */
 contract Ownable is Initializable {
+    /// @notice owner of the contract
     address public owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -47,6 +48,9 @@ contract Ownable is Initializable {
         emit OwnershipTransferred(address(0), owner);
     }
 
+    /**
+     * Ensures that the caller is the owner
+     */
     modifier onlyOwner() {
         _checkOwner();
         _;
@@ -61,6 +65,11 @@ contract Ownable is Initializable {
         owner = newOwner;
     }
 
+    /**
+     * Revers if `msg.sender` is not the `owner` of the contract
+     * 
+     * @dev Revers with Ownable_NotOwner
+     */
     function _checkOwner() internal view {
         if (msg.sender != owner) {
             revert Ownable_NotOwner(msg.sender);

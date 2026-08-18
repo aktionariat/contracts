@@ -76,7 +76,7 @@ With an issuer configured as ADMIN (`setType(issuer, TYPE_ADMIN)`) and transfer 
 ```diff
 -            if (isAdmin(from)) {
 +            if (isAdmin(from) && to != address(0x0)) {
-                  setFlag(to, FLAG_INDEX_ALLOWED, true);
+                  _setFlag(to, FLAG_INDEX_ALLOWED, true);
                   emit AddressTypeUpdate(to, TYPE_ALLOWED);
               }
 ```

@@ -1,8 +1,24 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { connection, ethers, owner, signer1, signer2, signer3 } from "./TestBase.ts";
+import {
+  connection,
+  ethers,
+  owner,
+  signer1,
+  signer2,
+  signer3,
+  signer4,
+  signer5,
+  signer6,
+} from "./TestBase.ts";
 import { setBalance, setZCHFBalance } from "../scripts/helpers/setBalance.ts";
 import { ZCHF_ADDRESS } from "./Fixtures.ts";
+
+import {
+  IERC20,
+  Shares,
+  SharesUnderAgreement,
+} from "../types/ethers-contracts/index.ts";
 
 // Tests for contracts/shares/sha/SharesUnderAgreement.sol (+ DragAlong + Modification).
 //
@@ -10,38 +26,49 @@ import { ZCHF_ADDRESS } from "./Fixtures.ts";
 // Self-contained: deploys its own base Shares and (for drag-along) a separate currency token,
 // so no mainnet fork is required.
 
-const BASE = { symbol: "TEST", name: "Test Company Shares", terms: "https://test.com/terms" };
+const BASE = {
+  symbol: "TEST",
+  name: "Test Company Shares",
+  terms: "https://test.com/terms",
+};
 const AGREEMENT_TERMS = "https://test.com/agreement";
 const DECIMALS = 0;
 
 const MIGRATION_DELAY = 20n * 24n * 60n * 60n; // 20 days
-const DRAG_DELAY = 20n * 24n * 60n * 60n;      // 20 days
-const DRAG_FEE = ethers.parseEther("1");       // deter(100) * 0.01 ether
+const DRAG_DELAY = 20n * 24n * 60n * 60n; // 20 days
+const DRAG_FEE = ethers.parseEther("1"); // deter(100) * 0.01 ether
 
-async function deployShares(symbol: string, name: string): Promise<Contract> {
-  const Shares = await ethers.getContractFactory("contracts/shares/base/Shares.sol:Shares");
+async function deployShares(symbol: string, name: string): Promise<Shares> {
+  const Shares = await ethers.getContractFactory("Shares");
   const s = await Shares.deploy(symbol, name, BASE.terms, owner);
   await s.waitForDeployment();
-  return s as unknown as Contract;
+  return s;
 }
 
-async function deploySharesUnderAgreement(base: Contract): Promise<Contract> {
-  const SUA = await ethers.getContractFactory("contracts/shares/sha/SharesUnderAgreement.sol:SharesUnderAgreement");
+async function deploySharesUnderAgreement(
+  base: Shares
+): Promise<SharesUnderAgreement> {
+  const SUA = await ethers.getContractFactory("SharesUnderAgreement");
   const sua = await SUA.deploy(base, AGREEMENT_TERMS, DECIMALS, owner);
   await sua.waitForDeployment();
-  return sua as unknown as Contract;
+  return sua;
 }
 
 // Mint base shares to `holder`, approve the wrapper, and wrap them.
-async function fundAndWrap(base: Contract, sua: Contract, holder: any, amount: bigint) {
+async function fundAndWrap(
+  base: Shares,
+  sua: SharesUnderAgreement,
+  holder: any,
+  amount: bigint
+) {
   await base.connect(owner).mint(holder, amount);
   await base.connect(holder).approve(sua, amount);
   await sua.connect(holder)["wrap(uint256)"](amount);
 }
 
 describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
-  let base: Contract;
-  let sharesUnderAgreement: Contract;
+  let base: Shares;
+  let sharesUnderAgreement: SharesUnderAgreement;
 
   beforeEach(async () => {
     base = await deployShares(BASE.symbol, BASE.name);
@@ -52,10 +79,14 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
     it("derives symbol/name from the base token and starts binding", async () => {
       expect(await sharesUnderAgreement.symbol()).to.equal(BASE.symbol + "S");
       expect(await sharesUnderAgreement.name()).to.equal(BASE.name + " SHA");
-      expect(await sharesUnderAgreement.base()).to.equal(await base.getAddress());
+      expect(await sharesUnderAgreement.base()).to.equal(
+        await base.getAddress()
+      );
       expect(await sharesUnderAgreement.terms()).to.equal(AGREEMENT_TERMS);
       expect(await sharesUnderAgreement.binding()).to.equal(true);
-      expect(await sharesUnderAgreement.owner()).to.equal(await owner.getAddress());
+      expect(await sharesUnderAgreement.owner()).to.equal(
+        await owner.getAddress()
+      );
       expect(await sharesUnderAgreement.decimals()).to.equal(0n);
     });
   });
@@ -72,7 +103,9 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
     it("wraps for a different recipient", async () => {
       await base.connect(owner).mint(signer1, 30n);
       await base.connect(signer1).approve(sharesUnderAgreement, 30n);
-      await sharesUnderAgreement.connect(signer1)["wrap(address,uint256)"](signer2, 30n);
+      await sharesUnderAgreement
+        .connect(signer1)
+        ["wrap(address,uint256)"](signer2, 30n);
       expect(await sharesUnderAgreement.balanceOf(signer2)).to.equal(30n);
       expect(await sharesUnderAgreement.balanceOf(signer1)).to.equal(0n);
     });
@@ -91,7 +124,9 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
     });
 
     it("refuses to unwrap while the agreement is binding", async () => {
-      await expect(sharesUnderAgreement.connect(signer1).unwrap(10n)).to.revert(ethers);
+      await expect(sharesUnderAgreement.connect(signer1).unwrap(10n)).to.revert(
+        ethers
+      );
     });
 
     it("allows unwrap 1:1 once the agreement is terminated", async () => {
@@ -114,25 +149,31 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
 
     it("rejects proposals from non-qualified holders (<10%)", async () => {
       // signer2 holds nothing -> not qualified
-      await expect(sharesUnderAgreement.connect(signer2).proposeTermination()).to.revert(ethers);
+      await expect(
+        sharesUnderAgreement.connect(signer2).proposeTermination()
+      ).to.revert(ethers);
     });
 
     it("refuses to execute before the delay", async () => {
       await sharesUnderAgreement.connect(owner).proposeTermination();
-      await expect(sharesUnderAgreement.connect(owner).executeMigration()).to.revert(ethers);
+      await expect(
+        sharesUnderAgreement.connect(owner).executeMigration()
+      ).to.revert(ethers);
     });
 
     it("can be vetoed via cancelMigration by the owner", async () => {
       await sharesUnderAgreement.connect(owner).proposeTermination();
       await sharesUnderAgreement.connect(owner).cancelMigration();
       await connection.networkHelpers.time.increase(MIGRATION_DELAY + 1n);
-      await expect(sharesUnderAgreement.connect(owner).executeMigration()).to.revert(ethers);
+      await expect(
+        sharesUnderAgreement.connect(owner).executeMigration()
+      ).to.revert(ethers);
       expect(await sharesUnderAgreement.binding()).to.equal(true);
     });
   });
 
   describe("DragAlong (acquisition)", function () {
-    let currency: Contract;
+    let currency: IERC20;
     const buyer = signer3;
     const PRICE_PER_SHARE_E18 = ethers.parseUnits("2", 18); // 2 currency units per wrapped unit
     // 60 + 40 = 100 wrapped total -> totalPrice = 2 * 100 = 200 currency
@@ -140,7 +181,7 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
 
     beforeEach(async () => {
       // Use the real forked ZCHF as the payment currency (a plain ERC20), not a securities token.
-      currency = await ethers.getContractAt("contracts/ERC20/IERC20.sol:IERC20", ZCHF_ADDRESS);
+      currency = await ethers.getContractAt("IERC20", ZCHF_ADDRESS);
       // Two holders so totalSupply = 100 and minority/majority logic is exercised.
       await base.connect(owner).mintAndWrap(signer1, sharesUnderAgreement, 60n);
       await base.connect(owner).mintAndWrap(signer2, sharesUnderAgreement, 40n);
@@ -151,7 +192,11 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
     });
 
     async function makeOffer() {
-      await sharesUnderAgreement.connect(buyer).offerAcquisition(currency, PRICE_PER_SHARE_E18, "tender", { value: DRAG_FEE });
+      await sharesUnderAgreement
+        .connect(buyer)
+        .offerAcquisition(currency, PRICE_PER_SHARE_E18, "tender", {
+          value: DRAG_FEE,
+        });
     }
 
     it("records an offer and cannot be accepted before the delay", async () => {
@@ -180,19 +225,72 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
       expect(await base.balanceOf(buyer)).to.equal(100n);
       expect(await currency.balanceOf(buyer)).to.equal(0n);
       // The wrapper's new base is the currency, and it now holds the proceeds.
-      expect(await sharesUnderAgreement.base()).to.equal(await currency.getAddress());
-      expect(await currency.balanceOf(sharesUnderAgreement)).to.equal(TOTAL_PRICE);
+      expect(await sharesUnderAgreement.base()).to.equal(
+        await currency.getAddress()
+      );
+      expect(await currency.balanceOf(sharesUnderAgreement)).to.equal(
+        TOTAL_PRICE
+      );
       expect(await sharesUnderAgreement.binding()).to.equal(false);
 
       // Holders unwrap to collect proceeds proportionally (60% / 40% of 200).
       // Assert on deltas: forked ZCHF balances can carry over from other suites.
       const signer1Before = await currency.balanceOf(signer1);
       await sharesUnderAgreement.connect(signer1).unwrap(60n);
-      expect(await currency.balanceOf(signer1) - signer1Before).to.equal(120n);
+      expect((await currency.balanceOf(signer1)) - signer1Before).to.equal(
+        120n
+      );
 
       const signer2Before = await currency.balanceOf(signer2);
       await sharesUnderAgreement.connect(signer2).unwrap(40n);
-      expect(await currency.balanceOf(signer2) - signer2Before).to.equal(80n);
+      expect((await currency.balanceOf(signer2)) - signer2Before).to.equal(80n);
+    });
+  });
+
+  describe("Allowance", function () {
+    it("zero-value transferFrom from admin should not auto-allowlists recipient", async () => {
+      const admin = signer4;
+      const recipient = signer5;
+      const thirdParty = signer6;
+
+      const adminAddr = await admin.getAddress();
+      const recipientAddr = await recipient.getAddress();
+
+      // Make one address admin
+      await base.connect(owner)["setType(address,uint8)"](adminAddr, 4);
+      expect(await base.isAdmin(adminAddr)).to.equal(true);
+
+      // verify allowlisting
+      expect(await base.isAllowed(recipientAddr)).to.equal(false);
+      expect(await base.isAdmin(recipientAddr)).to.equal(false);
+      expect(await base.isRestricted(recipientAddr)).to.equal(false);
+
+      // Third part makes a zero transfer call (allowance does not underflow)
+      await base.connect(thirdParty).transferFrom(adminAddr, recipientAddr, 0);
+
+      // Recipient is not TYPE_ALLOWED despite zero transfer succesfull
+      expect(await base.isAllowed(recipientAddr)).to.equal(false);
+      expect(await base.isAdmin(recipientAddr)).to.equal(false);
+    });
+
+    it("non-zero transferFrom from admin with no allowance reverts: tokens are safe by underflow", async () => {
+      const admin = signer4;
+      const attacker = signer6;
+
+      const victimAddr = await admin.getAddress();
+      const attackerAddr = await attacker.getAddress();
+
+      await base.connect(owner).mint(victimAddr, 100n);
+      expect(await base.balanceOf(victimAddr)).to.equal(100n);
+
+      // Attacker tries to steal all tokens via transferFrom with no allowance
+      await expect(
+        base.connect(attacker).transferFrom(victimAddr, attackerAddr, 100n)
+      ).to.revert(ethers);
+
+      // Victim still has all tokens
+      expect(await base.balanceOf(victimAddr)).to.equal(100n);
+      expect(await base.balanceOf(attackerAddr)).to.equal(0n);
     });
   });
 });

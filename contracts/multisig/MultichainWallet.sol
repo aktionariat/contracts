@@ -4,6 +4,9 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
+
+import {IArgumentSource} from "./IArgumentSource.sol";
+import {IERC20} from "../ERC20/IERC20.sol";
 import "./MultiSigWallet.sol";
 
 contract MultichainWallet is CCIPReceiver, MultiSigWallet {
@@ -130,13 +133,4 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
             payable(msg.sender).call{value: amount}("");
         }
     }
-}
-
-interface IERC20 {
-    function approve(address spender, uint256 amount) external returns (bool);
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-}
-
-interface IArgumentSource {
-    function router() external returns (address);
 }
