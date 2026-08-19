@@ -77,6 +77,10 @@ abstract contract Modification is ERC20Flaggable, Ownable {
 
     function _propose(IERC20 successor, uint8 migrationType) internal returns (Migration memory) {
         if (!isQualified(msg.sender)) revert NotQualified();
+        if (migrationType == TYPE_DEFAULT) {
+            ISuccessor(address(successor)).wrap(0); // sanity check that successor implements the interface
+        }
+        
         migration = Migration({ successor: successor, timestamp: uint64(block.timestamp), migrationType: migrationType });
         emit MigrationProposed(msg.sender, successor, migrationType);
         return migration;

@@ -37,6 +37,7 @@ abstract contract DeterrenceFee is Initializable, Ownable {
 
     event DeterrenceFeePaid(address payer, uint256 fee);
 
+    error UnableToPayDeterrenceFee(address receiver);
     error FeeMissing(uint256 required, uint256 found);
 
     constructor(uint96 deterrenceFee_) {
@@ -56,8 +57,11 @@ abstract contract DeterrenceFee is Initializable, Ownable {
         // Pay the deterrence fee to the Aktionariat ledger
         if (deterrenceFee > 0 && msg.sender != owner) {
             uint256 fee = deterrenceFee * multiple;
+
             if (msg.value < fee) revert FeeMissing(fee, msg.value);
             (bool success, ) = payable(owner).call{value: msg.value}("");
+            if (!success) revert UnableToPayDeterrenceFee(owner);
+
             emit DeterrenceFeePaid(msg.sender, fee);
         }
         _;

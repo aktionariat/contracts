@@ -41,7 +41,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         if (decodedSender != address(this)) revert InvalidSender(decodedSender);
 
         (address[] memory signerList, uint8[] memory powers) = abi.decode(message.data, (address[], uint8[]));
-        for (uint i=0; i<signerList.length; i++){
+        for (uint i = 0; i < signerList.length; i++){
             _setSigner(signerList[i], powers[i]);
             emit SyncReceived(message.messageId, signerList[i], powers[i]);
         }
@@ -49,7 +49,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
 
     function sync(uint64[] calldata targets, address[] calldata signerList) external {
         uint8[] memory powers = _getPowers(signerList);
-        for (uint i=0; i<targets.length; i++){
+        for (uint i = 0; i<targets.length; i++){
             _sync(targets[i], signerList, powers);
         }
     }
@@ -66,7 +66,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
 
     function _getPowers(address[] memory signerList) internal view returns (uint8[] memory powers) {
         powers = new uint8[](signerList.length);
-        for (uint i=0; i<signerList.length; i++){
+        for (uint i = 0; i < signerList.length; i++){
             powers[i] = signers(signerList[i]);
         }
     }
@@ -93,7 +93,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         IERC20(LINK).safeTransferFrom(msg.sender, address(this), fee);
         IERC20(LINK).forceApprove(address(router), fee);
         bytes32 msgId = router.ccipSend(chain, message);
-        for (uint i=0; i<signerList.length; i++){
+        for (uint i = 0; i < signerList.length; i++){
             emit SyncSent(msgId, chain, signerList[i], powers[i]);
         }
     }

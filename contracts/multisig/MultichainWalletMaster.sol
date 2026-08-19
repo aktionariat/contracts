@@ -24,7 +24,7 @@ contract MultichainWalletMaster is MultichainWallet, Initializable {
 
   function initializeWithSigners(address[] calldata signerList, uint8[] calldata powers) external initializer {
     if (signerList.length != powers.length) revert Multisig_LengthMismatch();
-    for (uint i=0; i<signerList.length; i++){
+    for (uint i=0; i < signerList.length; i++){
       _setSigner(signerList[i], powers[i]);
     }
     if (signerCount == 0) revert Multisig_InsufficientSigners();
