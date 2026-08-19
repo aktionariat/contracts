@@ -4,6 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {IAny2EVMMessageReceiver} from "@chainlink/contracts-ccip/contracts/interfaces/IAny2EVMMessageReceiver.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract MockCCIPRouter is IRouterClient {
     uint256 public fee;
@@ -26,10 +27,10 @@ contract MockCCIPRouter is IRouterClient {
         external payable
         returns (bytes32)
     {
-        // Native fee: require msg.value >= fee
-        // Fee token: fee is paid in ERC-20 (transferred by the caller before ccipSend)
         if (message.feeToken == address(0x0)) {
             require(msg.value >= fee, "MockCCIPRouter: insufficient msg.value");
+        } else {
+            IERC20(message.feeToken).transferFrom(msg.sender, address(this), fee);
         }
         totalFeesCollected += fee;
         sentChains.push(destinationChainSelector);

@@ -19,11 +19,24 @@ const targetSelectors = [
   "0x96c6fd1e",
   "0xdad89dca",
   "0x1a76572a",
+  "0xf08bcb3e",
 ];
 
 // Add your custom errors here
 const errors = [
   "TestError()",
+
+  "TokenNotSupported(address)",
+  "ChainNotSupported(uint64)",
+  "OnlyCallableByUpdaterOrOwner()",
+  "StaleGasPrice(uint64,uint256,uint256)",
+  "StaleTokenPrice(address,uint256,uint256)",
+  "InvalidStalenessThreshold()",
+
+  "UnsupportedDestinationChain(uint64)",
+  "InsufficientFeeTokenAmount()",
+  "InvalidMsgValue()",
+  "OnlyOffRamp()",
 
   "TransfersPaused()",
   "Allowlist_ReceiverIsForbidden(address)",
