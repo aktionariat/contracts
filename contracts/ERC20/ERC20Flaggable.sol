@@ -50,8 +50,7 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     /// @dev the offset needed to be left shifted to reach flag's bits
     uint8 private constant FLAGGING_OFFSET = 224;
     /// @dev the mask to select flags bits
-    uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
-    // uint256 constant MASK = (type(uint256).max) << FLAGGING_OFFSET; // could be computed in function of FLAGGING_OFFSET
+    uint256 private constant FLAGGING_MASK = (type(uint256).max) << FLAGGING_OFFSET;
     /// @dev the maximum offset allowed
     /// if FLAGGING_OFFSET is not greater or equal to 1, uint8 overflows and
     /// it correctly diqualifies any offset

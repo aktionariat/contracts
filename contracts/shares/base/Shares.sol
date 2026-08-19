@@ -218,6 +218,7 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
      */
     function batchMintAndWrap(address[] calldata target, address wrapper, uint256[] calldata amount) external onlyOwner {
         if (target.length != amount.length) revert ArrayLengthMismatch();
+
         uint256 len = target.length;
         for (uint256 i = 0; i < len; i++) {
             mintAndWrap(target[i], wrapper, amount[i]);
