@@ -134,11 +134,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
      *  - index must be within bounds
      */
     function _hasFlag(address account, uint8 index) internal view returns (bool) {
-        // ensure index is within bounds
-        if (MAX_FLAGGING_OFFSET <= index) {
-            revert InvalidFlagOffset(index, MAX_FLAGGING_OFFSET);
-        }
-
         uint256 flag = 0x1 << (index + FLAGGING_OFFSET);
         return _balances[account] & flag == flag;
     }
@@ -150,11 +145,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
      *  - index must be within bounds
      */
     function _setFlag(address account, uint8 index, bool value) internal {
-        // ensure index is within bounds
-        if (MAX_FLAGGING_OFFSET <= index) {
-            revert InvalidFlagOffset(index, MAX_FLAGGING_OFFSET);
-        }
-
         uint256 flagMask = 1 << (index + FLAGGING_OFFSET);
         uint256 balance = _balances[account];
         if ((balance & flagMask == flagMask) != value) {
@@ -373,10 +363,10 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
      *      the balance of the user is zero and he tries to burn tokens he will be allowed if the
      *      allowlisting flag is not validated, as virtually he doesn't have a zero balance.
      */
-    function _checkAllowlistingFlagUnchanged(uint256 oldBalance, uint256 newBalance, address owner, uint256 amount) internal view {
+    function _checkAllowlistingFlagUnchanged(uint256 oldBalance, uint256 newBalance, address owner, uint256 amount) internal pure {
         if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
             // assume more meaning for the current code than simply insufficient balance
-            revert ERC20InsufficientBalance(owner, balanceOf(owner), amount);
+            revert ERC20InsufficientBalance(owner, oldBalance, amount);
         }
     }
 
