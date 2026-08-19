@@ -227,7 +227,7 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _transfer(sender, recipient, amount);
 
-        uint256 currentAllowance = allowance(sender, msg.sender);
+        uint256 currentAllowance = _allowances[sender][msg.sender];
         if (currentAllowance < INFINITE_ALLOWANCE) {
             // Only decrease the allowance if it was not set to 'infinite'
             // Documented in /doc/infiniteallowance.md

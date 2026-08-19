@@ -118,13 +118,18 @@ contract TradeReactor is IReactor, IntentVerifier {
     function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 tradedTokens, uint256 totalFee) public {
         verify(sellerIntent, sellerSig);
         verify(buyerIntent, buyerSig);
+
         if (sellerIntent.tokenOut != buyerIntent.tokenIn) revert TokenMismatch();
         if (sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
-        if (tradedTokens > (sellerIntent.amountOut - filledAmount[sellerIntent.hash()])) revert OverFilled();
-        if (tradedTokens > (buyerIntent.amountIn - filledAmount[buyerIntent.hash()])) revert OverFilled();
 
-        filledAmount[sellerIntent.hash()] += tradedTokens;
-        filledAmount[buyerIntent.hash()] += tradedTokens;
+        bytes32 sellerHash = sellerIntent.hash();
+        bytes32 buyerHash = buyerIntent.hash();
+
+        if (tradedTokens > (sellerIntent.amountOut - filledAmount[sellerHash])) revert OverFilled();
+        if (tradedTokens > (buyerIntent.amountIn - filledAmount[buyerHash])) revert OverFilled();
+
+        filledAmount[sellerHash] += tradedTokens;
+        filledAmount[buyerHash] += tradedTokens;
 
         uint256 totalExecutionPrice = getTotalExecutionPrice(buyerIntent, sellerIntent, tradedTokens);
 
