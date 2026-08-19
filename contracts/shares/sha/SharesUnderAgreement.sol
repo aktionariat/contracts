@@ -93,11 +93,6 @@ contract SharesUnderAgreement is Initializable, ERC20Named, ERC20Allowlistable, 
 
     /**
      * Constructor style initialization. Used to enable the proxy pattern.
-     *
-     * @param base_ the base Shares token address
-     * @param _terms terms
-     * @param _decimals decmials of the token
-     * @param _owner the owner of the token
      */
     function initialize(IERC20 base_, string memory _terms, uint8 _decimals, address _owner) public initializer {
         __ERC20Named_init(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner);

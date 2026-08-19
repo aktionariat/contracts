@@ -81,17 +81,12 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
      * @notice can be turned into a standalone library
      */
 
-    /// @dev balances map: owner => token quantity
     mapping(address => uint256) private _balances; // upper 32 bits reserved for flags
-    /// @dev allowance map: owner => allowed address => token quantity
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    /// @dev token global settings
     uint256 private _settings;
-    /// @dev token total supply
     uint256 private _totalSupply;
 
-    /// @notice token decimals
     uint8 public override decimals;
 
 
@@ -106,8 +101,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
 
     /**
      * Proxy constructor.
-     *
-     * @param _decimals token decimals
      */
     function __ERC20Flaggable_init(uint8 _decimals) internal onlyInitializing {
         decimals = _decimals;
@@ -129,9 +122,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
 
     /**
      * Queries whether a specific account has a specific flag.
-     * 
-     * @param account the address to be queried for the flag
-     * @param number the index offset to select the flag
      */
     function hasFlag(address account, uint8 number) external view returns (bool) {
         return _hasFlag(account, number);
@@ -140,9 +130,8 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     /**
      * Queries whether a specific account has a specific flag.
      * 
-     * @param account the address to be queried
-     * @param index the index offset to select the flag (from 0 up to inlcuding 31)
-     * @return bool whether the address has the flag set or not
+     * Requirements:
+     *  - index must be within bounds
      */
     function _hasFlag(address account, uint8 index) internal view returns (bool) {
         // ensure index is within bounds
@@ -157,9 +146,8 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     /**
      * Applies a flag to an address
      * 
-     * @param account the address to apply the flag to
-     * @param index the offset index of the flag
-     * @param value whether the flag has to be applied or removed, ture or false respectively
+     * Requirements:
+     *  - index must be within bounds
      */
     function _setFlag(address account, uint8 index, bool value) internal {
         // ensure index is within bounds
@@ -175,10 +163,7 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     }
 
     /**
-     * Queries if the gloabl flag at the specific index is set,
-     * 
-     * @param index the index of the flag
-     * @return bool to indicate whether or not the flag is set
+     * Queries if the gloabl flag at the specific index is set
      */
     function _hasGlobalFlag(uint8 index) internal view returns (bool) {
         uint256 flagMask = 1 << index;
@@ -187,9 +172,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
 
     /**
      * Applies a global flag.
-     * 
-     * @param index the index of the flag to be modified
-     * @param value whether to add or remove the flag, respectively, true and false
      */
     function _setGlobalFlag(uint8 index, bool value) internal {
         uint256 flagMask = 1 << index;
@@ -302,9 +284,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
 
     /**
      * Increases the balance of an address by a specific amount
-     * 
-     * @param recipient the address which balance to increase
-     * @param amount the amount to be increased by
      */
     function increaseBalance(address recipient, uint256 amount) private {
         if (recipient == address(0x0)) {
@@ -340,9 +319,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
 
     /**
      * Decreases the balance of an address by a specific amount
-     * 
-     * @param sender the address which balance to decrease
-     * @param amount the amount to be decreased by
      */
     function decreaseBalance(address sender, uint256 amount) private {
         uint256 oldBalance = _balances[sender];
@@ -393,15 +369,9 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
      * Checks that allowlist flag remains unchanged, that is, the balance does not overflow nor
      * underflow from available unit224 space.
      * 
-     * @dev it could be that the balance is reduced while not being under 0x0 allowlist tier (free).
-     *      In that case if the balance of the user is zero and he tries to burn tokens he will be
-     *      allowed if the allowlisting flag is not validated, as virtually he doesn't have a zero
-     *      balance.
-     * 
-     * @param oldBalance old user balance
-     * @param newBalance new user balance
-     * @param owner sender address
-     * @param amount balance amount change
+     * @dev it could be that if the balance is reduced while not being under 0x0 allowlist tier (free)
+     *      the balance of the user is zero and he tries to burn tokens he will be allowed if the
+     *      allowlisting flag is not validated, as virtually he doesn't have a zero balance.
      */
     function _checkAllowlistingFlagUnchanged(uint256 oldBalance, uint256 newBalance, address owner, uint256 amount) internal view {
         if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {

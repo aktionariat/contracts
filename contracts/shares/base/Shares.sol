@@ -94,11 +94,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
 
     /**
      * Constructor style initialization. Used to enable the proxy pattern.
-     *
-     * @param _symbol the symbol of the token
-     * @param _name the name of the token
-     * @param _terms the terms of the token
-     * @param _owner the owner of the token
      */
     function initialize(string memory _symbol, string memory _name, string memory _terms, address _owner) public initializer {
         __ERC20Named_init(_symbol, _name, 0, _owner);
@@ -110,8 +105,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
 
     /**
      * Updates the link to the registration agreement.
-     * 
-     * @param _terms new terms
      */
     function setTerms(string memory _terms) external onlyOwner {
         terms = _terms;
@@ -120,8 +113,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
 
     /**
      * Allows the issuer to make public announcements that are visible on chain.
-     * 
-     * @param message message to be sent to stakeholders
      */
     function announcement(string calldata message) external onlyOwner {
         emit Announcement(message);
@@ -133,8 +124,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
      * @notice The successor must implement ISuccessorToken.notifyBurned. When a holder calls 'migrate',
      *          their tokens are transferred to the successor and burned, and the successor is notified
      *          so it can mint replacement tokens for the holder.
-     * 
-     * @param successor_ the successor token
      */
     function setSuccessor(ISuccessorToken successor_) external onlyOwner {
         successor = successor_;
@@ -162,8 +151,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
      * @notice Alternatively, the token holder can burn the token with the burn function, in
      *          which case they are returned to the issuer, and then hope for the issuer to
      *          mint a new token or other form of security as a replacement.
-     * 
-     * @param amount the token amount being migrated
      */
     function migrate(uint256 amount) public {
         if (address(successor) == address(0)) revert NoSuccessorDefined();
@@ -235,8 +222,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
      *          get them back in another form under an according agreement (e.g. printed certificates or
      *          tokens on a different blockchain). It is not recommended to call this function without
      *          having agreed with the company on the further fate of the shares in question.
-     *  
-     * @param _amount the amount to be burned
      */
     function burn(uint256 _amount) external {
         _transfer(msg.sender, owner, _amount);
@@ -252,9 +237,6 @@ interface ISuccessorToken {
      *          this means. Most likely, the successor contract will mint an according number of new
      *          tokens for the indicated beneficiary, ensuring that the beneficiary retains control
      *          over the tokens.
-     * 
-     * @param beneficiary the address of the owner moving tokens to a successor
-     * @param amount the quantity being moved to the successor token
      */
     function notifyBurned(address beneficiary, uint256 amount) external;
 }
@@ -268,9 +250,6 @@ interface IWrapper {
      * @dev When called, the wrapper contract is expected to fetch the indicated amount of base tokens
      *      from the holder and mint the corresponding amount of wrapped tokens to the holder. The
      *      wrapper contract can assume to have the necessary allowance.
-     * 
-     * @param holder the address to mint to
-     * @param baseTokens the quantity of tokens transfered, and ultimately to be minted
      */
     function mintFromBase(address holder, uint256 baseTokens) external returns (uint256);
 }
