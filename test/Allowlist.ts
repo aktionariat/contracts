@@ -8,6 +8,11 @@ import {
   signer2,
   signer3,
 } from "./TestBase.ts";
+import {
+  IERC20,
+  Shares,
+  SharesUnderAgreement,
+} from "../types/ethers-contracts/index.ts";
 
 // Allowlist tests for addresses policies
 // To be tested the always-free allowlist of the zero address and contracts.
@@ -26,10 +31,8 @@ const DECIMALS = 0;
 // 184 days
 const RECOVERY_DELAY = 184n * 24n * 60n * 60n;
 
-async function deployShares(): Promise<Contract> {
-  const Shares = await ethers.getContractFactory(
-    "contracts/shares/base/Shares.sol:Shares"
-  );
+async function deployShares(): Promise<Shares> {
+  const Shares = await ethers.getContractFactory("Shares");
   const s = await Shares.deploy(
     SHARES.symbol,
     SHARES.name,
@@ -37,16 +40,16 @@ async function deployShares(): Promise<Contract> {
     owner
   );
   await s.waitForDeployment();
-  return s as unknown as Contract;
+  return s;
 }
 
-async function deploySharesUnderAgreement(base: Contract): Promise<Contract> {
-  const SUA = await ethers.getContractFactory(
-    "contracts/shares/sha/SharesUnderAgreement.sol:SharesUnderAgreement"
-  );
+async function deploySharesUnderAgreement(
+  base: IERC20
+): Promise<SharesUnderAgreement> {
+  const SUA = await ethers.getContractFactory("SharesUnderAgreement");
   const sua = await SUA.deploy(base, SHA_TERMS, DECIMALS, owner);
   await sua.waitForDeployment();
-  return sua as unknown as Contract;
+  return sua;
 }
 
 describe("Allowlist (ERC20Allowlistable)", function () {
@@ -113,7 +116,7 @@ describe("Allowlist (ERC20Allowlistable)", function () {
     // mock Router
     // tokens: WETH9, LINK, CCIP-BnM/LnM.
     const CCIPLocalSimulator = await ethers.getContractFactory(
-      "@chainlink/local/src/ccip/CCIPLocalSimulator.sol:CCIPLocalSimulator"
+      "CCIPLocalSimulator"
     );
     const simulator = await CCIPLocalSimulator.deploy();
     await simulator.waitForDeployment();
@@ -123,21 +126,19 @@ describe("Allowlist (ERC20Allowlistable)", function () {
     const mockRouterAddress = config[1];
 
     const mockRouter = await ethers.getContractAt(
-      "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol:IRouterClient",
+      "IRouterClient",
       mockRouterAddress
     );
 
     // We need to mock the pool's RMN proxy
-    const MockRMN = await ethers.getContractFactory(
-      "contracts/mocks/audit/agents/MockRMN.sol:MockRMN"
-    );
+    const MockRMN = await ethers.getContractFactory("MockRMN");
     const rmn = await MockRMN.deploy();
     await rmn.waitForDeployment();
 
     // The LockReleaseTokenPool from our vendored implementation, connected to the
     // simulator's router.
     const LockReleaseTokenPoolProxy = await ethers.getContractFactory(
-      "contracts/vendor/@chainlink/contracts-ccip/contracts/pools/LockReleaseTokenPoolProxy.sol:LockReleaseTokenPoolProxy"
+      "LockReleaseTokenPoolProxy"
     );
     const pool = await LockReleaseTokenPoolProxy.deploy(
       await sha.getAddress(),
