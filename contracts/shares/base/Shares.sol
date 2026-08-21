@@ -195,7 +195,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
             _approve(shareholder, wrapper, allowance + amount);
         }
         IWrapper(wrapper).mintFromBase(shareholder, amount);
-        // TODO could also remove added wrapper allowance
     }
 
     /**
