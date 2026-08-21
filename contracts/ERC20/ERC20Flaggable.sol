@@ -366,7 +366,7 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     function _checkAllowlistingFlagUnchanged(uint256 oldBalance, uint256 newBalance, address owner, uint256 amount) internal pure {
         if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
             // assume more meaning for the current code than simply insufficient balance
-            revert ERC20InsufficientBalance(owner, oldBalance, amount);
+            revert ERC20InsufficientBalance(owner, uint224(oldBalance), amount);
         }
     }
 
