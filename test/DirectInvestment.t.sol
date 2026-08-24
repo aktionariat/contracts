@@ -96,32 +96,38 @@ contract PaymentHubTest is Test {
         );
     }
 
+    function _expectInvalidPath(bytes memory path) internal {
+        // we need to recompute it each time before expecting it
+        vm.expectRevert(
+            abi.encodeWithSelector(PaymentHub.PaymentHub_InvalidPath.selector, address(directInvestment), address(paymentToken), path)
+        );
+    }
+
     function testFuzz_CheckPath_RejectsShortPaths(uint8 x) public {
         uint256 len = bound(uint256(x), 0, 42);
         bytes memory path = new bytes(len);
-        bytes memory errorOutput = abi.encodeWithSelector(PaymentHub.PaymentHub_InvalidPath.selector, address(directInvestment), address(paymentToken), path);
 
         // length less than 43 should revert
-        vm.expectRevert(errorOutput);
+        _expectInvalidPath(path);
         hub.getPriceInPaymentCurrency(directInvestment, 1, IERC20(address(paymentToken)), path);
 
         uint256 extra = bound(uint256(x), 1, 22);
-        bytes memory path = new bytes(43 + extra);
+        path = new bytes(43 + extra);
 
         // path of length [44, 65] should revert
-        vm.expectRevert(errorOutput);
+        _expectInvalidPath(path);
         hub.getPriceInPaymentCurrency(directInvestment, 1, IERC20(address(paymentToken)), path);
 
         // no base token start
-        bytes memory path = _path(IERC20(address(paymentToken)), IERC20(address(paymentToken)), 1);
+        path = _path(IERC20(address(paymentToken)), IERC20(address(paymentToken)), 1);
 
-        vm.expectRevert(errorOutput);
+        _expectInvalidPath(path);
         hub.getPriceInPaymentCurrency(directInvestment, 1, IERC20(address(paymentToken)), path);
-        
-        // no payment token end
-        bytes memory path = _path(IERC20(address(baseToken)), IERC20(address(weth)), 1);
 
-        vm.expectRevert(errorOutput);
+        // no payment token end
+        path = _path(IERC20(address(baseToken)), IERC20(address(weth)), 1);
+
+        _expectInvalidPath(path);
         hub.getPriceInPaymentCurrency(directInvestment, 1, IERC20(address(paymentToken)), path);
     }
 
@@ -193,6 +199,7 @@ contract PaymentHubTest is Test {
     // multipay
     function testFuzz_MultiPay_PaysEveryRecipient(uint8 seedCount, uint256 paymentAmount) public {
         uint256 count = bound(uint256(seedCount), 1, 5);
+        paymentAmount = bound(paymentAmount, 0, 1e36);
 
         address[] memory recipients = new address[](count);
         uint256[] memory amounts = new uint256[](count);
@@ -210,7 +217,7 @@ contract PaymentHubTest is Test {
         vm.stopPrank();
 
         for (uint256 i = 0; i < count; i++) {
-            assertEq(paymentToken.balanceOf(recipients[i]), (i + 1) * 10 ether, "each recipient must be paid");
+            assertEq(paymentToken.balanceOf(recipients[i]), (i + 1) * paymentAmount, "each recipient must be paid");
         }
     }
 }
@@ -261,12 +268,12 @@ contract DirectInvestmentTest is Test {
     function testFuzz_GetBuyPrice_Formula(uint256 price, uint256 increment, uint256 shares) public {
         price = bound(price, 0, 1e30);
         increment = bound(increment, 0, 1e21);
-        shares = bound(shares, 1, 1e12);
+        shares = bound(shares, 1, 1e4);
 
         // fuzz different increment and prices
         DirectInvestment di = _newDirectInvestment(price, increment);
 
-        // naive computation
+        // naive cost computation
         uint256 cost = 0;
         for (uint256 i = 0; i < shares; i++) {
             cost += price + i * increment;
