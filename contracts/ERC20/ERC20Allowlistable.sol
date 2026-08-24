@@ -229,7 +229,6 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
             if (
                 isAdmin(from)
                 && amount != 0
-                && address(to).code.length == 0
                 && to != address(0)
             ) {
                 _setFlag(to, FLAG_INDEX_ALLOWED, true);
