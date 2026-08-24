@@ -152,7 +152,7 @@ contract PaymentHub is Ownable {
     /// @notice Grant infinite Uniswap allowance for the listed payment currencies. Must be called once per new currency.
     /// @dev Permissionless; the hub holds no token balance between transactions.
     function approvePaymentCurrencies(IERC20[] calldata erc20In) external {
-        for (uint i=0; i<erc20In.length; i++) {
+        for (uint i = 0; i < erc20In.length; i++) {
             approveERC20(erc20In[i]);
         }
     }
@@ -171,7 +171,7 @@ contract PaymentHub is Ownable {
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
         if (recipients.length != amounts.length) revert ArrayLengthMismatch();
 
-        for (uint i=0; i<recipients.length; i++) {
+        for (uint i = 0; i < recipients.length; i++) {
             IERC20(token).safeTransferFrom(msg.sender, recipients[i], amounts[i]);
         }
     }

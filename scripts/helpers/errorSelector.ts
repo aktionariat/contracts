@@ -20,11 +20,20 @@ const targetSelectors = [
   "0xdad89dca",
   "0x1a76572a",
   "0xf08bcb3e",
+  "0xb5f20c2a",
 ];
 
 // Add your custom errors here
 const errors = [
   "TestError()",
+
+  "PaymentHub_InvalidAmount()",
+  "PaymentHub_InvalidPath(IDirectInvestment,IERC20,bytes)",
+  "ArrayLengthMismatch()",
+  "DirectInvestment_BuyingDisabled()",
+  "DirectInvestment_InvalidSettings()",
+  "DirectInvestment_NotPaymentHub(address)",
+  "DirectInvestment_InsufficientPayment(uint256,uint256)",
 
   "TokenNotSupported(address)",
   "ChainNotSupported(uint64)",
