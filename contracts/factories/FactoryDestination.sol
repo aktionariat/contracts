@@ -25,11 +25,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity ^0.8.26;
 
 import {BridgedSharesUnderAgreement} from "../multichain/BridgedSharesUnderAgreement.sol";
-import {Deployment} from "../utils/Deployment.sol";
-import {TokenPoolService} from "./lib/TokenPoolService.sol";
+
 import {CCIPService} from "./lib/CCIPService.sol";
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -43,18 +42,13 @@ contract FactoryDestination is Ownable {
     error UnableToPerformSetupCCIP_CanOnlySelfRegister(address actualOwner, address neededOwner);
     error InvalidAddress();
 
-    event BridgedSharesUnderAgreementLogicResolved(address indexed sourceWrapper);
-    event TokenPoolLogicResolved(address indexed sourcePool);
-
     event BridgedSharesUnderAgreementDeployed(address indexed proxyWrapper, string symbol);
     event TokenPoolDeployed(address indexed proxyPool);
 
     struct ChainlinkAddresses {
+        address tokenPoolFactory;
         address tokenAdminRegistry;
         address registryModuleOwner;
-        // needed for proxy token pool
-        address rmnProxy;
-        address router;
     }
 
     struct BridgedSharesUnderAgreementDeploymentData {
@@ -68,109 +62,133 @@ contract FactoryDestination is Ownable {
     struct DestinationParams {
         BridgedSharesUnderAgreementDeploymentData bridgedSharesUnderAgreement;
         ChainlinkAddresses chainlink;
+        bytes burnMintTokenPoolBytecode;
         TokenPoolFactory.RemoteTokenPoolInfo[] remoteTokenPools;
     }
 
-    struct DestinationDeployment {
+    struct TokenDeployment {
         address bridgedSharesUnderAgreement;
-        address brunMintTokenPool;
     }
 
-    address public BSHA_IMPLEMENTATION;
-    address public TOKEN_POOL_IMPLEMENTATION;
-
-    /**
-     * Factory Constructor.
-     * Sets the BSHA logic contract address.
-     *
-     * @dev We initialize at constructor since the code is initialization-dependent, that is
-     *      if we change the BSHA contract initialization call we would need to chnage the code
-     *      also in the factory
-     *
-     * @param bshaLogicContract the BSHA logic contract address
-     * @param tokenPoolLogicContract the TokenPool logic contract address
-     */
-    constructor(address bshaLogicContract, address tokenPoolLogicContract) Ownable(msg.sender) {
-        // BridgedSharesUnderAgreement Logic
-        BSHA_IMPLEMENTATION = bshaLogicContract;
-        emit BridgedSharesUnderAgreementLogicResolved(bshaLogicContract);
-
-        // BurnMintTokenPool Logic
-        TOKEN_POOL_IMPLEMENTATION = tokenPoolLogicContract;
-        emit TokenPoolLogicResolved(tokenPoolLogicContract);
+    struct TokenPoolDeployment {
+        address burnMintTokenPool;
     }
 
+    struct DestinationDeployment {
+        TokenDeployment token;
+        TokenPoolDeployment tokenPool;
+    }
+
+    constructor() Ownable(msg.sender) {}
+
     /**
-     *	Deploys the bSHA contract if needed and enabes the CCIP infrastructure.
+     * Deploys BSHA and TokenPool contracts, then sets the CCIP infrastructure to enable bridging via CCT.
      *
-     * @notice onlyOwner is not strictly necessary.
-     * @dev You need sure that the true owner has the ability to accept ownership of TokenPool and the
-     *      Token on the TokenAdminRegistry after the call.
-     *      If bSHA contract is passed by candidate, make sure that the owner of it is the factory pool,
-     *      otherwise registerAdminViaOwner will fail.
-     * @param params deployment parameters.
-     * @return deployment deployed addresses struct, comprehends bSHA and the burn mint pool.
+     * For backward compatibility we accept also already deployed BSHA do deployment setups.
+     * For BSHA, owneship of shares should be given to the factory before calling this function.
+     *
+     * @notice see deployToken and deployTokenBridge requirements
      */
     function deploy(DestinationParams calldata params, address futureOwner, bytes32 salt) external onlyOwner returns (DestinationDeployment memory deployment) {
-        // Move admin to deployer for all contracts
+        // // Proxy Token Deployment
+        if (params.bridgedSharesUnderAgreement.candidate != address(0)) {
+            // use existing token to initialize it
+            deployment.token.bridgedSharesUnderAgreement = params.bridgedSharesUnderAgreement.candidate;
+            // we defer check of ownership to the deployTokenBridge function
+        } else {
+            // call deployment
+            deployment.token = deployTokens(
+                params.bridgedSharesUnderAgreement, address(this), salt
+            );
+        }
+
+        // // Token Pool Deployment
+        deployment.tokenPool = deployTokenBridge(
+            deployment.token.bridgedSharesUnderAgreement,
+            params.chainlink,
+            params.burnMintTokenPoolBytecode,
+            params.remoteTokenPools,
+            futureOwner,
+            salt
+        );
+
+        return deployment;
+    }
+
+
+    /**
+     * Deploys shares token infrastructure.
+     * First deploys Shares, then SharesUnderAgreement
+     */
+    function deployTokens(BridgedSharesUnderAgreementDeploymentData calldata bsha, address futureOwner, bytes32 salt) public onlyOwner returns(TokenDeployment memory deployment) {
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;
         }
 
-        // // Proxy Token Deployment
-        if (params.bridgedSharesUnderAgreement.candidate != address(0)) {
-            // use existing token to initialize it
-            deployment.bridgedSharesUnderAgreement = params.bridgedSharesUnderAgreement.candidate;
-        } else {
-            // deploys a minimal proxy (EIP-1167) with BSHA_IMPLEMENTATION business logic
-            deployment.bridgedSharesUnderAgreement = Clones.cloneDeterministic(BSHA_IMPLEMENTATION, salt);
-
-            // initialize
-            BridgedSharesUnderAgreement(deployment.bridgedSharesUnderAgreement).initialize(
-                params.bridgedSharesUnderAgreement.symbol,
-                params.bridgedSharesUnderAgreement.name,
-                params.bridgedSharesUnderAgreement.terms,
-                address(this)
-            );
-        }
-        // emit
+        // we skip candiate here
+        deployment.bridgedSharesUnderAgreement  = address(
+            new BridgedSharesUnderAgreement{salt: salt}(
+                bsha.symbol,
+                bsha.name,
+                bsha.terms,
+                futureOwner // no need for deployer ownership
+            )
+        );
         emit BridgedSharesUnderAgreementDeployed(deployment.bridgedSharesUnderAgreement, IERC20Metadata(deployment.bridgedSharesUnderAgreement).symbol());
+    }
 
-        // Ensure the deployer is the owner
-        address bshaOwner = IOwnable(deployment.bridgedSharesUnderAgreement).owner();
-        if (bshaOwner != address(this)) {
-            revert UnableToPerformSetupCCIP_CanOnlySelfRegister(bshaOwner, address(this));
+    /**
+     * Deploys the token pool and sets up the CCIP Bridge infrastructure
+     */
+    function deployTokenBridge(
+        address bridgedSharesUnderAgreement,
+        ChainlinkAddresses calldata chainlink,
+        bytes calldata burnMintTokenPoolBytecode,
+        TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools,
+        address futureOwner,
+        bytes32 salt
+    ) public onlyOwner returns(TokenPoolDeployment memory deployment) {
+        if (futureOwner == address(0)) {
+            futureOwner = msg.sender;
         }
 
-        // // Pool Proxy Deployment
-        // Deploys Token Pool Proxy: Only if applicable
-        deployment.brunMintTokenPool = TokenPoolService._deployProxyTokenPool(
-            TOKEN_POOL_IMPLEMENTATION,
-            deployment.bridgedSharesUnderAgreement,
-            IERC20Metadata(deployment.bridgedSharesUnderAgreement).decimals(),
-            TokenPoolFactory.PoolType.BURN_MINT,
-            params.chainlink.rmnProxy,
-            params.chainlink.router,
-            salt
+        // Ensure the factory is the owner of SHA, Shares' owner is not a problem
+        address shaOwner = IOwnable(bridgedSharesUnderAgreement).owner();
+        if (shaOwner != address(this)) {
+            revert UnableToPerformSetupCCIP_CanOnlySelfRegister(shaOwner, address(this));
+        }
+
+        // // Chainlink Factory Token Pool Deployment
+        // Burn Mint Pool Deployment through Chainlink Factory Deployment
+        // address token,
+        // uint8 localTokenDecimals,
+        // RemoteTokenPoolInfo[] calldata remoteTokenPools,
+        // bytes calldata tokenPoolInitCode,
+        // bytes32 salt,
+        // PoolType poolType
+        deployment.burnMintTokenPool = TokenPoolFactory(chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
+            bridgedSharesUnderAgreement,
+            IERC20Metadata(bridgedSharesUnderAgreement).decimals(),
+            remoteTokenPools,
+            burnMintTokenPoolBytecode,
+            salt,
+            TokenPoolFactory.PoolType.BURN_MINT
         );
-        TokenPoolService._applyChainUpdatesTokenPool(deployment.brunMintTokenPool, params.remoteTokenPools, salt);
-        emit TokenPoolDeployed(deployment.brunMintTokenPool);
+        emit TokenPoolDeployed(deployment.burnMintTokenPool);
 
-        // set pool as minter and burner in bSHA
-        BridgedSharesUnderAgreement(deployment.bridgedSharesUnderAgreement).setPool(deployment.brunMintTokenPool);
+        // set pool as minter and burner in BSHA
+        BridgedSharesUnderAgreement(bridgedSharesUnderAgreement).setPool(deployment.burnMintTokenPool);
 
-        // // // Further settings do require only BSHA and Pool addresses
+        // // Further Pool settings do require only SHA and Pool addresses
         CCIPService._applySettingToChainlinkCCIPInfrastructure(
-            deployment.brunMintTokenPool,
-            deployment.bridgedSharesUnderAgreement,
+            deployment.burnMintTokenPool,
+            bridgedSharesUnderAgreement,
             futureOwner,
-            params.chainlink.registryModuleOwner,
-            params.chainlink.tokenAdminRegistry
+            chainlink.registryModuleOwner,
+            chainlink.tokenAdminRegistry
         );
 
-        // transfer Shares and SHA ownership to deployer (or address)
-        IOwnable(deployment.bridgedSharesUnderAgreement).transferOwnership(futureOwner);
-        // no need to accept ownership here
-        return deployment;
+        // transfer BSHA ownership to futureOwner
+        IOwnable(bridgedSharesUnderAgreement).transferOwnership(futureOwner);
     }
 }

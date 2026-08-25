@@ -27,8 +27,6 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "../../ERC20/ERC20Named.sol";
 import "../../ERC20/ERC20Allowlistable.sol";
 import "./Recoverable.sol";
@@ -53,7 +51,7 @@ import "./Recoverable.sol";
  * permissible. The intended use of the contract functionality is defined in the accompanying registration agreement.
  * In particular, the issuer must not use any administrative functions in violation of the registration agreement.
  */
-contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
+contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     // Version history:
     // 1: everything before 2022-07-19
     // 2: added mintMany and mintManyAndCall, added VERSION field
@@ -86,20 +84,6 @@ contract Shares is Initializable, IERC20, ERC20Named, ERC20Allowlistable, Recove
     error ArrayLengthMismatch();
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
-        terms = _terms;
-
-        // disable logic contracts initializers
-        _disableInitializers();
-    }
-
-    /**
-     * Constructor style initialization. Used to enable the proxy pattern.
-     */
-    function initialize(string memory _symbol, string memory _name, string memory _terms, address _owner) public initializer {
-        __ERC20Named_init(_symbol, _name, 0, _owner);
-        // __ERC20Allowlistable_init();
-        __DeterrenceFee_init(0.01 ether);
-
         terms = _terms;
     }
 

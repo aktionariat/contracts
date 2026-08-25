@@ -25,14 +25,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity ^0.8.26;
 
 import {Shares} from "../shares/base/Shares.sol";
 import {SharesUnderAgreement, IERC20} from "../shares/sha/SharesUnderAgreement.sol";
 
-import {Deployment} from "../utils/Deployment.sol";
-
-import {TokenPoolService} from "./lib/TokenPoolService.sol";
 import {CCIPService} from "./lib/CCIPService.sol";
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -53,20 +50,14 @@ contract FactorySource is Ownable {
     error NotPoolOwner(address sender);
     error InvalidAddress();
 
-    event SharesLogicResolved(address indexed sourceToken);
-    event SharesUnderAgreementLogicResolved(address indexed sourceWrapper);
-    event TokenPoolLogicResolved(address indexed sourcePool);
-
     event SharesDeployed(address indexed proxyToken, string symbol);
     event SharesUnderAgreementDeployed(address indexed proxyWrapper, string symbol);
     event TokenPoolDeployed(address indexed proxyPool);
 
     struct ChainlinkAddresses {
+        address tokenPoolFactory;
         address tokenAdminRegistry;
         address registryModuleOwner;
-        // needed for proxy token pool
-        address rmnProxy;
-        address router;
     }
 
     struct SharesDeploymentData {
@@ -87,141 +78,159 @@ contract FactorySource is Ownable {
         SharesDeploymentData shares;
         SharesUnderAgreementDeploymentData sharesUnderAgreement;
         ChainlinkAddresses chainlink;
+        bytes lockReleaseTokenPoolBytecode;
         TokenPoolFactory.RemoteTokenPoolInfo[] remoteTokenPools;
     }
 
-    struct SourceDeployment {
+    struct TokenDeployment {
         address shares;
         address sharesUnderAgreement;
+    }
+
+    struct TokenPoolDeployment {
         address lockReleaseTokenPool;
     }
 
-    address public SHARES_IMPLEMENTATION;
-    address public SHA_IMPLEMENTATION;
-    address public TOKEN_POOL_IMPLEMENTATION;
+    struct SourceDeployment {
+        TokenDeployment token;
+        TokenPoolDeployment tokenPool;
+    }
+
+    constructor() Ownable(msg.sender) {}
 
     /**
-     * Factory Constructor.
-     * Sets the BSHA logic contract address.
+     * Deploys Shares, SHA and TokenPool contracts, then sets the CCIP infrastructure to enable bridging via CCT.
      *
-     * @dev We initialize at constructor since the code is initialization-dependent, that is
-     *      if we change the BSHA contract initialization call we would need to chnage the code
-     *      also in the factory
+     * For backward compatibility we accept also already deployed Shares and SHA to do the deployment setup.
+     * For those shares, owneship of SHA should be given to the factory before calling this function.
      *
-     * @param sharesLogicContract the Shares logic contract address
-     * @param shaLogicContract the SHA logic contract address
-     * @param tokenPoolLogicContract the TokenPool logic contract address
+     * @notice see deployToken and deployTokenBridge requirements
      */
-    constructor(address sharesLogicContract, address shaLogicContract, address tokenPoolLogicContract) Ownable(msg.sender) {
-        // Shares
-        SHARES_IMPLEMENTATION = sharesLogicContract;
-        emit SharesLogicResolved(sharesLogicContract);
+    function deploy(SourceParams calldata params, address futureOwner, bytes32 salt) external onlyOwner returns (SourceDeployment memory deployment) {
+        // // Token Deployment
+        if (params.sharesUnderAgreement.candidate != address(0)) {
+            // SHA is deployed, so we can infer shares
+            // we give the possibility to deploy standalone deployments
 
-        // SHA
-        SHA_IMPLEMENTATION = shaLogicContract;
-        emit SharesUnderAgreementLogicResolved(shaLogicContract);
+            // return type purposes only
+            deployment.token.sharesUnderAgreement = params.sharesUnderAgreement.candidate;
 
-        // TokenPool
-        TOKEN_POOL_IMPLEMENTATION = tokenPoolLogicContract;
-        emit TokenPoolLogicResolved(tokenPoolLogicContract);
+            deployment.token.shares = address(SharesUnderAgreement(deployment.token.sharesUnderAgreement).base());
+            if (deployment.token.shares == address(0)) revert InvalidAddress();
+            // owner check deferred to deployTokenBridge
+        } else {
+            // call deployment
+            TokenDeployment memory tokenDeployment = deployTokens(
+                params.shares, params.sharesUnderAgreement, address(this), salt
+            );
+
+            if (IOwnable(tokenDeployment.shares).owner() == address(this)) {
+                IOwnable(tokenDeployment.shares).transferOwnership(futureOwner);
+            }
+
+            deployment.token = tokenDeployment;
+        }
+
+        // // Token Pool Deployment
+        deployment.tokenPool = deployTokenBridge(
+            deployment.token.sharesUnderAgreement,
+            params.chainlink,
+            params.lockReleaseTokenPoolBytecode,
+            params.remoteTokenPools,
+            futureOwner,
+            salt
+        );
+
+        return deployment;
     }
 
     /**
-     * Deploys, Shares, SHA and TokenPool contracts, then sets the CCIP infrastructure to enable bridging via CCT.
-     * Concludes by giving complete ownership to rightfull address.
-     *
-     * For backward compatibility we accept also already deployed Shares and SHA to do the CCIP setup.
-     * For those shares, owneship of shares should be given to the factory before calling this function.
-     *
-     * @notice onlyOwner is not strictly necessary.
-     * @dev You need to make sure that the true owner has the ability to accept ownership of TokenPool and the
-     *      Token on the TokenAdminRegistry after the call. If SHA contract is passed by candidate, make sure
-     *      that the owner of it is the factory pool, otherwise registerAdminViaOwner will fail
-     * @dev If
-     * @param params deployment parameters.
-     * @return deployment deployed addresses struct, comprehends Shares, SHA and LockReleaseTokenPool addresses.
+     * Deploys shares token infrastructure.
+     * First deploys Shares, then SharesUnderAgreement
      */
-    function deploy(SourceParams calldata params, address futureOwner, bytes32 salt) external onlyOwner returns (SourceDeployment memory deployment) {
+    function deployTokens(SharesDeploymentData calldata shares, SharesUnderAgreementDeploymentData calldata sha,  address futureOwner, bytes32 salt) public onlyOwner returns(TokenDeployment memory deployment) {
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;
         }
 
-        // // Token Deployment
-        if (params.sharesUnderAgreement.candidate != address(0)) {
-            // SHA is deployed, so we can infer shares
-            // we give the possibility to initialize standalone deployments
-
-            // return type purposes only
-            deployment.sharesUnderAgreement = params.sharesUnderAgreement.candidate;
-
-            deployment.shares = address(SharesUnderAgreement(deployment.sharesUnderAgreement).base());
-            if (deployment.shares == address(0)) revert InvalidAddress();
-
-            emit SharesDeployed(deployment.shares, IERC20Metadata(deployment.shares).symbol());
-            emit SharesUnderAgreementDeployed(deployment.sharesUnderAgreement, IERC20Metadata(deployment.sharesUnderAgreement).symbol());
+        // SHA is not deployed, we try to deploy both, we leave possibility
+        // to "deploy" (initialize) already deployed share tokens
+        // Infer or Deploy Shares via Contract
+        if (shares.candidate != address(0)) {
+            deployment.shares = shares.candidate;
         } else {
-            bool wasDeployed;
-
-            // SHA is not deployed, we try to deploy both, we leave possibility
-            // to "deploy" (initialize) already deployed tokens
-            // Infer or Deploy Shares via Proxy
-            (deployment.shares, wasDeployed) = Deployment._resolveAddressOrDeploy(params.shares.candidate, SHARES_IMPLEMENTATION, salt);
-            // initialize Shares if it was deployed
-            if (wasDeployed) {
-                Shares(deployment.shares).initialize(
-                    params.shares.symbol,
-                    params.shares.name,
-                    params.shares.terms,
+            deployment.shares  = address(
+                new Shares{salt: salt}(
+                    shares.symbol,
+                    shares.name,
+                    shares.terms,
                     futureOwner // no need for deployer ownership
-                );
-            }
-            emit SharesDeployed(deployment.shares, params.shares.symbol);
+                )
+            );
+        }
+        emit SharesDeployed(deployment.shares, shares.symbol);
 
-            // Deploy Proxy Shares Under Agreement
-            deployment.sharesUnderAgreement = Clones.cloneDeterministic(SHA_IMPLEMENTATION, salt);
+        // Deploy Shares Under Agreement
+        deployment.sharesUnderAgreement  = address(
+            new SharesUnderAgreement{salt: salt}(
+                IERC20(deployment.shares),
+                sha.terms,
+                IERC20Metadata(deployment.shares).decimals(),
+                futureOwner
+            )
+        );
+        emit SharesUnderAgreementDeployed(deployment.sharesUnderAgreement, IERC20Metadata(deployment.sharesUnderAgreement).symbol());
+    }
 
-            SharesUnderAgreement(deployment.sharesUnderAgreement).initialize(IERC20(deployment.shares), params.sharesUnderAgreement.terms, IERC20Metadata(deployment.shares).decimals(), address(this));
-            emit SharesUnderAgreementDeployed(deployment.sharesUnderAgreement, IERC20Metadata(deployment.sharesUnderAgreement).symbol());
+    /**
+     * Deploys the token pool and sets up the CCIP Bridge infrastructure
+     */
+    function deployTokenBridge(
+        address sharesUnderAgreement,
+        ChainlinkAddresses calldata chainlink,
+        bytes calldata lockReleaseTokenPoolBytecode,
+        TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools,
+        address futureOwner,
+        bytes32 salt
+    ) public onlyOwner returns(TokenPoolDeployment memory deployment) {
+        if (futureOwner == address(0)) {
+            futureOwner = msg.sender;
         }
 
-        // Ensure the deployer is the owner of SHA
-        // Sahres' owner is not a problem
-        address shaOwner = IOwnable(deployment.sharesUnderAgreement).owner();
+        // Ensure the factory is the owner of SHA, Shares' owner is not a problem
+        address shaOwner = IOwnable(sharesUnderAgreement).owner();
         if (shaOwner != address(this)) {
             revert UnableToPerformSetupCCIP_CanOnlySelfRegister(shaOwner, address(this));
         }
 
-        // // Proxy Pool Deployment
-        // Proxy also pool? Do it, but do not remove the current vanilla Chainlink initialization
-        // // Pool Proxy Deployment
-        // Deploys Token Pool Proxy: Only if applicable
-        deployment.lockReleaseTokenPool = TokenPoolService._deployProxyTokenPool(
-            TOKEN_POOL_IMPLEMENTATION,
-            deployment.sharesUnderAgreement,
-            IERC20Metadata(deployment.sharesUnderAgreement).decimals(),
-            TokenPoolFactory.PoolType.LOCK_RELEASE,
-            params.chainlink.rmnProxy,
-            params.chainlink.router,
-            salt
+        // // Chainlink Factory Token Pool Deployment
+        // LockRelease Pool Deployment through Chainlink Factory Deployment
+        // address token,
+        // uint8 localTokenDecimals,
+        // RemoteTokenPoolInfo[] calldata remoteTokenPools,
+        // bytes calldata tokenPoolInitCode,
+        // bytes32 salt,
+        // PoolType poolType
+        deployment.lockReleaseTokenPool = TokenPoolFactory(chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
+            sharesUnderAgreement,
+            IERC20Metadata(sharesUnderAgreement).decimals(),
+            remoteTokenPools,
+            lockReleaseTokenPoolBytecode,
+            salt,
+            TokenPoolFactory.PoolType.LOCK_RELEASE
         );
-        TokenPoolService._applyChainUpdatesTokenPool(deployment.lockReleaseTokenPool, params.remoteTokenPools, salt);
         emit TokenPoolDeployed(deployment.lockReleaseTokenPool);
 
-        // // // Further Pool settings do require only SHA and Pool addresses
+        // // Further Pool settings do require only SHA and Pool addresses
         CCIPService._applySettingToChainlinkCCIPInfrastructure(
             deployment.lockReleaseTokenPool,
-            deployment.sharesUnderAgreement,
+            sharesUnderAgreement,
             futureOwner,
-            params.chainlink.registryModuleOwner,
-            params.chainlink.tokenAdminRegistry
+            chainlink.registryModuleOwner,
+            chainlink.tokenAdminRegistry
         );
 
-        // // Shares and SHA ownership is not handled by their constructor, but set as
-        // // factory during deployment because of CCIP flow
-        // transfer Shares and SHA ownership to deployer (or address)
-        // IOwnable(deployment.shares).transferOwnership(futureOwner);
-        IOwnable(deployment.sharesUnderAgreement).transferOwnership(futureOwner);
-        // no need to accept ownership here
-        return deployment;
+        // transfer Shares and SHA ownership to futureOwner
+        IOwnable(sharesUnderAgreement).transferOwnership(futureOwner);
     }
 }

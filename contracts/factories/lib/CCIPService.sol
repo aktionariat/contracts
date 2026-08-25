@@ -25,7 +25,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity ^0.8.26;
 
 import {ITokenAdminRegistry} from "@chainlink/contracts-ccip/contracts/interfaces/ITokenAdminRegistry.sol";
 import {IOwnable} from "@chainlink/contracts/src/v0.8/shared/interfaces/IOwnable.sol";
@@ -33,12 +33,9 @@ import {RegistryModuleOwnerCustom} from "@chainlink/contracts-ccip/contracts/tok
 
 library CCIPService {
     function _applySettingToChainlinkCCIPInfrastructure(address tokenPool, address token, address futureOwner, address registryModuleOwner, address tokenAdminRegistry) internal {
-        // // Settings: not deployment aware, need only SHA and Token Pool addresses
-
-        // // Ownership of TokenPool in TokenPool is NOT pending: We deployed the pool
-        // // personally without passing through chainlink's factory, as such we already
-        // // own the pool
-        // Skipping: IOwnable(tokenPool).acceptOwnership();
+        // Ownership of TokenPool in TokenPool is pending: We deployed the pool
+        // through chainlink's factory
+        IOwnable(tokenPool).acceptOwnership();
 
         // Uses IOwner(token).owner() to set owner in the registry module
         // and checks that msg.sender is the token owner, that is only after accepting ownership
@@ -54,19 +51,18 @@ library CCIPService {
         // Setting of pool only viable by non-pending owner
         ITokenAdminRegistry(tokenAdminRegistry).setPool(token, tokenPool);
 
-        // Move admin to deployer for all contracts
-        // use futureOwner
+        // Move all contracts to futureOwner adimn
 
-        // Transfer ownership of TokenPool in TokenPool to deployer (or address)
+        // Transfer ownership of TokenPool in TokenPool to futureOwner
         IOwnable(tokenPool).transferOwnership(futureOwner);
-        // Then deployer will have to accept it through call:
+        // Then futureOwner will have to accept it through call:
         // IOwnable(tokenPool).acceptOwnership();
         // directly to the tokenPool contract
 
-        // Transfer ownership of Token in TokenAdminRegistry to deployer (or address)
+        // Transfer ownership of Token in TokenAdminRegistry to futureOwner
         ITokenAdminRegistry(tokenAdminRegistry).transferAdminRole(token, futureOwner);
-        // Then deployer will have to accept Administration through call:
+        // Then futureOwner will have to accept Administration through call:
         // ITokenAdminRegistry(tokenAdminRegistry).acceptAdminRole(token);
-        // directly to the tokenAdminRegistry contract
+        // directly to Chainlink's tokenAdminRegistry contract
     }
 }

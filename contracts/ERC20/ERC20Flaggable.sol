@@ -11,8 +11,6 @@
 // - add a global settings variable
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "./IERC20.sol";
 import "./ERC20Errors.sol";
 import "./IERC677Receiver.sol";
@@ -41,7 +39,7 @@ import "./IERC677Receiver.sol";
  * allowances. See `IERC20.approve`.
  */
 
-abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
+abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     /// @notice the custom infinite allowance of the ERC20 token
     /// as Documented in /doc/infiniteallowance.md
     /// 0x8000000000000000000000000000000000000000000000000000000000000000
@@ -96,13 +94,6 @@ abstract contract ERC20Flaggable is Initializable, IERC20, ERC20Errors {
     error InvalidFlagOffset(uint8 offset, uint8 maxOffset);
 
     constructor(uint8 _decimals) {
-        decimals = _decimals;
-    }
-
-    /**
-     * Proxy constructor.
-     */
-    function __ERC20Flaggable_init(uint8 _decimals) internal onlyInitializing {
         decimals = _decimals;
     }
 

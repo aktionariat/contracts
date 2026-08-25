@@ -27,12 +27,10 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "./Ownable.sol";
 
 // abstract because it does not initiate Ownable
-abstract contract DeterrenceFee is Initializable, Ownable {
+abstract contract DeterrenceFee is Ownable {
     uint96 public deterrenceFee;
 
     event DeterrenceFeePaid(address payer, uint256 fee);
@@ -41,15 +39,6 @@ abstract contract DeterrenceFee is Initializable, Ownable {
     error FeeMissing(uint256 required, uint256 found);
 
     constructor(uint96 deterrenceFee_) {
-        deterrenceFee = deterrenceFee_;
-    }
-
-    /**
-     * Proxy construtor.
-     *
-     * @param deterrenceFee_ the deterrence Fee
-     */
-    function __DeterrenceFee_init(uint96 deterrenceFee_) internal onlyInitializing {
         deterrenceFee = deterrenceFee_;
     }
 
