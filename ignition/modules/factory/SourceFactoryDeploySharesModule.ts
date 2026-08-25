@@ -44,17 +44,13 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
     }
   );
 
-  const sourceToken = m.readEventArgument(
-    deployTx,
-    "SharesDeployed",
-    "proxyToken"
-  );
+  const sourceToken = m.readEventArgument(deployTx, "SharesDeployed", "token");
   const sourceWrapper = m.readEventArgument(
     deployTx,
     "SharesUnderAgreementDeployed",
-    "proxyWrapper"
+    "wrapper"
   );
-  const pool = m.readEventArgument(deployTx, "TokenPoolDeployed", "proxyPool");
+  const pool = m.readEventArgument(deployTx, "TokenPoolDeployed", "pool");
   return {
     Shares: m.contractAt("Shares", sourceToken),
     SharesUnderAgreement: m.contractAt("SharesUnderAgreement", sourceWrapper),

@@ -54,13 +54,9 @@ export default buildModule(
     const sourceWrapper = m.readEventArgument(
       deployTx,
       "BridgedSharesUnderAgreementDeployed",
-      "proxyWrapper"
+      "wrapper"
     );
-    const pool = m.readEventArgument(
-      deployTx,
-      "TokenPoolDeployed",
-      "proxyPool"
-    );
+    const pool = m.readEventArgument(deployTx, "TokenPoolDeployed", "pool");
     return {
       BridgedSharesUnderAgreement: m.contractAt(
         "BridgedSharesUnderAgreement",

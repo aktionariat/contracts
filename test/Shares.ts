@@ -77,12 +77,6 @@ describe("Shares (shares/base/Shares.sol)", function () {
       expect(await shares.VERSION()).to.equal(6n);
       expect(await shares.deterrenceFee()).to.equal(DETERRENCE_FEE);
       expect(await shares.successor()).to.equal(ethers.ZeroAddress);
-
-      // expect init to not be callable
-      const attacker = signer1;
-      expect(
-        shares.initialize(SHARE.symbol, SHARE.name, SHARE.terms, attacker)
-      ).to.be.revertedWithCustomError(shares, "InvalidInitialization");
     });
 
     it("can set terms", async () => {

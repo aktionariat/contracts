@@ -5,7 +5,7 @@
  *
  * Copyright (c) 2025 Aktionariat AG (aktionariat.com)
  *
- * Permission is hereby granted to any person obtaining a copy of this software
+ * Permission is hereby granted, any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software
  * without restriction, including without limitation the rights to use, copy,
  * modify, merge, publish, distribute, sublicense, and/or sell copies of the
@@ -31,19 +31,25 @@ import {BridgedSharesUnderAgreement} from "../multichain/BridgedSharesUnderAgree
 
 import {CCIPService} from "./lib/CCIPService.sol";
 
-import "@openzeppelin/contracts/proxy/Clones.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {TokenPoolFactory} from "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol";
-import {IOwnable} from "@chainlink/contracts/src/v0.8/shared/interfaces/IOwnable.sol";
 
+/**
+ * FactoryDestination contract, to manage deployment and automatic CCIP integration.
+ *
+ * Tokens and pools are deployed via CREATE2 using externally provided bytecodes,
+ * keeping the factory bytecode compact. Constructor arguments are ABI-encoded
+ * and appended to the raw creation code before deployment.
+ */
 contract FactoryDestination is Ownable {
     error UnableToPerformSetupCCIP_CanOnlySelfRegister(address actualOwner, address neededOwner);
     error InvalidAddress();
 
-    event BridgedSharesUnderAgreementDeployed(address indexed proxyWrapper, string symbol);
-    event TokenPoolDeployed(address indexed proxyPool);
+    event BridgedSharesUnderAgreementDeployed(address indexed wrapper, string symbol);
+    event TokenPoolDeployed(address indexed pool);
 
     struct ChainlinkAddresses {
         address tokenPoolFactory;
@@ -53,6 +59,7 @@ contract FactoryDestination is Ownable {
 
     struct BridgedSharesUnderAgreementDeploymentData {
         address candidate;
+        bytes bytecode;
         // constructor arguments
         string symbol;
         string name;
@@ -90,7 +97,7 @@ contract FactoryDestination is Ownable {
      * @notice see deployToken and deployTokenBridge requirements
      */
     function deploy(DestinationParams calldata params, address futureOwner, bytes32 salt) external onlyOwner returns (DestinationDeployment memory deployment) {
-        // // Proxy Token Deployment
+        // // Token Deployment
         if (params.bridgedSharesUnderAgreement.candidate != address(0)) {
             // use existing token to initialize it
             deployment.token.bridgedSharesUnderAgreement = params.bridgedSharesUnderAgreement.candidate;
@@ -117,23 +124,20 @@ contract FactoryDestination is Ownable {
 
 
     /**
-     * Deploys shares token infrastructure.
-     * First deploys Shares, then SharesUnderAgreement
+     * Deploys BridgedSharesUnderAgreement token via CREATE2 using externally provided raw creation bytecode.
+     * Constructor arguments are ABI-encoded and appended to the bytecode before deployment.
      */
     function deployTokens(BridgedSharesUnderAgreementDeploymentData calldata bsha, address futureOwner, bytes32 salt) public onlyOwner returns(TokenDeployment memory deployment) {
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;
         }
 
-        // we skip candiate here
-        deployment.bridgedSharesUnderAgreement  = address(
-            new BridgedSharesUnderAgreement{salt: salt}(
-                bsha.symbol,
-                bsha.name,
-                bsha.terms,
-                futureOwner // no need for deployer ownership
-            )
+        // Deploy BSHA via CREATE2
+        bytes memory creationCode = abi.encodePacked(
+            bsha.bytecode,
+            abi.encode(bsha.symbol, bsha.name, bsha.terms, futureOwner)
         );
+        deployment.bridgedSharesUnderAgreement = Create2.deploy(0, salt, creationCode);
         emit BridgedSharesUnderAgreementDeployed(deployment.bridgedSharesUnderAgreement, IERC20Metadata(deployment.bridgedSharesUnderAgreement).symbol());
     }
 
@@ -152,20 +156,14 @@ contract FactoryDestination is Ownable {
             futureOwner = msg.sender;
         }
 
-        // Ensure the factory is the owner of SHA, Shares' owner is not a problem
-        address shaOwner = IOwnable(bridgedSharesUnderAgreement).owner();
+        // Ensure the factory is the owner of BSHA
+        address shaOwner = Ownable(bridgedSharesUnderAgreement).owner();
         if (shaOwner != address(this)) {
             revert UnableToPerformSetupCCIP_CanOnlySelfRegister(shaOwner, address(this));
         }
 
         // // Chainlink Factory Token Pool Deployment
         // Burn Mint Pool Deployment through Chainlink Factory Deployment
-        // address token,
-        // uint8 localTokenDecimals,
-        // RemoteTokenPoolInfo[] calldata remoteTokenPools,
-        // bytes calldata tokenPoolInitCode,
-        // bytes32 salt,
-        // PoolType poolType
         deployment.burnMintTokenPool = TokenPoolFactory(chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
             bridgedSharesUnderAgreement,
             IERC20Metadata(bridgedSharesUnderAgreement).decimals(),
@@ -189,6 +187,6 @@ contract FactoryDestination is Ownable {
         );
 
         // transfer BSHA ownership to futureOwner
-        IOwnable(bridgedSharesUnderAgreement).transferOwnership(futureOwner);
+        Ownable(bridgedSharesUnderAgreement).transferOwnership(futureOwner);
     }
 }

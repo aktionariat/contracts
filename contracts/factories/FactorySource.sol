@@ -5,7 +5,7 @@
  *
  * Copyright (c) 2025 Aktionariat AG (aktionariat.com)
  *
- * Permission is hereby granted to any person obtaining a copy of this software
+ * Permission is hereby granted, any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software
  * without restriction, including without limitation the rights to use, copy,
  * modify, merge, publish, distribute, sublicense, and/or sell copies of the
@@ -27,32 +27,32 @@
  */
 pragma solidity ^0.8.26;
 
-import {Shares} from "../shares/base/Shares.sol";
-import {SharesUnderAgreement, IERC20} from "../shares/sha/SharesUnderAgreement.sol";
+import {SharesUnderAgreement} from "../shares/sha/SharesUnderAgreement.sol";
 
 import {CCIPService} from "./lib/CCIPService.sol";
 
-import "@openzeppelin/contracts/proxy/Clones.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {TokenPoolFactory} from "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol";
-import {IOwnable} from "@chainlink/contracts/src/v0.8/shared/interfaces/IOwnable.sol";
 
 /**
  * FactorySource contract, to manage deployment and automatic CCIP integration.
  *
- * To halt and acivate the bridge you must directly call the token pool via
- * functions: `haltChains` and `activateChains`
+ * Tokens and pools are deployed via CREATE2 using externally provided bytecodes,
+ * keeping the factory bytecode compact. Constructor arguments are ABI-encoded
+ * and appended to the raw creation code before deployment.
  */
 contract FactorySource is Ownable {
     error UnableToPerformSetupCCIP_CanOnlySelfRegister(address actualOwner, address neededOwner);
     error NotPoolOwner(address sender);
     error InvalidAddress();
 
-    event SharesDeployed(address indexed proxyToken, string symbol);
-    event SharesUnderAgreementDeployed(address indexed proxyWrapper, string symbol);
-    event TokenPoolDeployed(address indexed proxyPool);
+    event SharesDeployed(address indexed token, string symbol);
+    event SharesUnderAgreementDeployed(address indexed wrapper, string symbol);
+    event TokenPoolDeployed(address indexed pool);
 
     struct ChainlinkAddresses {
         address tokenPoolFactory;
@@ -62,6 +62,7 @@ contract FactorySource is Ownable {
 
     struct SharesDeploymentData {
         address candidate;
+        bytes bytecode;
         // constructor
         string symbol;
         string name;
@@ -70,6 +71,7 @@ contract FactorySource is Ownable {
 
     struct SharesUnderAgreementDeploymentData {
         address candidate;
+        bytes bytecode;
         // constructor
         string terms;
     }
@@ -124,8 +126,8 @@ contract FactorySource is Ownable {
                 params.shares, params.sharesUnderAgreement, address(this), salt
             );
 
-            if (IOwnable(tokenDeployment.shares).owner() == address(this)) {
-                IOwnable(tokenDeployment.shares).transferOwnership(futureOwner);
+            if (Ownable(tokenDeployment.shares).owner() == address(this)) {
+                Ownable(tokenDeployment.shares).transferOwnership(futureOwner);
             }
 
             deployment.token = tokenDeployment;
@@ -146,39 +148,34 @@ contract FactorySource is Ownable {
 
     /**
      * Deploys shares token infrastructure.
-     * First deploys Shares, then SharesUnderAgreement
+     * First deploys Shares, then SharesUnderAgreement.
+     * Both are deployed via CREATE2 using externally provided raw creation bytecodes.
+     * Constructor arguments are ABI-encoded and appended to the bytecode before deployment.
      */
-    function deployTokens(SharesDeploymentData calldata shares, SharesUnderAgreementDeploymentData calldata sha,  address futureOwner, bytes32 salt) public onlyOwner returns(TokenDeployment memory deployment) {
+    function deployTokens(SharesDeploymentData calldata shares, SharesUnderAgreementDeploymentData calldata sha, address futureOwner, bytes32 salt) public onlyOwner returns(TokenDeployment memory deployment) {
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;
         }
 
-        // SHA is not deployed, we try to deploy both, we leave possibility
-        // to "deploy" (initialize) already deployed share tokens
-        // Infer or Deploy Shares via Contract
+        // Infer or Deploy Shares via CREATE2
         if (shares.candidate != address(0)) {
             deployment.shares = shares.candidate;
         } else {
-            deployment.shares  = address(
-                new Shares{salt: salt}(
-                    shares.symbol,
-                    shares.name,
-                    shares.terms,
-                    futureOwner // no need for deployer ownership
-                )
+            bytes memory sharesCreationCode = abi.encodePacked(
+                shares.bytecode,
+                abi.encode(shares.symbol, shares.name, shares.terms, futureOwner)
             );
+            deployment.shares = Create2.deploy(0, salt, sharesCreationCode);
         }
         emit SharesDeployed(deployment.shares, shares.symbol);
 
-        // Deploy Shares Under Agreement
-        deployment.sharesUnderAgreement  = address(
-            new SharesUnderAgreement{salt: salt}(
-                IERC20(deployment.shares),
-                sha.terms,
-                IERC20Metadata(deployment.shares).decimals(),
-                futureOwner
-            )
+        // Deploy Shares Under Agreement via CREATE2
+        // SHA needs base token address and decimals (always 0 for this token type)
+        bytes memory shaCreationCode = abi.encodePacked(
+            sha.bytecode,
+            abi.encode(IERC20(deployment.shares), sha.terms, IERC20Metadata(deployment.shares).decimals(), futureOwner)
         );
+        deployment.sharesUnderAgreement = Create2.deploy(0, salt, shaCreationCode);
         emit SharesUnderAgreementDeployed(deployment.sharesUnderAgreement, IERC20Metadata(deployment.sharesUnderAgreement).symbol());
     }
 
@@ -198,19 +195,13 @@ contract FactorySource is Ownable {
         }
 
         // Ensure the factory is the owner of SHA, Shares' owner is not a problem
-        address shaOwner = IOwnable(sharesUnderAgreement).owner();
+        address shaOwner = Ownable(sharesUnderAgreement).owner();
         if (shaOwner != address(this)) {
             revert UnableToPerformSetupCCIP_CanOnlySelfRegister(shaOwner, address(this));
         }
 
         // // Chainlink Factory Token Pool Deployment
         // LockRelease Pool Deployment through Chainlink Factory Deployment
-        // address token,
-        // uint8 localTokenDecimals,
-        // RemoteTokenPoolInfo[] calldata remoteTokenPools,
-        // bytes calldata tokenPoolInitCode,
-        // bytes32 salt,
-        // PoolType poolType
         deployment.lockReleaseTokenPool = TokenPoolFactory(chainlink.tokenPoolFactory).deployTokenPoolWithExistingToken(
             sharesUnderAgreement,
             IERC20Metadata(sharesUnderAgreement).decimals(),
@@ -230,7 +221,7 @@ contract FactorySource is Ownable {
             chainlink.tokenAdminRegistry
         );
 
-        // transfer Shares and SHA ownership to futureOwner
-        IOwnable(sharesUnderAgreement).transferOwnership(futureOwner);
+        // transfer SHA ownership to futureOwner
+        Ownable(sharesUnderAgreement).transferOwnership(futureOwner);
     }
 }

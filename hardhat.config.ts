@@ -16,7 +16,6 @@ import {
   bridgeTokensTask,
   estimateCCIPDeploymentGasTask,
   resetDestinationChainTask,
-  manageBridgeTask,
 
   // Shares
   mintWrapSharesTask,
@@ -39,7 +38,6 @@ const config: HardhatUserConfig = {
     bridgeTokensTask,
     estimateCCIPDeploymentGasTask,
     resetDestinationChainTask,
-    manageBridgeTask,
 
     // Shares
     mintWrapSharesTask,

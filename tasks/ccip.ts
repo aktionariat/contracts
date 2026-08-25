@@ -40,44 +40,6 @@ export const bridgeTokensTask = task(
   .setAction(() => import("./ccip/bridgeTokensTask.ts"))
   .build();
 
-export const manageBridgeTask = task(
-  "ccip-manage-bridge",
-  "Halts or Activates outgoing transfer of bridges for all destinations"
-)
-  .addOption({
-    name: "source",
-    description: "Source network to manage the bridge",
-    type: ArgumentType.STRING,
-    defaultValue: "sepolia",
-  })
-  .addOption({
-    name: "destination",
-    description:
-      "Destination network(s) to manage bridge for, multiple inputs can be passed in by [net1]-[net2]. Length must match the one of dtkp",
-    type: ArgumentType.STRING,
-    defaultValue: "baseSepolia",
-  })
-  .addOption({
-    name: "stkp",
-    description: "Source chain Token Pool address",
-    type: ArgumentType.STRING_WITHOUT_DEFAULT,
-    defaultValue: undefined,
-  })
-  .addOption({
-    name: "halt",
-    description: "Whether to halt or acivate the bridgr",
-    type: ArgumentType.FLAG,
-    defaultValue: false,
-  })
-  .addOption({
-    name: "reset",
-    description: "If to reset ignition deployment folder",
-    type: ArgumentType.FLAG,
-    defaultValue: false,
-  })
-  .setAction(() => import("./ccip/manageBridgeTask.ts"))
-  .build();
-
 // Utils CCIP Tasks
 export const allowTokenPoolOnBridgedSHATask = task(
   "ccip-allow-tkp-bsha",

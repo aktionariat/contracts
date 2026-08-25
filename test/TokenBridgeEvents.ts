@@ -28,7 +28,7 @@ describe("Token Bridge Events tests", function () {
     f = await connection.networkHelpers.loadFixture(deployBridgeFixture);
   });
 
-  it("bridges BSHA to destination, halts bridge, executes drag-along, bridges BSHA back and unwraps to payment currency", async () => {
+  it("bridges BSHA to destination, executes drag-along, bridges BSHA back and unwraps to payment currency", async () => {
     const signer1Addr = await signer1.getAddress();
     const signer2Addr = await signer2.getAddress();
     const signer3Addr = await signer3.getAddress();
@@ -44,9 +44,6 @@ describe("Token Bridge Events tests", function () {
     await lockSourceAndMintDest(f, signer1Addr, signer2Addr, amount);
     expect(await f.bsha.balanceOf(signer2Addr)).to.equal(amount);
 
-    // Halt bridge on source chain
-    await f.lockReleasePool.connect(owner).haltChains([CHAIN_SELECTOR]);
-
     // Verify lockOrBurn reverts when halted
     // remember that we impersonate onRamp since only onRamp can call, as mock router
     // returns address(12345678)
@@ -56,19 +53,6 @@ describe("Token Bridge Events tests", function () {
     });
     await setBalance(ONRAMP_ADDRESS, ethers.parseEther("100"));
     const onRamp = await ethers.getSigner(ONRAMP_ADDRESS);
-
-    await expect(
-      f.lockReleasePool.connect(onRamp).lockOrBurn({
-        receiver: ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address"],
-          [signer2Addr]
-        ),
-        remoteChainSelector: CHAIN_SELECTOR,
-        originalSender: signer1Addr,
-        amount: 10n,
-        localToken: await f.sha.getAddress(),
-      })
-    ).to.revert(ethers);
 
     await provider.request({
       method: "hardhat_stopImpersonatingAccount",
