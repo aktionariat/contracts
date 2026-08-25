@@ -11,17 +11,18 @@ export type ToRuntimeValue<T> = {
   [K in keyof T]: RuntimeValue<T[K]>;
 };
 
-// factories common
-export type ChainlinkAddresses = {
+// source
+export type SourceChainlinkAddresses = {
+  tokenPoolFactory: string;
   tokenAdminRegistry: string;
   registryModuleOwner: string;
   rmnProxy: string;
   router: string;
 };
 
-// source
 export type SharesDeploymentData = {
   candidate: string;
+  bytecode: string;
   symbol: string;
   name: string;
   terms: string;
@@ -29,13 +30,15 @@ export type SharesDeploymentData = {
 
 export type SharesUnderAgreementDeploymentData = {
   candidate: string;
+  bytecode: string;
   terms: string;
 };
 
 export type SourceParams = {
   shares: SharesDeploymentData;
   sharesUnderAgreement: SharesUnderAgreementDeploymentData;
-  chainlink: ChainlinkAddresses;
+  chainlink: SourceChainlinkAddresses;
+  lockReleaseTokenPoolBytecode: string;
   remoteTokenPools: RemoteTokenPoolInfo[];
 };
 
@@ -48,8 +51,17 @@ export type SourceDeployment = {
 };
 
 // destination
+export type DestinationChainlinkAddresses = {
+  tokenPoolFactory: string;
+  tokenAdminRegistry: string;
+  registryModuleOwner: string;
+  rmnProxy: string;
+  router: string;
+};
+
 export type BridgedSharesUnderAgreementDeploymentData = {
   candidate: string;
+  bytecode: string;
   symbol: string;
   name: string;
   terms: string;
@@ -57,7 +69,8 @@ export type BridgedSharesUnderAgreementDeploymentData = {
 
 export type DestinationParams = {
   bridgedSharesUnderAgreement: BridgedSharesUnderAgreementDeploymentData;
-  chainlink: ChainlinkAddresses;
+  chainlink: DestinationChainlinkAddresses;
+  burnMintTokenPoolBytecode: string;
   remoteTokenPools: RemoteTokenPoolInfo[];
 };
 
@@ -65,5 +78,5 @@ export type DestinationParamsRuntimeValue = ToRuntimeValue<DestinationParams>;
 
 export type DestinationDeployment = {
   bridgedSharesUnderAgreement: string;
-  brunMintTokenPool: string;
+  burnMintTokenPool: string;
 };

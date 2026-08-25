@@ -1,10 +1,10 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import {
   BridgedSharesUnderAgreementDeploymentData,
-  ChainlinkAddresses,
+  DestinationChainlinkAddresses,
+  DestinationParamsRuntimeValue,
 } from "./lib/types.ts";
 import { RemoteTokenPoolInfo } from "../ccip/lib/types.ts";
-import { DestinationParamsRuntimeValue } from "./lib/types.ts";
 
 export default buildModule(
   "DestinationFactoryDeployBridgedSharesModule",
@@ -16,7 +16,10 @@ export default buildModule(
         "bridgedSharesUnderAgreementDeploymentData"
       );
     const chainlinkAddresses =
-      m.getParameter<ChainlinkAddresses>("chainlinkAddresses");
+      m.getParameter<DestinationChainlinkAddresses>("chainlinkAddresses");
+    const burnMintTokenPoolBytecode = m.getParameter<string>(
+      "burnMintTokenPoolBytecode"
+    );
     const remoteTokenPools =
       m.getParameter<RemoteTokenPoolInfo[]>("remoteTokenPools");
 
@@ -32,15 +35,9 @@ export default buildModule(
     const destinationParams: DestinationParamsRuntimeValue = {
       bridgedSharesUnderAgreement: bridgedSharesUnderAgreementDeploymentData,
       chainlink: chainlinkAddresses,
+      burnMintTokenPoolBytecode,
       remoteTokenPools,
     };
-    // DeploymentData bridgedSharesUnderAgreement;
-    // DeploymentData brunMintTokenPool;
-    // ChainlinkAddresses chainlink;
-    // // Prediction of addresses is left either to backend
-    // // or directly to chainlink token pool factory
-    // ITokenPoolFactory.RemoteTokenPoolInfo[] remoteTokenPools;
-    // bytes32 salt;
 
     const deployTx = m.call(
       FactoryDestination,
@@ -62,7 +59,7 @@ export default buildModule(
         "BridgedSharesUnderAgreement",
         sourceWrapper
       ),
-      BurnMintTokenPool: m.contractAt("BurnMintTokenPoolProxy", pool),
+      BurnMintTokenPool: m.contractAt("BurnMintTokenPool", pool),
     };
   }
 );

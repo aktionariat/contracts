@@ -21,6 +21,7 @@ const targetSelectors = [
   "0x1a76572a",
   "0xf08bcb3e",
   "0xb5f20c2a",
+  "0x96a19be9",
 ];
 
 // Add your custom errors here

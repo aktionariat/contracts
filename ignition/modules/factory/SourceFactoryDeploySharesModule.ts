@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import {
-  ChainlinkAddresses,
+  SourceChainlinkAddresses,
   SharesDeploymentData,
   SharesUnderAgreementDeploymentData,
   SourceParamsRuntimeValue,
@@ -18,7 +18,10 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
       "sharesUnderAgreementDeploymentData"
     );
   const chainlinkAddresses =
-    m.getParameter<ChainlinkAddresses>("chainlinkAddresses");
+    m.getParameter<SourceChainlinkAddresses>("chainlinkAddresses");
+  const lockReleaseTokenPoolBytecode = m.getParameter<string>(
+    "lockReleaseTokenPoolBytecode"
+  );
   const remoteTokenPools =
     m.getParameter<RemoteTokenPoolInfo[]>("remoteTokenPools");
 
@@ -32,6 +35,7 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
     shares: sharesDeploymentData,
     sharesUnderAgreement: sharesUnderAgreementDeploymentData,
     chainlink: chainlinkAddresses,
+    lockReleaseTokenPoolBytecode,
     remoteTokenPools,
   };
 
@@ -54,6 +58,6 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
   return {
     Shares: m.contractAt("Shares", sourceToken),
     SharesUnderAgreement: m.contractAt("SharesUnderAgreement", sourceWrapper),
-    LockReleaseTokenPool: m.contractAt("LockReleaseTokenPoolProxy", pool),
+    LockReleaseTokenPool: m.contractAt("LockReleaseTokenPool", pool),
   };
 });

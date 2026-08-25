@@ -127,7 +127,7 @@ contract FactorySource is Ownable {
             );
 
             if (Ownable(tokenDeployment.shares).owner() == address(this)) {
-                Ownable(tokenDeployment.shares).transferOwnership(futureOwner);
+                Ownable(tokenDeployment.shares).transferOwnership(futureOwner == address(0) ? msg.sender : futureOwner);
             }
 
             deployment.token = tokenDeployment;

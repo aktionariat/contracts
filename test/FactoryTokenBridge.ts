@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { signer1, signer2 } from "./TestBase.ts";
+import { owner, signer1, signer2 } from "./TestBase.ts";
 import {
   deployBridgeFixture,
   lockSourceAndMintDest,
@@ -12,6 +12,16 @@ describe("FactoryTokenBridge (factory deployment + CCIP bridging)", function () 
 
   before(async () => {
     f = await deployBridgeFixture();
+  });
+
+  it("owner is the owner of fixture tokens (shares, sha, bsha) and pools (lockRelease and burnMint)", async () => {
+    expect(await f.shares.owner()).to.be.equal(await owner.getAddress());
+    expect(await f.sha.owner()).to.be.equal(await owner.getAddress());
+    expect(await f.lockReleasePool.owner()).to.be.equal(
+      await owner.getAddress()
+    );
+    expect(await f.bsha.owner()).to.be.equal(await owner.getAddress());
+    expect(await f.burnMintPool.owner()).to.be.equal(await owner.getAddress());
   });
 
   it("Lock SHA on source chain and mint BSHA on destination chain", async () => {

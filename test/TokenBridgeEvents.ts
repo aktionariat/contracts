@@ -13,7 +13,6 @@ import {
   deployBridgeFixture,
   lockSourceAndMintDest,
   burnDestAndReleaseSource,
-  CHAIN_SELECTOR,
   ONRAMP_ADDRESS,
   type BridgeFixture,
 } from "./FactoryFixture.ts";

@@ -42,7 +42,8 @@ export interface BridgeFixture {
 }
 
 export async function deployBridgeFixture(): Promise<BridgeFixture> {
-  const futureOwner = await owner.getAddress();
+  // const futureOwner = await owner.getAddress();
+  const futureOwner = ethers.ZeroAddress;
 
   // // CCIP Infra
   const CCIPLocalSimulator = await ethers.getContractFactory(
@@ -107,14 +108,16 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   const FactorySourceContract = await ethers.getContractFactory(
     "FactorySource"
   );
-  const factorySource: FactorySource = await FactorySourceContract.deploy();
+  const factorySource: FactorySource = await FactorySourceContract.connect(
+    owner
+  ).deploy();
   await factorySource.waitForDeployment();
 
   const FactoryDestinationContract = await ethers.getContractFactory(
     "FactoryDestination"
   );
   const factoryDestination: FactoryDestination =
-    await FactoryDestinationContract.deploy();
+    await FactoryDestinationContract.connect(owner).deploy();
   await factoryDestination.waitForDeployment();
 
   const factorySourceAddr = await factorySource.getAddress();
@@ -218,7 +221,7 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
     registryModuleOwner: await registryModuleOwner.getAddress(),
   };
 
-  const sourceTx = await factorySource.deploy(
+  const sourceTx = await factorySource.connect(owner).deploy(
     {
       shares: {
         candidate: ethers.ZeroAddress,
@@ -235,8 +238,11 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
       remoteTokenPools: [
         {
           remoteChainSelector: CHAIN_SELECTOR,
+
+          // set and not predict
           remotePoolAddress: encode(["address"], [burnMintPoolAddr]),
-          remotePoolInitCode: burnMintBytecode,
+          remotePoolInitCode: "0x",
+
           remoteChainConfig: {
             remotePoolFactory: factoryDestAddr,
             remoteRouter: ethers.ZeroAddress,
@@ -244,8 +250,11 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
             remoteTokenDecimals: 0,
           },
           poolType: 0,
+
+          // set and not predict
           remoteTokenAddress: encode(["address"], [bshaAddr]),
-          remoteTokenInitCode: BSHAFactory.bytecode,
+          remoteTokenInitCode: "0x",
+
           rateLimiterConfig: RATE_LIMITER_CONFIG,
         },
       ],
@@ -288,7 +297,7 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   );
 
   // // Destination Chain deployment
-  const destTx = await factoryDestination.deploy(
+  const destTx = await factoryDestination.connect(owner).deploy(
     {
       bridgedSharesUnderAgreement: {
         candidate: ethers.ZeroAddress,
@@ -300,8 +309,11 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
       remoteTokenPools: [
         {
           remoteChainSelector: CHAIN_SELECTOR,
+
+          // set and not predict
           remotePoolAddress: encode(["address"], [lockReleasePoolAddr]),
-          remotePoolInitCode: lockReleaseBytecode,
+          remotePoolInitCode: "0x",
+
           remoteChainConfig: {
             remotePoolFactory: factorySourceAddr,
             remoteRouter: ethers.ZeroAddress,
@@ -309,8 +321,11 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
             remoteTokenDecimals: 0,
           },
           poolType: 1,
+
+          // set and not predict
           remoteTokenAddress: encode(["address"], [shaAddr]),
-          remoteTokenInitCode: SHAFactory.bytecode,
+          remoteTokenInitCode: "0x",
+
           rateLimiterConfig: RATE_LIMITER_CONFIG,
         },
       ],
