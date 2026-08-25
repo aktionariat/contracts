@@ -6,7 +6,7 @@
 // Regenerate if signer sets may have changed before running the migration.
 
 export type AffectedCompany = {
-  name: string; id: number; tier: "prod" | "TEST"; priority: boolean;
+  name: string; id: number; tier: "prod" | "TEST" | "batch-nosig"; priority: boolean;
   oldMultisig: string; newMultisig: string; salt: string;
   signers: string[]; powers: number[];
 };
@@ -346,5 +346,360 @@ export const AFFECTED_COMPANIES: AffectedCompany[] = [
       "0xca185f792bb4ac012e25668948b4fd1708426ed7"
     ],
     "powers": [1, 2, 2, 2, 1]
+  },
+  {
+    "name": "company-4721",
+    "id": 4721,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0xe719642646ccbf15efd8af1c4b823ba9db0c6908",
+    "newMultisig": "0x3f39503e262254c47d0213f351fcae6017108116",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303034373231",
+    "signers": [
+      "0x102d8fe00ff2745b8a544f893090421f8768d24d"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "lum",
+    "id": 58899,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x1f979e2f9f43037cd02dc30718eca336ed8f6b5d",
+    "newMultisig": "0x9b74a13ca5dc0a3231d71255d44ea18189a7a7c2",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303538383939",
+    "signers": [
+      "0x4ed64f2a3d186e5154fd5c54891628d8a77b91d6"
+    ],
+    "powers": [2]
+  },
+  {
+    "name": "test-61392",
+    "id": 61392,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x897d469b41c05a3b80c0e15b2e1baf1af8c929eb",
+    "newMultisig": "0xb4a60791ad139eafd7f47e4660e97311e8bb8b93",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303631333932",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-61761",
+    "id": 61761,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x72cc87fa79529c6ad70cd849cb8fded94e071331",
+    "newMultisig": "0x3a56123b16a129503bc5174001ce7c96011beb6a",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303631373631",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "psy11",
+    "id": 61830,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x4c1ee40a520a566ab80c71562ad99a0375436449",
+    "newMultisig": "0x7209c052ad14cae5f1c2edb962c3a41b22c14e6d",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303631383330",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-61837",
+    "id": 61837,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x981deb5be2409941c4b7104cc87598e25814ffff",
+    "newMultisig": "0x073770fa4e84c6609eda6924daefadb859498972",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303631383337",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "che440925432",
+    "id": 62082,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x921c2b1a702410550ada4babd07979d6b82f3df7",
+    "newMultisig": "0x3cb5ee02be5994a688dd40aad1ddfd178a36e00e",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632303832",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-62084",
+    "id": 62084,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x03b8f3483ad6cf01ebc6d2f9f12f86bff234d672",
+    "newMultisig": "0xf547277924abfb05bf84c429e9857857f43b9f36",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632303834",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-62085",
+    "id": 62085,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x06d5943010e87dff006db9e159ca40eb2896d897",
+    "newMultisig": "0x376a4dfb58719ccd2fb6c8c7b9455d233b96ef69",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632303835",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-62086",
+    "id": 62086,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0xbdec883a1072e386fcadb326e4c587ecaad1602d",
+    "newMultisig": "0x20765ed45ced37a35e263a2cfad1ff53926fc924",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632303836",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-62087",
+    "id": 62087,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x797bc1375a315cc4fb146a7957f4fd851b7c0453",
+    "newMultisig": "0x197bb338fdb0870d7816770acae3c09ec4b3fa62",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632303837",
+    "signers": [
+      "0x5c157f039dceaa039bc33aa9f003a59390267644"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-62307",
+    "id": 62307,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x92c941e4c206fbc9c76164e56ea495b67cbbd3bc",
+    "newMultisig": "0x819bb53dc104e123c3c400165d135a619a4c006a",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632333037",
+    "signers": [
+      "0xf36b52ec5e7b66897ff6640d263b21a991f4131c",
+      "0x5a57dd9c623e1403af1d810673183d89724a4e0c",
+      "0xfec001c6d285584ed45a7ee5a8c4684a522211f6"
+    ],
+    "powers": [1, 2, 2]
+  },
+  {
+    "name": "abc",
+    "id": 62667,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0xfd3534b1ffc5d4ae1c623df827201832734be0e5",
+    "newMultisig": "0x77c6e66c76b43db0f87a9d47c8d27f87269edb0e",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632363637",
+    "signers": [
+      "0x59444cdcd324e633f7c38dec7a78974b8640c89a"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "test-62904",
+    "id": 62904,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x8d9677f86bdb7202d04742df0656f69fe0ccf553",
+    "newMultisig": "0x4d216c27da0ccf5e290fcc3fbf7b5b24a0eadedb",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632393034",
+    "signers": [
+      "0xf1c56ece3196d9c021cea9dfaf0962e66fcbb981"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "ubs",
+    "id": 63281,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0xf368e2ce73bfc356f8e967f1b29055dd88cfc1b3",
+    "newMultisig": "0x31b151a20052e32f278db3c80920d37dfd1b94cd",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303633323831",
+    "signers": [
+      "0x84c8a6835cc41a11256295ca3319b0781b200ff8"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "company-63471",
+    "id": 63471,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x954109fcd510c2ed1edfe6dc9456a34b107b80e6",
+    "newMultisig": "0x34c1b0e2d933bc30cb285632cb8c8d9d5e328193",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303633343731",
+    "signers": [
+      "0xb9158d7727d899f66f5095a4ff472b9c9444469f"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "swissmediapartners",
+    "id": 63499,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x26ed36cd88f0c35865db7abbece830bffabd1ad8",
+    "newMultisig": "0x8872da79d153c29f2c45b6fb320e1486e2b23b62",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303633343939",
+    "signers": [
+      "0x12a011423d7e5e04022198157bcb14129e6798ff",
+      "0xb8323ed9414a18910c89d6011dd6e23f043cf849"
+    ],
+    "powers": [2, 2]
+  },
+  {
+    "name": "perfectdomain",
+    "id": 63505,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0xc42574002258b911b70587849637e1a3e6d21dd3",
+    "newMultisig": "0x9ba1ff49ba3d9a63aee03649016ad1e6cfd32396",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303633353035",
+    "signers": [
+      "0xa5a9335a1c7d65a5544bf1d911ff5c9f84c47f94"
+    ],
+    "powers": [2]
+  },
+  {
+    "name": "zelemu",
+    "id": 64041,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x0faaf6235a7434152cf9ad5b66b974b15fe6f858",
+    "newMultisig": "0x6ee830e7ebdbcdb7a89c3700b9d2f36a499709b1",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303634303431",
+    "signers": [
+      "0xd98b95bc8f110226bf4bf87d7f4931079b970d1f"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "modernsky",
+    "id": 64350,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x268f720f7467524ef781d0f2a964a13408dbffeb",
+    "newMultisig": "0x64977d693c787bd69ca564018cc4b6efbb9358ff",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303634333530",
+    "signers": [
+      "0x42f74d00dc6e8085f25c5c806135fe557cff568f"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "cajungotshop",
+    "id": 64697,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0xe8d6aef69ff5729aa50f6486058510875f41eb0c",
+    "newMultisig": "0xc5bab35f9b4649a9e905ec5ac9869a212615d893",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303634363937",
+    "signers": [
+      "0xa5a9335a1c7d65a5544bf1d911ff5c9f84c47f94"
+    ],
+    "powers": [2]
+  },
+  {
+    "name": "deliver",
+    "id": 64728,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x628368abea8fd2e7f27eecf8f8aecaf4dada125d",
+    "newMultisig": "0xd454c45cb41be61da2f43eb8cb794709fb793b8b",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303634373238",
+    "signers": [
+      "0xb8323ed9414a18910c89d6011dd6e23f043cf849",
+      "0x12a011423d7e5e04022198157bcb14129e6798ff"
+    ],
+    "powers": [2, 2]
+  },
+  {
+    "name": "test-65392",
+    "id": 65392,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x32258088e5e1891576359b22689379ccf24a8c52",
+    "newMultisig": "0x6f7e9404d96b94acb4a8dcb650ad07754eb90ca2",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303635333932",
+    "signers": [
+      "0xe1eae5c32ad8f704c70b7c39e2819eef36db89d5"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "onmonetary",
+    "id": 65710,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x2c2f14cc4934b0a3ce3b0af6388b0d64f06f90cf",
+    "newMultisig": "0x573fb5a66e068dc673d1195d0c5d893c647b1e9d",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303635373130",
+    "signers": [
+      "0x809e853c4e6a542d785cac0bee87bb0296aaa1a4"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "kywaillestocks",
+    "id": 66277,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0xb1d355c2dfe1dcb0108e7469b99cedb6366d6f98",
+    "newMultisig": "0x5b5cc7eda91e5e3b899b9efbc8f5899e0faf9778",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303636323737",
+    "signers": [
+      "0xef22081761b3c2620afc24529f0ccd5f50513169"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "youtube",
+    "id": 66440,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x79b1179ee0cd6cc7f7217b4a99ebfe8152d2497f",
+    "newMultisig": "0x9bff60bfd3e5587964ee0bb6d126099cffd7eae8",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303636343430",
+    "signers": [
+      "0xa5a9335a1c7d65a5544bf1d911ff5c9f84c47f94"
+    ],
+    "powers": [1]
+  },
+  {
+    "name": "corexsolutions",
+    "id": 68148,
+    "tier": "batch-nosig",
+    "priority": false,
+    "oldMultisig": "0x0e37b5a4c1603bb2e4aa076de28ebdbd593c97a6",
+    "newMultisig": "0x826e0fdadba1184758c4a1250583d662b7c18ee5",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303638313438",
+    "signers": [
+      "0xfbe7f17440b2c6a523bb056b242682587188ec9d"
+    ],
+    "powers": [1]
   }
 ];
