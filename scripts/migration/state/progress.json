@@ -1,114 +1,120 @@
 {
-  "deployed": {
-    "2468": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "48006": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "57846": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "58400": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "59504": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "60103": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "60434": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "61438": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "62030": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "63907": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "64000": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "64281": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "64888": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "65382": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "65450": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "66298": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "66734": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ],
-    "68669": [
-      "mainnet",
-      "optimism",
-      "polygon"
-    ]
-  },
-  "synced": [
-    "64888",
-    "62030",
-    "60103",
-    "65382",
-    "66298",
-    "57846",
-    "66734",
-    "2468",
-    "59504",
-    "48006",
-    "60434",
-    "68669",
-    "61438",
-    "64000",
-    "63907",
-    "64281",
-    "58400",
-    "65450"
+ "deployed": {
+  "2468": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "48006": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "57846": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "58400": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "59504": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "60103": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "60434": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "61438": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "62030": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "63907": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "64000": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "64281": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "64888": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "65382": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "65450": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "66298": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "66734": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "68669": [
+   "mainnet",
+   "optimism",
+   "polygon"
+  ],
+  "62474": [
+   "mainnet",
+   "optimism",
+   "polygon"
   ]
+ },
+ "synced": [
+  "64888",
+  "62030",
+  "60103",
+  "65382",
+  "66298",
+  "57846",
+  "66734",
+  "2468",
+  "59504",
+  "48006",
+  "60434",
+  "68669",
+  "61438",
+  "64000",
+  "63907",
+  "64281",
+  "58400",
+  "65450",
+  "62474"
+ ]
 }

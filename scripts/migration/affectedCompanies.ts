@@ -329,5 +329,22 @@ export const AFFECTED_COMPANIES: AffectedCompany[] = [
     "powers": [
       1
     ]
+  },
+  {
+    "name": "docjo",
+    "id": 62474,
+    "tier": "prod",
+    "priority": true,
+    "oldMultisig": "0x53b75ea6fa0250d36409ec682fc282af089d0de8",
+    "newMultisig": "0x282Df87B628E202Fb51Be8c757066D163632B39C",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303632343734",
+    "signers": [
+      "0x4651e7d54bd93b6acee700d9ec1e7dc382cf0772",
+      "0xa531dc1f72ab0d1d21cbcb53f58459efe3c8454c",
+      "0x757bba4032d2b313909e91c7623804bf4beb0a93",
+      "0x251a7c515038b1af283cc08adec621445b03ac1d",
+      "0xca185f792bb4ac012e25668948b4fd1708426ed7"
+    ],
+    "powers": [1, 2, 2, 2, 1]
   }
 ];
