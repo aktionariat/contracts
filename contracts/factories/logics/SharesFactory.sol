@@ -27,31 +27,10 @@
  */
 pragma solidity ^0.8.26;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {TokenFactory} from "../base/TokenFactory.sol";
 
-import {Deployment} from "../lib/Deployment.sol";
-
-contract SharesFactory is Ownable {
-    bytes public bytecode;
-    bytes32 public bytecodeHash;
-
-    event BytecodeUpdated(bytes32 indexed newHash);
-    event TokenDeployed(address indexed deployed, string symbol);
-    error EmptyBytecode();
-
-    constructor(bytes memory initialBytecode) Ownable(msg.sender) {
-        if (initialBytecode.length == 0) revert EmptyBytecode();
-        bytecode = initialBytecode;
-        bytecodeHash = keccak256(initialBytecode);
-    }
-
-    function setBytecode(bytes calldata newBytecode) external onlyOwner {
-        if (newBytecode.length == 0) revert EmptyBytecode();
-        bytecode = newBytecode;
-        bytecodeHash = keccak256(newBytecode);
-        emit BytecodeUpdated(bytecodeHash);
-    }
+contract SharesFactory is TokenFactory {
+    constructor(bytes memory initialBytecode) TokenFactory(initialBytecode) {}
 
     /**
      * @notice Predict the CREATE2 address of a Shares deployment from this factory.
@@ -63,7 +42,7 @@ contract SharesFactory is Ownable {
         string calldata terms,
         address owner
     ) external view returns (address) {
-        return Deployment.compute(bytecode, address(this), salt, abi.encode(symbol, name, terms, owner));
+        return _predictAddress(salt, abi.encode(symbol, name, terms, owner));
     }
 
     /**
@@ -76,11 +55,6 @@ contract SharesFactory is Ownable {
         string calldata terms,
         address owner
     ) external returns (address deployed) {
-        bytes memory initCode = abi.encodePacked(
-            bytecode,
-            abi.encode(symbol, name, terms, owner)
-        );
-        deployed = Create2.deploy(0, salt, initCode);
-        emit TokenDeployed(deployed, symbol);
+        deployed = _deployToken(salt, abi.encode(symbol, name, terms, owner), symbol);
     }
 }
