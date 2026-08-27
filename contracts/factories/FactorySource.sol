@@ -33,6 +33,7 @@ import {CCIPService} from "./lib/CCIPService.sol";
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+// import {SharesLogicStorage} from "./logics/SharesLogicStorage.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -53,6 +54,8 @@ contract FactorySource is Ownable {
     event SharesDeployed(address indexed token, string symbol);
     event SharesUnderAgreementDeployed(address indexed wrapper, string symbol);
     event TokenPoolDeployed(address indexed pool);
+
+    // address public immutable sharesLogicStorage; // optional: points to deployed SharesLogicStorage
 
     struct ChainlinkAddresses {
         address tokenPoolFactory;
@@ -176,6 +179,12 @@ contract FactorySource is Ownable {
             abi.encode(IERC20(deployment.shares), sha.terms, IERC20Metadata(deployment.shares).decimals(), futureOwner)
         );
         deployment.sharesUnderAgreement = Create2.deploy(0, salt, shaCreationCode);
+        // --- Alternative: on-chain bytecode storage ---
+        // bytes memory shaCreationCode = abi.encodePacked(
+        //     SharesLogicStorage(sharesLogicStorage).getSharesUnderAgreementBytecode(),
+        //     abi.encode(IERC20(deployment.shares), sha.terms, IERC20Metadata(deployment.shares).decimals(), futureOwner)
+        // );
+        // deployment.sharesUnderAgreement = Create2.deploy(0, salt, shaCreationCode);
         emit SharesUnderAgreementDeployed(deployment.sharesUnderAgreement, IERC20Metadata(deployment.sharesUnderAgreement).symbol());
     }
 

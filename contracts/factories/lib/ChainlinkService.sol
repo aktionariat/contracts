@@ -31,7 +31,29 @@ import {ITokenAdminRegistry} from "@chainlink/contracts-ccip/contracts/interface
 import {IOwnable} from "@chainlink/contracts/src/v0.8/shared/interfaces/IOwnable.sol";
 import {RegistryModuleOwnerCustom} from "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/RegistryModuleOwnerCustom.sol";
 
-library CCIPService {
+library ChainlinkService {
+    event ChainlinkAddressesUpdated(ChainlinkAddresses indexed newChainlinkAddresses);
+
+    error MissingAddress(ChainlinkAddresses chainlinkAddresses);
+
+    struct ChainlinkAddresses {
+        address tokenPoolFactory;
+        address registryModuleOwner;
+        address tokenAdminRegistry;
+        address rmnProxy;
+        address router;
+    }
+
+    function _validateChainlinkAddresses(ChainlinkAddresses memory chainlinkAddresses) internal pure {
+        bool invalid = false;
+        if (chainlinkAddresses.tokenPoolFactory == address(0)) invalid = true;
+        if (chainlinkAddresses.registryModuleOwner == address(0)) invalid = true;
+        if (chainlinkAddresses.tokenAdminRegistry == address(0)) invalid = true;
+        if (chainlinkAddresses.rmnProxy == address(0)) invalid = true;
+        if (chainlinkAddresses.router == address(0)) invalid = true;
+        if (invalid) revert MissingAddress(chainlinkAddresses);
+    }
+
     function _applySettingToChainlinkCCIPInfrastructure(address tokenPool, address token, address futureOwner, address registryModuleOwner, address tokenAdminRegistry) internal {
         // Ownership of TokenPool in TokenPool is pending: We deployed the pool
         // through chainlink's factory
