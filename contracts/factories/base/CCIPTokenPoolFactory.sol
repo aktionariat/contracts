@@ -90,7 +90,7 @@ abstract contract CCIPTokenPoolFactory is OwnableBytecodeStore {
         address localToken,
         TokenPoolFactory.RemoteTokenPoolInfo[] calldata remoteTokenPools,
         address futureOwner
-    ) external onlyOwner returns (address deployedPool) {
+    ) external returns (address deployedPool) {
         Deployment._isContractOwner(localToken, address(this));
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;

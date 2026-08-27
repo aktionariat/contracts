@@ -78,6 +78,9 @@ contract TokenDeploymentManagerSource is Ownable {
         TokenPoolDeployment tokenPool;
     }
 
+    event TokenDeploymentSource(TokenDeployment indexed deployment);
+    event InfraDeploymentSource(SourceDeployment indexed deployment);
+
     error InvalidAddress();
 
     constructor(
@@ -130,6 +133,8 @@ contract TokenDeploymentManagerSource is Ownable {
         );
     }
 
+    // // Deployment orchestration helpers
+
     /**
      * @notice Deploys the whole source-chain infrastructure: Shares,
      *         SharesUnderAgreement and the LockRelease Token Pool with its CCIP
@@ -154,6 +159,8 @@ contract TokenDeploymentManagerSource is Ownable {
         } else {
             // deploy Shares, transiently owned by this manager
             if (params.shares.candidate != address(0)) {
+                deployment.token.shares = params.shares.candidate;
+            } else {
                 deployment.token.shares = sharesFactory.deploy(
                     salt,
                     params.shares.symbol,
@@ -161,8 +168,6 @@ contract TokenDeploymentManagerSource is Ownable {
                     params.shares.terms,
                     futureOwner
                 );
-            } else {
-                deployment.token.shares = params.shares.candidate;
             }
 
             // deploy SHA, owned by the pool logic factory so it can set up CCIP
@@ -183,6 +188,44 @@ contract TokenDeploymentManagerSource is Ownable {
             params.remoteTokenPools,
             futureOwner
         );
+
+        emit InfraDeploymentSource(deployment);
+        return deployment;
+    }
+
+    /**
+     * @notice Deploys the whole source-chain token infra: Shares,
+     *         SharesUnderAgreement
+     */
+    function deploy(SharesDeploymentData calldata shares, SharesUnderAgreementDeploymentData calldata sha, address futureOwner, bytes32 salt) external onlyOwner returns (TokenDeployment memory deployment) {
+        if (futureOwner == address(0)) {
+            futureOwner = msg.sender;
+        }
+
+        // // Token Deployment
+        // deploy Shares, transiently owned by this manager
+        if (shares.candidate != address(0)) {
+            deployment.shares = shares.candidate;
+        } else {
+            deployment.shares = sharesFactory.deploy(
+                salt,
+                shares.symbol,
+                shares.name,
+                shares.terms,
+                futureOwner
+            );
+        }
+
+        // deploy SHA, owned by the pool logic factory so it can set up CCIP
+        deployment.sharesUnderAgreement = shaFactory.deploy(
+            salt,
+            deployment.shares,
+            sha.terms,
+            IERC20Metadata(deployment.shares).decimals(),
+            futureOwner
+        );
+
+        emit TokenDeploymentSource(deployment);
         return deployment;
     }
 }

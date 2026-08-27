@@ -3,13 +3,13 @@ import { setBalance } from "../scripts/helpers/setBalance.ts";
 import {
   BridgedSharesUnderAgreement,
   BurnMintTokenPool,
-  FactoryDestination,
-  FactorySource,
   LockReleaseTokenPool,
   Shares,
   SharesUnderAgreement,
   TokenAdminRegistry,
   MockRMN,
+  TokenDeploymentManagerDestination,
+  TokenDeploymentManagerSource,
 } from "../types/ethers-contracts/index.ts";
 import { id } from "ethers";
 
@@ -37,7 +37,8 @@ export interface BridgeFixture {
   bsha: BridgedSharesUnderAgreement;
   lockReleasePool: LockReleaseTokenPool;
   burnMintPool: BurnMintTokenPool;
-  factorySource: FactorySource;
+  factorySource: TokenDeploymentManagerSource;
+  factoryDestination: TokenDeploymentManagerDestination;
   tokenAdminRegistry: TokenAdminRegistry;
 }
 
@@ -88,10 +89,11 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   );
   await tokenPoolFactory.waitForDeployment();
 
-  // // Get bytecodes for CREATE2 address prediction
-  const SharesFactory = await ethers.getContractFactory("Shares");
-  const SHAFactory = await ethers.getContractFactory("SharesUnderAgreement");
-  const BSHAFactory = await ethers.getContractFactory(
+  // // Get bytecodes for the logic factory sub-deployers (CREATE2 prediction is
+  // // now done on-chain via the managers' `predict` functions).
+  const SharesArtifact = await ethers.getContractFactory("Shares");
+  const SHAArtifact = await ethers.getContractFactory("SharesUnderAgreement");
+  const BSHAArtifact = await ethers.getContractFactory(
     "BridgedSharesUnderAgreement"
   );
   const LockReleasePoolArtifact = await ethers.getContractFactory(
@@ -104,142 +106,118 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   const lockReleaseBytecode = LockReleasePoolArtifact.bytecode;
   const burnMintBytecode = BurnMintPoolArtifact.bytecode;
 
-  // // Deploy Aktionariat factories
-  const FactorySourceContract = await ethers.getContractFactory(
-    "FactorySource"
+  const tokenPoolFactoryAddr = await tokenPoolFactory.getAddress();
+  const rmnProxyAddr = await mockRMN.getAddress();
+
+  // Chainlink addresses shared by the pool logic factories (source + destination)
+  const chainlinkAddresses = {
+    tokenPoolFactory: tokenPoolFactoryAddr,
+    tokenAdminRegistry: await tokenAdminRegistry.getAddress(),
+    registryModuleOwner: await registryModuleOwner.getAddress(),
+    rmnProxy: rmnProxyAddr,
+    router: mockRouter,
+  };
+
+  // // Source chain: deploy the logic sub-factories (bytecode + chainlink)
+  const SharesFactoryContract = await ethers.getContractFactory(
+    "SharesFactory"
   );
-  const factorySource: FactorySource = await FactorySourceContract.connect(
+  const sharesFactory = await SharesFactoryContract.connect(owner).deploy(
+    SharesArtifact.bytecode
+  );
+  await sharesFactory.waitForDeployment();
+
+  const SHAFactoryContract = await ethers.getContractFactory("SHAFactory");
+  const shaFactory = await SHAFactoryContract.connect(owner).deploy(
+    SHAArtifact.bytecode
+  );
+  await shaFactory.waitForDeployment();
+
+  const LockReleaseFactoryContract = await ethers.getContractFactory(
+    "CCIPLockReleaseTokenPoolFactory"
+  );
+  const lockReleaseFactory = await LockReleaseFactoryContract.connect(
     owner
-  ).deploy();
+  ).deploy(lockReleaseBytecode, chainlinkAddresses);
+  await lockReleaseFactory.waitForDeployment();
+
+  // // Deploy the source deployment manager
+  const FactorySourceContract = await ethers.getContractFactory(
+    "TokenDeploymentManagerSource"
+  );
+  const factorySource: TokenDeploymentManagerSource =
+    await FactorySourceContract.connect(owner).deploy(
+      await sharesFactory.getAddress(),
+      await shaFactory.getAddress(),
+      await lockReleaseFactory.getAddress()
+    );
   await factorySource.waitForDeployment();
 
-  const FactoryDestinationContract = await ethers.getContractFactory(
-    "FactoryDestination"
+  // // Destination chain: deploy the logic sub-factories (bytecode + chainlink)
+  const BridgedSHAFactoryContract = await ethers.getContractFactory(
+    "BridgedSHAFactory"
   );
-  const factoryDestination: FactoryDestination =
-    await FactoryDestinationContract.connect(owner).deploy();
+  const bridgedSHAFactory = await BridgedSHAFactoryContract.connect(
+    owner
+  ).deploy(BSHAArtifact.bytecode);
+  await bridgedSHAFactory.waitForDeployment();
+
+  const BurnMintFactoryContract = await ethers.getContractFactory(
+    "CCIPBurnMintTokenPoolFactory"
+  );
+  const burnMintFactory = await BurnMintFactoryContract.connect(owner).deploy(
+    burnMintBytecode,
+    chainlinkAddresses
+  );
+  await burnMintFactory.waitForDeployment();
+
+  // // Deploy the destination deployment manager
+  const FactoryDestinationContract = await ethers.getContractFactory(
+    "TokenDeploymentManagerDestination"
+  );
+  const factoryDestination: TokenDeploymentManagerDestination =
+    await FactoryDestinationContract.connect(owner).deploy(
+      await bridgedSHAFactory.getAddress(),
+      await burnMintFactory.getAddress()
+    );
   await factoryDestination.waitForDeployment();
 
   const factorySourceAddr = await factorySource.getAddress();
   const factoryDestAddr = await factoryDestination.getAddress();
-  const tokenPoolFactoryAddr = await tokenPoolFactory.getAddress();
-  const rmnProxyAddr = await mockRMN.getAddress();
 
-  // // Predict token addresses via CREATE2
-  const encode = (types: string[], values: any[]) =>
-    ethers.AbiCoder.defaultAbiCoder().encode(types, values);
-
-  // Shares: deployed by FactorySource
-  const sharesInitCode = ethers.concat([
-    SharesFactory.bytecode,
-    encode(
-      ["string", "string", "string", "address"],
-      [
-        SHARES_PARAMS.symbol,
-        SHARES_PARAMS.name,
-        SHARES_PARAMS.terms,
-        // TODO
-        factorySourceAddr,
-      ]
-    ),
-  ]);
-  const sharesAddr = ethers.getCreate2Address(
-    factorySourceAddr,
-    SALT,
-    ethers.keccak256(sharesInitCode)
-  );
-
-  // SHA: deployed by FactorySource
-  const shaInitCode = ethers.concat([
-    SHAFactory.bytecode,
-    encode(
-      ["address", "string", "uint8", "address"],
-      [sharesAddr, SHA_TERMS, 0, factorySourceAddr]
-    ),
-  ]);
-  const shaAddr = ethers.getCreate2Address(
-    factorySourceAddr,
-    SALT,
-    ethers.keccak256(shaInitCode)
-  );
-
-  // BSHA: deployed by FactoryDestination
-  const bshaInitCode = ethers.concat([
-    BSHAFactory.bytecode,
-    encode(
-      ["string", "string", "string", "address"],
-      [BSHA_PARAMS.symbol, BSHA_PARAMS.name, BSHA_PARAMS.terms, factoryDestAddr]
-    ),
-  ]);
-  const bshaAddr = ethers.getCreate2Address(
-    factoryDestAddr,
-    SALT,
-    ethers.keccak256(bshaInitCode)
-  );
-
-  // // Predict pool addresses via CREATE2, pools are deployed by TokenPoolFactory
-  // TokenPoolFactory modifies salt: salt = keccak256(abi.encodePacked(salt, msg.sender))
-  const lockReleaseSalt = ethers.keccak256(
-    ethers.solidityPacked(["bytes32", "address"], [SALT, factorySourceAddr])
-  );
-  const burnMintSalt = ethers.keccak256(
-    ethers.solidityPacked(["bytes32", "address"], [SALT, factoryDestAddr])
-  );
-
-  // LockRelease pool: constructor(token, decimals, allowlist, rmnProxy, acceptLiquidity, router)
-  const lockReleasePoolInitCode = ethers.concat([
-    lockReleaseBytecode,
-    encode(
-      ["address", "uint8", "address[]", "address", "bool", "address"],
-      [shaAddr, 0, [], rmnProxyAddr, true, mockRouter]
-    ),
-  ]);
-  const lockReleasePoolAddr = ethers.getCreate2Address(
-    tokenPoolFactoryAddr,
-    lockReleaseSalt,
-    ethers.keccak256(lockReleasePoolInitCode)
-  );
-
-  // BurnMint pool: constructor(token, decimals, allowlist, rmnProxy, router)
-  const burnMintPoolInitCode = ethers.concat([
-    burnMintBytecode,
-    encode(
-      ["address", "uint8", "address[]", "address", "address"],
-      [bshaAddr, 0, [], rmnProxyAddr, mockRouter]
-    ),
-  ]);
-  const burnMintPoolAddr = ethers.getCreate2Address(
-    tokenPoolFactoryAddr,
-    burnMintSalt,
-    ethers.keccak256(burnMintPoolInitCode)
-  );
+  // // Predict destination token + pool addresses on-chain via the destination
+  // // manager. This is independent of the source deployment, so it can run first.
+  const bshaParams = {
+    candidate: ethers.ZeroAddress,
+    symbol: BSHA_PARAMS.symbol,
+    name: BSHA_PARAMS.name,
+    terms: BSHA_PARAMS.terms,
+  };
+  const predictedDest = await factoryDestination.predict(bshaParams, SALT);
+  const bshaAddr = predictedDest.token.bridgedSharesUnderAgreement;
+  const burnMintPoolAddr = predictedDest.tokenPool.burnMintTokenPool;
 
   // // Source Chain deployment
-  const chainlink = {
-    tokenPoolFactory: tokenPoolFactoryAddr,
-    tokenAdminRegistry: await tokenAdminRegistry.getAddress(),
-    registryModuleOwner: await registryModuleOwner.getAddress(),
-  };
+  const encode = (types: string[], values: any[]) =>
+    ethers.AbiCoder.defaultAbiCoder().encode(types, values);
 
   const sourceTx = await factorySource.connect(owner).deploy(
     {
       shares: {
         candidate: ethers.ZeroAddress,
-        bytecode: SharesFactory.bytecode,
-        ...SHARES_PARAMS,
+        symbol: SHARES_PARAMS.symbol,
+        name: SHARES_PARAMS.name,
+        terms: SHARES_PARAMS.terms,
       },
       sharesUnderAgreement: {
         candidate: ethers.ZeroAddress,
-        bytecode: SHAFactory.bytecode,
         terms: SHA_TERMS,
       },
-      chainlink,
-      lockReleaseTokenPoolBytecode: lockReleaseBytecode,
       remoteTokenPools: [
         {
           remoteChainSelector: CHAIN_SELECTOR,
 
-          // set and not predict
+          // predicted destination burn-mint pool address
           remotePoolAddress: encode(["address"], [burnMintPoolAddr]),
           remotePoolInitCode: "0x",
 
@@ -251,7 +229,7 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
           },
           poolType: 0,
 
-          // set and not predict
+          // predicted destination BSHA address
           remoteTokenAddress: encode(["address"], [bshaAddr]),
           remoteTokenInitCode: "0x",
 
@@ -264,32 +242,42 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   );
   const sourceReceipt = await sourceTx.wait();
 
+  // The managers emit no events themselves: tokens/pools are deployed by the
+  // logic sub-factories, which emit TokenDeployed (param `deployed`) and
+  // PoolDeployed (param `pool`). Match each log to its emitting factory.
+  const sharesFactoryAddr = await sharesFactory.getAddress();
+  const shaFactoryAddr = await shaFactory.getAddress();
+  const lockReleaseFactoryAddr = await lockReleaseFactory.getAddress();
+
   const sharesEvent = sourceReceipt!.logs.find(
-    (l: any) => factorySource.interface.parseLog(l)?.name === "SharesDeployed"
+    (l: any) =>
+      l.address === sharesFactoryAddr &&
+      sharesFactory.interface.parseLog(l)?.name === "TokenDeployed"
   );
   const shaEvent = sourceReceipt!.logs.find(
     (l: any) =>
-      factorySource.interface.parseLog(l)?.name ===
-      "SharesUnderAgreementDeployed"
+      l.address === shaFactoryAddr &&
+      shaFactory.interface.parseLog(l)?.name === "TokenDeployed"
   );
   const poolEvent = sourceReceipt!.logs.find(
     (l: any) =>
-      factorySource.interface.parseLog(l)?.name === "TokenPoolDeployed"
+      l.address === lockReleaseFactoryAddr &&
+      lockReleaseFactory.interface.parseLog(l)?.name === "PoolDeployed"
   );
 
-  const actualSharesAddr = factorySource.interface.parseLog(sharesEvent!)!.args
-    .token;
+  const actualSharesAddr = sharesFactory.interface.parseLog(sharesEvent!)!.args
+    .deployed;
 
   const shares: Shares = await ethers.getContractAt("Shares", actualSharesAddr);
-  const actualShaAddr = factorySource.interface.parseLog(shaEvent!)!.args
-    .wrapper;
+  const actualShaAddr = shaFactory.interface.parseLog(shaEvent!)!.args.deployed;
 
   const sha: SharesUnderAgreement = await ethers.getContractAt(
     "SharesUnderAgreement",
     actualShaAddr
   );
-  const actualLockReleaseAddr = factorySource.interface.parseLog(poolEvent!)!
-    .args.pool;
+  const actualLockReleaseAddr = lockReleaseFactory.interface.parseLog(
+    poolEvent!
+  )!.args.pool;
 
   const lockReleasePool: LockReleaseTokenPool = await ethers.getContractAt(
     "LockReleaseTokenPool",
@@ -299,19 +287,13 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   // // Destination Chain deployment
   const destTx = await factoryDestination.connect(owner).deploy(
     {
-      bridgedSharesUnderAgreement: {
-        candidate: ethers.ZeroAddress,
-        bytecode: BSHAFactory.bytecode,
-        ...BSHA_PARAMS,
-      },
-      chainlink,
-      burnMintTokenPoolBytecode: burnMintBytecode,
+      bridgedSharesUnderAgreement: bshaParams,
       remoteTokenPools: [
         {
           remoteChainSelector: CHAIN_SELECTOR,
 
-          // set and not predict
-          remotePoolAddress: encode(["address"], [lockReleasePoolAddr]),
+          // actual source lock-release pool address (already deployed)
+          remotePoolAddress: encode(["address"], [actualLockReleaseAddr]),
           remotePoolInitCode: "0x",
 
           remoteChainConfig: {
@@ -322,8 +304,8 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
           },
           poolType: 1,
 
-          // set and not predict
-          remoteTokenAddress: encode(["address"], [shaAddr]),
+          // actual source SHA address (already deployed)
+          remoteTokenAddress: encode(["address"], [actualShaAddr]),
           remoteTokenInitCode: "0x",
 
           rateLimiterConfig: RATE_LIMITER_CONFIG,
@@ -335,24 +317,29 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   );
   const destReceipt = await destTx.wait();
 
+  // Same as source: parse events from the emitting logic sub-factories.
+  const bridgedSHAFactoryAddr = await bridgedSHAFactory.getAddress();
+  const burnMintFactoryAddr = await burnMintFactory.getAddress();
+
   const bshaEvent = destReceipt!.logs.find(
     (l: any) =>
-      factoryDestination.interface.parseLog(l)?.name ===
-      "BridgedSharesUnderAgreementDeployed"
+      l.address === bridgedSHAFactoryAddr &&
+      bridgedSHAFactory.interface.parseLog(l)?.name === "TokenDeployed"
   );
   const destPoolEvent = destReceipt!.logs.find(
     (l: any) =>
-      factoryDestination.interface.parseLog(l)?.name === "TokenPoolDeployed"
+      l.address === burnMintFactoryAddr &&
+      burnMintFactory.interface.parseLog(l)?.name === "PoolDeployed"
   );
 
-  const actualBshaAddr = factoryDestination.interface.parseLog(bshaEvent!)!.args
-    .wrapper;
+  const actualBshaAddr = bridgedSHAFactory.interface.parseLog(bshaEvent!)!.args
+    .deployed;
 
   const bsha: BridgedSharesUnderAgreement = await ethers.getContractAt(
     "BridgedSharesUnderAgreement",
     actualBshaAddr
   );
-  const actualBurnMintAddr = factoryDestination.interface.parseLog(
+  const actualBurnMintAddr = burnMintFactory.interface.parseLog(
     destPoolEvent!
   )!.args.pool;
 
@@ -362,11 +349,11 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   );
 
   // // Ownership acceptances
-  // LockRelease pool: TokenPoolFactory transferred ownership to FactorySource
-  // then CCIPService accepted and transferred to futureOwner
+  // LockRelease pool: TokenPoolFactory transferred ownership to the pool logic
+  // factory, then CCIPService accepted and transferred to futureOwner
   // futureOwner (= owner) must accept
   await lockReleasePool.connect(owner).acceptOwnership();
-  // Token admin: FactorySource registered as admin, then transferred to futureOwner
+  // Token admin: the pool logic factory registered as admin, then transferred to futureOwner
   await tokenAdminRegistry
     .connect(owner)
     .acceptAdminRole(await sha.getAddress());
@@ -388,6 +375,7 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
     lockReleasePool,
     burnMintPool,
     factorySource,
+    factoryDestination,
     tokenAdminRegistry,
   };
 }
