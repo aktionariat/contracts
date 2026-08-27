@@ -9,12 +9,12 @@
 // - infinite allowance support, with 2^255 and above considered infinite
 // - use upper 32 bits of balance for flags
 // - add a global settings variable
-
 pragma solidity >=0.8.0 <0.9.0;
 
 import "./IERC20.sol";
 import "./ERC20Errors.sol";
 import "./IERC677Receiver.sol";
+
 /**
  * @dev Implementation of the `IERC20` interface.
  *
@@ -40,37 +40,58 @@ import "./IERC677Receiver.sol";
  */
 
 abstract contract ERC20Flaggable is IERC20, ERC20Errors {
+    /// @notice the custom infinite allowance of the ERC20 token
+    /// as Documented in /doc/infiniteallowance.md
+    /// 0x8000000000000000000000000000000000000000000000000000000000000000
+    uint256 public constant INFINITE_ALLOWANCE = 2 ** 255;
 
-    // as Documented in /doc/infiniteallowance.md
-    // 0x8000000000000000000000000000000000000000000000000000000000000000
-    uint256 constant public INFINITE_ALLOWANCE = 2**255;
+    /// @dev the offset needed to be left shifted to reach flag's bits
+    uint8 private constant FLAGGING_OFFSET = 224;
+    /// @dev the mask to select flags bits
+    uint256 private constant FLAGGING_MASK = (type(uint256).max) << FLAGGING_OFFSET;
+    /// @dev the maximum offset allowed
+    /// if FLAGGING_OFFSET is not greater or equal to 1, uint8 overflows and
+    /// it correctly diqualifies any offset
+    uint8 private constant MAX_FLAGGING_OFFSET = uint8(256 - FLAGGING_OFFSET);
 
-    uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
+    /**
+     * FLAGs
+     * Documentation of flags used by subclasses.
+     * 
+     * 
+     * @dev Internal flags are bit flags: it can hold 32 true/false flags and additional zero flag representation.
+     *      Intenral flag indexes can range from 0 up to and including 31.
+     *      Internal flags are managed on the account's balance, within the _balances map.
+     * 
+     * ERC20Draggable: uint8 private constant FLAG_INDEX_VOTED = 1;
+     * ERC20Recoverable: uint8 private constant FLAG_INDEX_CLAIM_PRESENT = 10;
+     * ERCAllowlistable: uint8 private constant FLAG_INDEX_ALLOWLIST = 20;
+     * ERCAllowlistable: uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
+     * ERCAllowlistable: uint8 private constant FLAG_INDEX_POWERLIST = 22;
+     * 
+     * 
+     * @dev Global flags are bit flags: it can hold 256 true/false flags and additional zero flag representation.
+     *      Global flag indexes can range from 0 up to and including 255.
+     *      Global flags are managed by _settings.
+     * 
+     * ERCAllowlistable: uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
+     * 
+     * @notice can be turned into a standalone library
+     */
 
-    // Documentation of flags used by subclasses:
-    // NOTE: flags denote the bit number that is being used and must be smaller than 32
-    // ERC20Draggable: uint8 private constant FLAG_INDEX_VOTED = 1;
-    // ERC20Recoverable: uint8 private constant FLAG_INDEX_CLAIM_PRESENT = 10;
-    // ERCAllowlistable: uint8 private constant FLAG_INDEX_ALLOWLIST = 20;
-    // ERCAllowlistable: uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
-    // ERCAllowlistable: uint8 private constant FLAG_INDEX_POWERLIST = 22;
-
-    // ERCAllowlistable: uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
-
-    mapping (address => uint256) private _balances; // upper 32 bits reserved for flags
-
-    mapping (address => mapping (address => uint256)) private _allowances;
+    mapping(address => uint256) private _balances; // upper 32 bits reserved for flags
+    mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _settings;
     uint256 private _totalSupply;
 
-    uint8 public immutable override decimals;
+    uint8 public override decimals;
 
-    /// Overflow on minting, transfer. 
-    /// @param receiver The address were the balance overflows. 
-    /// @param balance The current balance of the receiver. 
-    /// @param amount The amount added, which result in the overflow. 
-    error ERC20BalanceOverflow(address receiver, uint256 balance, uint256 amount);
+
+    /// Overflow on internal flag offset
+    /// @param offset the offset used
+    /// @param maxOffset the maximum valid offset
+    error InvalidFlagOffset(uint8 offset, uint8 maxOffset);
 
     constructor(uint8 _decimals) {
         decimals = _decimals;
@@ -87,34 +108,55 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      * @dev See `IERC20.balanceOf`.
      */
     function balanceOf(address account) public view override returns (uint256) {
-        return uint224 (_balances [account]);
+        return uint224(_balances[account]);
     }
 
+    /**
+     * Queries whether a specific account has a specific flag.
+     */
     function hasFlag(address account, uint8 number) external view returns (bool) {
-        return hasFlagInternal(account, number);
+        return _hasFlag(account, number);
     }
 
-    function setFlag(address account, uint8 index, bool value) internal {
-        uint256 flagMask = 1 << (index + 224);
-        uint256 balance = _balances [account];
-        if ((balance & flagMask == flagMask) != value) {
-            _balances [account] = balance ^ flagMask;
-        }
-    }
-
-    function hasFlagInternal(address account, uint8 number) internal view returns (bool) {
-        uint256 flag = 0x1 << (number + 224);
+    /**
+     * Queries whether a specific account has a specific flag.
+     * 
+     * Requirements:
+     *  - index must be within bounds
+     */
+    function _hasFlag(address account, uint8 index) internal view returns (bool) {
+        uint256 flag = 0x1 << (index + FLAGGING_OFFSET);
         return _balances[account] & flag == flag;
     }
 
-    function hasGlobalFlag(uint8 index) internal view returns (bool) {
+    /**
+     * Applies a flag to an address
+     * 
+     * Requirements:
+     *  - index must be within bounds
+     */
+    function _setFlag(address account, uint8 index, bool value) internal {
+        uint256 flagMask = 1 << (index + FLAGGING_OFFSET);
+        uint256 balance = _balances[account];
+        if ((balance & flagMask == flagMask) != value) {
+            _balances[account] = balance ^ flagMask;
+        }
+    }
+
+    /**
+     * Queries if the gloabl flag at the specific index is set
+     */
+    function _hasGlobalFlag(uint8 index) internal view returns (bool) {
         uint256 flagMask = 1 << index;
         return (_settings & flagMask) == flagMask;
     }
 
-    function setGlobalFlag(uint8 index, bool value) internal {
+    /**
+     * Applies a global flag.
+     */
+    function _setGlobalFlag(uint8 index, bool value) internal {
         uint256 flagMask = 1 << index;
-        if (( _settings & flagMask == flagMask) != value) {
+        if ((_settings & flagMask == flagMask) != value) {
             _settings = _settings ^ flagMask;
         }
     }
@@ -165,12 +207,14 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      */
     function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _transfer(sender, recipient, amount);
-        uint256 currentAllowance = allowance(sender, msg.sender);
-        if (currentAllowance < INFINITE_ALLOWANCE){
+
+        uint256 currentAllowance = _allowances[sender][msg.sender];
+        if (currentAllowance < INFINITE_ALLOWANCE) {
             // Only decrease the allowance if it was not set to 'infinite'
             // Documented in /doc/infiniteallowance.md
             _allowances[sender][msg.sender] = currentAllowance - amount;
         }
+
         return true;
     }
 
@@ -190,6 +234,7 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      */
     function _transfer(address sender, address recipient, uint256 amount) internal virtual {
         _beforeTokenTransfer(sender, recipient, amount);
+
         decreaseBalance(sender, amount);
         increaseBalance(recipient, amount);
         emit Transfer(sender, recipient, amount);
@@ -200,7 +245,8 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
         return transfer(recipient, amount) && IERC677Receiver(recipient).onTokenTransfer(msg.sender, amount, data);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+    /**
+     * @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
      *
      * Emits a `Transfer` event with `from` set to the zero address.
@@ -211,24 +257,29 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      */
     function _mint(address recipient, uint256 amount) internal virtual {
         _beforeTokenTransfer(address(0), recipient, amount);
+
         _totalSupply += amount;
         increaseBalance(recipient, amount);
         emit Transfer(address(0), recipient, amount);
     }
 
+    /**
+     * Increases the balance of an address by a specific amount
+     */
     function increaseBalance(address recipient, uint256 amount) private {
         if (recipient == address(0x0)) {
-            revert ERC20InvalidReceiver(recipient); //use burn instead
+            revert ERC20InvalidReceiver(recipient); // use burn instead
         }
+
         uint256 oldBalance = _balances[recipient];
         uint256 newBalance = oldBalance + amount;
-        if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
-            revert ERC20BalanceOverflow(recipient, oldBalance, amount);
-        }
+
+        _checkAllowlistingFlagUnchanged(oldBalance, newBalance, recipient, amount);
+
         _balances[recipient] = newBalance;
     }
 
-     /**
+    /**
      * @dev Destroys `amount` tokens from `account`, reducing the
      * total supply.
      *
@@ -247,12 +298,15 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
         emit Transfer(account, address(0), amount);
     }
 
+    /**
+     * Decreases the balance of an address by a specific amount
+     */
     function decreaseBalance(address sender, uint256 amount) private {
         uint256 oldBalance = _balances[sender];
         uint256 newBalance = oldBalance - amount;
-        if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
-            revert ERC20InsufficientBalance(sender, balanceOf(sender), amount);
-        }
+
+        _checkAllowlistingFlagUnchanged(oldBalance, newBalance, sender, amount);
+
         _balances[sender] = newBalance;
     }
 
@@ -285,12 +339,27 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
      * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
      * - `from` and `to` are never both zero.
      *
-     * This function is intentionally left blank. By default ERC20Flaggable does not take any actions on its own, 
+     * This function is intentionally left blank. By default ERC20Flaggable does not take any actions on its own,
      * but derived contracts may override it to implement custom logic. For example, allowlisting.
      */
 
     // solhint-disable-next-line no-empty-blocks
-    function _beforeTokenTransfer(address from, address to, uint256 amount) virtual internal;
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual;
+
+    /**
+     * Checks that allowlist flag remains unchanged, that is, the balance does not overflow nor
+     * underflow from available unit224 space.
+     * 
+     * @dev it could be that if the balance is reduced while not being under 0x0 allowlist tier (free)
+     *      the balance of the user is zero and he tries to burn tokens he will be allowed if the
+     *      allowlisting flag is not validated, as virtually he doesn't have a zero balance.
+     */
+    function _checkAllowlistingFlagUnchanged(uint256 oldBalance, uint256 newBalance, address owner, uint256 amount) internal pure {
+        if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
+            // assume more meaning for the current code than simply insufficient balance
+            revert ERC20InsufficientBalance(owner, uint224(oldBalance), amount);
+        }
+    }
 
     /**
      * Checks if msg.sender is an authorized address.
@@ -301,5 +370,4 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
             revert ERC20InvalidSender(msg.sender);
         }
     }
-
 }

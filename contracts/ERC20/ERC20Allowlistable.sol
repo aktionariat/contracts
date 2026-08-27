@@ -35,16 +35,19 @@ import "../utils/Ownable.sol";
  * See ../../doc/allowlist.md for more information.
  */
 abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
-
+    /// @notice Sequentail Flag indexes (types), then casted to indexed
+    ///         within setTypeInternal
     uint8 public constant TYPE_FREE = 0x0;
     uint8 public constant TYPE_ALLOWED = 0x1;
     uint8 public constant TYPE_RESTRICTED = 0x2;
     uint8 public constant TYPE_ADMIN = 0x4;
 
+    /// @notice Flag indexes must lie within [0, 31]
     uint8 private constant FLAG_INDEX_ALLOWED = 20;
     uint8 private constant FLAG_INDEX_RESTRICTED = 21;
     uint8 private constant FLAG_INDEX_ADMIN = 22;
 
+    /// @notice Global Flag indexes must lie within [0, 256]
     uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
 
     event AddressTypeUpdate(address indexed account, uint8 addressType);
@@ -67,8 +70,10 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     /**
      * Configures newly minted shares to be subject to transfer restrictions, whereas the first
      * recipient is automatically allowlisted.
-     * 
+     *
      * In the background, this is achieved by configuring the null address as ADMIN.
+     * 
+     * @param transferRestrictionsApplicable whether apply or not restrictions, ture to apply and false otherwise.
      */
     function setApplicable(bool transferRestrictionsApplicable) external onlyOwner {
         if (transferRestrictionsApplicable) {
@@ -78,10 +83,18 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
         }
     }
 
+    /**
+     * Freezes an address, that is, makes it restricted 
+     */
     function freeze(address account) public onlyOwner {
         setTypeInternal(account, TYPE_RESTRICTED);
     }
 
+    /**
+     * Unfreezes an address, that is, makes it default type
+     * 
+     * @notice default type means the allowlist type of the null address
+     */
     function unfreeze(address account) public onlyOwner {
         setTypeInternal(account, defaultType());
     }
@@ -91,17 +104,23 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
      * Also used as the neutral type when unfreezing an address.
      */
     function defaultType() public view returns (uint8) {
-        if (hasFlagInternal(address(0x0), FLAG_INDEX_ADMIN)) {
+        if (_hasFlag(address(0x0), FLAG_INDEX_ADMIN)) {
             return TYPE_ALLOWED;
         } else {
             return TYPE_FREE;
         }
     }
 
+    /**
+     * Set Allowlist flag type to an address. Only owner function
+     */
     function setType(address account, uint8 typeNumber) public onlyOwner {
         setTypeInternal(account, typeNumber);
     }
 
+    /**
+     * Batch version of setType
+     */
     function setType(address[] calldata addressesToAdd, uint8 typeNumber) public onlyOwner {
         for (uint i = 0; i < addressesToAdd.length; i++) {
             setType(addressesToAdd[i], typeNumber);
@@ -109,35 +128,45 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     }
 
     /**
-     * If TYPE_FREE all flags are set to 0
+     * Utils to set any Allowlist type to addresses in a single call
+     * 
+     * @notice If TYPE_FREE all flags are set to 0
      */
     function setTypeInternal(address account, uint8 typeNumber) internal {
-        setFlag(account, FLAG_INDEX_ALLOWED, typeNumber == TYPE_ALLOWED);
-        setFlag(account, FLAG_INDEX_RESTRICTED, typeNumber == TYPE_RESTRICTED);
-        setFlag(account, FLAG_INDEX_ADMIN, typeNumber == TYPE_ADMIN);
+        _setFlag(account, FLAG_INDEX_ALLOWED, typeNumber == TYPE_ALLOWED);
+        _setFlag(account, FLAG_INDEX_RESTRICTED, typeNumber == TYPE_RESTRICTED);
+        _setFlag(account, FLAG_INDEX_ADMIN, typeNumber == TYPE_ADMIN);
         emit AddressTypeUpdate(account, typeNumber);
     }
 
     /**
-     * If true, this address is allowlisted and can only transfer tokens to other allowlisted addresses.
+     * From an address returns whether it is an Allowed address or not
+     * 
+     * @notice If true, this address is allowlisted and can only transfer tokens to other
+     *          allowlisted addresses.
      */
     function isAllowed(address account) public view returns (bool) {
-        return hasFlagInternal(account, FLAG_INDEX_ALLOWED);
+        return _hasFlag(account, FLAG_INDEX_ALLOWED);
     }
 
     /**
-     * If true, this address can only transfer tokens to admin addresses and not receive from anyone.
+     * From an address returns whether it is a Restricted address or not
+     * 
+     * @notice If true, this address can only transfer tokens to admin addresses and not receive
+     *          from anyone.
      */
     function isRestricted(address account) public view returns (bool) {
-        return hasFlagInternal(account, FLAG_INDEX_RESTRICTED);
+        return _hasFlag(account, FLAG_INDEX_RESTRICTED);
     }
 
     /**
-     * If true, this address can send to any address, except restricted
+     * From an address returns whether it is an Admin address or not
+     * 
+     * @notice If true, this address can send to any address, except restricted
      * It also automatically allowlists target addresses
      */
     function isAdmin(address account) public view returns (bool) {
-        return hasFlagInternal(account, FLAG_INDEX_ADMIN);
+        return _hasFlag(account, FLAG_INDEX_ADMIN);
     }
 
     /**
@@ -145,7 +174,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
      * and recoveries) revert with Paused(). Reversible via 'unpause'.
      */
     function pause() external onlyOwner {
-        setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, true);
+        _setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, true);
         emit Paused();
     }
 
@@ -153,7 +182,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
      * Lifts the global pause set via 'pause'.
      */
     function unpause() external onlyOwner {
-        setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, false);
+        _setGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED, false);
         emit Unpaused();
     }
 
@@ -171,9 +200,19 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
      * | Restricted |  N  |  N  |  N  |  Y  |
      * | Admin      |  Y  |  Y  |  N  |  Y  |
      * +------------+-----+-----+-----+-----+
+     * 
+     * @notice Any transfer of admin sets the reciever to Allowed, except if at least one of:
+     *          - The transfer amount is zero
+     *          - The receipient (to) is a contract
+     *          - The receipient (to) is the zero address
+     *          is not true.
+     * 
+     * @param from the address the amunt it is transfered from
+     * @param to the address the amount is transfered to
+     * @param amount the amount being transferred
      */
-    function _beforeTokenTransfer(address from, address to, uint256 /* amount */) internal virtual override {
-        if (hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert TransfersPaused();
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+        if (_hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert TransfersPaused();
         if (isRestricted(to)) {
             revert Allowlist_ReceiverIsForbidden(to);
         } else if (isRestricted(from)) {
@@ -187,8 +226,12 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
 
             // Admin address always sets the recipient to ALLOWED
             // If this behaviour is not desired, set admin addresses to FREE instead
-            if (isAdmin(from)) {
-                setFlag(to, FLAG_INDEX_ALLOWED, true);
+            if (
+                isAdmin(from)
+                && amount != 0
+                && to != address(0)
+            ) {
+                _setFlag(to, FLAG_INDEX_ALLOWED, true);
                 emit AddressTypeUpdate(to, TYPE_ALLOWED);
             }
         }

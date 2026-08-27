@@ -6,7 +6,6 @@
 // - Replaced Context._msgSender() with msg.sender
 // - Made leaner
 // - Extracted interface
-
 pragma solidity >=0.8.0 <0.9.0;
 
 /**
@@ -22,7 +21,7 @@ pragma solidity >=0.8.0 <0.9.0;
  * the owner.
  */
 contract Ownable {
-
+    /// @notice owner of the contract
     address public owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -32,11 +31,14 @@ contract Ownable {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor (address initialOwner) {
+    constructor(address initialOwner) {
         owner = initialOwner;
         emit OwnershipTransferred(address(0), owner);
     }
 
+    /**
+     * Ensures that the caller is the owner
+     */
     modifier onlyOwner() {
         _checkOwner();
         _;
@@ -51,6 +53,11 @@ contract Ownable {
         owner = newOwner;
     }
 
+    /**
+     * Revers if `msg.sender` is not the `owner` of the contract
+     * 
+     * @dev Revers with Ownable_NotOwner
+     */
     function _checkOwner() internal view {
         if (msg.sender != owner) {
             revert Ownable_NotOwner(msg.sender);

@@ -1,7 +1,29 @@
 import { expect } from "chai";
-import { Contract } from "ethers";
-import { connection, ethers, owner, signer1, signer2, signer3 } from "./TestBase.ts";
+import {
+  connection,
+  ethers,
+  owner,
+  signer1,
+  signer2,
+  signer3,
+} from "./TestBase.ts";
 import { setBalance } from "../scripts/helpers/setBalance.ts";
+
+import { expectUserToBeFree } from "./lib/allowlist.ts";
+
+import { Shares } from "../types/ethers-contracts/index.ts";
+
+// TODO added for burns tests
+// // negative no balance and no flag: underflow uint256
+// expect(shares.connect(owner).mint(signer1, -5n))
+//   .to.be.revertedWithCustomError(shares, "ERC20InsufficientBalance")
+//   .withArgs(await owner.getAddress(), 0n, -5n);
+
+// // negative no balance and flag: ERC20InsufficientBalance
+// await shares["setType(address,uint8)"](await owner.getAddress(), 1n);
+// expect(shares.connect(owner).mint(signer1, -5n))
+//   .to.be.revertedWithCustomError(shares, "ERC20InsufficientBalance")
+//   .withArgs(await owner.getAddress(), 0n, -5n);
 
 // Baseline test suite for the new self-contained share token in contracts/shares/base/Shares.sol.
 // Deploys the contract directly (no ignition / no mainnet fork) since it has no external dependencies.
@@ -15,18 +37,32 @@ const SHARE = {
 const DETERRENCE_FEE = ethers.parseEther("0.01");
 const RECOVERY_DELAY = 184n * 24n * 60n * 60n; // 184 days in seconds
 
-async function deployShares(): Promise<Contract> {
-  const Shares = await ethers.getContractFactory("contracts/shares/base/Shares.sol:Shares");
-  const shares = await Shares.deploy(SHARE.symbol, SHARE.name, SHARE.terms, owner);
+/**
+ * Deploys and returns a Shares contract instance.
+ * Fields are written using the `SHARES` top level constant.
+ * Uses `owner` as deployer.
+ *
+ * @returns Shares contract promise
+ */
+async function deployShares(): Promise<Shares> {
+  const Shares = await ethers.getContractFactory("Shares");
+  const shares = await Shares.deploy(
+    SHARE.symbol,
+    SHARE.name,
+    SHARE.terms,
+    owner
+  );
   await shares.waitForDeployment();
-  return shares as unknown as Contract;
+  return shares;
 }
 
-describe("Shares (base/Shares.sol)", function () {
-
+describe("Shares (shares/base/Shares.sol)", function () {
   describe("Deployment & params", function () {
-    let shares: Contract;
-    before(async () => { shares = await deployShares(); });
+    let shares: Shares;
+
+    before(async () => {
+      shares = await deployShares();
+    });
 
     it("deploys", async () => {
       expect(await shares.getAddress()).to.exist;
@@ -40,18 +76,101 @@ describe("Shares (base/Shares.sol)", function () {
       expect(await shares.decimals()).to.equal(0n);
       expect(await shares.VERSION()).to.equal(6n);
       expect(await shares.deterrenceFee()).to.equal(DETERRENCE_FEE);
+      expect(await shares.successor()).to.equal(ethers.ZeroAddress);
+    });
+
+    it("can set terms", async () => {
+      const newTerms = "https://new.com/terms";
+      await expect(shares.connect(owner).setTerms(newTerms))
+        .to.emit(shares, "ChangeTerms")
+        .withArgs(newTerms);
+      expect(await shares.terms()).to.equal(newTerms);
+
+      // only owner can set terms
+      await expect(
+        shares.connect(signer1).setTerms("https://attacker.com")
+      ).to.revert(ethers);
+    });
+
+    it("can set successor", async () => {
+      // deploy mock successor
+      const MockSuccessor = await ethers.getContractFactory(
+        "MockSuccessorToken"
+      );
+      const mock = await MockSuccessor.deploy();
+      await mock.waitForDeployment();
+
+      // only owner can set successor
+      await expect(shares.connect(signer1).setSuccessor(mock)).to.revert(
+        ethers
+      );
+
+      // owner sets the mock as successor
+      // we check even from call notifyBurned(address(0), 0)
+      await expect(shares.connect(owner).setSuccessor(mock))
+        .to.emit(mock, "NotifyBurned")
+        .withArgs(ethers.ZeroAddress, 0n)
+        .to.emit(shares, "SuccessorDefined")
+        .withArgs(await mock.getAddress());
+      expect(await shares.successor()).to.equal(await mock.getAddress());
+
+      // setting an EOA as successor skips the code check
+      await shares.connect(owner).setSuccessor(signer3);
+      expect(await shares.successor()).to.equal(await signer3.getAddress());
+    });
+
+    it("can emit announcements", async () => {
+      const msg = "Hello shareholders";
+      await expect(shares.connect(owner).announcement(msg))
+        .to.emit(shares, "Announcement")
+        .withArgs(msg);
+
+      // only owner can emit
+      await expect(shares.connect(signer1).announcement("pwned")).to.revert(
+        ethers
+      );
     });
   });
 
   describe("Minting", function () {
-    let shares: Contract;
-    beforeEach(async () => { shares = await deployShares(); });
+    // Covered functions are:
+    // mint
+    // batchMint
+    // mintAndWrap
+    // batchMintAndWrap
+
+    let shares: Shares;
+
+    beforeEach(async () => {
+      shares = await deployShares();
+    });
 
     it("mints only by owner", async () => {
+      // only owner can mint
+      await expect(shares.connect(signer1).mint(signer1, 100n))
+        .to.be.revertedWithCustomError(shares, "Ownable_NotOwner")
+        .withArgs(signer1);
+
+      // make sure everyone is free
+      await expectUserToBeFree(shares, await owner.getAddress());
+      await expectUserToBeFree(shares, await signer1.getAddress());
+
+      // mint shares to address
       await shares.connect(owner).mint(signer1, 100n);
       expect(await shares.balanceOf(signer1)).to.equal(100n);
       expect(await shares.totalSupply()).to.equal(100n);
-      await expect(shares.connect(signer1).mint(signer1, 1n)).to.revert(ethers);
+
+      // make sure everyone is free after mint
+      await expectUserToBeFree(shares, await owner.getAddress());
+      await expectUserToBeFree(shares, await signer1.getAddress());
+    });
+
+    it("can't mint quantity that modifies internal flags", async () => {
+      // TODO move to Allowlist.ts
+      // we try to min uint256: we assume flags have at least one bit of space
+      await expect(shares.connect(owner).mint(signer1, ethers.MaxUint256))
+        .to.revertedWithCustomError(shares, "ERC20InsufficientBalance")
+        .withArgs(await signer1.getAddress(), 0n, ethers.MaxUint256);
     });
 
     it("batchMints to many recipients", async () => {
@@ -61,12 +180,15 @@ describe("Shares (base/Shares.sol)", function () {
     });
 
     it("reverts batchMint on length mismatch", async () => {
-      await expect(shares.connect(owner).batchMint([signer1, signer2], [10n])).to.revert(ethers);
+      await expect(
+        shares.connect(owner).batchMint([signer1, signer2], [10n])
+      ).to.revertedWithCustomError(shares, "ArrayLengthMismatch");
     });
   });
 
   describe("Transfers & allowlist", function () {
-    let shares: Contract;
+    let shares: Shares;
+
     beforeEach(async () => {
       shares = await deployShares();
       await shares.connect(owner).mint(signer1, 100n);
@@ -88,13 +210,17 @@ describe("Shares (base/Shares.sol)", function () {
       await shares.connect(owner).freeze(signer2);
       expect(await shares.isRestricted(signer2)).to.equal(true);
       // cannot receive
-      await expect(shares.connect(signer1).transfer(signer2, 1n)).to.revert(ethers);
+      await expect(shares.connect(signer1).transfer(signer2, 1n)).to.revert(
+        ethers
+      );
       // give signer2 some balance first via direct mint? mint to restricted also blocked -> unfreeze, mint, refreeze
       await shares.connect(owner).unfreeze(signer2);
       await shares.connect(owner).mint(signer2, 10n);
       await shares.connect(owner).freeze(signer2);
       // restricted can only send to an admin address (address(0) is not admin unless applicable)
-      await expect(shares.connect(signer2).transfer(signer1, 1n)).to.revert(ethers);
+      await expect(shares.connect(signer2).transfer(signer1, 1n)).to.revert(
+        ethers
+      );
     });
 
     it("freeze/unfreeze are owner-only", async () => {
@@ -104,7 +230,8 @@ describe("Shares (base/Shares.sol)", function () {
   });
 
   describe("Pause", function () {
-    let shares: Contract;
+    let shares: Shares;
+
     beforeEach(async () => {
       shares = await deployShares();
       await shares.connect(owner).mint(signer1, 100n);
@@ -112,9 +239,13 @@ describe("Shares (base/Shares.sol)", function () {
 
     it("blocks transfers, mints and burns while paused", async () => {
       await shares.connect(owner).pause();
-      await expect(shares.connect(signer1).transfer(signer2, 1n)).to.revert(ethers);
+      await expect(shares.connect(signer1).transfer(signer2, 1n)).to.revert(
+        ethers
+      );
       await expect(shares.connect(owner).mint(signer1, 1n)).to.revert(ethers);
-      await expect(shares.connect(signer1)["burn(uint256)"](1n)).to.revert(ethers);
+      await expect(shares.connect(signer1)["burn(uint256)"](1n)).to.revert(
+        ethers
+      );
     });
 
     it("resumes after unpause", async () => {
@@ -130,22 +261,52 @@ describe("Shares (base/Shares.sol)", function () {
   });
 
   describe("Holder self-burn", function () {
-    let shares: Contract;
+    let shares: Shares;
+
     beforeEach(async () => {
       shares = await deployShares();
       await shares.connect(owner).mint(signer1, 100n);
     });
 
     it("routes burned tokens through the owner and reduces supply", async () => {
+      const balanceBefore = await shares.balanceOf(await signer1.getAddress());
       const supplyBefore = await shares.totalSupply();
-      await shares.connect(signer1)["burn(uint256)"](30n);
-      expect(await shares.balanceOf(signer1)).to.equal(70n);
-      expect(await shares.totalSupply()).to.equal(supplyBefore - 30n);
+
+      const toBurnAmount = 30n;
+      expect(await shares.connect(signer1)["burn(uint256)"](toBurnAmount))
+        .to.emit(shares, "Transfer")
+        .withArgs(await owner.getAddress(), ethers.ZeroAddress, toBurnAmount);
+
+      expect(await shares.balanceOf(signer1)).to.equal(
+        balanceBefore - toBurnAmount
+      );
+      expect(await shares.totalSupply()).to.equal(supplyBefore - toBurnAmount);
+    });
+
+    it("reverts if burn modifies flag bits", async () => {
+      // TODO move to Allowlist.ts
+      const balanceBefore = await shares.balanceOf(await signer1.getAddress());
+
+      // apply Admin flag
+      const ADMIN_TYPE = 4n;
+      await expect(
+        shares
+          .connect(owner)
+          ["setType(address,uint8)"](await signer1.getAddress(), ADMIN_TYPE)
+      )
+        .to.emit(shares, "AddressTypeUpdate")
+        .withArgs(await signer1.getAddress(), ADMIN_TYPE);
+
+      const toBurnAmount = balanceBefore + 1n;
+      await expect(shares.connect(signer1)["burn(uint256)"](toBurnAmount))
+        .to.revertedWithCustomError(shares, "ERC20InsufficientBalance")
+        .withArgs(await signer1.getAddress(), balanceBefore, toBurnAmount);
     });
   });
 
   describe("Recovery", function () {
-    let shares: Contract;
+    let shares: Shares;
+
     beforeEach(async () => {
       shares = await deployShares();
       await shares.connect(owner).mint(signer1, 100n);
@@ -154,7 +315,9 @@ describe("Shares (base/Shares.sol)", function () {
 
     it("recovers a lost balance to the proposed recipient after the delay", async () => {
       // signer2 proposes to recover signer1's balance to itself, paying the deterrence fee
-      await shares.connect(signer2)["initRecovery(address)"](signer1, { value: DETERRENCE_FEE });
+      await shares
+        .connect(signer2)
+        ["initRecovery(address)"](signer1, { value: DETERRENCE_FEE });
       const rec = await shares.recoveries(signer1);
       expect(rec.recipient).to.equal(await signer2.getAddress());
 
@@ -168,7 +331,9 @@ describe("Shares (base/Shares.sol)", function () {
     });
 
     it("lets the lost address veto the recovery via cancelRecovery", async () => {
-      await shares.connect(signer2)["initRecovery(address)"](signer1, { value: DETERRENCE_FEE });
+      await shares
+        .connect(signer2)
+        ["initRecovery(address)"](signer1, { value: DETERRENCE_FEE });
       await shares.connect(signer1).cancelRecovery();
       const rec = await shares.recoveries(signer1);
       expect(rec.timestamp).to.equal(0n);
@@ -178,13 +343,19 @@ describe("Shares (base/Shares.sol)", function () {
     });
 
     it("requires the deterrence fee from non-owner proposers", async () => {
-      await expect(shares.connect(signer2)["initRecovery(address)"](signer1)).to.revert(ethers);
+      await expect(
+        shares.connect(signer2)["initRecovery(address)"](signer1)
+      ).to.revert(ethers);
     });
 
     it("rejects a second recovery while one is in progress", async () => {
-      await shares.connect(signer2)["initRecovery(address)"](signer1, { value: DETERRENCE_FEE });
+      await shares
+        .connect(signer2)
+        ["initRecovery(address)"](signer1, { value: DETERRENCE_FEE });
       await expect(
-        shares.connect(signer2)["initRecovery(address)"](signer1, { value: DETERRENCE_FEE })
+        shares
+          .connect(signer2)
+          ["initRecovery(address)"](signer1, { value: DETERRENCE_FEE })
       ).to.revert(ethers);
     });
 
@@ -193,7 +364,9 @@ describe("Shares (base/Shares.sol)", function () {
     it("lets the owner time-locked-burn a balance after the delay", async () => {
       await shares.connect(owner).initBurn(signer1);
       // too early
-      await expect(shares.connect(owner)["burn(address)"](signer1)).to.revert(ethers);
+      await expect(shares.connect(owner)["burn(address)"](signer1)).to.revert(
+        ethers
+      );
 
       await connection.networkHelpers.time.increase(RECOVERY_DELAY + 1n);
       const supplyBefore = await shares.totalSupply();
@@ -212,12 +385,15 @@ describe("Shares (base/Shares.sol)", function () {
       await shares.connect(owner).initBurn(signer1);
       await shares.connect(signer1).cancelRecovery();
       await connection.networkHelpers.time.increase(RECOVERY_DELAY + 1n);
-      await expect(shares.connect(owner)["burn(address)"](signer1)).to.revert(ethers); // RecoveryNotFound
+      await expect(shares.connect(owner)["burn(address)"](signer1)).to.revert(
+        ethers
+      ); // RecoveryNotFound
     });
   });
 
   describe("Successor migration", function () {
-    let shares: Contract;
+    let shares: Shares;
+
     beforeEach(async () => {
       shares = await deployShares();
       await shares.connect(owner).mint(signer1, 100n);
@@ -229,11 +405,62 @@ describe("Shares (base/Shares.sol)", function () {
 
     it("sets successor (owner-only)", async () => {
       // EOA successor: setSuccessor skips the notifyBurned sanity check when there is no code
-      await expect(shares.connect(signer1).setSuccessor(signer3)).to.revert(ethers);
+      await expect(shares.connect(signer1).setSuccessor(signer3)).to.revert(
+        ethers
+      );
       await shares.connect(owner).setSuccessor(signer3);
       expect(await shares.successor()).to.equal(await signer3.getAddress());
     });
 
-    // Full migrate() flow needs a mock ISuccessorToken implementing notifyBurned -> TODO once a mock contract is agreed.
+    it("migrate(amount) transfers tokens to successor, burns them, and emits notifyBurned", async () => {
+      const MockSuccessor = await ethers.getContractFactory(
+        "MockSuccessorToken"
+      );
+      const mock = await MockSuccessor.deploy();
+      await mock.waitForDeployment();
+
+      await shares.connect(owner).setSuccessor(mock);
+
+      const supplyBefore = await shares.totalSupply();
+      const userAddr = await signer1.getAddress();
+      const mockAddr = await mock.getAddress();
+
+      await expect(shares.connect(signer1)["migrate(uint256)"](40n))
+        .to.emit(mock, "NotifyBurned")
+        .withArgs(userAddr, 40n);
+
+      // signer1 had 100, migrated 40 -> 60 left
+      expect(await shares.balanceOf(signer1)).to.equal(60n);
+      // successor received 40 then burned them -> balance is 0
+      expect(await shares.balanceOf(mockAddr)).to.equal(0n);
+      // total supply reduced by 40
+      expect(await shares.totalSupply()).to.equal(supplyBefore - 40n);
+      // mock recorded the calls: 1 from setSuccessor sanity check + 1 from migrate
+      expect(await mock.lastBeneficiary()).to.equal(userAddr);
+      expect(await mock.lastAmount()).to.equal(40n);
+      expect(await mock.notifyCount()).to.equal(2n);
+    });
+
+    it("migrate() convenience migrates the full remaining balance", async () => {
+      const MockSuccessor = await ethers.getContractFactory(
+        "MockSuccessorToken"
+      );
+      const mock = await MockSuccessor.deploy();
+      await mock.waitForDeployment();
+
+      await shares.connect(owner).setSuccessor(mock);
+
+      const supplyBefore = await shares.totalSupply();
+      const userAddr = await signer1.getAddress();
+
+      // signer1 has 100 -> migrate everything
+      await expect(shares.connect(signer1)["migrate()"]())
+        .to.emit(mock, "NotifyBurned")
+        .withArgs(userAddr, 100n);
+
+      expect(await shares.balanceOf(signer1)).to.equal(0n);
+      expect(await shares.totalSupply()).to.equal(supplyBefore - 100n);
+      expect(await mock.lastAmount()).to.equal(100n);
+    });
   });
 });

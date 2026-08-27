@@ -1,7 +1,7 @@
 import hre from "hardhat";
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { connection, provider, ethers, deployer, owner, signer1, signer2, signer3 } from "./TestBase.ts";
+import { provider, ethers, deployer, owner, signer1, signer2, signer3 } from "./TestBase.ts";
 
 // LINK-only MultichainWallet tests, run against real forked chains:
 // - mainnet fork (default connection, chainid 1): real CCIP router + real LINK, no mocks.
@@ -94,18 +94,31 @@ describe("MultichainWallet LINK-only sync", function () {
   let wallet: Contract;
   let link: Contract;
   let router: Contract;
+  let mockRouterAddr: string;
+  let mockLinkAddr: string;
   const salt = ethers.encodeBytes32String("TESTCOMPANY");
 
   before(async function () {
-    ({ factory } = await deployStack(ethers, ROUTER.mainnet, LINK.mainnet));
+    const MockRouter = await ethers.getContractFactory("MockCCIPRouter");
+    const mockRouter = await MockRouter.deploy();
+    await mockRouter.waitForDeployment();
+    await mockRouter.setFee(1);
+    mockRouterAddr = await mockRouter.getAddress();
+
+    const MockLink = await ethers.getContractFactory("MockERC20");
+    const mockLink = await MockLink.deploy("Chainlink Token", "LINK");
+    await mockLink.waitForDeployment();
+    mockLinkAddr = await mockLink.getAddress();
+
+    ({ factory } = await deployStack(ethers, mockRouterAddr, mockLinkAddr));
     wallet = await createWallet(ethers, factory, owner.address, salt);
-    link = new ethers.Contract(LINK.mainnet, ERC20_ABI, deployer);
-    router = new ethers.Contract(ROUTER.mainnet, ROUTER_ABI, ethers.provider);
-    await setForkedTokenBalance(provider, ethers, LINK.mainnet, deployer.address, ethers.parseEther("1000"));
+    link = new ethers.Contract(mockLinkAddr, ERC20_ABI, deployer);
+    router = new ethers.Contract(mockRouterAddr, ROUTER_ABI, ethers.provider);
+    await mockLink.mint(deployer.address, ethers.parseEther("1000"));
   });
 
   it("should store LINK as immutable fee token", async function () {
-    expect(await wallet.LINK()).to.equal(LINK.mainnet);
+    expect(await wallet.LINK()).to.equal(mockLinkAddr);
   });
 
   it("should not expose a payable sync or a fee token choice", async function () {
@@ -128,6 +141,7 @@ describe("MultichainWallet LINK-only sync", function () {
       .to.be.revert(ethers);
   });
 
+  // here
   it("should pull exactly the CCIP fee in LINK from the caller", async function () {
     const walletAddress = await wallet.getAddress();
     const message = buildSyncMessage(walletAddress, [owner.address], [1], LINK.mainnet);
@@ -145,7 +159,7 @@ describe("MultichainWallet LINK-only sync", function () {
     expect(callerBefore - await link.balanceOf(deployer.address)).to.equal(fee);
     expect(await link.balanceOf(walletAddress)).to.equal(walletLinkBefore); // wallet's own funds untouched
     expect(await ethers.provider.getBalance(walletAddress)).to.equal(walletEthBefore);
-    expect(await link.allowance(walletAddress, ROUTER.mainnet)).to.equal(0n); // router consumed the exact approval
+    expect(await link.allowance(walletAddress, mockRouterAddr)).to.equal(0n); // router consumed the exact approval
 
     const syncSent = receipt.logs.filter((l: any) => l.address === walletAddress)
       .map((l: any) => wallet.interface.parseLog(l)).filter((l: any) => l?.name === "SyncSent");
@@ -197,7 +211,13 @@ describe("MultichainWalletFactory createWithSigners", function () {
   let factory: Contract;
 
   before(async function () {
-    ({ factory } = await deployStack(ethers, ROUTER.mainnet, LINK.mainnet));
+    const MockRouter = await ethers.getContractFactory("MockCCIPRouter");
+    const mockRouter = await MockRouter.deploy();
+    await mockRouter.waitForDeployment();
+    const MockLink = await ethers.getContractFactory("MockERC20");
+    const mockLink = await MockLink.deploy("Chainlink Token", "LINK");
+    await mockLink.waitForDeployment();
+    ({ factory } = await deployStack(ethers, await mockRouter.getAddress(), await mockLink.getAddress()));
   });
 
   it("should set the full signer set atomically on mainnet, at the same address as create would", async function () {

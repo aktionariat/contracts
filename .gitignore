@@ -6,7 +6,11 @@ node_modules
 /artifacts
 
 # Ignition deployments
-/ignition
+# /ignition
+/ignition/deployments
+/ignition/modules/aktionariat
+/ignition/modules/issuers
+/ignition/modules/TestModule.ts
 
 # TypeChain files
 /types
@@ -19,4 +23,5 @@ node_modules
 KEYS.ts
 /.deps
 
+.DS_Store
 .claude
