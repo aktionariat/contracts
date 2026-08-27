@@ -135,26 +135,6 @@ export default async function (
   };
   console.log(`All networks connected`);
 
-  // // Get pool bytecodes for CREATE2 address prediction
-  const LockReleasePoolArtifact =
-    await sourceConnection.ethers.getContractFactory("LockReleaseTokenPool");
-  const BurnMintPoolArtifact = await sourceConnection.ethers.getContractFactory(
-    "BurnMintTokenPool"
-  );
-  const lockReleaseBytecode = LockReleasePoolArtifact.bytecode;
-  const burnMintBytecode = BurnMintPoolArtifact.bytecode;
-
-  // Get token bytecodes for CREATE2 prediction
-  const SharesFactory = await sourceConnection.ethers.getContractFactory(
-    "Shares"
-  );
-  const SHAFactory = await sourceConnection.ethers.getContractFactory(
-    "SharesUnderAgreement"
-  );
-  const BSHAFactory = await sourceConnection.ethers.getContractFactory(
-    "BridgedSharesUnderAgreement"
-  );
-
   // // Factories
   // The deployment managers are wired to logic sub-factories that hold the
   // bytecodes and Chainlink addresses. If already deployed, the managers are
@@ -190,9 +170,6 @@ export default async function (
           deploymentId: `logics-source-${sourceNetworkName}`,
           parameters: {
             LogicsSourceModule: {
-              sharesBytecode: SharesFactory.bytecode,
-              shaBytecode: SHAFactory.bytecode,
-              lockReleaseTokenPoolBytecode: lockReleaseBytecode,
               chainlinkAddresses: sourceChainlinkAddresses,
             },
           },
@@ -262,8 +239,6 @@ export default async function (
           deploymentId: `logics-destination-${net}`,
           parameters: {
             LogicsDestinationModule: {
-              bridgedSHABytecode: BSHAFactory.bytecode,
-              burnMintTokenPoolBytecode: burnMintBytecode,
               chainlinkAddresses: destinationChainlinkAddresses,
             },
           },

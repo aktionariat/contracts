@@ -27,6 +27,8 @@
  */
 pragma solidity ^0.8.26;
 
+import {BridgedSharesUnderAgreement} from "../../multichain/BridgedSharesUnderAgreement.sol";
+
 import {TokenFactory} from "../base/TokenFactory.sol";
 
 /**
@@ -34,7 +36,11 @@ import {TokenFactory} from "../base/TokenFactory.sol";
  * @notice On-chain bytecode storage and CREATE2 deployer for the BridgedSharesUnderAgreement contract.
  */
 contract BridgedSHAFactory is TokenFactory {
-    constructor(bytes memory initialBytecode) TokenFactory(initialBytecode) {}
+    constructor() TokenFactory() {}
+
+    function _targetBytecode() internal pure override returns (bytes memory) {
+        return type(BridgedSharesUnderAgreement).creationCode;
+    }
 
     /**
      * @notice Predict the CREATE2 address of a BridgedSharesUnderAgreement deployment from this factory.

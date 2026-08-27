@@ -89,23 +89,6 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   );
   await tokenPoolFactory.waitForDeployment();
 
-  // // Get bytecodes for the logic factory sub-deployers (CREATE2 prediction is
-  // // now done on-chain via the managers' `predict` functions).
-  const SharesArtifact = await ethers.getContractFactory("Shares");
-  const SHAArtifact = await ethers.getContractFactory("SharesUnderAgreement");
-  const BSHAArtifact = await ethers.getContractFactory(
-    "BridgedSharesUnderAgreement"
-  );
-  const LockReleasePoolArtifact = await ethers.getContractFactory(
-    "LockReleaseTokenPool"
-  );
-  const BurnMintPoolArtifact = await ethers.getContractFactory(
-    "BurnMintTokenPool"
-  );
-
-  const lockReleaseBytecode = LockReleasePoolArtifact.bytecode;
-  const burnMintBytecode = BurnMintPoolArtifact.bytecode;
-
   const tokenPoolFactoryAddr = await tokenPoolFactory.getAddress();
   const rmnProxyAddr = await mockRMN.getAddress();
 
@@ -118,19 +101,16 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
     router: mockRouter,
   };
 
-  // // Source chain: deploy the logic sub-factories (bytecode + chainlink)
+  // // Source chain: deploy the logic sub-factories (the creation bytecode of
+  // // each target is derived from an import via `type(Target).creationCode`).
   const SharesFactoryContract = await ethers.getContractFactory(
     "SharesFactory"
   );
-  const sharesFactory = await SharesFactoryContract.connect(owner).deploy(
-    SharesArtifact.bytecode
-  );
+  const sharesFactory = await SharesFactoryContract.connect(owner).deploy();
   await sharesFactory.waitForDeployment();
 
   const SHAFactoryContract = await ethers.getContractFactory("SHAFactory");
-  const shaFactory = await SHAFactoryContract.connect(owner).deploy(
-    SHAArtifact.bytecode
-  );
+  const shaFactory = await SHAFactoryContract.connect(owner).deploy();
   await shaFactory.waitForDeployment();
 
   const LockReleaseFactoryContract = await ethers.getContractFactory(
@@ -138,7 +118,7 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
   );
   const lockReleaseFactory = await LockReleaseFactoryContract.connect(
     owner
-  ).deploy(lockReleaseBytecode, chainlinkAddresses);
+  ).deploy(chainlinkAddresses);
   await lockReleaseFactory.waitForDeployment();
 
   // // Deploy the source deployment manager
@@ -153,20 +133,20 @@ export async function deployBridgeFixture(): Promise<BridgeFixture> {
     );
   await factorySource.waitForDeployment();
 
-  // // Destination chain: deploy the logic sub-factories (bytecode + chainlink)
+  // // Destination chain: deploy the logic sub-factories (creation bytecode is
+  // // derived from an import; only the Chainlink addresses are passed in)
   const BridgedSHAFactoryContract = await ethers.getContractFactory(
     "BridgedSHAFactory"
   );
   const bridgedSHAFactory = await BridgedSHAFactoryContract.connect(
     owner
-  ).deploy(BSHAArtifact.bytecode);
+  ).deploy();
   await bridgedSHAFactory.waitForDeployment();
 
   const BurnMintFactoryContract = await ethers.getContractFactory(
     "CCIPBurnMintTokenPoolFactory"
   );
   const burnMintFactory = await BurnMintFactoryContract.connect(owner).deploy(
-    burnMintBytecode,
     chainlinkAddresses
   );
   await burnMintFactory.waitForDeployment();

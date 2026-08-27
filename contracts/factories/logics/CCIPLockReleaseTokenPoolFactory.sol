@@ -28,15 +28,19 @@
 pragma solidity ^0.8.26;
 
 import {TokenPoolFactory} from "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol";
+import {LockReleaseTokenPool} from "@chainlink/contracts-ccip/contracts/pools/LockReleaseTokenPool.sol";
 
 import {ChainlinkService} from "../lib/ChainlinkService.sol";
 import {CCIPTokenPoolFactory} from "../base/CCIPTokenPoolFactory.sol";
 
 contract CCIPLockReleaseTokenPoolFactory is CCIPTokenPoolFactory {
     constructor(
-        bytes memory initialBytecode,
         ChainlinkService.ChainlinkAddresses memory initialChainlinkAddresses
-    ) CCIPTokenPoolFactory(initialBytecode, initialChainlinkAddresses) {}
+    ) CCIPTokenPoolFactory(initialChainlinkAddresses) {}
+
+    function _targetBytecode() internal pure override returns (bytes memory) {
+        return type(LockReleaseTokenPool).creationCode;
+    }
 
     function _poolType() internal pure override returns (TokenPoolFactory.PoolType) {
         return TokenPoolFactory.PoolType.LOCK_RELEASE;

@@ -27,10 +27,16 @@
  */
 pragma solidity ^0.8.26;
 
+import {Shares} from "../../shares/base/Shares.sol";
+
 import {TokenFactory} from "../base/TokenFactory.sol";
 
 contract SharesFactory is TokenFactory {
-    constructor(bytes memory initialBytecode) TokenFactory(initialBytecode) {}
+    constructor() TokenFactory() {}
+
+    function _targetBytecode() internal pure override returns (bytes memory) {
+        return type(Shares).creationCode;
+    }
 
     /**
      * @notice Predict the CREATE2 address of a Shares deployment from this factory.

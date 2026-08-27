@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {OwnableBytecodeStore} from "./OwnableBytecodeStore.sol";
+import {BytecodeStore} from "./BytecodeStore.sol";
 import {Deployment} from "../lib/Deployment.sol";
 
 /**
@@ -15,10 +15,10 @@ import {Deployment} from "../lib/Deployment.sol";
  * @dev Subclasses build their constructor args with `abi.encode(...)` and pass
  *      them to `_predictAddress` / `_deployToken`.
  */
-abstract contract TokenFactory is OwnableBytecodeStore {
+abstract contract TokenFactory is BytecodeStore {
     event TokenDeployed(address indexed deployed, string symbol);
 
-    constructor(bytes memory initialBytecode) OwnableBytecodeStore(initialBytecode) {}
+    constructor() BytecodeStore() {}
 
     function _predictAddress(bytes32 salt, bytes memory args) internal view returns (address) {
         return Deployment.compute(bytecode, address(this), salt, args);

@@ -29,10 +29,16 @@ pragma solidity ^0.8.26;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+import {SharesUnderAgreement} from "../../shares/sha/SharesUnderAgreement.sol";
+
 import {TokenFactory} from "../base/TokenFactory.sol";
 
 contract SHAFactory is TokenFactory {
-    constructor(bytes memory initialBytecode) TokenFactory(initialBytecode) {}
+    constructor() TokenFactory() {}
+
+    function _targetBytecode() internal pure override returns (bytes memory) {
+        return type(SharesUnderAgreement).creationCode;
+    }
 
     /**
      * @notice Predict the CREATE2 address of a SharesUnderAgreement deployment from this factory.

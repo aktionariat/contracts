@@ -48,9 +48,6 @@ export type SourceDeployment = {
 
 // logics source
 export type LogicsSourceParams = {
-  sharesBytecode: string;
-  shaBytecode: string;
-  lockReleaseTokenPoolBytecode: string;
   chainlinkAddresses: SourceChainlinkAddresses;
 };
 
@@ -86,8 +83,6 @@ export type DestinationDeployment = {
 
 // logics destination
 export type LogicsDestinationParams = {
-  bridgedSHABytecode: string;
-  burnMintTokenPoolBytecode: string;
   chainlinkAddresses: DestinationChainlinkAddresses;
 };
 

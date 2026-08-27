@@ -6,7 +6,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 
 import {TokenPoolFactory} from "@chainlink/contracts-ccip/contracts/tokenAdminRegistry/TokenPoolFactory/TokenPoolFactory.sol";
 
-import {OwnableBytecodeStore} from "./OwnableBytecodeStore.sol";
+import {BytecodeStore} from "./BytecodeStore.sol";
 import {Deployment} from "../lib/Deployment.sol";
 import {ChainlinkService} from "../lib/ChainlinkService.sol";
 
@@ -17,18 +17,17 @@ import {ChainlinkService} from "../lib/ChainlinkService.sol";
  *         infrastructure. Stores both the pool creation bytecode and the
  *         Chainlink infrastructure addresses.
  * @dev Subclasses provide the pool type (`_poolType`) and an optional
- *      post-deploy hook (`_postDeploy`) for pool-type-specific setup.
+ *      post-deploy hook (`_postTokenPrePoolDeploy`) for pool-type-specific setup.
  */
-abstract contract CCIPTokenPoolFactory is OwnableBytecodeStore {
+abstract contract CCIPTokenPoolFactory is BytecodeStore, Ownable(msg.sender) {
     ChainlinkService.ChainlinkAddresses public chainlinkAddresses;
 
     event ChainlinkAddressesUpdated(ChainlinkService.ChainlinkAddresses indexed newChainlinkAddresses);
     event PoolDeployed(address indexed pool, address indexed token);
 
     constructor(
-        bytes memory initialBytecode,
         ChainlinkService.ChainlinkAddresses memory initialChainlinkAddresses
-    ) OwnableBytecodeStore(initialBytecode) {
+    ) BytecodeStore() {
         ChainlinkService._validateChainlinkAddresses(initialChainlinkAddresses);
         chainlinkAddresses = initialChainlinkAddresses;
     }
@@ -55,7 +54,7 @@ abstract contract CCIPTokenPoolFactory is OwnableBytecodeStore {
      * @notice Optional pool-type-specific setup after deployment, before the
      *         CCIP infrastructure settings are applied. Override to no-op.
      */
-    function _postDeploy(address pool, address localToken) internal virtual {
+    function _postTokenPrePoolDeploy(address pool, address localToken) internal virtual {
         pool;
         localToken;
     }
@@ -105,7 +104,7 @@ abstract contract CCIPTokenPoolFactory is OwnableBytecodeStore {
             _poolType()
         );
 
-        _postDeploy(deployedPool, localToken);
+        _postTokenPrePoolDeploy(deployedPool, localToken);
 
         ChainlinkService._applySettingToChainlinkCCIPInfrastructure(
             deployedPool,

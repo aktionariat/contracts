@@ -6,24 +6,20 @@ import { SourceChainlinkAddresses } from "../lib/types.ts";
  * TokenDeploymentManagerSource uses to deploy Shares, SharesUnderAgreement and
  * the LockReleaseTokenPool.
  *
- * Each logic factory holds the creation bytecode of its target contract
- * (and, for the pool, the Chainlink infrastructure addresses) immutably.
+ * Each logic factory derives its target's creation bytecode from an import
+ * (`type(Target).creationCode`); only the Chainlink infrastructure addresses
+ * are passed in.
  */
 export default buildModule("LogicsSourceModule", (m) => {
-  const sharesBytecode = m.getParameter<string>("sharesBytecode");
-  const shaBytecode = m.getParameter<string>("shaBytecode");
-  const lockReleaseTokenPoolBytecode = m.getParameter<string>(
-    "lockReleaseTokenPoolBytecode"
-  );
   const chainlinkAddresses = m.getParameter<SourceChainlinkAddresses>(
     "chainlinkAddresses"
   );
 
-  const sharesFactory = m.contract("SharesFactory", [sharesBytecode]);
-  const shaFactory = m.contract("SHAFactory", [shaBytecode]);
+  const sharesFactory = m.contract("SharesFactory", []);
+  const shaFactory = m.contract("SHAFactory", []);
   const lockReleaseTokenPoolFactory = m.contract(
     "CCIPLockReleaseTokenPoolFactory",
-    [lockReleaseTokenPoolBytecode, chainlinkAddresses]
+    [chainlinkAddresses]
   );
 
   return {
