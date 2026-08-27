@@ -78,8 +78,9 @@ contract TokenDeploymentManagerSource is Ownable {
         TokenPoolDeployment tokenPool;
     }
 
-    event TokenDeploymentSource(TokenDeployment indexed deployment);
-    event InfraDeploymentSource(SourceDeployment indexed deployment);
+    // ignition needs non-struct events
+    event TokenDeploymentSource(address indexed shares, address indexed sharesUnderAgreement);
+    event InfraDeploymentSource(address indexed shares, address indexed sharesUnderAgreement, address indexed lockReleaseTokenPool);
 
     error InvalidAddress();
 
@@ -189,7 +190,11 @@ contract TokenDeploymentManagerSource is Ownable {
             futureOwner
         );
 
-        emit InfraDeploymentSource(deployment);
+        emit InfraDeploymentSource(
+            deployment.token.shares,
+            deployment.token.sharesUnderAgreement,
+            deployment.tokenPool.lockReleaseTokenPool
+        );
         return deployment;
     }
 
@@ -197,7 +202,7 @@ contract TokenDeploymentManagerSource is Ownable {
      * @notice Deploys the whole source-chain token infra: Shares,
      *         SharesUnderAgreement
      */
-    function deploy(SharesDeploymentData calldata shares, SharesUnderAgreementDeploymentData calldata sha, address futureOwner, bytes32 salt) external onlyOwner returns (TokenDeployment memory deployment) {
+    function deployTokens(SharesDeploymentData calldata shares, SharesUnderAgreementDeploymentData calldata sha, address futureOwner, bytes32 salt) external onlyOwner returns (TokenDeployment memory deployment) {
         if (futureOwner == address(0)) {
             futureOwner = msg.sender;
         }
@@ -225,7 +230,10 @@ contract TokenDeploymentManagerSource is Ownable {
             futureOwner
         );
 
-        emit TokenDeploymentSource(deployment);
+        emit TokenDeploymentSource(
+            deployment.shares,
+            deployment.sharesUnderAgreement
+        );
         return deployment;
     }
 }

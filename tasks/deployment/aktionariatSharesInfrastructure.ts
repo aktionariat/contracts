@@ -54,12 +54,14 @@ interface AktionariatSharesInfrastructureArguments {
 
 // Note for address prediction:
 //
-// The new factories (FactorySource, FactoryDestination) take no constructor
-// arguments and deploy tokens + pools via CREATE2 using externally provided
-// bytecodes. This means:
-//   - On the source chain we predict destination pool/token addresses using
-//     the destination factory address + bytecode hashes, then pass them to
-//     the source factory so the Chainlink token pool factory can verify.
+// The deployment managers (TokenDeploymentManagerSource/Destination) take no
+// token/pool bytecode or Chainlink addresses: those are baked into the logic
+// sub-factories deployed by LogicsSourceModule/LogicsDestinationModule, which
+// are wired into the managers. This means:
+//   - The destination manager exposes `predict`, which returns the exact
+//     BSHA and BurnMint pool addresses that its `deploy` will create. We call
+//     it on the destination chain and pass the predicted addresses to the
+//     source chain so the Chainlink token pool factory can verify them.
 //   - On the destination chain we pass the actual source pool/token addresses
 //     (already deployed) since they are known at that point.
 //
@@ -154,11 +156,51 @@ export default async function (
   );
 
   // // Factories
-  // if possible are collected from tasks/deployment/const/factories
+  // The deployment managers are wired to logic sub-factories that hold the
+  // bytecodes and Chainlink addresses. If already deployed, the managers are
+  // collected from tasks/deployment/const/factories.
+
+  // Source chainlink addresses, needed by the source logics (pool factory)
+  const sourceChainlinkAddresses: SourceChainlinkAddresses = {
+    tokenPoolFactory:
+      CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName].tokenPoolFactory,
+    tokenAdminRegistry:
+      CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName]
+        .tokenAdminRegistry,
+    registryModuleOwner:
+      CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName]
+        .registryModuleOwner,
+    rmnProxy: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName].rmnProxy,
+    router: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName].router,
+  };
+
+  // no source factory, so we deploy source logics + source manager
   let sourceFactory: string =
     FACTORIES_STORAGE[sourceNetworkName as keyof typeof FACTORIES_STORAGE];
   if (!sourceFactory) {
-    // no source factory, so we deploy it
+    console.log(`\n\nDeploying Source Logics on ${sourceNetworkName}...`);
+    const { sharesFactory, shaFactory, lockReleaseTokenPoolFactory } =
+      await sourceConnection.ignition.deploy(
+        (
+          await import(
+            "../../ignition/modules/factory/logics/LogicsSourceModule.ts"
+          )
+        ).default,
+        {
+          deploymentId: `logics-source-${sourceNetworkName}`,
+          parameters: {
+            LogicsSourceModule: {
+              sharesBytecode: SharesFactory.bytecode,
+              shaBytecode: SHAFactory.bytecode,
+              lockReleaseTokenPoolBytecode: lockReleaseBytecode,
+              chainlinkAddresses: sourceChainlinkAddresses,
+            },
+          },
+          displayUi: true,
+        }
+      );
+    console.log(`\tDeployed Source Logics on ${sourceNetworkName}`);
+
     console.log(`\n\nDeploying Source Factory on ${sourceNetworkName}...`);
     const { FactorySource } = await sourceConnection.ignition.deploy(
       (
@@ -166,6 +208,14 @@ export default async function (
       ).default,
       {
         deploymentId: `factory-source-${sourceNetworkName}`,
+        parameters: {
+          SourceFactoryModule: {
+            sharesFactory: await sharesFactory.getAddress(),
+            shaFactory: await shaFactory.getAddress(),
+            lockReleaseTokenPoolFactory:
+              await lockReleaseTokenPoolFactory.getAddress(),
+          },
+        },
         displayUi: true,
       }
     );
@@ -173,7 +223,9 @@ export default async function (
     console.log(`\tDeployed Factory Source at ${sourceFactory}`);
   }
 
-  console.log(`\n\nDeploying Destination Factories on missing networks...`);
+  console.log(
+    `\n\nDeploying Destination Logics and Factories on missing networks...`
+  );
   const tmpDestinationFactories: {
     [key in CCIPNetwork]?: string;
   } = {};
@@ -188,6 +240,38 @@ export default async function (
   }
 
   for (const net of missingNetworks) {
+    console.log(`\tDeploying Destination Logics on ${net}...`);
+    const destinationChainlinkAddresses: DestinationChainlinkAddresses = {
+      tokenPoolFactory:
+        CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].tokenPoolFactory,
+      tokenAdminRegistry:
+        CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].tokenAdminRegistry,
+      registryModuleOwner:
+        CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].registryModuleOwner,
+      rmnProxy: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].rmnProxy,
+      router: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].router,
+    };
+    const { bridgedSHAFactory, burnMintTokenPoolFactory } =
+      await destinationConnections[net].ignition.deploy(
+        (
+          await import(
+            "../../ignition/modules/factory/logics/LogicsDestinationModule.ts"
+          )
+        ).default,
+        {
+          deploymentId: `logics-destination-${net}`,
+          parameters: {
+            LogicsDestinationModule: {
+              bridgedSHABytecode: BSHAFactory.bytecode,
+              burnMintTokenPoolBytecode: burnMintBytecode,
+              chainlinkAddresses: destinationChainlinkAddresses,
+            },
+          },
+          displayUi: true,
+        }
+      );
+    console.log(`\tDeployed Destination Logics on ${net}`);
+
     console.log(`\tDeploying Factory Destination on ${net}...`);
     const { FactoryDestination } = await destinationConnections[
       net
@@ -199,6 +283,13 @@ export default async function (
       ).default,
       {
         deploymentId: `factory-destination-${net}`,
+        parameters: {
+          DestinationFactoryModule: {
+            bridgedSHAFactory: await bridgedSHAFactory.getAddress(),
+            burnMintTokenPoolFactory:
+              await burnMintTokenPoolFactory.getAddress(),
+          },
+        },
         displayUi: true,
       }
     );
@@ -219,7 +310,7 @@ export default async function (
 
   // // Predict destination token and pool addresses for source chain config
   // The source chain's remoteTokenPools needs to reference destination pool/token.
-  // We predict them here using CREATE2 since we know the factory addresses and bytecodes.
+  // We predict them through the destination manager's on-chain `predict`.
   const encode = (types: string[], values: any[]) =>
     sourceConnection.ethers.AbiCoder.defaultAbiCoder().encode(types, values);
 
@@ -232,54 +323,28 @@ export default async function (
 
   for (const net of destinationNetworkNames) {
     const bshaParams = BSHA_PARAMETERS[net]!;
+    const bshaDeploymentData: BridgedSharesUnderAgreementDeploymentData = {
+      candidate: ethers.ZeroAddress,
+      symbol: bshaParams.bSYMBOL,
+      name: bshaParams.bNAME,
+      terms: bshaParams.bTERMS,
+    };
 
-    // BSHA predicted address (deployed by FactoryDestination)
-    const bshaInitCode = sourceConnection.ethers.concat([
-      BSHAFactory.bytecode,
-      encode(
-        ["string", "string", "string", "address"],
-        [
-          bshaParams.bSYMBOL,
-          bshaParams.bNAME,
-          bshaParams.bTERMS,
-          destinationFactories[net],
-        ]
-      ),
-    ]);
-    const predictedBshaAddr = sourceConnection.ethers.getCreate2Address(
-      destinationFactories[net],
-      SALT,
-      sourceConnection.ethers.keccak256(bshaInitCode)
+    const DestinationManager = await destinationConnections[
+      net
+    ].ethers.getContractAt(
+      "TokenDeploymentManagerDestination",
+      destinationFactories[net]
     );
-    tmpPredictedBshaAddresses[net] = predictedBshaAddr;
+    const predicted = await DestinationManager.predict(
+      bshaDeploymentData,
+      SALT
+    );
 
-    // BurnMint pool predicted address (deployed by TokenPoolFactory)
-    // TokenPoolFactory modifies salt: salt = keccak256(abi.encodePacked(salt, msg.sender))
-    const burnMintSalt = sourceConnection.ethers.keccak256(
-      sourceConnection.ethers.solidityPacked(
-        ["bytes32", "address"],
-        [SALT, destinationFactories[net]]
-      )
-    );
-    const burnMintPoolInitCode = sourceConnection.ethers.concat([
-      burnMintBytecode,
-      encode(
-        ["address", "uint8", "address[]", "address", "address"],
-        [
-          predictedBshaAddr,
-          0,
-          [],
-          CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].rmnProxy,
-          CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].router,
-        ]
-      ),
-    ]);
-    const predictedBurnMintPoolAddr = sourceConnection.ethers.getCreate2Address(
-      CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].tokenPoolFactory,
-      burnMintSalt,
-      sourceConnection.ethers.keccak256(burnMintPoolInitCode)
-    );
-    tmpPredictedBurnMintPoolAddresses[net] = predictedBurnMintPoolAddr;
+    tmpPredictedBshaAddresses[net] =
+      predicted.token.bridgedSharesUnderAgreement;
+    tmpPredictedBurnMintPoolAddresses[net] =
+      predicted.tokenPool.burnMintTokenPool;
   }
 
   const predictedBshaAddresses = tmpPredictedBshaAddresses as {
@@ -287,20 +352,6 @@ export default async function (
   };
   const predictedBurnMintPoolAddresses = tmpPredictedBurnMintPoolAddresses as {
     [key in CCIPNetwork]: string;
-  };
-
-  // // Source chain data
-  const sourceChainlinkAddresses: SourceChainlinkAddresses = {
-    tokenPoolFactory:
-      CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName].tokenPoolFactory,
-    tokenAdminRegistry:
-      CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName]
-        .tokenAdminRegistry,
-    registryModuleOwner:
-      CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName]
-        .registryModuleOwner,
-    rmnProxy: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName].rmnProxy,
-    router: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[sourceNetworkName].router,
   };
 
   let sharesUnderAgreement = _taskArguments.sha ?? ethers.ZeroAddress;
@@ -312,7 +363,6 @@ export default async function (
 
   const sharesDeploymentData: SharesDeploymentData = {
     candidate: ethers.ZeroAddress,
-    bytecode: SharesFactory.bytecode,
     symbol: SYMBOL,
     name: NAME,
     terms: TERMS,
@@ -320,7 +370,6 @@ export default async function (
   const sharesUnderAgreementDeploymentData: SharesUnderAgreementDeploymentData =
     {
       candidate: ethers.ZeroAddress,
-      bytecode: SHAFactory.bytecode,
       terms: TERMS,
     };
 
@@ -364,8 +413,6 @@ export default async function (
     sourceFactory,
     sharesDeploymentData,
     sharesUnderAgreementDeploymentData,
-    chainlinkAddresses: sourceChainlinkAddresses,
-    lockReleaseTokenPoolBytecode: lockReleaseBytecode,
     remoteTokenPools: sourceRemoteTokenPools,
     futureOwner: ethers.ZeroAddress,
     salt: SALT,
@@ -425,21 +472,9 @@ export default async function (
   for (let net of destinationNetworkNames) {
     let factoryDestination = destinationFactories[net];
 
-    const destinationChainlinkAddresses: DestinationChainlinkAddresses = {
-      tokenPoolFactory:
-        CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].tokenPoolFactory,
-      tokenAdminRegistry:
-        CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].tokenAdminRegistry,
-      registryModuleOwner:
-        CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].registryModuleOwner,
-      rmnProxy: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].rmnProxy,
-      router: CCIP_INFRASTRUCTURE_ADDRESSES_STORAGE[net].router,
-    };
-
     const bridgedSharesUnderAgreementDeploymentData: BridgedSharesUnderAgreementDeploymentData =
       {
         candidate: ethers.ZeroAddress,
-        bytecode: BSHAFactory.bytecode,
         symbol: BSHA_PARAMETERS[net]!.bSYMBOL,
         name: BSHA_PARAMETERS[net]!.bNAME,
         terms: BSHA_PARAMETERS[net]!.bTERMS,
@@ -483,8 +518,6 @@ export default async function (
     const DestinationFactoryDeployBridgedSharesModuleInput = {
       factoryDestination,
       bridgedSharesUnderAgreementDeploymentData,
-      chainlinkAddresses: destinationChainlinkAddresses,
-      burnMintTokenPoolBytecode: burnMintBytecode,
       remoteTokenPools: destinationRemoteTokenPools,
       futureOwner: ethers.ZeroAddress,
       salt: SALT,

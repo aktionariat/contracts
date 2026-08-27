@@ -14,15 +14,14 @@ export type ToRuntimeValue<T> = {
 // source
 export type SourceChainlinkAddresses = {
   tokenPoolFactory: string;
-  tokenAdminRegistry: string;
   registryModuleOwner: string;
+  tokenAdminRegistry: string;
   rmnProxy: string;
   router: string;
 };
 
 export type SharesDeploymentData = {
   candidate: string;
-  bytecode: string;
   symbol: string;
   name: string;
   terms: string;
@@ -30,15 +29,12 @@ export type SharesDeploymentData = {
 
 export type SharesUnderAgreementDeploymentData = {
   candidate: string;
-  bytecode: string;
   terms: string;
 };
 
 export type SourceParams = {
   shares: SharesDeploymentData;
   sharesUnderAgreement: SharesUnderAgreementDeploymentData;
-  chainlink: SourceChainlinkAddresses;
-  lockReleaseTokenPoolBytecode: string;
   remoteTokenPools: RemoteTokenPoolInfo[];
 };
 
@@ -50,18 +46,27 @@ export type SourceDeployment = {
   lockReleaseTokenPool: string;
 };
 
+// logics source
+export type LogicsSourceParams = {
+  sharesBytecode: string;
+  shaBytecode: string;
+  lockReleaseTokenPoolBytecode: string;
+  chainlinkAddresses: SourceChainlinkAddresses;
+};
+
+export type LogicsSourceParamsRuntimeValue = ToRuntimeValue<LogicsSourceParams>;
+
 // destination
 export type DestinationChainlinkAddresses = {
   tokenPoolFactory: string;
-  tokenAdminRegistry: string;
   registryModuleOwner: string;
+  tokenAdminRegistry: string;
   rmnProxy: string;
   router: string;
 };
 
 export type BridgedSharesUnderAgreementDeploymentData = {
   candidate: string;
-  bytecode: string;
   symbol: string;
   name: string;
   terms: string;
@@ -69,8 +74,6 @@ export type BridgedSharesUnderAgreementDeploymentData = {
 
 export type DestinationParams = {
   bridgedSharesUnderAgreement: BridgedSharesUnderAgreementDeploymentData;
-  chainlink: DestinationChainlinkAddresses;
-  burnMintTokenPoolBytecode: string;
   remoteTokenPools: RemoteTokenPoolInfo[];
 };
 
@@ -80,3 +83,13 @@ export type DestinationDeployment = {
   bridgedSharesUnderAgreement: string;
   burnMintTokenPool: string;
 };
+
+// logics destination
+export type LogicsDestinationParams = {
+  bridgedSHABytecode: string;
+  burnMintTokenPoolBytecode: string;
+  chainlinkAddresses: DestinationChainlinkAddresses;
+};
+
+export type LogicsDestinationParamsRuntimeValue =
+  ToRuntimeValue<LogicsDestinationParams>;

@@ -65,6 +65,8 @@ contract TokenDeploymentManagerDestination is Ownable {
         TokenPoolDeployment tokenPool;
     }
 
+    event InfraDeploymentSource(address indexed bridgedSharesUnderAgreement, address indexed burnMintTokenPool);
+
     error InvalidAddress();
 
     constructor(
@@ -140,6 +142,10 @@ contract TokenDeploymentManagerDestination is Ownable {
             futureOwner
         );
 
+        emit InfraDeploymentSource(
+            deployment.token.bridgedSharesUnderAgreement,
+            deployment.tokenPool.burnMintTokenPool
+        );
         return deployment;
     }
 }

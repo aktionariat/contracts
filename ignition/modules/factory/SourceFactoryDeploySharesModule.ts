@@ -1,12 +1,19 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import {
-  SourceChainlinkAddresses,
   SharesDeploymentData,
   SharesUnderAgreementDeploymentData,
   SourceParamsRuntimeValue,
 } from "./lib/types.ts";
 import { RemoteTokenPoolInfo } from "../ccip/lib/types.ts";
 
+/**
+ * Deploys the whole source-chain infrastructure through the
+ * TokenDeploymentManagerSource: Shares, SharesUnderAgreement and the
+ * LockReleaseTokenPool (with its CCIP settings).
+ *
+ * The deployed addresses are read from the manager's `InfraDeploymentSource`
+ * event.
+ */
 export default buildModule("SourceFactoryDeploySharesModule", (m) => {
   const sourceFactory = m.getParameter<string>("sourceFactory");
 
@@ -17,11 +24,6 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
     m.getParameter<SharesUnderAgreementDeploymentData>(
       "sharesUnderAgreementDeploymentData"
     );
-  const chainlinkAddresses =
-    m.getParameter<SourceChainlinkAddresses>("chainlinkAddresses");
-  const lockReleaseTokenPoolBytecode = m.getParameter<string>(
-    "lockReleaseTokenPoolBytecode"
-  );
   const remoteTokenPools =
     m.getParameter<RemoteTokenPoolInfo[]>("remoteTokenPools");
 
@@ -29,13 +31,14 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
 
   const salt = m.getParameter<string>("salt");
 
-  const FactorySource = m.contractAt("FactorySource", sourceFactory);
+  const FactorySource = m.contractAt(
+    "TokenDeploymentManagerSource",
+    sourceFactory
+  );
 
   const sourceParams: SourceParamsRuntimeValue = {
     shares: sharesDeploymentData,
     sharesUnderAgreement: sharesUnderAgreementDeploymentData,
-    chainlink: chainlinkAddresses,
-    lockReleaseTokenPoolBytecode,
     remoteTokenPools,
   };
 
@@ -48,16 +51,24 @@ export default buildModule("SourceFactoryDeploySharesModule", (m) => {
     }
   );
 
-  const sourceToken = m.readEventArgument(deployTx, "SharesDeployed", "token");
-  const sourceWrapper = m.readEventArgument(
+  const shares = m.readEventArgument(deployTx, "InfraDeploymentSource", "shares");
+  const sharesUnderAgreement = m.readEventArgument(
     deployTx,
-    "SharesUnderAgreementDeployed",
-    "wrapper"
+    "InfraDeploymentSource",
+    "sharesUnderAgreement"
   );
-  const pool = m.readEventArgument(deployTx, "TokenPoolDeployed", "pool");
+  const lockReleaseTokenPool = m.readEventArgument(
+    deployTx,
+    "InfraDeploymentSource",
+    "lockReleaseTokenPool"
+  );
+
   return {
-    Shares: m.contractAt("Shares", sourceToken),
-    SharesUnderAgreement: m.contractAt("SharesUnderAgreement", sourceWrapper),
-    LockReleaseTokenPool: m.contractAt("LockReleaseTokenPool", pool),
+    Shares: m.contractAt("Shares", shares),
+    SharesUnderAgreement: m.contractAt(
+      "SharesUnderAgreement",
+      sharesUnderAgreement
+    ),
+    LockReleaseTokenPool: m.contractAt("LockReleaseTokenPool", lockReleaseTokenPool),
   };
 });
