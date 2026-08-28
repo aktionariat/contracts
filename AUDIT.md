@@ -30,6 +30,8 @@ Those folders hold token contracts, `Shares`, `SharesUnderAgreement` and `Bridge
 
 `utils` holds all utilities that contracts within the audit scope use.
 
+## Not to be covered Files
+
 Files that are not to be covered by the audit reside within folders:
 
 ```
