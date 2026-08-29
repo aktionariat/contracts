@@ -25,6 +25,7 @@
     "@chainlink/contracts": "^1.5.0",
     "@chainlink/contracts-ccip": "^1.6.3",
     "@openzeppelin/contracts": "^5.4.0",
+    "@uniswap/v3-core": "^1.0.1",
     "ethers": "^6.15.0"
   }
 }

@@ -1,30 +1,30 @@
 /**
-* SPDX-License-Identifier: LicenseRef-Aktionariat
-*
-* MIT License with Automated License Fee Payments
-*
-* Copyright (c) 2022 Aktionariat AG (aktionariat.com)
-*
-* Permission is hereby granted to any person obtaining a copy of this software
-* and associated documentation files (the "Software"), to deal in the Software
-* without restriction, including without limitation the rights to use, copy,
-* modify, merge, publish, distribute, sublicense, and/or sell copies of the
-* Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* - The above copyright notice and this permission notice shall be included in
-*   all copies or substantial portions of the Software.
-* - All automated license fee payments integrated into this and related Software
-*   are preserved.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
+ * SPDX-License-Identifier: LicenseRef-Aktionariat
+ *
+ * MIT License with Automated License Fee Payments
+ *
+ * Copyright (c) 2022 Aktionariat AG (aktionariat.com)
+ *
+ * Permission is hereby granted to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * - The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ * - All automated license fee payments integrated into this and related Software
+ *   are preserved.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 pragma solidity >=0.8.0 <0.9.0;
 
 import "../ERC20/IERC20.sol";
@@ -33,8 +33,12 @@ import "../utils/Ownable.sol";
 import "./IDirectInvestment.sol";
 import "./IUniswapV3.sol";
 
+interface INoReturnApprove {
+    function approve(address spender, uint256 amount) external;
+}
+
 /**
- * A hub for payments, to be used with the DirectInvestment contract. 
+ * A hub for payments, to be used with the DirectInvestment contract.
  * Enables a single allowance given to this contract to be used across multiple DirectInvestment contracts.
  * Separates payment process with possible swaps from the DirectInvestment settlement logic.
  * Handles paying with the base currency of the the DirectInvestment contract, or any other ERC20 token or ETH, by giving a Uniswap v3 swap path.
@@ -42,7 +46,6 @@ import "./IUniswapV3.sol";
  */
 
 contract PaymentHub is Ownable {
-
     using SafeERC20 for IERC20;
 
     // Version History
@@ -100,9 +103,9 @@ contract PaymentHub is Ownable {
         require(amountShares > 0, PaymentHub_InvalidAmount());
 
         checkPath(directInvestment, paymentCurrency, path);
-        
+
         uint256 priceInBaseCurrency = directInvestment.getBuyPrice(amountShares);
-        
+
         paymentCurrency.safeTransferFrom(msg.sender, address(this), amountInMaximum);
         swapToBaseCurrencyAndPay(directInvestment, priceInBaseCurrency, paymentCurrency, amountInMaximum, path);
         directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);
@@ -112,7 +115,7 @@ contract PaymentHub is Ownable {
     /// @dev Unused ETH is refunded as WETH.
     function payFromEtherAndNotify(IDirectInvestment directInvestment, uint256 amountShares, bytes calldata path, bytes calldata ref) public payable {
         require(amountShares > 0, PaymentHub_InvalidAmount());
-        
+
         IWETH9 weth = IWETH9(uniswapV3Quoter.WETH9());
         checkPath(directInvestment, weth, path);
 
@@ -132,14 +135,13 @@ contract PaymentHub is Ownable {
 
     /// @dev Executes the exactOutput swap into `directInvestment` and refunds unused `paymentCurrency` to the caller.
     function swapToBaseCurrencyAndPay(IDirectInvestment directInvestment, uint256 amountBaseCurrency, IERC20 paymentCurrency, uint256 amountInMaximum, bytes memory path) internal {
-        ISwapRouter.ExactOutputParams memory params =
-            ISwapRouter.ExactOutputParams({
-                path: path,
-                recipient: address(directInvestment),
-                deadline: block.timestamp,
-                amountOut: amountBaseCurrency,
-                amountInMaximum: amountInMaximum
-            });
+        ISwapRouter.ExactOutputParams memory params = ISwapRouter.ExactOutputParams({
+            path: path,
+            recipient: address(directInvestment),
+            deadline: block.timestamp,
+            amountOut: amountBaseCurrency,
+            amountInMaximum: amountInMaximum
+        });
 
         uint256 amountIn = uniswapV3SwapRouter.exactOutput(params);
 
@@ -151,7 +153,7 @@ contract PaymentHub is Ownable {
     /// @notice Grant infinite Uniswap allowance for the listed payment currencies. Must be called once per new currency.
     /// @dev Permissionless; the hub holds no token balance between transactions.
     function approvePaymentCurrencies(IERC20[] calldata erc20In) external {
-        for (uint i=0; i<erc20In.length; i++) {
+        for (uint i = 0; i < erc20In.length; i++) {
             approveERC20(erc20In[i]);
         }
     }
@@ -161,6 +163,12 @@ contract PaymentHub is Ownable {
         IERC20(erc20In).approve(address(uniswapV3SwapRouter), type(uint256).max);
     }
 
+    /// @notice Grant infinite Uniswap allowance for a single payment currency.
+    /// @dev does not return boolean for USDT approve compatability
+    function silentApproveERC20(IERC20 erc20In) public {
+        INoReturnApprove(address(erc20In)).approve(address(uniswapV3SwapRouter), type(uint256).max);
+    }
+
     /// @notice Owner rescue for tokens accidentally sent to the hub.
     function withdrawToken(IERC20 tokenAddress, address to, uint256 amount) external onlyOwner {
         tokenAddress.safeTransfer(to, amount);
@@ -168,7 +176,7 @@ contract PaymentHub is Ownable {
 
     /// @notice Pay multiple recipients in one tx, e.g. for dividends. Unrelated to share purchases.
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
-        for (uint i=0; i<recipients.length; i++) {
+        for (uint i = 0; i < recipients.length; i++) {
             IERC20(token).safeTransferFrom(msg.sender, recipients[i], amounts[i]);
         }
     }

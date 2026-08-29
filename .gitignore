@@ -19,4 +19,5 @@ node_modules
 KEYS.ts
 /.deps
 
+.DS_Store
 .claude
