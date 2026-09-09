@@ -16,6 +16,7 @@ const LINK_MAINNET = "0x514910771AF9Ca656af840dff83E8264EcF986CA";
 const SELECTOR: Record<string, bigint> = { optimism: 3734403246176062136n, polygon: 4051577828743386545n };
 const CHUNK = Number(process.env.CHUNK ?? 2);
 const EXECUTE = process.env.EXECUTE === "true";
+const ONLY = (process.env.ONLY ?? "").split(",").map((s) => s.trim()).filter(Boolean).map(Number);
 const APPROVAL_LINK = process.env.APPROVAL_PER_WALLET_LINK ?? "1";
 
 const ERC20_ABI = ["function balanceOf(address) view returns (uint256)", "function approve(address,uint256) returns (bool)"];
@@ -40,6 +41,7 @@ async function main() {
 
   let acted = 0;
   for (const co of AFFECTED_COMPANIES) {
+    if (ONLY.length && !ONLY.includes(co.id)) continue;
     const exp = co.signers.length;
     const deficient: string[] = [];
     for (const c of ["optimism", "polygon"]) {
