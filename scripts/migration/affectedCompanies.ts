@@ -6,7 +6,7 @@
 // Regenerate if signer sets may have changed before running the migration.
 
 export type AffectedCompany = {
-  name: string; id: number; tier: "prod" | "TEST" | "batch-nosig"; priority: boolean;
+  name: string; id: number; tier: "prod" | "TEST" | "batch-nosig" | "voluntary"; priority: boolean;
   oldMultisig: string; newMultisig: string; salt: string;
   signers: string[]; powers: number[];
 };
@@ -701,5 +701,30 @@ export const AFFECTED_COMPANIES: AffectedCompany[] = [
       "0xfbe7f17440b2c6a523bb056b242682587188ec9d"
     ],
     "powers": [1]
+  },
+  {
+    // Voluntary migration: old wallet is the pre-multichain v3 multisig (not v8, not
+    // affected by the sync() bug). Signer set deliberately REDUCED from the old wallet's 7:
+    // Marie-Christin Kamann (0xb282e0ef...) and Arman Margaryan (0x52a80cee..., 0x74e1d172...)
+    // are not carried over. Verified against live signers()/signerCount() 2026-09-09.
+    "name": "quitt",
+    "id": 10,
+    "tier": "voluntary",
+    "priority": false,
+    "oldMultisig": "0x81c36908a73c3117c03fe4a625d890987376e69f",
+    "newMultisig": "0x7e40CaecBC232F2DC265c6F0360847EF6032F9Ea",
+    "salt": "0x3030303030303030303030303030303030303030303030303030303030303130",
+    "signers": [
+      "0xdd395fdd15099367ce525608d56c3f48fd369b0c",
+      "0x57e00edeb897130d52370c893e8ead88354dd169",
+      "0xc3f5c8ba3e782679226ad252b837c9422e6b38be",
+      "0xa893808cefc350bf7c8b0d9c2c3e7d01e683b990"
+    ],
+    "powers": [
+      2,
+      1,
+      2,
+      2
+    ]
   }
 ];
