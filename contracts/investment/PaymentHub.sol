@@ -158,7 +158,7 @@ contract PaymentHub is Ownable {
 
     /// @notice Grant infinite Uniswap allowance for a single payment currency.
     function approveERC20(IERC20 erc20In) public {
-        IERC20(erc20In).approve(address(uniswapV3SwapRouter), type(uint256).max);
+        erc20In.forceApprove(address(uniswapV3SwapRouter), type(uint256).max);
     }
 
     /// @notice Owner rescue for tokens accidentally sent to the hub.
