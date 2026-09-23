@@ -7,8 +7,8 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "../ERC20/IERC20.sol";
+import {SafeERC20} from "../utils/SafeERC20.sol";
 import "./MultiSigWallet.sol";
 import "./MultichainWalletArgumentSource.sol";
 
@@ -89,7 +89,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         IRouterClient router = IRouterClient(getRouter());
         uint256 fee = router.getFee(chain, message);
         IERC20(LINK).safeTransferFrom(msg.sender, address(this), fee);
-        IERC20(LINK).forceApprove(address(router), fee);
+        IERC20(LINK).approve(address(router), fee);
         bytes32 msgId = router.ccipSend(chain, message);
         for (uint i=0; i<signerList.length; i++){
             emit SyncSent(msgId, chain, signerList[i], powers[i]);
