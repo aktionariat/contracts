@@ -20,3 +20,6 @@ KEYS.ts
 /.deps
 
 .claude
+
+# Editor settings
+/.vscode
