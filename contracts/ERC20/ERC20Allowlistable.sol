@@ -172,7 +172,7 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
      * | Admin      |  Y  |  Y  |  N  |  Y  |
      * +------------+-----+-----+-----+-----+
      */
-    function _beforeTokenTransfer(address from, address to, uint256 /* amount */) internal virtual override {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
         if (hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert TransfersPaused();
         if (isRestricted(to)) {
             revert Allowlist_ReceiverIsForbidden(to);
@@ -185,9 +185,8 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
                 revert Allowlist_ReceiverNotAllowlisted(to);
             }
 
-            // Admin address always sets the recipient to ALLOWED
-            // If this behaviour is not desired, set admin addresses to FREE instead
-            if (isAdmin(from)) {
+            // Admin sets the recipient to ALLOWED, except on zero-value transfers and burns
+            if (isAdmin(from) && amount != 0 && to != address(0)) {
                 setFlag(to, FLAG_INDEX_ALLOWED, true);
                 emit AddressTypeUpdate(to, TYPE_ALLOWED);
             }

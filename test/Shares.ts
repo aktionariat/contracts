@@ -101,6 +101,26 @@ describe("Shares (base/Shares.sol)", function () {
       await expect(shares.connect(signer1).freeze(signer2)).to.revert(ethers);
       await expect(shares.connect(signer1).unfreeze(signer2)).to.revert(ethers);
     });
+
+    it("does not allowlist the recipient of a zero-value transferFrom from an admin", async () => {
+      await shares.connect(owner)["setType(address,uint8)"](signer1, await shares.TYPE_ADMIN());
+      // anyone can call transferFrom with amount 0: no allowance is consumed
+      await shares.connect(signer2).transferFrom(signer1, signer3, 0n);
+      expect(await shares.isAllowed(signer3)).to.equal(false);
+      // a real admin transfer still allowlists
+      await shares.connect(signer1).transfer(signer3, 1n);
+      expect(await shares.isAllowed(signer3)).to.equal(true);
+    });
+
+    it("keeps minting to new holders after a burn routed through an admin owner", async () => {
+      await shares.connect(owner)["setType(address,uint8)"](owner, await shares.TYPE_ADMIN());
+      // burn moves the tokens to the owner and burns them there: hook sees from=owner(ADMIN), to=0
+      await shares.connect(signer1)["burn(uint256)"](30n);
+      expect(await shares.isAllowed(ethers.ZeroAddress)).to.equal(false);
+      await shares.connect(owner).mint(signer3, 10n);
+      expect(await shares.balanceOf(signer3)).to.equal(10n);
+      expect(await shares.isAllowed(signer3)).to.equal(false);
+    });
   });
 
   describe("Pause", function () {
