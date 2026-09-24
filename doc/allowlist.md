@@ -24,6 +24,17 @@ Below is a summary table of the implemented ruleset. Rows represent the "from", 
 
 (*) A Restricted address can send to the contract owner, whatever the owner's own type is. This lets the issuer retrieve blocked tokens with the holder's cooperation.
 
+## Sinks
+
+The contract owner and the zero address are sinks: every address that is not Restricted can send to them, whatever its own type and whatever the sink's type is. Tokens sent there either leave circulation (a burn) or return to the issuer, so the transfer restrictions have nothing left to protect. This is what keeps the built-in flows working under every allowlist configuration:
+
+- The holder's `burn` moves the tokens to the owner and burns them there.
+- The issuer's time-locked `burn` in `Recoverable` does the same for a lost address, which is also how a Restricted address gets burned: it may only send to the owner.
+- `unwrap` in `SharesUnderAgreement` burns wrapped tokens.
+- `migrate` moves the tokens to the successor token and burns them there. The successor is not a sink, so under transfer restrictions the issuer types it Admin or Allowed when setting it.
+
+Only the pause and the Restricted rules apply to moves into a sink. Sending to the owner does not change the owner's type, but an Admin sending to the owner still marks the owner Allowed like any other recipient. The issuer sets its own type explicitly if it wants to be able to sell to Free addresses.
+
 ## Intermediaries
 
 Contracts that hold tokens on behalf of others must be typed Admin so that they can forward tokens to any recipient and the recipient becomes Allowed on the way. This applies to the `SharesUnderAgreement` wrapper (holds the base shares), the `TradeReactor` (holds sold tokens for a moment during settlement) and the CCIP token pools (hold locked tokens while they are bridged). Being Admin does not let them receive from a Restricted address, so a blocked holder cannot wrap, sell or bridge tokens to get around the block. Recovery of a Restricted address with `initRecovery` / `recover` must therefore name the owner as recipient, or the address must be unfrozen first.

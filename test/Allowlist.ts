@@ -94,4 +94,30 @@ describe("Allowlist (ERC20Allowlistable)", function () {
     await sua.connect(signer2).transferFrom(signer1, signer3, 0n);
     expect(await sua.isAllowed(signer3)).to.equal(false);
   });
+
+  describe("unwrap", function () {
+    const MIGRATION_DELAY = 20n * 24n * 60n * 60n;
+
+    beforeEach(async () => {
+      // terminate the agreement so that unwrap is available
+      await sua.connect(owner).proposeTermination();
+      await connection.networkHelpers.time.increase(MIGRATION_DELAY + 1n);
+      await sua.connect(owner).executeMigration();
+      expect(await sua.binding()).to.equal(false);
+    });
+
+    it("lets an allowlisted holder unwrap while address zero is free", async () => {
+      await sua.connect(owner)["setType(address,uint8)"](signer1, await sua.TYPE_ALLOWED());
+      expect(await sua.isAdmin(ethers.ZeroAddress)).to.equal(false);
+      await sua.connect(signer1).unwrap(40n);
+      expect(await sua.balanceOf(signer1)).to.equal(60n);
+      expect(await shares.balanceOf(signer1)).to.equal(40n);
+    });
+
+    it("does not let a frozen holder unwrap", async () => {
+      await sua.connect(owner).freeze(signer1);
+      await expect(sua.connect(signer1).unwrap(40n))
+        .to.be.revertedWithCustomError(sua, "Allowlist_SenderIsForbidden").withArgs(signer1.address);
+    });
+  });
 });

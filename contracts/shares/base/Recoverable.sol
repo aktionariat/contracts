@@ -33,8 +33,10 @@ pragma solidity >=0.8.0 <0.9.0;
  * @author Murat Ögat, murat@aktionariat.com
  *
  * This contract manages recovery of tokens on a lost address to a new recipient address.
- * The recovery has to be proposed by the contract owner and can then be executed with a 20 day delay.
- * It can be cancelled by the contract owner or the owner of the "lost" address at any time before execution.
+ * Anyone can propose a recovery against the deterrence fee, the contract owner for free. It can be
+ * executed after a delay of 184 days and cancelled at any time before that by the contract owner or
+ * by the holder of the "lost" address, whose ability to do so proves that the address is not lost.
+ * A recovery with the zero address as recipient is a burn, which only the owner can propose.
  */
 
 import "../../utils/Ownable.sol";
@@ -115,17 +117,21 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
      * Burning tokens can indicate that the underlying shares have been cancelled.
      * But it could also be a preparatory step for re-issuing the shares in a different form
      * or as a new token on a different chain.
+     *
+     * Like the holder's own burn, the tokens are returned to the owner and burned there, so that
+     * a restricted (frozen) lost address can be burned as well: it may only send to the owner.
      */
     function burn(address lostAddress, uint256 balance) public onlyOwner {
         address target = prepare(lostAddress);
         if (target != address(0x0)) revert NotBurn();
-        _burn(lostAddress, balance);
+        _transfer(lostAddress, owner, balance);
+        _burn(owner, balance);
         emit Burned(lostAddress, balance);
     }
 
     /**
      * Completes a recovery by moving the whole balance of the lost address to the target chosen in
-     * 'initRecovery'. The move is subject to the allowlist rules. A restricted (frozen) lost address
+     * 'initRecovery'. The move is subject to the transfer rules. A restricted (frozen) lost address
      * can only send to the owner, so its recovery must be initiated with the owner multisig as
      * recipient or the address must be unfrozen first.
      */

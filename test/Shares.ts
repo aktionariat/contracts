@@ -172,6 +172,35 @@ describe("Shares (base/Shares.sol)", function () {
       expect(await shares.balanceOf(signer1)).to.equal(70n);
       expect(await shares.totalSupply()).to.equal(supplyBefore - 30n);
     });
+
+    // The owner and the zero address are sinks: the allowlist types never block a burn.
+    it("lets an allowlisted holder burn to a free owner", async () => {
+      await shares.connect(owner)["setType(address,uint8)"](signer1, await shares.TYPE_ALLOWED());
+      expect(await shares.isAllowed(owner)).to.equal(false);
+      await expect(shares.connect(signer1).transfer(signer2, 1n)).to.revert(ethers); // allowed -> free blocked
+      await shares.connect(signer1)["burn(uint256)"](30n);
+      expect(await shares.balanceOf(signer1)).to.equal(70n);
+      expect(await shares.isAllowed(owner)).to.equal(false); // sending to the owner does not retype it
+    });
+
+    it("keeps burning after an admin transfer stamped the owner ALLOWED", async () => {
+      await shares.connect(owner)["setType(address,uint8)"](signer1, await shares.TYPE_ADMIN());
+      await shares.connect(signer1).transfer(owner, 1n);
+      expect(await shares.isAllowed(owner)).to.equal(true);
+      await shares.connect(owner).mint(signer2, 10n);
+      // signer2 is free, the owner ALLOWED and address zero free: both legs must still pass
+      await shares.connect(signer2)["burn(uint256)"](10n);
+      expect(await shares.balanceOf(signer2)).to.equal(0n);
+      expect(await shares.balanceOf(owner)).to.equal(1n);
+    });
+
+    it("lets a frozen holder burn, the tokens go through the owner", async () => {
+      await shares.connect(owner).freeze(signer1);
+      const supplyBefore = await shares.totalSupply();
+      await shares.connect(signer1)["burn(uint256)"](40n);
+      expect(await shares.balanceOf(signer1)).to.equal(60n);
+      expect(await shares.totalSupply()).to.equal(supplyBefore - 40n);
+    });
   });
 
   describe("Recovery", function () {
@@ -243,6 +272,43 @@ describe("Shares (base/Shares.sol)", function () {
       await shares.connect(signer1).cancelRecovery();
       await connection.networkHelpers.time.increase(RECOVERY_DELAY + 1n);
       await expect(shares.connect(owner)["burn(address)"](signer1)).to.revert(ethers); // RecoveryNotFound
+    });
+
+    // A frozen address may only send to the owner. The issuer burn takes that route, so it works on
+    // frozen and allowlisted addresses alike; a recovery to anyone but the owner does not.
+    it("lets the owner burn a frozen balance", async () => {
+      await shares.connect(owner).freeze(signer1);
+      await shares.connect(owner).initBurn(signer1);
+      await connection.networkHelpers.time.increase(RECOVERY_DELAY + 1n);
+      const supplyBefore = await shares.totalSupply();
+      await expect(shares.connect(owner)["burn(address)"](signer1))
+        .to.emit(shares, "Transfer").withArgs(signer1.address, owner.address, 100n)
+        .and.to.emit(shares, "Transfer").withArgs(owner.address, ethers.ZeroAddress, 100n);
+      expect(await shares.balanceOf(signer1)).to.equal(0n);
+      expect(await shares.balanceOf(owner)).to.equal(0n);
+      expect(await shares.totalSupply()).to.equal(supplyBefore - 100n);
+    });
+
+    it("recovers a frozen balance only to the owner", async () => {
+      await shares.connect(owner).freeze(signer1);
+      await shares.connect(signer2)["initRecovery(address)"](signer1, { value: DETERRENCE_FEE });
+      await connection.networkHelpers.time.increase(RECOVERY_DELAY + 1n);
+      await expect(shares.connect(signer2).recover(signer1))
+        .to.be.revertedWithCustomError(shares, "Allowlist_SenderIsForbidden").withArgs(signer1.address);
+
+      await shares.connect(owner)["cancelRecovery(address)"](signer1);
+      await shares.connect(signer2)["initRecovery(address,address)"](signer1, owner, { value: DETERRENCE_FEE });
+      await connection.networkHelpers.time.increase(RECOVERY_DELAY + 1n);
+      await shares.connect(signer2).recover(signer1);
+      expect(await shares.balanceOf(owner)).to.equal(100n);
+    });
+
+    it("burns an allowlisted balance while address zero is free", async () => {
+      await shares.connect(owner)["setType(address,uint8)"](signer1, await shares.TYPE_ALLOWED());
+      await shares.connect(owner).initBurn(signer1);
+      await connection.networkHelpers.time.increase(RECOVERY_DELAY + 1n);
+      await shares.connect(owner)["burn(address,uint256)"](signer1, 60n);
+      expect(await shares.balanceOf(signer1)).to.equal(40n);
     });
   });
 

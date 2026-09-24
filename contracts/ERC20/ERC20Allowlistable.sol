@@ -163,6 +163,10 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
      * 1. "Restricted" addresses cannot send or receive shares, except sending to the contract owner
      * 2. Shares on "Free" addresses are freely transferable
      * 3. "Allowed" addresses can only send to "Allowed" or "Admin" addresses
+     * 4. The owner and the zero address are sinks: every non-restricted address can send to them,
+     *    whatever their own type is. Tokens sent there leave circulation (burn) or return to the
+     *    issuer, which is also how the holder's 'burn', 'migrate' and 'unwrap' and the issuer's
+     *    time-locked burn work. Only the pause and the freeze rules apply to these moves.
      *
      * Rows are the sender, columns the recipient.
      *
@@ -185,8 +189,11 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
                 revert Allowlist_SenderIsForbidden(from);
             }
         } else if (!isAdmin(to) && !isAllowed(to)) {
+            // The recipient is a free address, the owner or the zero address
             if (isAllowed(from)) {
-                revert Allowlist_ReceiverNotAllowlisted(to);
+                if (to != address(0) && to != owner) {
+                    revert Allowlist_ReceiverNotAllowlisted(to);
+                }
             }
 
             // Admin sets the recipient to ALLOWED, except on zero-value transfers and burns
