@@ -62,6 +62,7 @@ contract PaymentHub is Ownable {
     ISwapRouter private immutable uniswapV3SwapRouter;
 
     error PaymentHub_InvalidAmount();
+    error PaymentHub_ArrayLengthMismatch();
     error PaymentHub_InvalidPath(IDirectInvestment directInvestment, IERC20 paymentCurrency, bytes path);
 
     constructor(address _owner, IQuoter _uniswapV3Quoter, ISwapRouter _uniswapV3SwapRouter) Ownable(_owner) {
@@ -168,6 +169,7 @@ contract PaymentHub is Ownable {
 
     /// @notice Pay multiple recipients in one tx, e.g. for dividends. Unrelated to share purchases.
     function multiPay(IERC20 token, address[] calldata recipients, uint256[] calldata amounts) public {
+        require(recipients.length == amounts.length, PaymentHub_ArrayLengthMismatch());
         for (uint i=0; i<recipients.length; i++) {
             IERC20(token).safeTransferFrom(msg.sender, recipients[i], amounts[i]);
         }

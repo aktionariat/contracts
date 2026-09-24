@@ -155,6 +155,29 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
     });
   });
 
+  describe("PaymentHub.multiPay", function () {
+    it("pays each recipient its amount", async () => {
+      await setZCHFBalance(await signer1.getAddress(), 30n);
+      await base.connect(signer1).approve(hub, 30n);
+
+      await hub.connect(signer1).multiPay(base, [signer2, signer3], [10n, 20n]);
+
+      expect(await base.balanceOf(signer2)).to.equal(10n);
+      expect(await base.balanceOf(signer3)).to.equal(20n);
+      expect(await base.balanceOf(signer1)).to.equal(0n);
+    });
+
+    it("reverts when there are more amounts than recipients", async () => {
+      await expect(hub.connect(signer1).multiPay(base, [signer2], [10n, 20n]))
+        .to.be.revertedWithCustomError(hub, "PaymentHub_ArrayLengthMismatch");
+    });
+
+    it("reverts when there are more recipients than amounts", async () => {
+      await expect(hub.connect(signer1).multiPay(base, [signer2, signer3], [10n]))
+        .to.be.revertedWithCustomError(hub, "PaymentHub_ArrayLengthMismatch");
+    });
+  });
+
   describe("processIncoming exact-payment guard (the relocated price-bug fix)", function () {
     let diHubbed: Contract;
     beforeEach(async () => {
