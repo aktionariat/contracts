@@ -77,7 +77,6 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     event Announcement(string message);
     event ChangeTerms(string terms);
-    event ChangeTotalShares(uint256 total);
     event SuccessorDefined(ISuccessorToken successor);
 
     error NoSuccessorDefined();
