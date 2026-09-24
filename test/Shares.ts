@@ -40,6 +40,13 @@ describe("Shares (base/Shares.sol)", function () {
       expect(await shares.decimals()).to.equal(0n);
       expect(await shares.VERSION()).to.equal(6n);
       expect(await shares.deterrenceFee()).to.equal(DETERRENCE_FEE);
+      expect(await shares.tokenId()).to.equal("");
+    });
+
+    it("sets the token id (owner-only)", async () => {
+      await expect(shares.connect(signer1).setTokenId("CH0000000000")).to.revert(ethers);
+      await expect(shares.connect(owner).setTokenId("CH0000000000")).to.emit(shares, "ChangeTokenId").withArgs("CH0000000000");
+      expect(await shares.tokenId()).to.equal("CH0000000000");
     });
   });
 

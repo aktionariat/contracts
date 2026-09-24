@@ -59,7 +59,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     // 3: added permit
     // 4: refactor to custom errors, added allowance for permit2
     // 5: Complete revision, CMTA compatibility, dropped permit
-    // 6: pause, successor migration, mintAndWrap
+    // 6: pause, successor migration, mintAndWrap, tokenId
     uint8 public constant VERSION = 6;
 
     /**
@@ -70,6 +70,11 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     string public terms;
 
     /**
+     * An optional identifier of the security behind the token, for example an ISIN.
+     */
+    string public tokenId;
+
+    /**
      * A reference to a successor token (if any), allowing the token holders to convert their tokens into successor tokens.
      * This can for example be useful to perform an upgrade of a token with additional functionality.
      */
@@ -77,6 +82,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
 
     event Announcement(string message);
     event ChangeTerms(string terms);
+    event ChangeTokenId(string tokenId);
     event SuccessorDefined(ISuccessorToken successor);
 
     error NoSuccessorDefined();
@@ -91,6 +97,14 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     function setTerms(string memory _terms) external onlyOwner {
         terms = _terms;
         emit ChangeTerms(_terms);
+    }
+
+    /**
+     * Updates the identifier of the security.
+     */
+    function setTokenId(string calldata _tokenId) external onlyOwner {
+        tokenId = _tokenId;
+        emit ChangeTokenId(_tokenId);
     }
 
     /**
