@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Intent, IntentHash} from "./IntentHash.sol";/**
+import {Intent, IntentHash} from "./IntentHash.sol";
 
+/**
  * @title IntentVerifier
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
@@ -26,7 +27,7 @@ contract IntentVerifier {
     // Verifying Contract: this contract
     // Salt: hash of "aktionariat" as bytes32
 
-    bytes32 private DOMAIN_SEPARATOR = keccak256(abi.encode(
+    bytes32 private immutable DOMAIN_SEPARATOR = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"),
             keccak256(bytes("TradeIntent")),
             keccak256(bytes("1")),
@@ -36,10 +37,15 @@ contract IntentVerifier {
     ));
 
     function verifyIntentSignature(Intent calldata intent, bytes calldata sig) public view {
+        _verifyIntentSignature(intent, intent.hash(), sig);
+    }
+
+    /// @dev `intentHash` must be `intent.hash()`; callers pass it in so it is computed only once.
+    function _verifyIntentSignature(Intent calldata intent, bytes32 intentHash, bytes calldata sig) internal view {
         bytes32 digest = keccak256(abi.encodePacked(
             "\x19\x01",
             DOMAIN_SEPARATOR,
-            intent.hash()
+            intentHash
         ));
 
         (uint8 v, bytes32 r, bytes32 s) = signatureToVRS(sig);

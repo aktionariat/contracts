@@ -116,15 +116,17 @@ contract TradeReactor is IReactor, IntentVerifier {
      * @param tradedTokens The amount of the token to trade.
      */
     function process(Intent calldata sellerIntent, bytes calldata sellerSig, Intent calldata buyerIntent, bytes calldata buyerSig, uint256 tradedTokens, uint256 totalFee) public {
-        verify(sellerIntent, sellerSig);
-        verify(buyerIntent, buyerSig);
+        bytes32 sellerHash = sellerIntent.hash();
+        bytes32 buyerHash = buyerIntent.hash();
+        _verify(sellerIntent, sellerHash, sellerSig);
+        _verify(buyerIntent, buyerHash, buyerSig);
         if (sellerIntent.tokenOut != buyerIntent.tokenIn) revert TokenMismatch();
         if (sellerIntent.tokenIn != buyerIntent.tokenOut) revert TokenMismatch();
-        if (tradedTokens > (sellerIntent.amountOut - filledAmount[sellerIntent.hash()])) revert OverFilled();
-        if (tradedTokens > (buyerIntent.amountIn - filledAmount[buyerIntent.hash()])) revert OverFilled();
+        if (tradedTokens > (sellerIntent.amountOut - filledAmount[sellerHash])) revert OverFilled();
+        if (tradedTokens > (buyerIntent.amountIn - filledAmount[buyerHash])) revert OverFilled();
 
-        filledAmount[sellerIntent.hash()] += tradedTokens;
-        filledAmount[buyerIntent.hash()] += tradedTokens;
+        filledAmount[sellerHash] += tradedTokens;
+        filledAmount[buyerHash] += tradedTokens;
 
         uint256 totalExecutionPrice = getTotalExecutionPrice(buyerIntent, sellerIntent, tradedTokens);
 
@@ -142,7 +144,12 @@ contract TradeReactor is IReactor, IntentVerifier {
     }
 
     function verify(Intent calldata intent, bytes calldata signature) public view {
-        verifyIntentSignature(intent, signature);
+        _verify(intent, intent.hash(), signature);
+    }
+
+    /// @dev `intentHash` must be `intent.hash()`; callers pass it in so it is computed only once.
+    function _verify(Intent calldata intent, bytes32 intentHash, bytes calldata signature) internal view {
+        _verifyIntentSignature(intent, intentHash, signature);
         if (block.timestamp > intent.expiration) revert IntentExpired(intent.expiration);
         if (intent.filler != msg.sender && intent.filler != address(0x0)) revert InvalidFiller();
     }
