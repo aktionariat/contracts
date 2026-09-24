@@ -23,6 +23,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
     error InvalidSourceChain(uint64 selector);
     error InvalidDestinationChain();
     error InvalidSender(address sender);
+    error ApproveFailed();
 
     event SyncSent(bytes32 msgId, uint64 chain, address signerList, uint8 power);
     event SyncReceived(bytes32 msgId, address signerList, uint8 power);
@@ -89,7 +90,7 @@ contract MultichainWallet is CCIPReceiver, MultiSigWallet {
         IRouterClient router = IRouterClient(getRouter());
         uint256 fee = router.getFee(chain, message);
         IERC20(LINK).safeTransferFrom(msg.sender, address(this), fee);
-        IERC20(LINK).approve(address(router), fee);
+        if (!IERC20(LINK).approve(address(router), fee)) revert ApproveFailed();
         bytes32 msgId = router.ccipSend(chain, message);
         for (uint i=0; i<signerList.length; i++){
             emit SyncSent(msgId, chain, signerList[i], powers[i]);
