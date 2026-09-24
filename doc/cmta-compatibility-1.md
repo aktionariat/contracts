@@ -18,7 +18,7 @@
 |---|---|---|---|---|---|
 | 1.a | Name attribute | ERC20 `name` |  | y | `string public name` in `ERC20Named`, set in constructor, mutable via `setName(symbol, name)` (onlyOwner). |
 | 1.b | Ticker symbol attribute | ERC20 `symbol` |  | y | `string public symbol` in `ERC20Named`, set in constructor, mutable via `setName(symbol, name)` (onlyOwner). |
-| 1.c | Token ID attribute | `tokenId` |  | y | `string public tokenId` in `Shares`, mutable via `setTokenId(id)` (onlyOwner) |
+| 1.c | Token ID attribute | `tokenId` |  | n | No on-chain token id (added 2026-05-03, removed 2026-06-03 for simplicity). Identifiers such as an ISIN live in the linked `terms` document. |
 | 1.d | Reference to legally required documentation | `terms` |  | y | `string public terms` set in constructor, updatable via `setTerms` (onlyOwner). Linked URL fulfills the article 973d para 2 clause 3 requirement. `ChangeTerms` event on update. |
 | 1.e | No fractions | ERC20 `decimals` | Decimals must be set to zero unless governing law permits fractions. | y | `decimals` is hardcoded to `0` in the constructor (`ERC20Named(_symbol, _name, 0, _owner)`). |
 
