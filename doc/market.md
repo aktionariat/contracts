@@ -10,16 +10,18 @@ The Direct Investment contract lets the issuer sell shares directly to investors
 
 ## Price
 
-The issuer sets a base `price` and a linear `increment`. The first share costs `price`, and each further share in the same purchase costs `increment` more than the previous one, so the price rises with demand. `getBuyPrice(n)` returns the total cost of the next `n` shares as the sum of this arithmetic series. The issuer can change the price at any time with `setPrice`, and open or close the counter with `setEnabled`. There is no automatic time-based drift; price changes are always explicit.
+The issuer sets a base `price` and a linear `increment`. The first share costs `price`, and each further share in the same purchase costs `increment` more than the previous one, so the price rises with demand. `getBuyPrice(n)` returns the total cost of the next `n` shares as the sum of this arithmetic series. The issuer can change the price at any time with `setPrice`. There is no automatic time-based drift; price changes are always explicit. Because the price can move between quoting and execution, every on-chain purchase carries a cap: `maxPrice` for base-currency payments, `amountInMaximum` or `msg.value` for swapped ones.
 
 ## Paying
 
 A purchase always settles for the exact computed price. There are two ways to pay:
 
 - **On-chain, through the [PaymentHub](../contracts/investment/PaymentHub.sol).** The hub lets an investor pay in the contract's base currency, or in any other ERC-20 token or in ETH, routing the payment through Uniswap v3 pools via the Universal Router into the base currency before settling. A single allowance to the hub works across all Direct Investment contracts; no Permit2 signature is needed. The investor passes the swap path, a maximum input and a deadline; the swap takes exactly the base amount needed and returns the unused remainder (as ETH for ETH payments). Quotes come from `getPriceInPaymentCurrency`, which wraps Uniswap's QuoterV2 and is meant to be called off-chain.
-- **Off-chain, settled by the issuer.** For bank transfers and other off-chain payments, the issuer calls `notifyTradeAndTransfer` (or its batch variant) to deliver the shares once the payment has been confirmed.
+- **Off-chain, settled by the issuer.** For bank transfers and other off-chain payments, the issuer calls `notifyTradeAndTransfer` (or its batch variant) to deliver the shares once the payment has been confirmed. Inventory is not reserved for pending off-chain orders; if on-chain buyers empty the contract first, the delivery reverts and the issuer tops up the inventory.
 
 The contract verifies that the base currency received matches `getBuyPrice` exactly, so an investor can never be under- or over-charged for a given number of shares.
+
+`setEnabled` switches only the on-chain path (`cryptoBuyingEnabled`); issuer-settled deliveries always work. Whether bank transfers are offered at all is an off-chain setting of the issuer portal.
 
 ## Administration
 

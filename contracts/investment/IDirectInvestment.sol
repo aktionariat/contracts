@@ -11,7 +11,7 @@ interface IDirectInvestment {
   function getBuyPrice(uint256 shares) external view returns (uint256);
   function processIncoming(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) external;
 
-  error DirectInvestment_BuyingDisabled();
+  error DirectInvestment_CryptoBuyingDisabled();
   error DirectInvestment_InvalidSettings();
   error DirectInvestment_NotPaymentHub(address sender);
   error DirectInvestment_InsufficientPayment(uint256 required, uint256 provided);

@@ -56,7 +56,7 @@ contract PaymentHub is Ownable {
     // Version 11: Cleanup unused permit, remove selling, replace forwarder with owner
     // Version 12: Cleanup and rewrite for DirectInvestment v10. Remove handling ETH refunds.
     // Version 13: forceApprove for tokens like USDT, multiPay checks array lengths
-    // Version 14: Uniswap Universal Router and QuoterV2, caller-supplied deadline, ETH change returned as ETH
+    // Version 14: Uniswap Universal Router and QuoterV2, caller-supplied deadline, ETH change returned as ETH, maxPrice for base currency buys
 
     uint256 public constant VERSION = 14;
 
@@ -72,6 +72,7 @@ contract PaymentHub is Ownable {
     IERC20 private immutable weth;
 
     error PaymentHub_InvalidAmount();
+    error PaymentHub_PriceExceedsMaximum(uint256 price, uint256 maxPrice);
     error PaymentHub_ArrayLengthMismatch();
     error PaymentHub_InvalidPath(IDirectInvestment directInvestment, IERC20 paymentCurrency, bytes path);
 
@@ -96,12 +97,13 @@ contract PaymentHub is Ownable {
         return amountIn;
     }
 
-    /// @notice Buy `amountShares` by paying directly in the base currency.
+    /// @notice Buy `amountShares` by paying directly in the base currency. Reverts if the total price exceeds `maxPrice`.
     /// @dev Caller must have approved this contract for the base currency.
-    function payFromBaseCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, bytes calldata ref) public {
+    function payFromBaseCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, uint256 maxPrice, bytes calldata ref) public {
         require(amountShares > 0, PaymentHub_InvalidAmount());
 
         uint256 priceInBaseCurrency = directInvestment.getBuyPrice(amountShares);
+        require(priceInBaseCurrency <= maxPrice, PaymentHub_PriceExceedsMaximum(priceInBaseCurrency, maxPrice));
 
         directInvestment.base().safeTransferFrom(msg.sender, address(directInvestment), priceInBaseCurrency);
         directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);

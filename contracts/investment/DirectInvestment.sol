@@ -39,9 +39,10 @@ contract DirectInvestment is IDirectInvestment, Ownable {
     // Version 8: use SafeERC20
     // Version 9: fixed price bug, removed drift
     // Version 10: removed selling back and keeping ETH, payable, related events
-    uint8 public constant VERSION = 10;
+    // Version 11: buying flag only gates crypto buying
+    uint8 public constant VERSION = 11;
 
-    bool public buyingEnabled = true;
+    bool public cryptoBuyingEnabled = true; // gates processIncoming only; owner-settled orders always work
 
     event Trade(IERC20 indexed token, address who, bytes ref, uint256 amount, IERC20 base, uint256 totalPrice, uint256 fee, uint256 newprice);
     event PaymentHubUpdate(address indexed paymentHub);
@@ -84,16 +85,14 @@ contract DirectInvestment is IDirectInvestment, Ownable {
 
     /// @dev Bumps price, then transfers shares. Caller must have ensured payment is settled.
     function deliverShares(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) internal {
-        require(buyingEnabled, DirectInvestment_BuyingDisabled());
-
         price = price + (amountShares * increment);
         IERC20(token).safeTransfer(buyer, amountShares);
 
         emit Trade(token, buyer, ref, amountShares, base, amountBaseCurrency, 0, price);
     }
     
-    /// @notice Owner-triggered settlement for off-chain payments (e.g. bank transfers).
-    /// @dev `amountBaseCurrency` is informational; the issuer verifies the payment off-chain.
+    /// @notice Owner-triggered settlement for off-chain payments (e.g. bank transfers). Works while crypto buying is disabled.
+    /// @dev `amountBaseCurrency` is informational; the issuer verifies the payment off-chain. Inventory is not reserved: reverts if on-chain buyers drained it first.
     function notifyTradeAndTransfer(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) public onlyOwner {
         deliverShares(buyer, amountShares, amountBaseCurrency, ref);
     }
@@ -108,6 +107,8 @@ contract DirectInvestment is IDirectInvestment, Ownable {
     /// @notice Settle an on-chain payment routed through the PaymentHub and deliver shares.
     /// @dev PaymentHub must transfer exactly `getBuyPrice(amountShares)` of base currency before calling.
     function processIncoming(address buyer, uint256 amountShares, uint256 amountBaseCurrency, bytes calldata ref) public override onlyPaymentHub {
+        require(cryptoBuyingEnabled, DirectInvestment_CryptoBuyingDisabled());
+
         uint256 executionPrice = getBuyPrice(amountShares);
         require(amountBaseCurrency == executionPrice, DirectInvestment_InsufficientPayment(executionPrice, amountBaseCurrency));
 
@@ -125,17 +126,17 @@ contract DirectInvestment is IDirectInvestment, Ownable {
         emit PaymentHubUpdate(paymenthub);
     }
 
-    /// @notice Enable or disable on-chain buying.
-    function setEnabled(bool _buyingEnabled) public onlyOwner() {
-        buyingEnabled = _buyingEnabled;
-        emit SettingsChange(buyingEnabled ? 0x1 : 0x0);
+    /// @notice Enable or disable buying with crypto through the PaymentHub. Owner-settled orders are unaffected.
+    function setEnabled(bool _cryptoBuyingEnabled) public onlyOwner() {
+        cryptoBuyingEnabled = _cryptoBuyingEnabled;
+        emit SettingsChange(cryptoBuyingEnabled ? 0x1 : 0x0);
     }
 
-    /// @notice Move all token and base balances to a successor contract and disable buying.
+    /// @notice Move all token and base balances to a successor contract and disable crypto buying.
     function migrate(address directInvestmentContract) external onlyOwner() {
         IERC20(token).safeTransfer(directInvestmentContract, token.balanceOf(address(this)));
         IERC20(base).safeTransfer(directInvestmentContract, base.balanceOf(address(this)));
-        buyingEnabled = false;
+        cryptoBuyingEnabled = false;
     }
 
     /// @dev Restricts access to the configured PaymentHub.
@@ -157,14 +158,14 @@ contract DirectInvestment is IDirectInvestment, Ownable {
     }
 
     /// @dev Backwards-compat shim. Reverts if `_sellingEnabled` is true (selling no longer supported).
-    function setEnabled(bool _buyingEnabled, bool _sellingEnabled) external onlyOwner() {
+    function setEnabled(bool _cryptoBuyingEnabled, bool _sellingEnabled) external onlyOwner() {
         require(!_sellingEnabled, DirectInvestment_InvalidSettings());
-        setEnabled(_buyingEnabled);
+        setEnabled(_cryptoBuyingEnabled);
     }
 
-    /// @dev Backwards-compat shim. Settings bitfield reduced to bit 0 = buying enabled.
+    /// @dev Backwards-compat shim. Settings bitfield reduced to bit 0 = crypto buying enabled.
     function settings() external view returns (uint256) {
-        return buyingEnabled ? 0x1 : 0x0;
+        return cryptoBuyingEnabled ? 0x1 : 0x0;
     }
 
     /// @dev Backwards-compat shim. Accepts the legacy settings bitfield.

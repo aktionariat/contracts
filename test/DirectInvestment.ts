@@ -72,8 +72,8 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
       expect(await di.increment()).to.equal(INCREMENT);
       expect(await di.owner()).to.equal(await owner.getAddress());
       expect(await di.paymenthub()).to.equal(await hub.getAddress());
-      expect(await di.VERSION()).to.equal(10n);
-      expect(await di.buyingEnabled()).to.equal(true);
+      expect(await di.VERSION()).to.equal(11n);
+      expect(await di.cryptoBuyingEnabled()).to.equal(true);
     });
   });
 
@@ -111,12 +111,14 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
       expect(await di.paymenthub()).to.equal(await signer1.getAddress());
     });
 
-    it("setEnabled toggles buying (owner-only)", async () => {
+    it("setEnabled toggles crypto buying (owner-only)", async () => {
       await expect(di.connect(signer1).setEnabled(false)).to.revert(ethers);
       await di.connect(owner).setEnabled(false);
-      expect(await di.buyingEnabled()).to.equal(false);
+      expect(await di.cryptoBuyingEnabled()).to.equal(false);
+      expect(await di.settings()).to.equal(0n);
       await di.connect(owner).setEnabled(true);
-      expect(await di.buyingEnabled()).to.equal(true);
+      expect(await di.cryptoBuyingEnabled()).to.equal(true);
+      expect(await di.settings()).to.equal(1n);
     });
   });
 
@@ -127,6 +129,15 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
       await di.connect(owner).notifyTradeAndTransfer(signer1, 10n, 0n, "0x");
       expect(await token.balanceOf(signer1)).to.equal(10n);
       expect(await di.price()).to.equal(priceBefore + 10n * INCREMENT);
+    });
+
+    it("settles while crypto buying is disabled", async () => {
+      await di.connect(owner).setEnabled(false);
+      await di.connect(owner).notifyTradeAndTransfer(signer1, 10n, 0n, "0x");
+      await di.connect(owner).notifyTradesAndTransfer([signer2, signer3], [1n, 2n], [0n, 0n], ["0x", "0x"]);
+      expect(await token.balanceOf(signer1)).to.equal(10n);
+      expect(await token.balanceOf(signer2)).to.equal(1n);
+      expect(await token.balanceOf(signer3)).to.equal(2n);
     });
   });
 
@@ -139,19 +150,30 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
       await setZCHFBalance(await signer1.getAddress(), buyPrice);
       await base.connect(signer1).approve(hub, buyPrice);
 
-      await hub.connect(signer1).payFromBaseCurrencyAndNotify(di, amountShares, "0x");
+      await hub.connect(signer1).payFromBaseCurrencyAndNotify(di, amountShares, buyPrice, "0x");
 
       expect(await token.balanceOf(signer1)).to.equal(amountShares);
       expect(await base.balanceOf(signer1)).to.equal(0n);
       expect(await base.balanceOf(di)).to.equal(buyPrice);
     });
 
-    it("reverts the buy when buying is disabled", async () => {
+    it("reverts when the price rose above maxPrice", async () => {
+      const maxPrice = await di.getBuyPrice(5n);
+      await setZCHFBalance(await signer1.getAddress(), maxPrice * 2n);
+      await base.connect(signer1).approve(hub, maxPrice * 2n);
+
+      await di.connect(owner).setPrice(PRICE + 1n, INCREMENT);
+      await expect(hub.connect(signer1).payFromBaseCurrencyAndNotify(di, 5n, maxPrice, "0x"))
+        .to.be.revertedWithCustomError(hub, "PaymentHub_PriceExceedsMaximum").withArgs(maxPrice + 5n, maxPrice);
+    });
+
+    it("reverts when crypto buying is disabled", async () => {
       await di.connect(owner).setEnabled(false);
       const buyPrice = await di.getBuyPrice(5n);
       await setZCHFBalance(await signer1.getAddress(), buyPrice);
       await base.connect(signer1).approve(hub, buyPrice);
-      await expect(hub.connect(signer1).payFromBaseCurrencyAndNotify(di, 5n, "0x")).to.revert(ethers);
+      await expect(hub.connect(signer1).payFromBaseCurrencyAndNotify(di, 5n, buyPrice, "0x"))
+        .to.be.revertedWithCustomError(di, "DirectInvestment_CryptoBuyingDisabled");
     });
   });
 
@@ -207,7 +229,7 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
   });
 
   describe("migrate", function () {
-    it("moves token and base balances to a successor and disables buying", async () => {
+    it("moves token and base balances to a successor and disables crypto buying", async () => {
       await setZCHFBalance(await di.getAddress(), 555n);
       const successor = await deployDirectInvestment(token, base, await hub.getAddress());
 
@@ -216,7 +238,7 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
 
       expect(await token.balanceOf(successor)).to.equal(tokenBal);
       expect(await base.balanceOf(successor)).to.equal(555n);
-      expect(await di.buyingEnabled()).to.equal(false);
+      expect(await di.cryptoBuyingEnabled()).to.equal(false);
     });
   });
 });
