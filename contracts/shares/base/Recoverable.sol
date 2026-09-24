@@ -123,6 +123,12 @@ abstract contract Recoverable is ERC20Flaggable, DeterrenceFee {
         emit Burned(lostAddress, balance);
     }
 
+    /**
+     * Completes a recovery by moving the whole balance of the lost address to the target chosen in
+     * 'initRecovery'. The move is subject to the allowlist rules. A restricted (frozen) lost address
+     * can only send to the owner, so its recovery must be initiated with the owner multisig as
+     * recipient or the address must be unfrozen first.
+     */
     function recover(address lostAddress) external {
         address target = prepare(lostAddress);
         if (target == address(0x0)) revert NotRecovery();

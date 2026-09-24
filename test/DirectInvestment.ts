@@ -159,11 +159,14 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
     it("pays each recipient its amount", async () => {
       await setZCHFBalance(await signer1.getAddress(), 30n);
       await base.connect(signer1).approve(hub, 30n);
+      // other test files share the forked ZCHF state, so compare deltas rather than absolute balances
+      const before2 = await base.balanceOf(signer2);
+      const before3 = await base.balanceOf(signer3);
 
       await hub.connect(signer1).multiPay(base, [signer2, signer3], [10n, 20n]);
 
-      expect(await base.balanceOf(signer2)).to.equal(10n);
-      expect(await base.balanceOf(signer3)).to.equal(20n);
+      expect(await base.balanceOf(signer2)).to.equal(before2 + 10n);
+      expect(await base.balanceOf(signer3)).to.equal(before3 + 20n);
       expect(await base.balanceOf(signer1)).to.equal(0n);
     });
 

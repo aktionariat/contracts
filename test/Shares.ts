@@ -93,8 +93,18 @@ describe("Shares (base/Shares.sol)", function () {
       await shares.connect(owner).unfreeze(signer2);
       await shares.connect(owner).mint(signer2, 10n);
       await shares.connect(owner).freeze(signer2);
-      // restricted can only send to an admin address (address(0) is not admin unless applicable)
+      // restricted can only send to the owner: not to a free address, not even to an admin address
       await expect(shares.connect(signer2).transfer(signer1, 1n)).to.revert(ethers);
+      await shares.connect(owner)["setType(address,uint8)"](signer3, await shares.TYPE_ADMIN());
+      await expect(shares.connect(signer2).transfer(signer3, 1n))
+        .to.be.revertedWithCustomError(shares, "Allowlist_SenderIsForbidden").withArgs(signer2.address);
+      // the owner cannot send to a restricted address either
+      await expect(shares.connect(owner).transfer(signer2, 1n))
+        .to.be.revertedWithCustomError(shares, "Allowlist_ReceiverIsForbidden").withArgs(signer2.address);
+      // but the restricted holder can hand tokens back to the owner
+      await shares.connect(signer2).transfer(owner, 4n);
+      expect(await shares.balanceOf(signer2)).to.equal(6n);
+      expect(await shares.balanceOf(owner)).to.equal(4n);
     });
 
     it("freeze/unfreeze are owner-only", async () => {

@@ -10,17 +10,23 @@ Generally, there are four types of addresses:
 
 - "Allowed" addresses that can receive tokens from anyone, but only send to allowlisted or admin addresses.
 - "Admin" addresses are like Allowed addresses, but implicitly turn target addresses into Allowed addresses, such that they can de facto transfer to anyone. If newly minted tokens need to be transfer restricted by default, the null address can be set set as "Admin", converting all new recipients to "Allowed" status during minting automatically.
-- "Restricted" addresses cannot send tokens to or receive tokens from anyone, except that they can transfer tokens to "Admin" addresses.
+- "Restricted" addresses cannot send tokens to or receive tokens from anyone, except that they can transfer tokens to the contract owner. This is the "frozen" state in CMTA terms, set with `freeze` and cleared with `unfreeze`.
 - "Free" addresses that can send to Free, Allowed, and Admin addresses, but can only receive from other Free addresses. This is the default for new addresses.
 
-Below is a summary table of the implemented ruleset. Rows represent the "to", colummns represent the "from" address.
+Below is a summary table of the implemented ruleset. Rows represent the "from", columns represent the "to" address.
 
 |            | Fre | Alw | Res | Adm |
 |------------|-----|-----|-----|-----|
 | Free       |  Y  |  Y  |  N  |  Y  |
 | Allowed    |  N  |  Y  |  N  |  Y  |
-| Restricted |  N  |  N  |  N  |  Y  |
+| Restricted |  N  |  N  |  N  |  N (*) |
 | Admin      |  Y  |  Y  |  N  |  Y  |
+
+(*) A Restricted address can send to the contract owner, whatever the owner's own type is. This lets the issuer retrieve blocked tokens with the holder's cooperation.
+
+## Intermediaries
+
+Contracts that hold tokens on behalf of others must be typed Admin so that they can forward tokens to any recipient and the recipient becomes Allowed on the way. This applies to the `SharesUnderAgreement` wrapper (holds the base shares), the `TradeReactor` (holds sold tokens for a moment during settlement) and the CCIP token pools (hold locked tokens while they are bridged). Being Admin does not let them receive from a Restricted address, so a blocked holder cannot wrap, sell or bridge tokens to get around the block. Recovery of a Restricted address with `initRecovery` / `recover` must therefore name the owner as recipient, or the address must be unfrozen first.
 
 ## Token Types
 

@@ -126,7 +126,8 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
     }
 
     /**
-     * If true, this address can only transfer tokens to admin addresses and not receive from anyone.
+     * If true, this address (a "frozen" address in CMTA terms) cannot receive tokens from anyone and can
+     * only transfer tokens to the contract owner.
      */
     function isRestricted(address account) public view returns (bool) {
         return hasFlagInternal(account, FLAG_INDEX_RESTRICTED);
@@ -159,25 +160,28 @@ abstract contract ERC20Allowlistable is ERC20Flaggable, Ownable {
 
     /**
      * Implements the following ruleset.
-     * 1. "Restricted" addresses cannot send or receive shares, except sending to an admin address
+     * 1. "Restricted" addresses cannot send or receive shares, except sending to the contract owner
      * 2. Shares on "Free" addresses are freely transferable
-     * 3. "Allowed" addresses can only send to "Allowed" or "Admin" addresses   *
+     * 3. "Allowed" addresses can only send to "Allowed" or "Admin" addresses
+     *
+     * Rows are the sender, columns the recipient.
      *
      * +------------+-----+-----+-----+-----+
      * |            | Fre | Alw | Res | Adm |
      * +------------+-----+-----+-----+-----+
      * | Free       |  Y  |  Y  |  N  |  Y  |
      * | Allowed    |  N  |  Y  |  N  |  Y  |
-     * | Restricted |  N  |  N  |  N  |  Y  |
+     * | Restricted |  N  |  N  |  N  |  N  | (*)
      * | Admin      |  Y  |  Y  |  N  |  Y  |
      * +------------+-----+-----+-----+-----+
+     * (*) except to the owner, regardless of the owner's type.
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
         if (hasGlobalFlag(GLOBAL_FLAG_INDEX_PAUSED)) revert TransfersPaused();
         if (isRestricted(to)) {
             revert Allowlist_ReceiverIsForbidden(to);
         } else if (isRestricted(from)) {
-            if (!isAdmin(to)) {
+            if (to != owner) {
                 revert Allowlist_SenderIsForbidden(from);
             }
         } else if (!isAdmin(to) && !isAllowed(to)) {
