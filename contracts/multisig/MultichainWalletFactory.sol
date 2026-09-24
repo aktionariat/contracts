@@ -4,7 +4,7 @@
 
 pragma solidity >=0.8.0 <0.9.0;
 
-import "@openzeppelin/contracts/proxy/Clones.sol";
+import "../utils/Clones.sol";
 import "./MultichainWalletMaster.sol";
 
 contract MultichainWalletFactory {

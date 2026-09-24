@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "@chainlink/contracts-ccip": "1.6.3",
-    "@openzeppelin/contracts": "5.7.0",
     "ethers": "6.17.0"
   },
   "overrides": {
