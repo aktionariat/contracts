@@ -4,9 +4,8 @@
 
 pragma solidity >=0.8.0 <0.9.0;
 
-import "../utils/Address.sol";
-import "./RLPEncode.sol";
 import "./Nonce.sol";
+import "./RLPEncode.sol";
 
 contract MultiSigWallet is Nonce {
 
@@ -18,7 +17,7 @@ contract MultiSigWallet is Nonce {
   // Version 8: multichain synchronization with CCIP
   // Version 9: removes setSigner isContract check
   // Version 10: MultichainWallet bug fix
-  // Version 11: local IERC20/SafeERC20, plain LINK approve
+  // Version 11: local IERC20/SafeERC20, plain LINK approve, own RLP encoding, no Address library
   uint8 public constant VERSION = 11;
 
   mapping (address signer => uint8 power) internal power; // The addresses that can co-sign transactions and the number of signatures needed
@@ -61,6 +60,11 @@ contract MultiSigWallet is Nonce {
   /// Migration can't override current signer. 
   /// param destination The address to which the signer rights should be migrated. 
   error Multisig_InvalidDestination(address destination);
+  /// The call carries data but the target has no code, so it would succeed without doing anything.
+  /// @param target The address the transaction was sent to.
+  error Multisig_NotAContract(address target);
+  /// The call reverted without any return data.
+  error Multisig_CallFailed();
 
   // We use the gas price field to get a unique id into our transactions.
   // Note that 32 bits do not guarantee that no one can generate a contract with the
@@ -68,7 +72,11 @@ contract MultiSigWallet is Nonce {
   // two multisig contracts with the same id, and that's all we need to prevent
   // replay-attacks.
   function contractId() public view returns (bytes memory) {
-    return toBytes(uint32(uint160(address(this))) ^ block.chainid);
+    return RLPEncode.toBytes(contractIdValue());
+  }
+
+  function contractIdValue() private view returns (uint256) {
+    return uint32(uint160(address(this))) ^ block.chainid;
   }
 
   /**
@@ -83,7 +91,7 @@ contract MultiSigWallet is Nonce {
    */
   function checkSignatures(uint128 nonce, address to, uint value, bytes calldata data,
     uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external view returns (address[] memory) {
-    bytes32 transactionHash = calculateTransactionHash(nonce, contractId(), to, value, data);
+    bytes32 transactionHash = calculateTransactionHash(nonce, to, value, data);
     return verifySignatures(transactionHash, v, r, s);
   }
 
@@ -91,64 +99,58 @@ contract MultiSigWallet is Nonce {
    * Checks if the execution of a transaction would succeed if it was properly signed.
    */
   function checkExecution(address to, uint value, bytes calldata data) external {
-    Address.functionCallWithValue(to, data, value);
+    call(to, value, data);
     revert("Test passed. Reverting.");
   }
 
   function execute(uint128 nonce, address to, uint value, bytes calldata data, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s) external returns (bytes memory) {
-    bytes32 transactionHash = calculateTransactionHash(nonce, contractId(), to, value, data);
+    bytes32 transactionHash = calculateTransactionHash(nonce, to, value, data);
     address[] memory found = verifySignatures(transactionHash, v, r, s);
     flagUsed(nonce);
-    bytes memory returndata = Address.functionCallWithValue(to, data, value);
+    bytes memory returndata = call(to, value, data);
     emit Transacted(to, extractSelector(data), found);
     if (value > 0) {emit SentEth(to, value);}
     return returndata;
   }
 
-  function extractSelector(bytes calldata data) private pure returns (bytes4){
-    if (data.length < 4){
-      return bytes4(0);
-    } else {
-      return bytes4(data[0]) | (bytes4(data[1]) >> 8) | (bytes4(data[2]) >> 16) | (bytes4(data[3]) >> 24);
-    }
-  }
-
-  function toBytes (uint256 x) public pure returns (bytes memory result) {
-    uint l = 0;
-    uint xx = x;
-    if (x >= 0x100000000000000000000000000000000) { x >>= 128; l += 16; }
-    if (x >= 0x10000000000000000) { x >>= 64; l += 8; }
-    if (x >= 0x100000000) { x >>= 32; l += 4; }
-    if (x >= 0x10000) { x >>= 16; l += 2; }
-    if (x >= 0x100) { x >>= 8; l += 1; }
-    if (x > 0x0) { l += 1; }
-    assembly {
-      result := mload (0x40)
-      mstore (0x40, add (result, add (l, 0x20)))
-      mstore (add (result, l), xx)
-      mstore (result, l)
-    }
-  }
-
-  // Note: does not work with contract creation
-  function calculateTransactionHash(uint128 sequence, bytes memory id, address to, uint value, bytes calldata data)
-    internal view returns (bytes32){
-    bytes[] memory all = new bytes[](9);
-    all[0] = toBytes(sequence); // sequence number instead of nonce
-    all[1] = id; // contract id instead of gas price
-    all[2] = bytes("\x82\x52\x08"); // 21000 gas limitation, cannot be lower
-    all[3] = abi.encodePacked (bytes1 (0x94), to);
-    all[4] = toBytes(value);
-    all[5] = data;
-    all[6] = toBytes(block.chainid);
-    all[7] = new bytes(0);
-    for (uint i = 0; i<8; i++){
-      if (i != 2 && i!= 3) {
-        all[i] = RLPEncode.encodeBytes(all[i]);
+  /**
+   * Low-level call that bubbles up the revert data of the target.
+   */
+  function call(address to, uint value, bytes calldata data) private returns (bytes memory returndata) {
+    if (data.length != 0 && to.code.length == 0) revert Multisig_NotAContract(to);
+    bool success;
+    (success, returndata) = to.call{value: value}(data);
+    if (!success) {
+      if (returndata.length == 0) revert Multisig_CallFailed();
+      assembly ("memory-safe") {
+        revert(add(returndata, 0x20), mload(returndata))
       }
     }
-    all[8] = all[7];
-    return keccak256(RLPEncode.encodeList(all));
+  }
+
+  function extractSelector(bytes calldata data) private pure returns (bytes4){
+    return data.length < 4 ? bytes4(0) : bytes4(data[:4]);
+  }
+
+  /**
+   * The hash the signers sign: the EIP-155 signing hash of a legacy transaction
+   * [nonce, gasPrice, gasLimit, to, value, data, chainId, 0, 0], with the sequence
+   * number in the nonce field and the contract id in the gas price field.
+   * Note: does not work with contract creation
+   */
+  function calculateTransactionHash(uint128 sequence, address to, uint value, bytes calldata data)
+    internal view returns (bytes32){
+    bytes memory items = abi.encodePacked(
+      RLPEncode.encodeUint(sequence),          // sequence number instead of nonce
+      RLPEncode.encodeUint(contractIdValue()), // contract id instead of gas price
+      hex"825208",                             // 21000 gas limitation, cannot be lower
+      hex"94", to,
+      RLPEncode.encodeUint(value),
+      RLPEncode.lengthPrefix(data), data,
+      RLPEncode.encodeUint(block.chainid),
+      hex"8080"                                // r and s
+    );
+    return keccak256(abi.encodePacked(RLPEncode.lengthPrefix(items.length, 0xc0), items));
   }
 
   function verifySignatures(bytes32 transactionHash, uint8[] calldata v, bytes32[] calldata r, bytes32[] calldata s)
