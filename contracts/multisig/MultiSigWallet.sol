@@ -19,7 +19,7 @@ contract MultiSigWallet is Nonce {
   // Version 9: removes setSigner isContract check
   // Version 10: MultichainWallet bug fix
   // Version 11: local IERC20/SafeERC20, plain LINK approve
-  uint8 public constant VERSION = 0xB;
+  uint8 public constant VERSION = 11;
 
   mapping (address signer => uint8 power) internal power; // The addresses that can co-sign transactions and the number of signatures needed
 
