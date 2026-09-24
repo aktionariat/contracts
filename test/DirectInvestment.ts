@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { Contract } from "ethers";
 import { ethers, owner, signer1, signer2, signer3 } from "./TestBase.ts";
 import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
-import { ZCHF_ADDRESS } from "./Fixtures.ts";
+import { UNISWAP_QUOTER_V2, UNISWAP_UNIVERSAL_ROUTER, ZCHF_ADDRESS } from "./Fixtures.ts";
 
 // Tests for contracts/investment/DirectInvestment.sol + PaymentHub.sol.
 //
@@ -24,9 +24,9 @@ async function deployShares(symbol: string, name: string): Promise<Contract> {
 }
 
 async function deployPaymentHub(): Promise<Contract> {
-  // quoter/router are only used by the swap paths, which this suite does not exercise.
+  // The swap paths are exercised in Routing.ts; this suite only pays in base currency.
   const PaymentHub = await ethers.getContractFactory("contracts/investment/PaymentHub.sol:PaymentHub");
-  const hub = await PaymentHub.deploy(owner, ethers.ZeroAddress, ethers.ZeroAddress);
+  const hub = await PaymentHub.deploy(owner, UNISWAP_QUOTER_V2, UNISWAP_UNIVERSAL_ROUTER);
   await hub.waitForDeployment();
   return hub as unknown as Contract;
 }

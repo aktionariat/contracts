@@ -31,14 +31,14 @@ import "../ERC20/IERC20.sol";
 import "../utils/SafeERC20.sol";
 import "../utils/Ownable.sol";
 import "./IDirectInvestment.sol";
-import "./IUniswapV3.sol";
+import "./IUniswap.sol";
 
 /**
- * A hub for payments, to be used with the DirectInvestment contract. 
+ * A hub for payments, to be used with the DirectInvestment contract.
  * Enables a single allowance given to this contract to be used across multiple DirectInvestment contracts.
  * Separates payment process with possible swaps from the DirectInvestment settlement logic.
- * Handles paying with the base currency of the the DirectInvestment contract, or any other ERC20 token or ETH, by giving a Uniswap v3 swap path.
- * ETH payments are handled similar to WETH, by submitting the same path but sending msg.value instead of allowing WETH to be used.
+ * Handles paying with the base currency of the DirectInvestment contract, or any other ERC20 token or ETH, by giving a Uniswap v3 swap path.
+ * Swaps run through the Uniswap Universal Router; the hub hands it the payment and it settles into the DirectInvestment contract and returns the change.
  */
 
 contract PaymentHub is Ownable {
@@ -56,19 +56,29 @@ contract PaymentHub is Ownable {
     // Version 11: Cleanup unused permit, remove selling, replace forwarder with owner
     // Version 12: Cleanup and rewrite for DirectInvestment v10. Remove handling ETH refunds.
     // Version 13: forceApprove for tokens like USDT, multiPay checks array lengths
+    // Version 14: Uniswap Universal Router and QuoterV2, caller-supplied deadline, ETH change returned as ETH
 
-    uint256 public constant VERSION = 13;
+    uint256 public constant VERSION = 14;
 
-    IQuoter private immutable uniswapV3Quoter;
-    ISwapRouter private immutable uniswapV3SwapRouter;
+    // Universal Router commands and its "the router itself" recipient sentinel.
+    bytes1 private constant V3_SWAP_EXACT_OUT = 0x01;
+    bytes1 private constant SWEEP = 0x04;
+    bytes1 private constant WRAP_ETH = 0x0b;
+    bytes1 private constant UNWRAP_WETH = 0x0c;
+    address private constant ROUTER_ITSELF = address(2);
+
+    IQuoterV2 private immutable quoter;
+    IUniversalRouter private immutable router;
+    IERC20 private immutable weth;
 
     error PaymentHub_InvalidAmount();
     error PaymentHub_ArrayLengthMismatch();
     error PaymentHub_InvalidPath(IDirectInvestment directInvestment, IERC20 paymentCurrency, bytes path);
 
-    constructor(address _owner, IQuoter _uniswapV3Quoter, ISwapRouter _uniswapV3SwapRouter) Ownable(_owner) {
-        uniswapV3Quoter = _uniswapV3Quoter;
-        uniswapV3SwapRouter = _uniswapV3SwapRouter;
+    constructor(address _owner, IQuoterV2 _quoter, IUniversalRouter _router) Ownable(_owner) {
+        quoter = _quoter;
+        router = _router;
+        weth = IERC20(_quoter.WETH9());
     }
 
     /// @notice Quote the buy price in base currency for `amountShares`.
@@ -77,12 +87,13 @@ contract PaymentHub is Ownable {
     }
 
     /// @notice Quote the buy price for `amountShares` denominated in `paymentCurrency`.
-    /// @dev Not view: routes through the Uniswap V3 quoter.
+    /// @dev Not view: routes through the Uniswap quoter. Call it off-chain.
     function getPriceInPaymentCurrency(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, bytes calldata path) public returns (uint256) {
         checkPath(directInvestment, paymentCurrency, path);
 
         uint256 priceInBase = getPriceInBaseCurrency(directInvestment, amountShares);
-        return uniswapV3Quoter.quoteExactOutput(path, priceInBase);
+        (uint256 amountIn,,,) = quoter.quoteExactOutput(path, priceInBase);
+        return amountIn;
     }
 
     /// @notice Buy `amountShares` by paying directly in the base currency.
@@ -96,32 +107,39 @@ contract PaymentHub is Ownable {
         directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);
     }
 
-    /// @notice Buy `amountShares` by paying in any ERC20, swapped to base via Uniswap.
-    /// @dev Caller must have approved this contract for `amountInMaximum` of `paymentCurrency`. Unused remainder is refunded.
-    function payFromOtherCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, uint256 amountInMaximum, bytes calldata path, bytes calldata ref) public {
+    /// @notice Buy `amountShares` by paying in any ERC20, swapped to base via Uniswap. Reverts after `deadline`.
+    /// @dev Caller must have approved this contract for `amountInMaximum` of `paymentCurrency`. Unused remainder is returned.
+    function payFromOtherCurrencyAndNotify(IDirectInvestment directInvestment, uint256 amountShares, IERC20 paymentCurrency, uint256 amountInMaximum, bytes calldata path, uint256 deadline, bytes calldata ref) public {
         require(amountShares > 0, PaymentHub_InvalidAmount());
 
         checkPath(directInvestment, paymentCurrency, path);
-        
+
         uint256 priceInBaseCurrency = directInvestment.getBuyPrice(amountShares);
-        
-        paymentCurrency.safeTransferFrom(msg.sender, address(this), amountInMaximum);
-        swapToBaseCurrencyAndPay(directInvestment, priceInBaseCurrency, paymentCurrency, amountInMaximum, path);
+
+        paymentCurrency.safeTransferFrom(msg.sender, address(router), amountInMaximum);
+        bytes[] memory inputs = new bytes[](2);
+        inputs[0] = swapInput(directInvestment, priceInBaseCurrency, amountInMaximum, path);
+        inputs[1] = sweepInput(paymentCurrency, msg.sender);
+        router.execute(abi.encodePacked(V3_SWAP_EXACT_OUT, SWEEP), inputs, deadline);
+
         directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);
     }
 
-    /// @notice Buy `amountShares` by paying in ETH, wrapped to WETH and swapped to base via Uniswap.
-    /// @dev Unused ETH is refunded as WETH.
-    function payFromEtherAndNotify(IDirectInvestment directInvestment, uint256 amountShares, bytes calldata path, bytes calldata ref) public payable {
+    /// @notice Buy `amountShares` by paying in ETH, wrapped to WETH and swapped to base via Uniswap. Reverts after `deadline`.
+    /// @dev Unused ETH is returned as ETH; a caller that cannot receive ETH must pay in WETH instead.
+    function payFromEtherAndNotify(IDirectInvestment directInvestment, uint256 amountShares, bytes calldata path, uint256 deadline, bytes calldata ref) public payable {
         require(amountShares > 0, PaymentHub_InvalidAmount());
-        
-        IWETH9 weth = IWETH9(uniswapV3Quoter.WETH9());
+
         checkPath(directInvestment, weth, path);
 
         uint256 priceInBaseCurrency = directInvestment.getBuyPrice(amountShares);
 
-        weth.deposit{value: msg.value}();
-        swapToBaseCurrencyAndPay(directInvestment, priceInBaseCurrency, weth, msg.value, path);
+        bytes[] memory inputs = new bytes[](3);
+        inputs[0] = wrapInput(msg.value);
+        inputs[1] = swapInput(directInvestment, priceInBaseCurrency, msg.value, path);
+        inputs[2] = unwrapInput(msg.sender);
+        router.execute{value: msg.value}(abi.encodePacked(WRAP_ETH, V3_SWAP_EXACT_OUT, UNWRAP_WETH), inputs, deadline);
+
         directInvestment.processIncoming(msg.sender, amountShares, priceInBaseCurrency, ref);
     }
 
@@ -132,35 +150,24 @@ contract PaymentHub is Ownable {
         require(address(bytes20(path[path.length - 20:])) == address(paymentCurrency), PaymentHub_InvalidPath(directInvestment, paymentCurrency, path));
     }
 
-    /// @dev Executes the exactOutput swap into `directInvestment` and refunds unused `paymentCurrency` to the caller.
-    function swapToBaseCurrencyAndPay(IDirectInvestment directInvestment, uint256 amountBaseCurrency, IERC20 paymentCurrency, uint256 amountInMaximum, bytes memory path) internal {
-        ISwapRouter.ExactOutputParams memory params =
-            ISwapRouter.ExactOutputParams({
-                path: path,
-                recipient: address(directInvestment),
-                deadline: block.timestamp,
-                amountOut: amountBaseCurrency,
-                amountInMaximum: amountInMaximum
-            });
-
-        uint256 amountIn = uniswapV3SwapRouter.exactOutput(params);
-
-        if (amountIn < amountInMaximum) {
-            IERC20(paymentCurrency).safeTransfer(msg.sender, amountInMaximum - amountIn);
-        }
+    /// @dev WRAP_ETH: the router wraps `amount` of the ETH it was sent and keeps the WETH.
+    function wrapInput(uint256 amount) private pure returns (bytes memory) {
+        return abi.encode(ROUTER_ITSELF, amount);
     }
 
-    /// @notice Grant infinite Uniswap allowance for the listed payment currencies. Must be called once per new currency.
-    /// @dev Permissionless; the hub holds no token balance between transactions.
-    function approvePaymentCurrencies(IERC20[] calldata erc20In) external {
-        for (uint i=0; i<erc20In.length; i++) {
-            approveERC20(erc20In[i]);
-        }
+    /// @dev V3_SWAP_EXACT_OUT: exactly `amountOut` into the DirectInvestment, paid from the router's own balance (payerIsUser = false), no per-hop price limits.
+    function swapInput(IDirectInvestment directInvestment, uint256 amountOut, uint256 amountInMaximum, bytes calldata path) private pure returns (bytes memory) {
+        return abi.encode(directInvestment, amountOut, amountInMaximum, path, false, new uint256[](0));
     }
 
-    /// @notice Grant infinite Uniswap allowance for a single payment currency.
-    function approveERC20(IERC20 erc20In) public {
-        erc20In.forceApprove(address(uniswapV3SwapRouter), type(uint256).max);
+    /// @dev SWEEP: the router's remaining `token` balance, i.e. the change, goes to `payer`.
+    function sweepInput(IERC20 token, address payer) private pure returns (bytes memory) {
+        return abi.encode(token, payer, 0);
+    }
+
+    /// @dev UNWRAP_WETH: the router's remaining WETH, i.e. the change, goes to `payer` as ETH.
+    function unwrapInput(address payer) private pure returns (bytes memory) {
+        return abi.encode(payer, 0);
     }
 
     /// @notice Owner rescue for tokens accidentally sent to the hub.

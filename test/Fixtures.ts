@@ -10,6 +10,10 @@ import { ethers, owner } from "./TestBase.ts";
 
 export const ZCHF_ADDRESS = "0xB58E61C3098d85632Df34EecfB899A1Ed80921cB";
 
+// Uniswap on mainnet, as used by PaymentHub: QuoterV2 (v3-periphery) and Universal Router 2.1.2.
+export const UNISWAP_QUOTER_V2 = "0x61fFE014bA17989E743c5F6cB21bF9697530B21e";
+export const UNISWAP_UNIVERSAL_ROUTER = "0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85";
+
 export const fixtureConfig = {
   shares: { symbol: "TEST", name: "Test Company Shares", terms: "https://test.com/terms" },
   sharesUnderAgreement: { terms: "https://test.com/agreement", decimals: 0 },

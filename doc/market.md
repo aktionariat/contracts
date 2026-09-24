@@ -16,7 +16,7 @@ The issuer sets a base `price` and a linear `increment`. The first share costs `
 
 A purchase always settles for the exact computed price. There are two ways to pay:
 
-- **On-chain, through the [PaymentHub](../contracts/investment/PaymentHub.sol).** The hub lets an investor pay in the contract's base currency, or in any other ERC-20 token or in ETH, routing the payment through a Uniswap v3 swap into the base currency before settling. A single allowance to the hub works across all Direct Investment contracts. The hub computes the exact base amount needed and refunds any unused remainder.
+- **On-chain, through the [PaymentHub](../contracts/investment/PaymentHub.sol).** The hub lets an investor pay in the contract's base currency, or in any other ERC-20 token or in ETH, routing the payment through Uniswap v3 pools via the Universal Router into the base currency before settling. A single allowance to the hub works across all Direct Investment contracts; no Permit2 signature is needed. The investor passes the swap path, a maximum input and a deadline; the swap takes exactly the base amount needed and returns the unused remainder (as ETH for ETH payments). Quotes come from `getPriceInPaymentCurrency`, which wraps Uniswap's QuoterV2 and is meant to be called off-chain.
 - **Off-chain, settled by the issuer.** For bank transfers and other off-chain payments, the issuer calls `notifyTradeAndTransfer` (or its batch variant) to deliver the shares once the payment has been confirmed.
 
 The contract verifies that the base currency received matches `getBuyPrice` exactly, so an investor can never be under- or over-charged for a given number of shares.
