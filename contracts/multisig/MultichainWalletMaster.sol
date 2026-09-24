@@ -14,8 +14,9 @@ contract MultichainWalletMaster is MultichainWallet, Initializable {
   // Args must be the same address across all chains and only be used to initiate immutables, address used for deployment was 0xf6d96dD440D020022134b8d902bedC2a2249E041
   // Must only be used to initialize immutables as clones won't inherit other state
   constructor(MultichainWalletArgumentSource args) MultichainWallet(args){
-    // Although this is just the master and its state will not be used, let's initialize it anyway to prevent malicious calls to initialize() on the master contract.
-    initialize(msg.sender);
+    // The master's own state is never used by the clones. Lock it so that nobody can initialize the master
+    // itself and become its signer.
+    _lockInitializer();
   }
 
   function initialize(address owner) public initializer {

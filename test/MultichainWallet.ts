@@ -216,8 +216,15 @@ describe("MultichainWalletFactory createWithSigners", function () {
   it("should not allow initializing twice", async function () {
     const salt = ethers.encodeBytes32String("WITHSIGNERS");
     const wallet = await ethers.getContractAt("MultichainWalletMaster", await factory.predict(salt));
-    await expect(wallet.initialize(signer1.address)).to.be.revertedWithCustomError(wallet, "Initializable_AlreadyInitalized");
-    await expect(wallet.initializeWithSigners([signer1.address], [1])).to.be.revertedWithCustomError(wallet, "Initializable_AlreadyInitalized");
+    await expect(wallet.initialize(signer1.address)).to.be.revertedWithCustomError(wallet, "Initializable_AlreadyInitialized");
+    await expect(wallet.initializeWithSigners([signer1.address], [1])).to.be.revertedWithCustomError(wallet, "Initializable_AlreadyInitialized");
+  });
+
+  it("should keep the master locked and without signers", async function () {
+    const master = await ethers.getContractAt("MultichainWalletMaster", await factory.IMPLEMENTATION());
+    expect(await master.signerCount()).to.equal(0);
+    await expect(master.initialize(signer1.address)).to.be.revertedWithCustomError(master, "Initializable_AlreadyInitialized");
+    await expect(master.initializeWithSigners([signer1.address], [1])).to.be.revertedWithCustomError(master, "Initializable_AlreadyInitialized");
   });
 
   it("should reject an empty or mismatched signer list", async function () {
