@@ -24,7 +24,8 @@ contract SecondaryMarket is Ownable {
 
     // Version
     // 1: initial version
-    uint16 public constant VERSION = 1;
+    // 2: process only accepts intents for this market's token and currency
+    uint16 public constant VERSION = 2;
 
     uint16 public constant ALL = 10000;
     address public constant LICENSE_FEE_RECIPIENT = 0x29Fe8914e76da5cE2d90De98a64d0055f199d06D;
@@ -254,6 +255,8 @@ contract SecondaryMarket is Ownable {
     function process(Intent calldata seller, bytes calldata sellerSig, Intent calldata buyer, bytes calldata buyerSig, uint256 tradedAmount) external {
         if (!isOpen) revert MarketClosed();
         if (router != address(0) && msg.sender != router) revert WrongRouter(msg.sender, router);
+        if (seller.tokenOut != TOKEN || seller.tokenIn != CURRENCY) revert WrongTokens();
+        if (buyer.tokenOut != CURRENCY || buyer.tokenIn != TOKEN) revert WrongTokens();
 
         uint256 totalExecutionPrice = IReactor(REACTOR).getTotalExecutionPrice(buyer, seller, tradedAmount);
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / 10000;

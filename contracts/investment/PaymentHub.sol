@@ -55,8 +55,9 @@ contract PaymentHub is Ownable {
     // Version 10: Added checkAmount to prevent underpayment of shares, removed keep ether
     // Version 11: Cleanup unused permit, remove selling, replace forwarder with owner
     // Version 12: Cleanup and rewrite for DirectInvestment v10. Remove handling ETH refunds.
+    // Version 13: forceApprove for tokens like USDT, multiPay checks array lengths
 
-    uint256 public constant VERSION = 12;
+    uint256 public constant VERSION = 13;
 
     IQuoter private immutable uniswapV3Quoter;
     ISwapRouter private immutable uniswapV3SwapRouter;

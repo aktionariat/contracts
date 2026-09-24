@@ -25,7 +25,8 @@ contract TradeReactor is IReactor, IntentVerifier {
     // Version
     // 1: initial version
     // 3: get correct execution price
-    uint16 public constant VERSION = 3;
+    // 4: hash each intent once in process, immutable domain separator
+    uint16 public constant VERSION = 4;
 
     mapping(bytes32 => uint256) public filledAmount;
 

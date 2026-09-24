@@ -191,6 +191,54 @@ describe("SecondaryMarket", function () {
     expect(await sharesUnderAgreement.balanceOf(signer2.address)).to.equal(sellerRemainingBalance - tradeAmount3);
   });
 
+  describe("Token pair check in process", function () {
+    // Intents signed with filler = 0 are accepted by the reactor from any caller, including any market,
+    // so the market itself has to reject pairs other than its own.
+    async function fillerlessIntent(signer: any, tokenOut: any, amountOut: bigint, tokenIn: any, amountIn: bigint) {
+      const now = BigInt((await provider.request({ method: "eth_getBlockByNumber", params: ["latest", false] }) as any).timestamp);
+      const intent = {
+        owner: signer.address, filler: ethers.ZeroAddress,
+        tokenOut: await ethers.resolveAddress(tokenOut), amountOut,
+        tokenIn: await ethers.resolveAddress(tokenIn), amountIn,
+        creation: now, expiration: now + 3600n, data: "0x",
+      };
+      return { intent, signature: await getSignature(signer, intent, await tradeReactor.getAddress()) };
+    }
+
+    it("settles filler-less intents for its own pair", async function () {
+      const seller = await fillerlessIntent(signer2, sharesUnderAgreement, 20n, zchf, ethers.parseUnits("150", 18));
+      const buyer = await fillerlessIntent(signer1, zchf, ethers.parseUnits("100", 18), sharesUnderAgreement, 10n);
+      await expect(secondaryMarket.process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
+        .to.emit(secondaryMarket, "Trade");
+    });
+
+    it("rejects intents trading another token", async function () {
+      const Shares = await ethers.getContractFactory("contracts/shares/base/Shares.sol:Shares");
+      const other = await Shares.deploy("OTH", "Other Shares", "https://test.com/terms", owner);
+      await other.connect(owner).mint(signer2.address, 20n);
+      await other.connect(signer2).approve(tradeReactor, 20n);
+
+      const seller = await fillerlessIntent(signer2, other, 20n, zchf, ethers.parseUnits("150", 18));
+      const buyer = await fillerlessIntent(signer1, zchf, ethers.parseUnits("100", 18), other, 10n);
+      await expect(secondaryMarket.process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
+        .to.be.revertedWithCustomError(secondaryMarket, "WrongTokens");
+    });
+
+    it("rejects intents trading against another currency", async function () {
+      const usdt = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+      const seller = await fillerlessIntent(signer2, sharesUnderAgreement, 20n, usdt, 150_000_000n);
+      const buyer = await fillerlessIntent(signer1, usdt, 100_000_000n, sharesUnderAgreement, 10n);
+      await expect(secondaryMarket.process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
+        .to.be.revertedWithCustomError(secondaryMarket, "WrongTokens");
+    });
+
+    it("rejects seller and buyer intents passed in swapped positions", async function () {
+      const { buyerIntent, buyerSignature, sellerIntent, sellerSignature } = await createMatchingIntents();
+      await expect(secondaryMarket.process(buyerIntent, buyerSignature, sellerIntent, sellerSignature, 10n))
+        .to.be.revertedWithCustomError(secondaryMarket, "WrongTokens");
+    });
+  });
+
   it("Should not execute expired intents", async function () {
     const buyerIntent = getNamedStruct(await secondaryMarket.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds));
     const buyerSignature = await getSignature(signer1, buyerIntent, await tradeReactor.getAddress());    
