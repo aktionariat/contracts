@@ -35,6 +35,10 @@ contract Nonce {
     
     uint128 private max; // highest nonce ever used
     uint128 private reg;
+
+    /// The nonce has been used before or lies outside the accepted window around the highest nonce.
+    /// @param nonce The rejected nonce.
+    error Nonce_AlreadyUsed(uint128 nonce);
     
     /**
      * The next recommended nonce, which is the highest nonce ever used plus one.
@@ -67,7 +71,7 @@ contract Nonce {
         } else if (isValidLowNonce(unmaskedNonce)){
             reg = uint128(reg | 0x1 << (max - unmaskedNonce - 1));
         } else {
-            revert("used");
+            revert Nonce_AlreadyUsed(nonce);
         }
     }
     

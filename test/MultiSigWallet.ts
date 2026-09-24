@@ -161,7 +161,8 @@ describe("MultiSigWallet signatures", function () {
   it("rejects a replay of a used sequence", async function () {
     const seq = nextSequence();
     await execute([wallets.a], seq, owner.address, 1n, "0x");
-    await expect(execute([wallets.a], seq, owner.address, 1n, "0x")).to.be.revertedWith("used");
+    await expect(execute([wallets.a], seq, owner.address, 1n, "0x"))
+      .to.be.revertedWithCustomError(wallet, "Nonce_AlreadyUsed").withArgs(seq);
   });
 
   it("rejects duplicate signatures", async function () {
