@@ -12,7 +12,6 @@ import { ZCHF_ADDRESS } from "./Fixtures.ts";
 
 const BASE = { symbol: "TEST", name: "Test Company Shares", terms: "https://test.com/terms" };
 const AGREEMENT_TERMS = "https://test.com/agreement";
-const DECIMALS = 0;
 
 const MIGRATION_DELAY = 20n * 24n * 60n * 60n; // 20 days
 const DRAG_DELAY = 20n * 24n * 60n * 60n;      // 20 days
@@ -27,7 +26,7 @@ async function deployShares(symbol: string, name: string): Promise<Contract> {
 
 async function deploySharesUnderAgreement(base: Contract): Promise<Contract> {
   const SUA = await ethers.getContractFactory("contracts/shares/sha/SharesUnderAgreement.sol:SharesUnderAgreement");
-  const sua = await SUA.deploy(base, AGREEMENT_TERMS, DECIMALS, owner);
+  const sua = await SUA.deploy(base, AGREEMENT_TERMS, owner);
   await sua.waitForDeployment();
   return sua as unknown as Contract;
 }

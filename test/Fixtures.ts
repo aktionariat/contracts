@@ -16,7 +16,7 @@ export const UNISWAP_UNIVERSAL_ROUTER = "0x23617e59A5925b2A4Bf75d73ff6711cD0b29D
 
 export const fixtureConfig = {
   shares: { symbol: "TEST", name: "Test Company Shares", terms: "https://test.com/terms" },
-  sharesUnderAgreement: { terms: "https://test.com/agreement", decimals: 0 },
+  sharesUnderAgreement: { terms: "https://test.com/agreement" },
 };
 
 export interface Fixture {
@@ -37,7 +37,7 @@ async function deployShares(): Promise<Contract> {
 
 async function deploySharesUnderAgreement(base: Contract): Promise<Contract> {
   const SharesUnderAgreement = await ethers.getContractFactory("contracts/shares/sha/SharesUnderAgreement.sol:SharesUnderAgreement");
-  const sharesUnderAgreement = await SharesUnderAgreement.deploy(base, fixtureConfig.sharesUnderAgreement.terms, fixtureConfig.sharesUnderAgreement.decimals, owner);
+  const sharesUnderAgreement = await SharesUnderAgreement.deploy(base, fixtureConfig.sharesUnderAgreement.terms, owner);
   await sharesUnderAgreement.waitForDeployment();
   return sharesUnderAgreement as unknown as Contract;
 }

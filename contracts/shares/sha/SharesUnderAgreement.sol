@@ -77,8 +77,8 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     error ContractBinding();
     error ContractNotBinding();
 
-    constructor(IERC20 base_, string memory _terms, uint8 _decimals, address _owner)
-        ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), _decimals, _owner)
+    constructor(IERC20 base_, string memory _terms, address _owner)
+        ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), 0, _owner)
         ERC20Allowlistable()
         DeterrenceFee(0.01 ether) {
         base = base_;
