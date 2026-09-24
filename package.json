@@ -19,7 +19,7 @@
     "typescript": "5.9.3"
   },
   "dependencies": {
-    "@chainlink/contracts-ccip": "1.6.3",
+    "@chainlink/contracts-ccip": "2.0.0",
     "ethers": "6.17.0"
   },
   "overrides": {
