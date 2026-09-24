@@ -11,20 +11,19 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@nomicfoundation/hardhat-ignition-ethers": "^3.0.5",
-    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.1",
-    "@nomicfoundation/hardhat-verify": "^3.0.6",
-    "@types/chance": "^1.1.7",
-    "@types/mocha": "^10.0.10",
-    "chance": "^1.1.13",
-    "hardhat": "^3.0.13",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "@nomicfoundation/hardhat-ignition-ethers": "3.1.6",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "3.0.7",
+    "@nomicfoundation/hardhat-verify": "3.1.0",
+    "@types/mocha": "10.0.10",
+    "hardhat": "3.17.0",
+    "typescript": "5.9.3"
   },
   "dependencies": {
-    "@chainlink/contracts": "^1.5.0",
-    "@chainlink/contracts-ccip": "^1.6.3",
+    "@chainlink/contracts-ccip": "1.6.3",
     "@openzeppelin/contracts": "5.7.0",
-    "ethers": "^6.15.0"
+    "ethers": "6.17.0"
+  },
+  "overrides": {
+    "@zksync/contracts": "npm:@matterlabs/zksync-contracts@29.0.0"
   }
 }
