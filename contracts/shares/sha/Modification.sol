@@ -41,10 +41,9 @@ pragma solidity >=0.8.0 <0.9.0;
  * replaced by a shell contract, such as ERC20Cancelled.
  */
 
-import "../../utils/Ownable.sol";
-import "../../ERC20/ERC20Flaggable.sol";
+import "./Wrapping.sol";
 
-abstract contract Modification is ERC20Flaggable, Ownable {
+abstract contract Modification is Wrapping {
 
     uint8 public constant TYPE_DEFAULT = 0x1;
     uint8 public constant TYPE_INTERNAL = 0x2;
@@ -87,7 +86,7 @@ abstract contract Modification is ERC20Flaggable, Ownable {
      */
     function proposeTermination() external returns (Migration memory) {
         // When terminating, the new base is the old base
-        return _propose(baseToken(), TYPE_TERMINATION);
+        return _propose(base, TYPE_TERMINATION);
     }
 
     /**
@@ -97,7 +96,7 @@ abstract contract Modification is ERC20Flaggable, Ownable {
      * different form or on a different blockchain.
      */
     function proposeCancellation() external onlyOwner returns (Migration memory) {
-        return _propose(baseToken(), TYPE_CANCELLATION);
+        return _propose(base, TYPE_CANCELLATION);
     }
 
     /**
@@ -106,7 +105,7 @@ abstract contract Modification is ERC20Flaggable, Ownable {
      * Internal migrations do not terminate the contract. It remains binding.
      */
     function proposeInternalMigration() external onlyOwner returns (Migration memory) {
-        return _propose(IMigratableBase(address(baseToken())).successor(), TYPE_INTERNAL);
+        return _propose(IMigratableBase(address(base)).successor(), TYPE_INTERNAL);
     }
 
     /**
@@ -134,8 +133,8 @@ abstract contract Modification is ERC20Flaggable, Ownable {
         Migration memory mig = prepareExecution(); // reverts if migration not found or too early
         if (mig.migrationType == TYPE_DEFAULT){
             // This is a normal migration, move all base tokens to the successor contract
-            uint256 balance = baseToken().balanceOf(address(this));
-            baseToken().approve(address(mig.successor), balance);
+            uint256 balance = base.balanceOf(address(this));
+            base.approve(address(mig.successor), balance);
             ISuccessor(address(mig.successor)).wrap(balance); // sends all base tokens to the successor and we get successor tokens in return
             replaceBase(mig.successor);
             terminate();
@@ -144,12 +143,12 @@ abstract contract Modification is ERC20Flaggable, Ownable {
             terminate();
         } else if (mig.migrationType == TYPE_INTERNAL){
             // This is an internal update of the base token
-            IMigratableBase base = IMigratableBase(address(baseToken()));
-            if (address(base.successor()) != address(mig.successor)) revert MigrationNotFound(); // make sure the proposed successor is the actual successor of the base token
-            base.migrate(); // tells the old base to migrate to the new base
+            IMigratableBase migratable = IMigratableBase(address(base));
+            if (address(migratable.successor()) != address(mig.successor)) revert MigrationNotFound(); // make sure the proposed successor is the actual successor of the base token
+            migratable.migrate(); // tells the old base to migrate to the new base
             replaceBase(mig.successor); // replace the base with the new base
         } else if (mig.migrationType == TYPE_CANCELLATION) {
-            IMigratableBase(address(baseToken())).burn(baseToken().balanceOf(address(this)));
+            IMigratableBase(address(base)).burn(base.balanceOf(address(this)));
             terminate();
         }
         emit MigrationExecuted(msg.sender, mig.successor, mig.migrationType);
@@ -162,12 +161,6 @@ abstract contract Modification is ERC20Flaggable, Ownable {
         delete migration;
         return mig;
     }
-
-    function baseToken() internal virtual returns (IERC20);
-
-    function replaceBase(IERC20 wrapped) internal virtual;
-
-    function terminate() internal virtual;
 
 }
 

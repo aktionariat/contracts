@@ -38,12 +38,11 @@ pragma solidity >=0.8.0 <0.9.0;
  * Shareholders without wrapped tokens, or unable to act on them, object through the issuer, who can always cancel.
  * Sellers get paid in the specified currency token directly from the buyer.
  */
-import "../../utils/Ownable.sol";
+import "./Wrapping.sol";
 import "../../utils/SafeERC20.sol";
 import "../../utils/DeterrenceFee.sol";
-import "../../ERC20/ERC20Flaggable.sol";
 
-abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
+abstract contract DragAlong is Wrapping, DeterrenceFee {
 
     using SafeERC20 for IERC20;
 
@@ -124,7 +123,7 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
     function acceptOffer() public offerPresent {
         checkExecution(); // reverts if sender is not allowed to execute yet
 
-        IERC20 wrappedToken = baseToken();
+        IERC20 wrappedToken = base;
         Offer memory offer = latestOffer;
         delete latestOffer; // clear the offer to prevent reentrancy
 
@@ -138,11 +137,5 @@ abstract contract DragAlong is ERC20Flaggable, Ownable, DeterrenceFee {
 
         emit OfferAccepted(msg.sender, offer.buyer, balance, address(offer.currency), offer.pricePerShareE18, totalPrice);
     }
-
-    function baseToken() internal virtual view returns (IERC20);
-
-    function replaceBase(IERC20 wrapped) internal virtual;
-
-    function terminate() internal virtual;
 
 }

@@ -50,7 +50,7 @@ An implementation MAY satisfy the CMTAT standard while still failing to meet the
 
 ### Metadata
 - Implementation language: Solidity (`>=0.8.0 <0.9.0`)
-- Implementation version: `Shares` v6 (`VERSION = 6`) is the primary subject of this assessment. Where the shareholder-agreement variant `SharesUnderAgreement` v5 (`VERSION = 5`) differs, this is noted inline. Both share the same base contracts (`ERC20Flaggable`, `ERC20Named`, `ERC20Allowlistable`, `Recoverable`, `Ownable`, `DeterrenceFee`).
+- Implementation version: `Shares` v6 (`VERSION = 6`) is the primary subject of this assessment. Where the shareholder-agreement variant `SharesUnderAgreement` v6 (`VERSION = 6`) differs, this is noted inline. Both share the same base contracts (`ERC20Flaggable`, `ERC20Named`, `ERC20Allowlistable`, `Recoverable`, `Ownable`, `DeterrenceFee`).
 
 ### Token Attributes
 #### Mandatory
@@ -314,7 +314,7 @@ The following features go beyond the CMTAT baseline:
 
 `SharesUnderAgreement`-specific supplementary features:
 
-- **Wrapping / unwrapping.** `wrap` escrows base shares 1:1 and mints wrapped shares; `unwrap` (only once the contract is non-binding) burns wrapped shares and returns the proportional base balance via `convertToBase`. `mintFromBase` lets the base token wrap freshly minted shares directly. A `binding` flag controls whether holders may unwrap.
+- **Wrapping / unwrapping.** `wrap` escrows base shares 1:1 and mints wrapped shares; `unwrap` (only once the contract is non-binding) burns wrapped shares and returns the proportional base balance via `convertToBase`. `mintFromBase` lets the base token wrap freshly minted shares directly. A `binding` flag controls whether holders may unwrap. Once non-binding, the issuer can propose to complete the unwrap for a holder (`proposeUnwrap`); the holder or the issuer can cancel during a 20-day delay, after which anyone can `executeUnwrap`, always to the holder's own address. All of this lives in the `Wrapping` module, which `DragAlong` and `Modification` build on.
 
 - **Drag-along (`DragAlong`).** `offerAcquisition` lets a buyer make a priced acquisition offer; after a 20-day veto window (during which the owner or any ≥10% holder, or the buyer, can `cancelOffer`), `acceptOffer` force-sells all wrapped shares to the buyer, pays holders in the offered currency, makes the proceeds the new base, and terminates the agreement so holders can unwrap to collect.
 

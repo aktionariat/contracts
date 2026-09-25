@@ -2,7 +2,7 @@
 
 ![drag-along](https://hub.aktionariat.com/images/contracts/draggable.jpg)
 
-Documentation for the [SharesUnderAgreement](../contracts/shares/sha/SharesUnderAgreement.sol) token, which wraps a base [Shares](../contracts/shares/base/Shares.sol) token and binds it to a shareholder agreement (SHA). It composes two modules: [DragAlong](../contracts/shares/sha/DragAlong.sol) for acquisitions (documented separately in [dragalong.md](dragalong.md)) and [Modification](../contracts/shares/sha/Modification.sol) for migrations and termination.
+Documentation for the [SharesUnderAgreement](../contracts/shares/sha/SharesUnderAgreement.sol) token, which wraps a base [Shares](../contracts/shares/base/Shares.sol) token and binds it to a shareholder agreement (SHA). The wrapping mechanism itself lives in [Wrapping](../contracts/shares/sha/Wrapping.sol): the base token, `wrap`, `unwrap` and the assisted unwrap. Two modules build on it: [DragAlong](../contracts/shares/sha/DragAlong.sol) for acquisitions (documented separately in [dragalong.md](dragalong.md)) and [Modification](../contracts/shares/sha/Modification.sol) for migrations and termination. SharesUnderAgreement itself adds the naming, the terms and whether they are `binding`, and composes the rest.
 
 The wrapper's symbol and name are the base token's plus `S` / ` SHA`. For participation certificates the same pair exists as [ParticipationCertificates](../contracts/shares/base/ParticipationCertificates.sol) and [ParticipationCertificatesUnderAgreement](../contracts/shares/sha/ParticipationCertificatesUnderAgreement.sol), identical in behaviour, suffixed `P` / ` PCHA`.
 
@@ -15,6 +15,12 @@ A bare share token confers ownership but says nothing about a shareholder agreem
 Anyone holding base tokens can `wrap` them at any time, escrowing the base 1:1 and receiving wrapped tokens. The issuer can mint and wrap in one step via `Shares.mintAndWrap`.
 
 Unwrapping is only possible once the agreement is no longer `binding`, which happens after a termination, migration, or executed acquisition (see below). At that point holders call `unwrap` to break the seal and receive their share of whatever the wrapper now holds — either the original base tokens, or, after an acquisition, the sales proceeds. The amount returned is computed proportionally (`convertToBase`), so the rule works the same whether the backing is one base token per wrapped token or a pool of acquisition proceeds.
+
+### Assisted Unwrap
+
+Every terminal event leaves the wrapper waiting for its holders: after a migration the successor tokens sit in the wrapper, after a termination the base tokens, after an acquisition the proceeds. Holders who never act would keep the wrapper in that half-finished state forever. The issuer can therefore propose to complete the unwrap for a holder with `proposeUnwrap` (single or batch), which is only possible once the agreement is no longer binding.
+
+The proposal follows the same pattern as a recovery, with one important difference: it can only ever deliver the holder's full balance to the holder's own address. Nobody is moved to another address or another token without the chance to object. During the 20-day delay (`UNWRAP_PROPOSAL_DELAY`) the holder can cancel with `cancelUnwrap`, a contract holder through its owner with `cancelUnwrapOnOwnedContract`, and the issuer with `cancelUnwrap(address)`. A holder who simply unwraps on their own cancels the proposal by doing so. After the delay anyone can call `executeUnwrap`, which unwraps whatever the holder holds at that moment. A frozen holder cannot be executed, since the unwrap runs through the transfer rules like any other move; the issuer unfreezes the address first. Events: `UnwrapProposed`, `UnwrapProposalCancelled`, `Unwrapped`.
 
 ## Drag-Along
 
