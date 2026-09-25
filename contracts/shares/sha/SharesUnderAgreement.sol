@@ -90,7 +90,8 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     }
 
     /**
-     * The owner can change the URL where shareholders can find the terms.
+     * The owner can change the URL where shareholders can find the terms, like on the base token.
+     * The URL is a pointer; changing the agreement itself is a Modification subject to the veto period.
      */
     function setTerms(string calldata _terms) external onlyOwner {
         terms = _terms;
