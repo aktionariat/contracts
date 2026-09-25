@@ -22,6 +22,8 @@ The drag-along clause lets a buyer acquire all wrapped shares once the agreed co
 
 The `Modification` module governs structural changes to the agreement. Any qualified party — the issuer, or any holder with more than 10% of the supply — can propose one, and each proposal is subject to a 20-day veto window (`MIGRATION_PROPOSAL_DELAY`) during which a qualified party can cancel it with `cancelMigration`. After the delay, anyone can `executeMigration`.
 
+The 10% threshold, here and for the drag-along, is measured against the wrapped supply only. Shareholders whose shares are not tokenized or not wrapped, and holders who cannot act on their tokens (for example while a recovery of their address is pending), have no on-chain veto; they object to the issuer, who can cancel at any time and is accountable for the proposals it lets through. Anyone holding more than 10% is known to the company, so this channel always exists.
+
 | Proposal | Who | Effect on execution |
 |---|---|---|
 | `proposeMigration(successor)` | issuer or >10% holder | Moves all base tokens into a successor contract (a new SHA) and terminates this one, so holders unwrap into the successor. |

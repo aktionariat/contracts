@@ -120,7 +120,8 @@ abstract contract Modification is ERC20Flaggable, Ownable {
     }
     
     /**
-     * Returns whether the given address can initiate or cancel a migration.
+     * Returns whether the given address can initiate or cancel a migration: the issuer or a holder of
+     * more than 10% of the wrapped tokens. Everyone else objects through the issuer.
      */
     function isQualified(address holder) public view returns (bool) {
         return holder == owner || (balanceOf(holder) > totalSupply() / 10);

@@ -34,7 +34,8 @@ pragma solidity >=0.8.0 <0.9.0;
  *
  * Executes a drag-along clause, forcing minority shareholders to sell their shares to a buyer.
  * The drag-along can be proposed by anyone and can be executed after a 20 day delay.
- * It can be cancelled by the contract owner or any shareholder with 10% of the shares at any time before execution.
+ * It can be cancelled by the contract owner or any holder of more than 10% of the wrapped tokens at any time before execution.
+ * Shareholders without wrapped tokens, or unable to act on them, object through the issuer, who can always cancel.
  * Sellers get paid in the specified currency token directly from the buyer.
  */
 import "../../utils/Ownable.sol";
