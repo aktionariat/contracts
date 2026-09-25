@@ -78,11 +78,20 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     error ContractNotBinding();
 
     constructor(IERC20 base_, string memory _terms, address _owner)
-        ERC20Named(string.concat(base_.symbol(), "S"), string.concat(base_.name(), " SHA"), 0, _owner)
+        ERC20Named(string.concat(base_.symbol(), symbolSuffix()), string.concat(base_.name(), nameSuffix()), 0, _owner)
         ERC20Allowlistable()
         DeterrenceFee(0.01 ether) {
         base = base_;
         terms = _terms;
+    }
+
+    /// @dev Appended to the base token's symbol and name. Overridden for participation certificates.
+    function symbolSuffix() internal pure virtual returns (string memory) {
+        return "S";
+    }
+
+    function nameSuffix() internal pure virtual returns (string memory) {
+        return " SHA";
     }
 
     function baseToken() internal view override(DragAlong, Modification) returns (IERC20) {
