@@ -8,9 +8,7 @@ import {Intent, IntentHash} from "./IntentHash.sol";
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
  *
- * EIP-712 verifier for trade intents, the base of SecondaryMarket.sol. The domain is bound to the inheriting
- * contract, so an intent signed for one market is not valid on any other.
- * Recovers the signer from the signature of an Intent and compares it to the intent owner.
+ * EIP-712 verifier for trade intents, base of SecondaryMarket. The domain binds an intent to one market.
  */
 
 contract IntentVerifier {
@@ -41,7 +39,6 @@ contract IntentVerifier {
         _verifyIntentSignature(intent, intent.hash(), sig);
     }
 
-    /// @dev `intentHash` must be `intent.hash()`; callers pass it in so it is computed only once.
     function _verifyIntentSignature(Intent calldata intent, bytes32 intentHash, bytes calldata sig) internal view {
         bytes32 digest = keccak256(abi.encodePacked(
             "\x19\x01",

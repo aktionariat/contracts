@@ -51,7 +51,7 @@ describe("Allowlist (ERC20Allowlistable)", function () {
       await zchf.connect(signer2).approve(market, ethers.parseUnits("100", 18));
 
       const now = BigInt((await provider.request({ method: "eth_getBlockByNumber", params: ["latest", false] }) as any).timestamp);
-      const common = { filler: ethers.ZeroAddress, creation: now, expiration: now + 3600n, data: "0x" };
+      const common = { router: ethers.ZeroAddress, creation: now, expiration: now + 3600n, data: "0x" };
       const sellerIntent = { ...common, owner: signer1.address, tokenOut: await sua.getAddress(), amountOut: 10n, tokenIn: await zchf.getAddress(), amountIn: ethers.parseUnits("100", 18) };
       const buyerIntent = { ...common, owner: signer2.address, tokenOut: await zchf.getAddress(), amountOut: ethers.parseUnits("100", 18), tokenIn: await sua.getAddress(), amountIn: 10n };
       const sellerSig = await getSignature(signer1, sellerIntent, marketAddress);

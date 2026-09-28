@@ -4,18 +4,18 @@ Documentation for the peer-to-peer trading system, the [SecondaryMarket](../cont
 
 ## Overview
 
-Trading is intent-based. A buyer or seller signs an order ("intent") off-chain; nothing is locked up. A filler then matches a buy intent against a sell intent and submits both to the market, which verifies the signatures and the price and atomically swaps the tokens. Holders keep custody of their tokens until the moment a trade executes — the only on-chain commitment is an ERC-20 allowance to the market.
+Trading is intent-based. A buyer or seller signs an order ("intent") off-chain; nothing is locked up. The router then matches a buy intent against a sell intent and submits both to the market, which verifies the signatures and the price and atomically swaps the tokens. Holders keep custody of their tokens until the moment a trade executes — the only on-chain commitment is an ERC-20 allowance to the market.
 
 ```mermaid
 sequenceDiagram
     participant S as Seller
     participant B as Buyer
-    participant F as Filler
+    participant R as Router
     participant M as SecondaryMarket
-    S->>F: signed sell intent
-    B->>F: signed buy intent
-    Note over F: matches a buy against a sell
-    F->>M: process(seller, buyer, amount)
+    S->>R: signed sell intent
+    B->>R: signed buy intent
+    Note over R: matches a buy against a sell
+    R->>M: process(seller, buyer, amount)
     M->>B: shares (from seller)
     M->>S: currency minus fee (from buyer)
     Note over M: trading fee stays in the market
@@ -27,22 +27,22 @@ An intent is a signed order to give `amountOut` of `tokenOut` for `amountIn` of 
 
 Which side an intent is on follows from its tokens: an intent giving `TOKEN` is a sell and can only ever be processed as one, an intent giving `CURRENCY` is a buy. Its filled amount is therefore always counted in tokens, and it can never be filled beyond the signed maximum. `creation` may not lie in the future, because the later of two matching intents takes the spread (see below).
 
-An intent may name a `filler`, in which case only that address may submit it to `process`. With the zero address, anyone may submit a match; the submitter decides nothing but the pairing and the amount, so this is safe.
+An intent names the `router` that may submit it to `process`; the order helpers put the market's configured router there. With the zero address anyone may submit a match; the submitter decides nothing but the pairing and the amount, so this is safe. Note that changing the market's router invalidates the open orders that name the old one.
 
-Orders can be made public by calling `placeOrder`, which emits the intent as an event so any allowed filler can pick it up, or they can be sent to the configured filler directly. There is no privacy difference between the two — every fill is recorded on-chain regardless.
+Orders can be made public by calling `placeOrder`, which emits the intent as an event so the router can pick it up, or they can be sent to the router directly. There is no privacy difference between the two — every fill is recorded on-chain regardless.
 
 ## Matching and Price
 
-A buy and a sell match when the bid is at least the ask (`verifyPriceMatch`). When they do, the trade executes at the **earlier** order's price: whoever posted first gets their exact price, and any price improvement accrues to the later order rather than to the filler. All price calculations round in favour of the intent owner to avoid rounding exploits.
+A buy and a sell match when the bid is at least the ask (`verifyPriceMatch`). When they do, the trade executes at the **earlier** order's price: whoever posted first gets their exact price, and any price improvement accrues to the later order rather than to the router. All price calculations round in favour of the intent owner to avoid rounding exploits.
 
-Intents fill partially. The market tracks the filled amount per intent hash, so a large order can be matched against several smaller ones over time until it is exhausted, and never beyond (`OverFilled`). The intent owner, the named filler, the router and the market owner can cancel an intent with `cancelIntent`, which marks it fully filled.
+Intents fill partially. The market tracks the filled amount per intent hash, so a large order can be matched against several smaller ones over time until it is exhausted, and never beyond (`OverFilled`). The intent owner, the intent's router, the market's router and the market owner can cancel an intent with `cancelIntent`, which marks it fully filled.
 
 ## Fees
 
-A trading fee is charged to the seller — the buyer pays the full price, the seller receives the price minus the fee. The market computes the fee itself from `tradingFeeBips` (default 1.9%) at execution time; the submitter has no say in it. The issuer commits to never setting it above 5% (`MAX_TRADING_FEE_BIPS`), and a seller prices the fee into the ask knowing this ceiling; the rate is not part of the signed intent. The fee accumulates in the SecondaryMarket contract. `withdrawFees` splits the accumulated fees between the issuer and Aktionariat according to `licenseShare` (default 50%), settling the software licence fee in the same transaction.
+A trading fee is charged to the seller — the buyer pays the full price, the seller receives the price minus the fee. The market computes the fee itself from `tradingFeeBips` (default 1.9%) at execution time; the router has no say in it. The issuer commits to never setting it above 5% (`MAX_TRADING_FEE_BIPS`), and a seller prices the fee into the ask knowing this ceiling; the rate is not part of the signed intent. The fee accumulates in the SecondaryMarket contract. `withdrawFees` splits the accumulated fees between the issuer and Aktionariat according to `licenseShare` (default 50%), settling the software licence fee in the same transaction.
 
 ## Control
 
-The market is operated by the issuer. It can be opened and closed (`open` / `close`), and a trusted `router` can be configured: if set, only that router may call `process`. Pinning a router prevents front-running, since no one else can submit a different matching of the same orders. With no router configured, anyone can act as filler.
+The market is operated by the issuer. It can be opened and closed (`open` / `close`), and a trusted `router` can be configured: if set, only that router may call `process`. Pinning a router prevents front-running, since no one else can submit a different matching of the same orders. With no router configured, anyone can act as router.
 
 Under transfer restrictions the market must be typed Admin on the token, like every intermediary (see [allowlist.md](allowlist.md)): sold tokens pass through the market on their way to the buyer, who becomes Allowed on arrival.

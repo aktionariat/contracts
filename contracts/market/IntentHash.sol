@@ -13,7 +13,7 @@ import {IERC20} from "../ERC20/IERC20.sol";
 
 struct Intent {
 	address owner;
-	address filler;
+	address router; // who may submit it, null for anyone
 	address tokenOut; // The ERC20 token sent out
 	uint256 amountOut; // The maximum amount
 	address tokenIn; // The ERC20 token received
@@ -24,7 +24,7 @@ struct Intent {
 }
 
 library IntentHash {
-	bytes32 internal constant INTENT_TYPE_HASH = keccak256("Intent(address owner,address filler,address tokenOut,uint256 amountOut,address tokenIn,uint256 amountIn,uint256 creation,uint256 expiration,bytes data)");
+	bytes32 internal constant INTENT_TYPE_HASH = keccak256("Intent(address owner,address router,address tokenOut,uint256 amountOut,address tokenIn,uint256 amountIn,uint256 creation,uint256 expiration,bytes data)");
 
 	function hash(Intent calldata intent) internal pure returns (bytes32) {
 		return
@@ -32,7 +32,7 @@ library IntentHash {
 				abi.encode(
 					INTENT_TYPE_HASH,
 					intent.owner,
-					intent.filler,
+					intent.router,
 					intent.tokenOut,
 					intent.amountOut,
 					intent.tokenIn,

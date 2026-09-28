@@ -76,7 +76,7 @@ describe("SecondaryMarket", function () {
     const sellerCurrencyBefore = await zchf.balanceOf(sellerIntentConfig.owner);
     const sellerTokenBefore = await sharesUnderAgreement.balanceOf(sellerIntentConfig.owner);
     const sellerFilledAmountBefore = await secondaryMarket.getFilledAmount(sellerIntent);
-    const fillerCurrencyBefore = await zchf.balanceOf(await secondaryMarket.getAddress());
+    const marketCurrencyBefore = await zchf.balanceOf(await secondaryMarket.getAddress());
 
     await secondaryMarket.process(sellerIntent, sellerSignature, buyerIntent, buyerSignature, tradedAmount);
     
@@ -86,13 +86,13 @@ describe("SecondaryMarket", function () {
     const sellerCurrencyAfter = await zchf.balanceOf(sellerIntentConfig.owner);
     const sellerTokenAfter = await sharesUnderAgreement.balanceOf(sellerIntentConfig.owner);
     const sellerFilledAmountAfter = await secondaryMarket.getFilledAmount(sellerIntent);
-    const fillerCurrencyAfter = await zchf.balanceOf(await secondaryMarket.getAddress());
+    const marketCurrencyAfter = await zchf.balanceOf(await secondaryMarket.getAddress());
 
     expect(buyerTokenAfter - buyerTokenBefore).to.equal(tradedAmount);
     expect(sellerTokenBefore - sellerTokenAfter).to.equal(tradedAmount);
     expect(buyerCurrencyBefore - buyerCurrencyAfter).to.equal(totalExecutionPrice);
     expect(sellerCurrencyAfter - sellerCurrencyBefore).to.equal(totalExecutionPrice - totalFee);
-    expect(fillerCurrencyAfter - fillerCurrencyBefore).to.equal(totalFee);
+    expect(marketCurrencyAfter - marketCurrencyBefore).to.equal(totalFee);
     expect(buyerFilledAmountAfter - buyerFilledAmountBefore).to.equal(tradedAmount);
     expect(sellerFilledAmountAfter - sellerFilledAmountBefore).to.equal(tradedAmount);
   });
@@ -193,10 +193,10 @@ describe("SecondaryMarket", function () {
   describe("Token pair check in process", function () {
     // An intent is bound to this market by its signature, but its tokens still have to be this market's
     // pair, and in the right slot: the seller gives TOKEN, the buyer gives CURRENCY.
-    async function fillerlessIntent(signer: any, tokenOut: any, amountOut: bigint, tokenIn: any, amountIn: bigint) {
+    async function routerlessIntent(signer: any, tokenOut: any, amountOut: bigint, tokenIn: any, amountIn: bigint) {
       const now = BigInt((await provider.request({ method: "eth_getBlockByNumber", params: ["latest", false] }) as any).timestamp);
       const intent = {
-        owner: signer.address, filler: ethers.ZeroAddress,
+        owner: signer.address, router: ethers.ZeroAddress,
         tokenOut: await ethers.resolveAddress(tokenOut), amountOut,
         tokenIn: await ethers.resolveAddress(tokenIn), amountIn,
         creation: now, expiration: now + 3600n, data: "0x",
@@ -204,9 +204,9 @@ describe("SecondaryMarket", function () {
       return { intent, signature: await getSignature(signer, intent, await secondaryMarket.getAddress()) };
     }
 
-    it("settles filler-less intents for its own pair", async function () {
-      const seller = await fillerlessIntent(signer2, sharesUnderAgreement, 20n, zchf, ethers.parseUnits("150", 18));
-      const buyer = await fillerlessIntent(signer1, zchf, ethers.parseUnits("100", 18), sharesUnderAgreement, 10n);
+    it("settles router-less intents for its own pair", async function () {
+      const seller = await routerlessIntent(signer2, sharesUnderAgreement, 20n, zchf, ethers.parseUnits("150", 18));
+      const buyer = await routerlessIntent(signer1, zchf, ethers.parseUnits("100", 18), sharesUnderAgreement, 10n);
       await expect(secondaryMarket.process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
         .to.emit(secondaryMarket, "Trade");
     });
@@ -217,16 +217,16 @@ describe("SecondaryMarket", function () {
       await other.connect(owner).mint(signer2.address, 20n);
       await other.connect(signer2).approve(secondaryMarket, 20n);
 
-      const seller = await fillerlessIntent(signer2, other, 20n, zchf, ethers.parseUnits("150", 18));
-      const buyer = await fillerlessIntent(signer1, zchf, ethers.parseUnits("100", 18), other, 10n);
+      const seller = await routerlessIntent(signer2, other, 20n, zchf, ethers.parseUnits("150", 18));
+      const buyer = await routerlessIntent(signer1, zchf, ethers.parseUnits("100", 18), other, 10n);
       await expect(secondaryMarket.process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
         .to.be.revertedWithCustomError(secondaryMarket, "WrongTokens");
     });
 
     it("rejects intents trading against another currency", async function () {
       const usdt = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-      const seller = await fillerlessIntent(signer2, sharesUnderAgreement, 20n, usdt, 150_000_000n);
-      const buyer = await fillerlessIntent(signer1, usdt, 100_000_000n, sharesUnderAgreement, 10n);
+      const seller = await routerlessIntent(signer2, sharesUnderAgreement, 20n, usdt, 150_000_000n);
+      const buyer = await routerlessIntent(signer1, usdt, 100_000_000n, sharesUnderAgreement, 10n);
       await expect(secondaryMarket.process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
         .to.be.revertedWithCustomError(secondaryMarket, "WrongTokens");
     });
@@ -305,11 +305,11 @@ describe("SecondaryMarket", function () {
   });
 
   describe("Intent hardening (audit #1, #3, #5, #10)", function () {
-    // Filler-less intents signed for this market, built by hand so every field can be chosen.
+    // Router-less intents signed for this market, built by hand so every field can be chosen.
     async function signedIntent(signer: any, tokenOut: any, amountOut: bigint, tokenIn: any, amountIn: bigint, overrides: any = {}) {
       const now = BigInt(await connection.networkHelpers.time.latest());
       const intent = {
-        owner: signer.address, filler: ethers.ZeroAddress,
+        owner: signer.address, router: ethers.ZeroAddress,
         tokenOut: await ethers.resolveAddress(tokenOut), amountOut,
         tokenIn: await ethers.resolveAddress(tokenIn), amountIn,
         creation: now, expiration: now + 3600n, data: "0x",
@@ -328,7 +328,7 @@ describe("SecondaryMarket", function () {
       const strangerBefore = await zchf.balanceOf(signer3.address);
       const marketBefore = await zchf.balanceOf(secondaryMarket);
       const sellerBefore = await zchf.balanceOf(signer2.address);
-      // the market has no router, so a stranger may submit the match; it earns nothing by doing so
+      // the market has no router and the intents name none, so a stranger may submit the match; it earns nothing by doing so
       await expect(secondaryMarket.connect(signer3).process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
         .to.emit(secondaryMarket, "Trade").withArgs(signer2.address, signer1.address, await secondaryMarket.getIntentHash(seller.intent), await secondaryMarket.getIntentHash(buyer.intent), sharesUnderAgreement, 10n, zchf, price, fee);
       expect(await zchf.balanceOf(signer3.address)).to.equal(strangerBefore);
@@ -417,7 +417,7 @@ describe("SecondaryMarket", function () {
     it("enforces the configured router", async function () {
       const marketAddress = await secondaryMarketWithRouter.getAddress();
       const now = BigInt(await connection.networkHelpers.time.latest());
-      const common = { filler: ethers.ZeroAddress, creation: now, expiration: now + 3600n, data: "0x" };
+      const common = { router: ethers.ZeroAddress, creation: now, expiration: now + 3600n, data: "0x" };
       const seller = { ...common, owner: signer2.address, tokenOut: await sharesUnderAgreement.getAddress(), amountOut: 10n, tokenIn: await zchf.getAddress(), amountIn: ethers.parseUnits("100", 18) };
       const buyer = { ...common, owner: signer1.address, tokenOut: await zchf.getAddress(), amountOut: ethers.parseUnits("100", 18), tokenIn: await sharesUnderAgreement.getAddress(), amountIn: 10n };
       const sellerSig = await getSignature(signer2, seller, marketAddress);
@@ -430,29 +430,29 @@ describe("SecondaryMarket", function () {
       await expect(secondaryMarketWithRouter.connect(router).process(seller, sellerSig, buyer, buyerSig, 10n)).to.emit(secondaryMarketWithRouter, "Trade");
     });
 
-    it("lets only the named filler submit an intent that names one", async function () {
-      const seller = await signedIntent(signer2, sharesUnderAgreement, 10n, zchf, ethers.parseUnits("100", 18), { filler: signer3.address });
+    it("lets only the named router submit an intent that names one", async function () {
+      const seller = await signedIntent(signer2, sharesUnderAgreement, 10n, zchf, ethers.parseUnits("100", 18), { router: signer3.address });
       const buyer = await signedIntent(signer1, zchf, ethers.parseUnits("100", 18), sharesUnderAgreement, 10n);
       await expect(secondaryMarket.connect(deployer).process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n))
-        .to.be.revertedWithCustomError(secondaryMarket, "InvalidFiller");
+        .to.be.revertedWithCustomError(secondaryMarket, "WrongRouter");
       await expect(secondaryMarket.connect(signer3).process(seller.intent, seller.signature, buyer.intent, buyer.signature, 10n)).to.emit(secondaryMarket, "Trade");
     });
 
-    it("lets the intent owner, the named filler, the router and the market owner cancel, nobody else", async function () {
+    it("lets the intent owner, the intent router, the market router and the market owner cancel, nobody else", async function () {
       const now = BigInt(await connection.networkHelpers.time.latest());
       const base = { owner: signer2.address, tokenOut: await sharesUnderAgreement.getAddress(), amountOut: 10n, tokenIn: await zchf.getAddress(), amountIn: ethers.parseUnits("100", 18), creation: now, expiration: now + 3600n };
-      const intents = [0n, 1n, 2n, 3n].map(i => ({ ...base, filler: signer3.address, data: ethers.toBeHex(i, 1) }));
+      const intents = [0n, 1n, 2n, 3n].map(i => ({ ...base, router: signer3.address, data: ethers.toBeHex(i, 1) }));
       const market = secondaryMarketWithRouter;
       await expect(market.connect(signer4).cancelIntent(intents[0])).to.be.revertedWithCustomError(market, "NotAuthorized");
       await market.connect(signer2).cancelIntent(intents[0]); // owner
-      await market.connect(signer3).cancelIntent(intents[1]); // filler
-      await market.connect(router).cancelIntent(intents[2]); // router
+      await market.connect(signer3).cancelIntent(intents[1]); // intent router
+      await market.connect(router).cancelIntent(intents[2]); // market router
       await market.connect(owner).cancelIntent(intents[3]); // market owner
       for (const intent of intents) {
         expect(await market.getFilledAmount(intent)).to.equal(await market.CANCELLED());
       }
       // cancel by anyone on the router-less market is still refused
-      await expect(secondaryMarket.connect(signer4).cancelIntent({ ...intents[0], filler: ethers.ZeroAddress }))
+      await expect(secondaryMarket.connect(signer4).cancelIntent({ ...intents[0], router: ethers.ZeroAddress }))
         .to.be.revertedWithCustomError(secondaryMarket, "NotAuthorized");
     });
 

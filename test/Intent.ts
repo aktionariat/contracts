@@ -5,7 +5,7 @@ import { deployFixture } from "./Fixtures.ts";
 
 interface Intent { 
   owner: string,
-	filler: string,
+	router: string,
 	tokenOut: string,
 	amountOut: bigint,
 	tokenIn: string,
@@ -32,7 +32,7 @@ export const sellerIntentConfig = {
 export function getNamedStruct(intentStruct: Intent) {
   return {
     owner: intentStruct.owner,
-    filler: intentStruct.filler,
+    router: intentStruct.router,
     tokenOut: intentStruct.tokenOut,
     amountOut: intentStruct.amountOut,
     tokenIn: intentStruct.tokenIn,
@@ -55,7 +55,7 @@ export function getEIP712Fields(intentStruct: Intent, verifyingContract: string)
   const types = {
     Intent: [
       { name: 'owner', type: 'address' },
-      { name: 'filler', type: 'address' },
+      { name: 'router', type: 'address' },
       { name: 'tokenOut', type: 'address' },
       { name: 'amountOut', type: 'uint256' },
       { name: 'tokenIn', type: 'address' },
@@ -88,6 +88,17 @@ describe("Intents and Signing", function () {
     const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
     await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
     secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
+    const withRouterAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, deployer);
+    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, deployer);
+    secondaryMarketWithRouter = await ethers.getContractAt("SecondaryMarket", withRouterAddress);
+  });
+
+  it("Names the configured router in the order helpers", async function () {
+    expect(await secondaryMarketWithRouter.router()).to.equal(deployer.address);
+    const buy = await secondaryMarketWithRouter.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds);
+    const sell = await secondaryMarketWithRouter.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds);
+    expect(buy.router).to.equal(deployer.address);
+    expect(sell.router).to.equal(deployer.address);
   });
 
   it("Should be able to get buy intent from SecondaryMarket", async function () {
@@ -95,7 +106,7 @@ describe("Intents and Signing", function () {
     const latestBlockTimestamp = await connection.networkHelpers.time.latest();
 
     expect(intent.owner).to.equal(buyerIntentConfig.owner);
-    expect(intent.filler).to.equal(ethers.ZeroAddress);
+    expect(intent.router).to.equal(await secondaryMarket.router());
     expect(intent.tokenOut).to.equal(await secondaryMarket.CURRENCY());
     expect(intent.amountOut).to.equal(buyerIntentConfig.amountOut);
     expect(intent.tokenIn).to.equal(await secondaryMarket.TOKEN());
@@ -110,7 +121,7 @@ describe("Intents and Signing", function () {
     const latestBlockTimestamp = await connection.networkHelpers.time.latest();
 
     expect(intent.owner).to.equal(sellerIntentConfig.owner);
-    expect(intent.filler).to.equal(ethers.ZeroAddress);
+    expect(intent.router).to.equal(await secondaryMarket.router());
     expect(intent.tokenOut).to.equal(await secondaryMarket.TOKEN());
     expect(intent.amountOut).to.equal(sellerIntentConfig.amountOut);
     expect(intent.tokenIn).to.equal(await secondaryMarket.CURRENCY());
