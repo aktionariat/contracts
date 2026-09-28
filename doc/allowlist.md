@@ -37,7 +37,7 @@ Only the pause and the Restricted rules apply to moves into a sink. Sending to t
 
 ## Intermediaries
 
-Contracts that hold tokens on behalf of others must be typed Admin so that they can forward tokens to any recipient and the recipient becomes Allowed on the way. This applies to the `SharesUnderAgreement` wrapper (holds the base shares), the `TradeReactor` (holds sold tokens for a moment during settlement) and the CCIP token pools (hold locked tokens while they are bridged). Being Admin does not let them receive from a Restricted address, so a blocked holder cannot wrap, sell or bridge tokens to get around the block. Recovery of a Restricted address with `initRecovery` / `recover` must therefore name the owner as recipient, or the address must be unfrozen first.
+Contracts that hold tokens on behalf of others must be typed Admin so that they can forward tokens to any recipient and the recipient becomes Allowed on the way. This applies to the `SharesUnderAgreement` wrapper (holds the base shares), the `SecondaryMarket` (holds sold tokens for a moment during settlement) and the CCIP token pools (hold locked tokens while they are bridged). Being Admin does not let them receive from a Restricted address, so a blocked holder cannot wrap, sell or bridge tokens to get around the block. Recovery of a Restricted address with `initRecovery` / `recover` must therefore name the owner as recipient, or the address must be unfrozen first.
 
 ## Token Types
 

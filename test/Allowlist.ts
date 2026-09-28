@@ -13,16 +13,16 @@ const RECOVERY_DELAY = 184n * 24n * 60n * 60n; // 184 days in seconds
 describe("Allowlist (ERC20Allowlistable)", function () {
   let shares: Contract;
   let sua: Contract;
-  let tradeReactor: Contract;
+  let secondaryMarketFactory: Contract;
   let zchf: Contract;
 
   beforeEach(async () => {
-    ({ shares, sharesUnderAgreement: sua, tradeReactor, zchf } = await deployFixture());
+    ({ shares, sharesUnderAgreement: sua, secondaryMarketFactory, zchf } = await deployFixture());
     await mintAndWrap(shares, sua, await signer1.getAddress(), 100n);
   });
 
   describe("restricted holders", function () {
-    // The wrapper, the reactor and the token pools are typed ADMIN so that they can forward tokens to
+    // The wrapper, the secondary market and the token pools are typed ADMIN so that they can forward tokens to
     // anyone. A restricted holder must not be able to use them as an exit: the only recipient it can
     // send to is the owner.
 
@@ -39,28 +39,30 @@ describe("Allowlist (ERC20Allowlistable)", function () {
       expect(await shares.balanceOf(owner)).to.equal(10n);
     });
 
-    it("cannot sell through the ADMIN trade reactor", async () => {
-      await sua.connect(owner)["setType(address,uint8)"](tradeReactor, await sua.TYPE_ADMIN());
+    it("cannot sell through the ADMIN secondary market", async () => {
+      const marketAddress = await secondaryMarketFactory.predict(owner, zchf, sua, ethers.ZeroAddress);
+      await secondaryMarketFactory.deploy(owner, zchf, sua, ethers.ZeroAddress);
+      const market = await ethers.getContractAt("SecondaryMarket", marketAddress);
+      await sua.connect(owner)["setType(address,uint8)"](market, await sua.TYPE_ADMIN());
       await sua.connect(owner).freeze(signer1);
-      await sua.connect(signer1).approve(tradeReactor, 100n);
+      await sua.connect(signer1).approve(market, 100n);
       // fund the buyer with exactly the trade price so the shared fork state is left as found
       await setZCHFBalance(signer2.address, ethers.parseUnits("100", 18));
-      await zchf.connect(signer2).approve(tradeReactor, ethers.parseUnits("100", 18));
+      await zchf.connect(signer2).approve(market, ethers.parseUnits("100", 18));
 
       const now = BigInt((await provider.request({ method: "eth_getBlockByNumber", params: ["latest", false] }) as any).timestamp);
-      const reactorAddress = await tradeReactor.getAddress();
       const common = { filler: ethers.ZeroAddress, creation: now, expiration: now + 3600n, data: "0x" };
       const sellerIntent = { ...common, owner: signer1.address, tokenOut: await sua.getAddress(), amountOut: 10n, tokenIn: await zchf.getAddress(), amountIn: ethers.parseUnits("100", 18) };
       const buyerIntent = { ...common, owner: signer2.address, tokenOut: await zchf.getAddress(), amountOut: ethers.parseUnits("100", 18), tokenIn: await sua.getAddress(), amountIn: 10n };
-      const sellerSig = await getSignature(signer1, sellerIntent, reactorAddress);
-      const buyerSig = await getSignature(signer2, buyerIntent, reactorAddress);
+      const sellerSig = await getSignature(signer1, sellerIntent, marketAddress);
+      const buyerSig = await getSignature(signer2, buyerIntent, marketAddress);
 
-      await expect(tradeReactor.process(sellerIntent, sellerSig, buyerIntent, buyerSig, 10n, 0n))
+      await expect(market.process(sellerIntent, sellerSig, buyerIntent, buyerSig, 10n))
         .to.be.revertedWithCustomError(sua, "Allowlist_SenderIsForbidden").withArgs(signer1.address);
 
       // the same trade settles once the seller is unfrozen
       await sua.connect(owner).unfreeze(signer1);
-      await tradeReactor.process(sellerIntent, sellerSig, buyerIntent, buyerSig, 10n, 0n);
+      await market.process(sellerIntent, sellerSig, buyerIntent, buyerSig, 10n);
       expect(await sua.balanceOf(signer2)).to.equal(10n);
     });
   });

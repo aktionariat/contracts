@@ -8,7 +8,7 @@ import {IERC20} from "../ERC20/IERC20.sol";
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
  *
- * The struct to be signed for submitting orders to the TradeReactor contract and its hashing per EIP-712.
+ * The struct to be signed for submitting orders to a SecondaryMarket contract and its hashing per EIP-712.
  */
 
 struct Intent {

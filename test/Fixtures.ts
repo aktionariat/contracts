@@ -22,7 +22,6 @@ export const fixtureConfig = {
 export interface Fixture {
   shares: Contract;                // base/Shares.sol — the registry token (replaces old Shares/AllowlistShares)
   sharesUnderAgreement: Contract;  // SharesUnderAgreement.sol — the wrapper (replaces old (Allowlist)DraggableShares)
-  tradeReactor: Contract;
   secondaryMarketFactory: Contract;
   authorizedExecutor: Contract;
   zchf: Contract;                  // forked mainnet ZCHF, used as trading currency
@@ -46,10 +45,6 @@ export async function deployFixture(): Promise<Fixture> {
   const shares = await deployShares();
   const sharesUnderAgreement = await deploySharesUnderAgreement(shares);
 
-  const TradeReactor = await ethers.getContractFactory("TradeReactor");
-  const tradeReactor = await TradeReactor.deploy();
-  await tradeReactor.waitForDeployment();
-
   const SecondaryMarketFactory = await ethers.getContractFactory("SecondaryMarketFactory");
   const secondaryMarketFactory = await SecondaryMarketFactory.deploy();
   await secondaryMarketFactory.waitForDeployment();
@@ -63,7 +58,6 @@ export async function deployFixture(): Promise<Fixture> {
   return {
     shares: shares as unknown as Contract,
     sharesUnderAgreement: sharesUnderAgreement as unknown as Contract,
-    tradeReactor: tradeReactor as unknown as Contract,
     secondaryMarketFactory: secondaryMarketFactory as unknown as Contract,
     authorizedExecutor: authorizedExecutor as unknown as Contract,
     zchf,

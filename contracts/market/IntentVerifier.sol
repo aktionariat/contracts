@@ -8,8 +8,9 @@ import {Intent, IntentHash} from "./IntentHash.sol";
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
  *
- * EIP-712 verifier, intended to be used with TradeReactor.sol to separate verifying logic from execution.
- * Recovers the signer from the signature of an Intent for secondary transaction and compares it to the intent owner.
+ * EIP-712 verifier for trade intents, the base of SecondaryMarket.sol. The domain is bound to the inheriting
+ * contract, so an intent signed for one market is not valid on any other.
+ * Recovers the signer from the signature of an Intent and compares it to the intent owner.
  */
 
 contract IntentVerifier {

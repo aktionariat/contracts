@@ -7,11 +7,10 @@ import { AuthorizedCallStruct } from "../types/ethers-contracts/EIP7702/Authoriz
 describe("AuthorizedExecutor", function () {
 
     let authorizedExecutor: Contract;
-    let tradeReactor: Contract;
     let zchf: Contract;
 
     beforeEach(async function() {
-        ({ authorizedExecutor, tradeReactor, zchf } = await deployFixture());
+        ({ authorizedExecutor, zchf } = await deployFixture());
     });
 
     it("Should deploy", async function () {
@@ -22,9 +21,10 @@ describe("AuthorizedExecutor", function () {
         // Get the contract as if the AuthorizedExecutor was already on signer1's address, to be able to construct transactions        
         const signer1AsContract = await connection.ethers.getContractAt("AuthorizedExecutor", await signer1.getAddress());
 
-        // Encode the function that we want to call, in this case setting an approval
+        // Encode the function that we want to call, in this case setting an approval for an arbitrary spender
+        const spender = signer2.address;
         const functionToCall = new connection.ethers.Interface(["function approve(address spender, uint256 amount) external returns (bool)"]);
-        const encodedCall = functionToCall.encodeFunctionData("approve", [await tradeReactor.getAddress(), ethers.parseUnits("1000", 18)]);
+        const encodedCall = functionToCall.encodeFunctionData("approve", [spender, ethers.parseUnits("1000", 18)]);
 
         // Get the actual nonce of the account. This is needed to sign the authorization.
         // Then, create and sign the authorization to be used afterwards.
@@ -45,7 +45,7 @@ describe("AuthorizedExecutor", function () {
         const signature = await getSignature(signer1, authorizedCall, signer1.address)
         
         // Store initial state for comparison
-        const allowanceBefore = await zchf.allowance(signer1, await tradeReactor.getAddress());
+        const allowanceBefore = await zchf.allowance(signer1, spender);
 
         // Execute the call by calling AuthorizedExecutor.execute with the call object and the signature
         // Also passing the type 4 (EIP-7702) and the signed authorization
@@ -54,7 +54,7 @@ describe("AuthorizedExecutor", function () {
         await signer1AsContract.connect(deployer).execute(authorizedCall, signature, { value: 0n, type: 4, authorizationList: [auth] });
 
         // Let's see what the allowance is afterwards
-        const allowanceAfter = await zchf.allowance(signer1, await tradeReactor.getAddress());
+        const allowanceAfter = await zchf.allowance(signer1, spender);
 
         // YAY!
         expect(allowanceAfter).to.equal(allowanceBefore + ethers.parseUnits("1000", 18));

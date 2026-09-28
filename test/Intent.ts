@@ -77,7 +77,6 @@ export function getSignature(signer: any, intentStruct: Intent, verifyingContrac
 }
 
 describe("Intents and Signing", function () {
-  let tradeReactor: Contract;
   let secondaryMarketFactory: Contract;
   let secondaryMarket: Contract;
   let secondaryMarketWithRouter: Contract;
@@ -85,9 +84,9 @@ describe("Intents and Signing", function () {
   let zchf: Contract;
 
   before(async function() {
-    ({ secondaryMarketFactory, zchf, sharesUnderAgreement, tradeReactor } = await deployFixture());
-    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, tradeReactor, ethers.ZeroAddress);
-    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, tradeReactor, ethers.ZeroAddress);
+    ({ secondaryMarketFactory, zchf, sharesUnderAgreement } = await deployFixture());
+    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
+    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
     secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
   });
 
@@ -96,7 +95,7 @@ describe("Intents and Signing", function () {
     const latestBlockTimestamp = await connection.networkHelpers.time.latest();
 
     expect(intent.owner).to.equal(buyerIntentConfig.owner);
-    expect(intent.filler).to.equal(await secondaryMarket.getAddress());
+    expect(intent.filler).to.equal(ethers.ZeroAddress);
     expect(intent.tokenOut).to.equal(await secondaryMarket.CURRENCY());
     expect(intent.amountOut).to.equal(buyerIntentConfig.amountOut);
     expect(intent.tokenIn).to.equal(await secondaryMarket.TOKEN());
@@ -111,7 +110,7 @@ describe("Intents and Signing", function () {
     const latestBlockTimestamp = await connection.networkHelpers.time.latest();
 
     expect(intent.owner).to.equal(sellerIntentConfig.owner);
-    expect(intent.filler).to.equal(await secondaryMarket.getAddress());
+    expect(intent.filler).to.equal(ethers.ZeroAddress);
     expect(intent.tokenOut).to.equal(await secondaryMarket.TOKEN());
     expect(intent.amountOut).to.equal(sellerIntentConfig.amountOut);
     expect(intent.tokenIn).to.equal(await secondaryMarket.CURRENCY());
@@ -123,19 +122,19 @@ describe("Intents and Signing", function () {
 
   it("Should be able to sign a buy intent", async function () {
     const intentStruct = await secondaryMarket.createBuyOrder(buyerIntentConfig.owner, buyerIntentConfig.amountOut, buyerIntentConfig.amountIn, buyerIntentConfig.validitySeconds);
-    const { domain, types, intent } = getEIP712Fields(intentStruct, await tradeReactor.getAddress());
+    const { domain, types, intent } = getEIP712Fields(intentStruct, await secondaryMarket.getAddress());
 
     const signature = await signer1.signTypedData(domain, types, intent);
 
-    await expect(secondaryMarket.verifySignature(intent, signature)).to.not.revert(ethers);
+    await expect(secondaryMarket.verify(intent, signature)).to.not.revert(ethers);
   });
 
   it("Should be able to sign a sell intent", async function () {
     const intentStruct = await secondaryMarket.createSellOrder(sellerIntentConfig.owner, sellerIntentConfig.amountOut, sellerIntentConfig.amountIn, sellerIntentConfig.validitySeconds);
-    const { domain, types, intent } = getEIP712Fields(intentStruct, await tradeReactor.getAddress());
+    const { domain, types, intent } = getEIP712Fields(intentStruct, await secondaryMarket.getAddress());
 
     const signature = await signer2.signTypedData(domain, types, intent);
 
-    await expect(secondaryMarket.verifySignature(intent, signature)).to.not.revert(ethers);
+    await expect(secondaryMarket.verify(intent, signature)).to.not.revert(ethers);
   });
 });
