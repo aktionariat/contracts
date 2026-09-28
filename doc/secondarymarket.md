@@ -33,7 +33,7 @@ Orders can be made public by calling `placeOrder`, which emits the intent as an 
 
 ## Matching and Price
 
-A buy and a sell match when the bid is at least the ask (`verifyPriceMatch`). When they do, the trade executes at the **earlier** order's price: whoever posted first gets their exact price, and any price improvement accrues to the later order rather than to the router. All price calculations round in favour of the intent owner to avoid rounding exploits.
+A buy and a sell match when the bid is at least the ask (`verifyPriceMatch`, compared exactly by cross-multiplication). When they do, the trade executes at the **earlier** order's price: whoever posted first gets their exact price, rounded in their favour (`getAsk` rounds up, `getBid` rounds down), and any price improvement accrues to the later order rather than to the router. The later order can be settled at most one currency unit worse than its own limit through that rounding.
 
 Intents fill partially. The market tracks the filled amount per intent hash, so a large order can be matched against several smaller ones over time until it is exhausted, and never beyond (`OverFilled`). The intent owner, the intent's router, the market's router and the market owner can cancel an intent with `cancelIntent`, which marks it fully filled.
 

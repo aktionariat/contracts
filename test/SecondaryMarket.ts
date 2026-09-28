@@ -63,10 +63,10 @@ describe("SecondaryMarket", function () {
   it("Should be able to execute matching intents", async function () {
     const { buyerIntent, buyerSignature, sellerIntent, sellerSignature } = await createMatchingIntents();
 
-    await secondaryMarket.verifyPriceMatch(buyerIntent, sellerIntent);
+    await secondaryMarket.verifyPriceMatch(sellerIntent, buyerIntent);
 
     const tradedAmount = await secondaryMarket.executableTrade(sellerIntent, buyerIntent);
-    const totalExecutionPrice = await secondaryMarket.getTotalExecutionPrice(buyerIntent, sellerIntent, tradedAmount);
+    const totalExecutionPrice = await secondaryMarket.getTotalExecutionPrice(sellerIntent, buyerIntent, tradedAmount);
     const tradingFeeBips = await secondaryMarket.tradingFeeBips();
     const totalFee = totalExecutionPrice * tradingFeeBips / 10000n;
 
@@ -159,7 +159,7 @@ describe("SecondaryMarket", function () {
     // All intents created on the same block. //
 
     // Seller - Buyer 4 should not match because price is too low
-    await expect(secondaryMarket.verifyPriceMatch(buyer4Intent, sellerIntent)).to.revert(ethers);
+    await expect(secondaryMarket.verifyPriceMatch(sellerIntent, buyer4Intent)).to.revert(ethers);
     await expect(secondaryMarket.executableTrade(sellerIntent, buyer4Intent)).to.revert(ethers);
     await expect(secondaryMarket.process(sellerIntent, sellerSignature, buyer4Intent, buyer4Signature, 1)).to.revert(ethers);
 
@@ -321,7 +321,7 @@ describe("SecondaryMarket", function () {
     it("computes the fee itself, whoever submits the match, and keeps it (#1)", async function () {
       const seller = await signedIntent(signer2, sharesUnderAgreement, 20n, zchf, ethers.parseUnits("150", 18));
       const buyer = await signedIntent(signer1, zchf, ethers.parseUnits("100", 18), sharesUnderAgreement, 10n);
-      const price = await secondaryMarket.getTotalExecutionPrice(buyer.intent, seller.intent, 10n);
+      const price = await secondaryMarket.getTotalExecutionPrice(seller.intent, buyer.intent, 10n);
       const fee = price * (await secondaryMarket.tradingFeeBips()) / 10000n;
       expect(fee).to.be.greaterThan(0n);
 
@@ -497,6 +497,25 @@ describe("SecondaryMarket", function () {
       await expect(secondaryMarket.placeOrder(cancelled.intent, cancelled.signature)).to.be.revertedWithCustomError(secondaryMarket, "UserCancelled");
       const bad = await signedIntent(signer2, sharesUnderAgreement, 10n, zchf, ethers.parseUnits("102", 18));
       await expect(secondaryMarket.placeOrder(bad.intent, buy.signature)).to.be.revertedWithCustomError(secondaryMarket, "InvalidSigner");
+    });
+
+    it("prices exactly: ceiling ask, floor bid, equal prices match, later side at most one unit worse", async function () {
+      const tenChf = ethers.parseUnits("10", 18);
+      // 7 shares for 10 CHF on both sides: 10e18 is not divisible by 7
+      const sell = await signedIntent(signer2, sharesUnderAgreement, 7n, zchf, tenChf);
+      const buy = await signedIntent(signer1, zchf, tenChf, sharesUnderAgreement, 7n);
+      expect(await secondaryMarket.getAsk(sell.intent, 3n)).to.equal((tenChf * 3n + 6n) / 7n); // rounded up
+      expect(await secondaryMarket.getBid(buy.intent, 3n)).to.equal(tenChf * 3n / 7n);          // rounded down
+      expect(await secondaryMarket.getAsk(sell.intent, 0n)).to.equal(0n);
+      expect(await secondaryMarket.getAsk(sell.intent, 7n)).to.equal(tenChf);
+      await secondaryMarket.verifyPriceMatch(sell.intent, buy.intent); // one-unit rounding used to make this revert
+      // same creation: the seller counts as later, the buyer's floor price applies, seller one wei short of exact
+      expect(await secondaryMarket.getTotalExecutionPrice(sell.intent, buy.intent, 3n)).to.equal(tenChf * 3n / 7n);
+      await expect(secondaryMarket.process(sell.intent, sell.signature, buy.intent, buy.signature, 3n)).to.emit(secondaryMarket, "Trade");
+      // one wei below the ask on the whole intent does not match
+      const cheap = await signedIntent(signer1, zchf, tenChf - 1n, sharesUnderAgreement, 7n);
+      await expect(secondaryMarket.verifyPriceMatch(sell.intent, cheap.intent)).to.be.revertedWithCustomError(secondaryMarket, "OfferTooLow");
+      await expect(secondaryMarket.process(sell.intent, sell.signature, cheap.intent, cheap.signature, 1n)).to.be.revertedWithCustomError(secondaryMarket, "OfferTooLow");
     });
 
     it("withdraws the accumulated fees with the license split", async function () {

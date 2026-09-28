@@ -173,10 +173,10 @@ contract SecondaryMarket is Ownable, IntentVerifier {
 
     /**
      * Asking price of a sell intent for the given amount of tokenOut, rounded up.
-     * Example: selling 7 ABC for 10 CHF, 3 ABC cost 10 - (7 - 3) * 10 / 7 = 5 instead of 3 * 10 / 7 = 3.
+     * Example: selling 7 ABC for 10 CHF, 3 ABC cost ceil(30 / 7) = 5.
      */
     function getAsk(Intent calldata intent, uint256 amount) public pure returns (uint256) {
-        return intent.amountIn - intent.amountIn * (intent.amountOut - amount) / intent.amountOut;
+        return (intent.amountIn * amount + intent.amountOut - 1) / intent.amountOut;
     }
 
     /**
@@ -187,17 +187,18 @@ contract SecondaryMarket is Ownable, IntentVerifier {
         return intent.amountOut * amount / intent.amountIn;
     }
 
-    function verifyPriceMatch(Intent calldata buyerIntent, Intent calldata sellerIntent) public pure {
-        uint256 ask = getAsk(sellerIntent, 1);
-        uint256 bid = getBid(buyerIntent, 1);
-        if (bid < ask) revert OfferTooLow();
+    /**
+     * Exact comparison of bid and ask without rounding: buyerOut / buyerIn >= sellerIn / sellerOut.
+     */
+    function verifyPriceMatch(Intent calldata sellerIntent, Intent calldata buyerIntent) public pure {
+        if (buyerIntent.amountOut * sellerIntent.amountOut < sellerIntent.amountIn * buyerIntent.amountIn) revert OfferTooLow();
     }
 
     /**
-     * The earlier intent gets its exact price.
+     * The earlier intent gets its exact price, rounded in its favour. The later one can be one unit worse.
      */
-    function getTotalExecutionPrice(Intent calldata buyerIntent, Intent calldata sellerIntent, uint256 tradedAmount) public pure returns (uint256) {
-        verifyPriceMatch(buyerIntent, sellerIntent);
+    function getTotalExecutionPrice(Intent calldata sellerIntent, Intent calldata buyerIntent, uint256 tradedAmount) public pure returns (uint256) {
+        verifyPriceMatch(sellerIntent, buyerIntent);
         return (sellerIntent.creation >= buyerIntent.creation) ? getBid(buyerIntent, tradedAmount) : getAsk(sellerIntent, tradedAmount);
     }
 
@@ -285,7 +286,7 @@ contract SecondaryMarket is Ownable, IntentVerifier {
      */
     function executableTrade(Intent calldata sellerIntent, Intent calldata buyerIntent) external view returns (uint256) {
         if (sellerIntent.amountOut == 0 || buyerIntent.amountIn == 0) return 0;
-        verifyPriceMatch(buyerIntent, sellerIntent);
+        verifyPriceMatch(sellerIntent, buyerIntent);
         uint256 executableSell = executableSellAmount(sellerIntent);
         uint256 executableBuy = executableBuyAmount(buyerIntent);
         return (executableSell < executableBuy) ? executableSell : executableBuy;
@@ -312,7 +313,7 @@ contract SecondaryMarket is Ownable, IntentVerifier {
         _fill(sellerHash, seller.amountOut, tradedAmount);
         _fill(buyerHash, buyer.amountIn, tradedAmount);
 
-        uint256 totalExecutionPrice = getTotalExecutionPrice(buyer, seller, tradedAmount);
+        uint256 totalExecutionPrice = getTotalExecutionPrice(seller, buyer, tradedAmount);
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / ALL;
 
         // Via the market, so an admin market allowlists the buyer
