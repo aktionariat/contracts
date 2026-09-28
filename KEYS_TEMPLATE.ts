@@ -6,6 +6,7 @@ const KEYS_TEMPLATE = {
         optimism: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
         polygon: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
         base: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
+        robinhood: "amount marine slide ugly weather pet couch muscle brain energy rare obscure",
     },
 
     // Etherscan Keys by Network
@@ -20,7 +21,9 @@ const KEYS_TEMPLATE = {
         mainnet: "https://eth-mainnet.g.alchemy.com/v2/demo",
         optimism: "https://opt-mainnet.g.alchemy.com/v2/demo",
         polygon: "https://polygon-mainnet.g.alchemy.com/v2/demo",
-        base: "https://base-mainnet.g.alchemy.com/v2/demo"
+        base: "https://base-mainnet.g.alchemy.com/v2/demo",
+        // Not Alchemy: public Robinhood Chain RPC (rate limited), see https://docs.robinhood.com/chain/connecting
+        robinhood: "https://rpc.mainnet.chain.robinhood.com"
     }
 }
 

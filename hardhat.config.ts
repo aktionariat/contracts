@@ -59,6 +59,16 @@ const config: HardhatUserConfig = {
                 mnemonic: KEYS.mnemonics.base
             }
         },
+        robinhood: {
+            // Robinhood Chain mainnet (Arbitrum Orbit L2). Chain id 4663, https://docs.robinhood.com/chain/connecting
+            type: "http",
+            chainId: 4663,
+            chainType: "generic",
+            url: KEYS.alchemy.robinhood,
+            accounts: {
+                mnemonic: KEYS.mnemonics.robinhood
+            }
+        },
         sepolia: {
             type: "http",
             chainId: 11155111,
@@ -130,6 +140,18 @@ const config: HardhatUserConfig = {
                 mnemonic: KEYS.mnemonics.base
             }
         },
+        hardhatRobinhood: {
+            type: "edr-simulated",
+            chainId: 4663,
+            chainType: "generic",
+            forking: {
+                url: KEYS.alchemy.robinhood,
+                enabled: true
+            },
+            accounts: {
+                mnemonic: KEYS.mnemonics.robinhood
+            }
+        },
     },
 
     ignition: {
@@ -140,6 +162,40 @@ const config: HardhatUserConfig = {
         },
     },
     
+    chainDescriptors: {
+        8453: {
+            // Hardhat ships name/explorers for Base but no hardfork history, which EDR needs to
+            // execute on a Base fork (hardhatBase). Isthmus has been live since 2025-05-09; block 0
+            // is fine because forks only execute blocks after the fork block.
+            name: "Base",
+            chainType: "op",
+            hardforkHistory: {
+                isthmus: { blockNumber: 0 }
+            },
+            blockExplorers: {
+                etherscan: {
+                    name: "Basescan",
+                    url: "https://basescan.org"
+                },
+                blockscout: {
+                    name: "Blockscout",
+                    url: "https://base.blockscout.com",
+                    apiUrl: "https://base.blockscout.com/api"
+                }
+            }
+        },
+        4663: {
+            name: "Robinhood Chain",
+            blockExplorers: {
+                blockscout: {
+                    name: "Blockscout",
+                    url: "https://robinhoodchain.blockscout.com",
+                    apiUrl: "https://robinhoodchain.blockscout.com/api"
+                }
+            }
+        }
+    },
+
     verify: {
         // With Etherscan V2, a single API key works for multiple networks
         etherscan: {

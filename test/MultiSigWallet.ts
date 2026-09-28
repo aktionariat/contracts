@@ -74,6 +74,14 @@ describe("MultiSigWallet signatures", function () {
     shares = (await Shares.deploy("TKN", "Token Shares", TERMS, walletAddress)) as unknown as Contract;
   });
 
+  it("only lets the deployment account run the rollout", async function () {
+    const Rollout = await ethers.getContractFactory("Rollout");
+    const rollout = await Rollout.deploy();
+    expect(await rollout.DEPLOYER()).to.equal(deployer.address);
+    await expect(rollout.connect(owner).rollout(owner.address, owner.address))
+      .to.be.revertedWithCustomError(rollout, "Rollout_Unauthorized").withArgs(owner.address);
+  });
+
   it("derives contractId from the low 32 bits of the address and the chain id", async function () {
     expect(contractId).to.equal((BigInt(walletAddress) & 0xffffffffn) ^ chainId);
   });
