@@ -27,16 +27,18 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
-import "./Shares.sol";
+import "./lib/BytecodeStore.sol";
+import "../investment/DirectInvestment.sol";
 
-/**
- * @title CompanyName AG Participation Certificates
- *
- * Participation certificates (Partizipationsscheine, art. 656a CO) are shares without voting rights.
- * The registry works exactly like Shares; this contract exists so the token is named for what it holds.
- */
-contract ParticipationCertificates is Shares {
+/// @dev Creation code of DirectInvestment, deployed by AktionariatFactory.
+contract DirectInvestmentFactory is BytecodeStore {
 
-    constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) Shares(_symbol, _name, _terms, _owner) {}
+    function creationCode() external pure override returns (bytes memory) {
+        return type(DirectInvestment).creationCode;
+    }
 
+    // Must equal the VERSION of the deployed contract (Solidity cannot read it from the type); the tests check it.
+    function version() external pure override returns (uint256) {
+        return 11;
+    }
 }

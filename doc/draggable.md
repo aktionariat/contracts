@@ -4,7 +4,7 @@
 
 Documentation for the [SharesUnderAgreement](../contracts/shares/sha/SharesUnderAgreement.sol) token, which wraps a base [Shares](../contracts/shares/base/Shares.sol) token and binds it to a shareholder agreement (SHA). The wrapping mechanism itself lives in [Wrapping](../contracts/shares/sha/Wrapping.sol): the base token, `wrap`, `unwrap` and the assisted unwrap. Two modules build on it: [DragAlong](../contracts/shares/sha/DragAlong.sol) for acquisitions (documented separately in [dragalong.md](dragalong.md)) and [Modification](../contracts/shares/sha/Modification.sol) for migrations and termination. SharesUnderAgreement itself adds the naming, the terms and whether they are `binding`, and composes the rest.
 
-The wrapper's symbol and name are the base token's plus `S` / ` SHA`. For participation certificates the same pair exists as [ParticipationCertificates](../contracts/shares/base/ParticipationCertificates.sol) and [ParticipationCertificatesUnderAgreement](../contracts/shares/sha/ParticipationCertificatesUnderAgreement.sol), identical in behaviour, suffixed `P` / ` PCHA`.
+The wrapper's symbol and name are the base token's plus `S` / ` SHA`. Participation certificates use the same two contracts; the names are free-form on the base token.
 
 ## Overview and Motivation
 

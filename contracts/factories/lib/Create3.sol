@@ -1,0 +1,67 @@
+/**
+ * SPDX-License-Identifier: LicenseRef-Aktionariat
+ *
+ * MIT License with Automated License Fee Payments
+ *
+ * Copyright (c) 2026 Aktionariat AG (aktionariat.com)
+ *
+ * Permission is hereby granted to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * - The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ * - All automated license fee payments integrated into this and related Software
+ *   are preserved.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+pragma solidity >=0.8.0 <0.9.0;
+
+/**
+ * @dev CREATE3: deploys a contract at an address that depends only on the deployer and the salt, not on the
+ * bytecode or constructor arguments. A 16-byte proxy is created with CREATE2 and then runs CREATE, so the
+ * final address is keccak(rlp(proxy, 1)). Used to give a token the same address on every chain.
+ */
+library Create3 {
+
+    // Proxy init code: returns the 8-byte runtime 363d3d37363d34f0 (calldatacopy + create with the calldata).
+    bytes32 internal constant PROXY_INITCODE_HASH = keccak256(hex"67363d3d37363d34f03d5260086018f3");
+
+    /// @dev The proxy create2 returned zero: the salt was already used on this chain.
+    error Create3_SaltAlreadyUsed(bytes32 salt);
+    /// @dev The proxy ran but left no code at the target: the constructor reverted.
+    error Create3_DeploymentFailed(address target);
+
+    function deploy(bytes32 salt, bytes memory initCode) internal returns (address deployed) {
+        address proxy;
+        assembly ("memory-safe") {
+            mstore(0x00, shl(128, 0x67363d3d37363d34f03d5260086018f3))
+            proxy := create2(0, 0x00, 16, salt)
+        }
+        if (proxy == address(0)) revert Create3_SaltAlreadyUsed(salt);
+        deployed = predict(salt);
+        (bool success, ) = proxy.call(initCode);
+        if (!success || deployed.code.length == 0) revert Create3_DeploymentFailed(deployed);
+    }
+
+    /// @dev The address `deploy(salt, ...)` produces when called from this contract.
+    function predict(bytes32 salt) internal view returns (address) {
+        return predict(address(this), salt);
+    }
+
+    function predict(address deployer, bytes32 salt) internal pure returns (address) {
+        address proxy = address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, PROXY_INITCODE_HASH)))));
+        // rlp([proxy, 1]) = 0xd6 0x94 <20 bytes> 0x01
+        return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), proxy, bytes1(0x01))))));
+    }
+}

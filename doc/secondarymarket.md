@@ -1,6 +1,6 @@
 # Secondary Market
 
-Documentation for the peer-to-peer trading system, the [SecondaryMarket](../contracts/market/SecondaryMarket.sol) contract. Where the [Direct Investment](market.md) contract is the issuer's primary-issuance counter, the secondary market is where existing shareholders trade with each other. There is one market per token and currency pair, deployed by the issuer through the [SecondaryMarketFactory](../contracts/market/SecondaryMarketFactory.sol).
+Documentation for the peer-to-peer trading system, the [SecondaryMarket](../contracts/market/SecondaryMarket.sol) contract. Where the [Direct Investment](market.md) contract is the issuer's primary-issuance counter, the secondary market is where existing shareholders trade with each other. There is one market per token and currency pair, deployed through the [AktionariatFactory](factories.md).
 
 ## Overview
 

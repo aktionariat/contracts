@@ -12,6 +12,7 @@ There are five notable smart contracts in this repository:
 3. The [ERC20Draggable Contract](doc/draggable.md), implementing the drag-along clause found in many shareholder agreements.
 4. The [ERC20Allowlistable Contract](doc/allowlist.md), providing a highly efficient and elaborate way to enforce transfer restrictions.
 5. The [Brokerbot Contract](doc/market.md), providing mechanisms for the selling and repurchasing of shares with automated price adjustments.
+6. The [AktionariatFactory](doc/factories.md), deploying a company's contracts with the same address on every chain.
 
 Futhermore, there is a [Shares Contract](doc/shares.md) that can contain all the functions to deploy a token that can represent shares under Swiss law. Also, we'd like to point to our elegant implementation of [infinite allowances](doc/infiniteallowance.md).
 

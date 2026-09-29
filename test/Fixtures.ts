@@ -22,7 +22,6 @@ export const fixtureConfig = {
 export interface Fixture {
   shares: Contract;                // base/Shares.sol — the registry token (replaces old Shares/AllowlistShares)
   sharesUnderAgreement: Contract;  // SharesUnderAgreement.sol — the wrapper (replaces old (Allowlist)DraggableShares)
-  secondaryMarketFactory: Contract;
   authorizedExecutor: Contract;
   zchf: Contract;                  // forked mainnet ZCHF, used as trading currency
 }
@@ -45,10 +44,6 @@ export async function deployFixture(): Promise<Fixture> {
   const shares = await deployShares();
   const sharesUnderAgreement = await deploySharesUnderAgreement(shares);
 
-  const SecondaryMarketFactory = await ethers.getContractFactory("SecondaryMarketFactory");
-  const secondaryMarketFactory = await SecondaryMarketFactory.deploy();
-  await secondaryMarketFactory.waitForDeployment();
-
   const AuthorizedExecutor = await ethers.getContractFactory("AuthorizedExecutor");
   const authorizedExecutor = await AuthorizedExecutor.deploy();
   await authorizedExecutor.waitForDeployment();
@@ -58,10 +53,18 @@ export async function deployFixture(): Promise<Fixture> {
   return {
     shares: shares as unknown as Contract,
     sharesUnderAgreement: sharesUnderAgreement as unknown as Contract,
-    secondaryMarketFactory: secondaryMarketFactory as unknown as Contract,
     authorizedExecutor: authorizedExecutor as unknown as Contract,
     zchf,
   };
+}
+
+// Deploys a SecondaryMarket directly. In production markets come out of AktionariatFactory (CREATE3);
+// the tests only need an instance.
+export async function deploySecondaryMarket(marketOwner: any, currency: any, token: any, router: any): Promise<Contract> {
+  const SecondaryMarket = await ethers.getContractFactory("SecondaryMarket");
+  const market = await SecondaryMarket.deploy(marketOwner, currency, token, router);
+  await market.waitForDeployment();
+  return market as unknown as Contract;
 }
 
 // New-stack equivalent of the old `scripts/helpers/mintAndWrap`: mints base shares to

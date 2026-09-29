@@ -1,7 +1,7 @@
 import { Contract, getAddress } from "ethers";
 import { expect } from "chai";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5 } from "./TestBase.ts";
-import { deployFixture } from "./Fixtures.ts";
+import { deployFixture, deploySecondaryMarket } from "./Fixtures.ts";
 
 interface Intent { 
   owner: string,
@@ -77,20 +77,15 @@ export function getSignature(signer: any, intentStruct: Intent, verifyingContrac
 }
 
 describe("Intents and Signing", function () {
-  let secondaryMarketFactory: Contract;
   let secondaryMarket: Contract;
   let secondaryMarketWithRouter: Contract;
   let sharesUnderAgreement: Contract  // SharesUnderAgreement, the traded token (replaces old allowlistDraggableShares)
   let zchf: Contract;
 
   before(async function() {
-    ({ secondaryMarketFactory, zchf, sharesUnderAgreement } = await deployFixture());
-    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
-    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
-    secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
-    const withRouterAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, deployer);
-    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, deployer);
-    secondaryMarketWithRouter = await ethers.getContractAt("SecondaryMarket", withRouterAddress);
+    ({ zchf, sharesUnderAgreement } = await deployFixture());
+    secondaryMarket = await deploySecondaryMarket(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
+    secondaryMarketWithRouter = await deploySecondaryMarket(owner, zchf, sharesUnderAgreement, deployer);
   });
 
   it("Names the configured router in the order helpers", async function () {

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
 import { connection, ethers, owner, provider, signer1, signer2, signer3 } from "./TestBase.ts";
-import { deployFixture, mintAndWrap } from "./Fixtures.ts";
+import { deployFixture, deploySecondaryMarket, mintAndWrap } from "./Fixtures.ts";
 import { getSignature } from "./Intent.ts";
 import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
 
@@ -13,11 +13,10 @@ const RECOVERY_DELAY = 184n * 24n * 60n * 60n; // 184 days in seconds
 describe("Allowlist (ERC20Allowlistable)", function () {
   let shares: Contract;
   let sua: Contract;
-  let secondaryMarketFactory: Contract;
   let zchf: Contract;
 
   beforeEach(async () => {
-    ({ shares, sharesUnderAgreement: sua, secondaryMarketFactory, zchf } = await deployFixture());
+    ({ shares, sharesUnderAgreement: sua, zchf } = await deployFixture());
     await mintAndWrap(shares, sua, await signer1.getAddress(), 100n);
   });
 
@@ -40,9 +39,7 @@ describe("Allowlist (ERC20Allowlistable)", function () {
     });
 
     it("cannot sell through the ADMIN secondary market", async () => {
-      const marketAddress = await secondaryMarketFactory.predict(owner, zchf, sua, ethers.ZeroAddress);
-      await secondaryMarketFactory.deploy(owner, zchf, sua, ethers.ZeroAddress);
-      const market = await ethers.getContractAt("SecondaryMarket", marketAddress);
+      const market = await deploySecondaryMarket(owner, zchf, sua, ethers.ZeroAddress);
       await sua.connect(owner)["setType(address,uint8)"](market, await sua.TYPE_ADMIN());
       await sua.connect(owner).freeze(signer1);
       await sua.connect(signer1).approve(market, 100n);
@@ -54,8 +51,8 @@ describe("Allowlist (ERC20Allowlistable)", function () {
       const common = { router: ethers.ZeroAddress, creation: now, expiration: now + 3600n, data: "0x" };
       const sellerIntent = { ...common, owner: signer1.address, tokenOut: await sua.getAddress(), amountOut: 10n, tokenIn: await zchf.getAddress(), amountIn: ethers.parseUnits("100", 18) };
       const buyerIntent = { ...common, owner: signer2.address, tokenOut: await zchf.getAddress(), amountOut: ethers.parseUnits("100", 18), tokenIn: await sua.getAddress(), amountIn: 10n };
-      const sellerSig = await getSignature(signer1, sellerIntent, marketAddress);
-      const buyerSig = await getSignature(signer2, buyerIntent, marketAddress);
+      const sellerSig = await getSignature(signer1, sellerIntent, await market.getAddress());
+      const buyerSig = await getSignature(signer2, buyerIntent, await market.getAddress());
 
       await expect(market.process(sellerIntent, sellerSig, buyerIntent, buyerSig, 10n))
         .to.be.revertedWithCustomError(sua, "Allowlist_SenderIsForbidden").withArgs(signer1.address);

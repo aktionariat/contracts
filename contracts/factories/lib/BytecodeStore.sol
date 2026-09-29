@@ -27,24 +27,15 @@
  */
 pragma solidity >=0.8.0 <0.9.0;
 
-import "./SharesUnderAgreement.sol";
-
 /**
- * @title CompanyName AG Participation Certificates PCHA
- *
- * SharesUnderAgreement for participation certificates: same wrapper, bound to a participation
- * certificate holder agreement (PCHA), named accordingly.
+ * @dev Holds the creation code of one contract in its own code section so that a deployer contract can
+ * fetch it and append constructor arguments. Splitting the bytecodes into stores keeps every contract under
+ * the 24 KB code-size limit. The store has no logic and no state.
  */
-contract ParticipationCertificatesUnderAgreement is SharesUnderAgreement {
+abstract contract BytecodeStore {
 
-    constructor(IERC20 base_, string memory _terms, address _owner) SharesUnderAgreement(base_, _terms, _owner) {}
+    function creationCode() external pure virtual returns (bytes memory);
 
-    function symbolSuffix() internal pure override returns (string memory) {
-        return "P";
-    }
-
-    function nameSuffix() internal pure override returns (string memory) {
-        return " PCHA";
-    }
-
+    /// @dev VERSION of the contract this store deploys.
+    function version() external pure virtual returns (uint256);
 }

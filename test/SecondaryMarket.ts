@@ -3,11 +3,10 @@ import { Contract, MaxInt256 } from "ethers";
 import { connection, deployer, ethers, owner, provider, signer1, signer2, signer3, signer4, signer5, signer6, signer7 } from "./TestBase.ts";
 import { buyerIntentConfig, getNamedStruct, getSignature, sellerIntentConfig } from "./Intent.ts";
 import { setZCHFBalance } from "../scripts/helpers/setBalance.ts";
-import { deployFixture, mintAndWrap } from "./Fixtures.ts";
+import { deployFixture, deploySecondaryMarket, mintAndWrap } from "./Fixtures.ts";
 
 
 describe("SecondaryMarket", function () {
-  let secondaryMarketFactory: Contract;
   let secondaryMarket: Contract;
   let secondaryMarketWithRouter: Contract;
   let shares: Contract        // base/Shares.sol (replaces old allowlistShares)
@@ -27,15 +26,9 @@ describe("SecondaryMarket", function () {
   }
 
   before(async function() {
-    ({ secondaryMarketFactory, zchf, shares, sharesUnderAgreement } = await connection.networkHelpers.loadFixture(deployFixture));
-
-    const secondaryMarketAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
-    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
-    secondaryMarket = await ethers.getContractAt("SecondaryMarket", secondaryMarketAddress);
-    
-    const secondaryMarketWithRouterAddress = await secondaryMarketFactory.predict(owner, zchf, sharesUnderAgreement, router);
-    await secondaryMarketFactory.deploy(owner, zchf, sharesUnderAgreement, router);
-    secondaryMarketWithRouter = await ethers.getContractAt("SecondaryMarket", secondaryMarketWithRouterAddress);
+    ({ zchf, shares, sharesUnderAgreement } = await connection.networkHelpers.loadFixture(deployFixture));
+    secondaryMarket = await deploySecondaryMarket(owner, zchf, sharesUnderAgreement, ethers.ZeroAddress);
+    secondaryMarketWithRouter = await deploySecondaryMarket(owner, zchf, sharesUnderAgreement, router);
 
     // Set balances and allowances of buyer and seller
     await setZCHFBalance(signer1.address, ethers.parseUnits("100000", 18));

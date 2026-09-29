@@ -37,7 +37,12 @@ Only the pause and the Restricted rules apply to moves into a sink. Sending to t
 
 ## Intermediaries
 
-Contracts that hold tokens on behalf of others must be typed Admin so that they can forward tokens to any recipient and the recipient becomes Allowed on the way. This applies to the `SharesUnderAgreement` wrapper (holds the base shares), the `SecondaryMarket` (holds sold tokens for a moment during settlement) and the CCIP token pools (hold locked tokens while they are bridged). Being Admin does not let them receive from a Restricted address, so a blocked holder cannot wrap, sell or bridge tokens to get around the block. Recovery of a Restricted address with `initRecovery` / `recover` must therefore name the owner as recipient, or the address must be unfrozen first.
+Contracts that hold tokens on behalf of others need a type under a restricted regime, otherwise Allowed holders cannot send to them. Which type depends on whom they pay out to:
+
+- The `SharesUnderAgreement` wrapper is **Admin on the base token**. After termination it pays base shares back to its own holders, and every one of them passed the wrapper's own gate before, so the wrapper may stamp them Allowed on the base.
+- The `SecondaryMarket` and the `DirectInvestment` are **Allowed on the traded token**, not Admin. They face outside addresses: an Admin market would let anyone buy and become Allowed on the way, which defeats the regime. As Allowed contracts they can only pay out to addresses the issuer has typed, so the allowlist is the gate an investor passes before buying. The same applies to the CCIP token pools, which pay out to whoever bridges back.
+
+`AktionariatFactory` sets these types at deployment when a company starts restricted. Contracts added later, or a regime switched on later, are typed by the issuer. No type lets a contract receive from a Restricted address, so a blocked holder cannot wrap, sell or bridge tokens to get around the block. Recovery of a Restricted address with `initRecovery` / `recover` must therefore name the owner as recipient, or the address must be unfrozen first.
 
 ## Token Types
 
