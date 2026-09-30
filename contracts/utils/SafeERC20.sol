@@ -3,7 +3,7 @@
 // in this repo: safeTransfer, safeTransferFrom, forceApprove and their private helpers. Code is 1:1.
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.7.0/contracts/token/ERC20/utils/SafeERC20.sol
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 import {IERC20} from "../ERC20/IERC20.sol";
 

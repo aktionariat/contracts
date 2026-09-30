@@ -27,7 +27,7 @@
  */
 import "./Ownable.sol";
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 // abstract because it does not initiate Ownable
 abstract contract DeterrenceFee is Ownable {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 /**
  * Recursive length prefix (RLP) encoding, https://ethereum.org/developers/docs/data-structures-and-encoding/rlp,

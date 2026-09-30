@@ -4,7 +4,7 @@
 // (we never fund clones at creation) and FailedDeployment is declared here instead of in utils/Errors.sol.
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.7.0/contracts/proxy/Clones.sol
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 /**
  * @dev https://eips.ethereum.org/EIPS/eip-1167[ERC-1167] minimal proxy clones, deployed with create2 so

@@ -7,7 +7,7 @@
 // - Made leaner
 // - Extracted interface
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where

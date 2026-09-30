@@ -10,7 +10,7 @@
 *
 * Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
 */
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 import "./IDirectInvestment.sol";
 import "../utils/Ownable.sol";

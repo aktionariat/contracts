@@ -25,7 +25,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 /**
  * @dev Holds the creation code of one contract in its own code section so that a deployer contract can

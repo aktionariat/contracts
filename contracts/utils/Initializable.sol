@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 /**
  * Minimal one-shot initializer guard, own code. Clones (EIP-1167) do not run a constructor, so their

@@ -2,7 +2,7 @@
 // Trimmed to what PaymentHub uses. Sources:
 // https://github.com/Uniswap/v3-periphery/blob/main/contracts/interfaces/IQuoterV2.sol
 // https://github.com/Uniswap/universal-router/blob/2.1.2/contracts/interfaces/IUniversalRouter.sol
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.37;
 
 interface IQuoterV2 {
     /// @notice Input needed for an exact-output swap along `path` (encoded output first). Not a view: simulates and reverts internally, call it off-chain.
