@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+// Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
+
 pragma solidity 0.8.37;
 
 // Given that development on ERC 677 has stalled, we should consider supporting EIP 1363: https://eips.ethereum.org/EIPS/eip-1363

@@ -76,4 +76,12 @@ npx hardhat test
 
 ## License
 
-All our smart contracts are open-source and can be used under a slightly modified [MIT License with Automated License Fee Payments](LICENSE). This means that you are free to use our contracts as long as you do not make any changes to circumvent the built-in license fee payments to our address [0x29Fe8914e76da5cE2d90De98a64d0055f199d06D](https://etherscan.io/address/0x29fe8914e76da5ce2d90de98a64d0055f199d06d), if there are any. Note that some of the source code you find in this repository stems from other sources with other licenses. These are marked accordingly.
+The source code is public, under three licenses. Each file states its own in the `SPDX-License-Identifier` line at the top.
+
+| License | Applies to | Terms |
+|---|---|---|
+| [Business Source License 1.1](LICENSE) | Everything not listed below: the share tokens, the shareholder agreement wrapper, the factory, the multisig, the payment hub | Source-available. Production use is permitted for contracts deployed by Aktionariat AG or with its authorization, which covers our issuers and their token holders. Each version becomes MIT licensed on the change date, 1 October 2030 at the latest. |
+| [Aktionariat License](LICENSE-AKTIONARIAT) | `DirectInvestment`, `SecondaryMarket` | MIT terms, provided the license fee payments built into the contracts stay in place. The fee recipient is [0x29Fe8914e76da5cE2d90De98a64d0055f199d06D](https://etherscan.io/address/0x29fe8914e76da5ce2d90de98a64d0055f199d06d). |
+| [MIT](LICENSE-MIT) | The `EIP7702` folder, interfaces, `ERC20Flaggable`, and code taken from other projects (OpenZeppelin, zOS, Uniswap interfaces), which keeps its authors' copyright notice | Free to use. |
+
+Versions published before version 6 remain under the license they were published with.

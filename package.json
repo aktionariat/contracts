@@ -8,7 +8,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition-ethers": "3.1.6",

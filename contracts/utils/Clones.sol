@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+// Copyright (c) 2016-2025 Zeppelin Group Ltd and contributors
+// Modifications Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
 // Copied from OpenZeppelin Contracts v5.7.0 (proxy/Clones.sol), reduced to the two functions used by
 // MultichainWalletFactory. Assembly is 1:1; the `value` parameter of cloneDeterministic is dropped
 // (we never fund clones at creation) and FailedDeployment is declared here instead of in utils/Errors.sol.

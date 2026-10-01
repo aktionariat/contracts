@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-//
+// Copyright (c) 2016-2025 Zeppelin Group Ltd and contributors
+// Modifications Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
 // From https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol
 //
 // Modifications:

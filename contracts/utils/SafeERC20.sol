@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+// Copyright (c) 2016-2025 Zeppelin Group Ltd and contributors
+// Modifications Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
 // Copied from OpenZeppelin Contracts v5.7.0 (token/ERC20/utils/SafeERC20.sol), reduced to the functions used
 // in this repo: safeTransfer, safeTransferFrom, forceApprove and their private helpers. Code is 1:1.
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.7.0/contracts/token/ERC20/utils/SafeERC20.sol

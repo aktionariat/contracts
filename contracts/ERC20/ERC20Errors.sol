@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
 
 pragma solidity 0.8.37;
 

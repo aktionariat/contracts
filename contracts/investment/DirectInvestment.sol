@@ -1,15 +1,7 @@
-/**
-* SPDX-License-Identifier: LicenseRef-Aktionariat
-*
-* Proprietary License
-*
-* This code cannot be used without an explicit permission from the copyright holder.
-* If you wish to use the Aktionariat Direct Investment Contract, you can either use the open version
-* named DirectInvestment.sol that can be used under an MIT License with Automated License Fee Payments,
-* or you can get in touch with use to negotiate a license.
-*
-* Copyright (c) 2021 Aktionariat AG (aktionariat.com), All rights reserved.
-*/
+// SPDX-License-Identifier: LicenseRef-Aktionariat
+// Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
+// Licensed under the Aktionariat License, see LICENSE-AKTIONARIAT
+
 pragma solidity 0.8.37;
 
 import "./IDirectInvestment.sol";

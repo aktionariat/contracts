@@ -1,9 +1,6 @@
-/**
-* SPDX-License-Identifier: MIT
-*
-* Copyright (c) 2016-2019 zOS Global Limited
-*
-*/
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2016-2019 zOS Global Limited
+
 pragma solidity 0.8.37;
 
 /**

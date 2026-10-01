@@ -1,4 +1,7 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LicenseRef-Aktionariat
+// Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
+// Licensed under the Aktionariat License, see LICENSE-AKTIONARIAT
+
 pragma solidity 0.8.37;
 
 import {IERC20} from "../ERC20/IERC20.sol";

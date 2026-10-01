@@ -1,6 +1,5 @@
-/**
- * SPDX-License-Identifier: MIT
- */
+// SPDX-License-Identifier: BUSL-1.1
+// Copyright (c) 2020-2026 Aktionariat AG (aktionariat.com)
 
 pragma solidity 0.8.37;
 
