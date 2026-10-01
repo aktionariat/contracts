@@ -4,7 +4,7 @@
 pragma solidity 0.8.37;
 
 /**
- * @title CompanyName AG Shares
+ * @title Recoverable
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
  *

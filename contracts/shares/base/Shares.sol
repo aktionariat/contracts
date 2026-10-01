@@ -8,7 +8,7 @@ import "../../ERC20/ERC20Allowlistable.sol";
 import "./Recoverable.sol";
 
 /**
- * @title CompanyName AG Shares
+ * @title Shares
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
  *

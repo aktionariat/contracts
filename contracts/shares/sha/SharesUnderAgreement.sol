@@ -10,12 +10,12 @@ import "../../ERC20/ERC20Allowlistable.sol";
 import "../../ERC20/ERC20Named.sol";
 
 /**
- * @title CompanyName AG Shares SHA
+ * @title SharesUnderAgreement
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
  *
- * This is an ERC-20 token representing share tokens of CompanyName AG that are bound to
- * a shareholder agreement that can be found at the URL defined in the constant 'terms'.
+ * This is an ERC-20 token representing share tokens that are bound to
+ * a shareholder agreement that can be found at the URL in 'terms'.
  */
 contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, DragAlong, Modification {
 

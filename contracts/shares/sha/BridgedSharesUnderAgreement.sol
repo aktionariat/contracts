@@ -8,7 +8,7 @@ import "../../ERC20/ERC20Allowlistable.sol";
 import "../../ERC20/ERC20Named.sol";
 
 /**
- * @title Bridged CompanyName AG Shares SHA
+ * @title BridgedSharesUnderAgreement
  * @author Murat Ögat, murat@aktionariat.com
  *
  * The representation of a home-chain SharesUnderAgreement on another chain, bridged with Chainlink CCIP:

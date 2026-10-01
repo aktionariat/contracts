@@ -4,17 +4,17 @@
 pragma solidity 0.8.37;
 
 /**
- * @title CompanyName AG Shares
+ * @title Modification
  * @author Luzius Meisser, luzius@aktionariat.com
  * @author Murat Ögat, murat@aktionariat.com
  *
- * Migrate to a new contract. Meaning can depend on the token to be migrated.
- * - Upgrades
- * Draggable tokens can be "upgraded" by replacing the underlying with a new contract.
- * In this case, users are expected to unwrap to the new token by themselves.
- * - Cancellation / Detokenization
- * In case of a cancellation of the SHA or detokenization, the underlying can be
- * replaced by a shell contract, such as ERC20Cancelled.
+ * Changes what the SharesUnderAgreement wrap, after a 20 day delay in which the contract owner or any
+ * holder of more than 10% of the wrapped tokens can cancel.
+ * - Migration: the base tokens move into a successor contract and the agreement ends. Holders unwrap
+ *   to the successor token by themselves.
+ * - Internal migration: the base token is replaced by its own successor, the agreement stays binding.
+ * - Termination: the agreement ends, holders unwrap to the base token.
+ * - Cancellation: the base tokens are burned and the agreement ends, for a reissuance in another form.
  */
 
 import "./Wrapping.sol";
