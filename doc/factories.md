@@ -34,7 +34,7 @@ The `DirectInvestment` and the market are built with the factory's `currency`, `
 
 Nothing is deployed on another chain unless the backend calls this function, which the issuer portal does when the issuer enables the chain. To open the bridge the issuer then adds the new chain to the home pool with `applyChainUpdates` (one proposal on the home chain) and accepts the new pool's ownership (one proposal on the new chain).
 
-What the bridge does to holders is covered in [allowlist.md](allowlist.md): a frozen holder cannot bridge out, a bridged-in transfer to an unlisted or frozen receiver waits until the issuer types it, and the lockbox is the custody address of the whole bridged float.
+What the bridge means for holders and the issuer is covered in [multichain.md](multichain.md).
 
 ## Gas
 

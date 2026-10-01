@@ -39,3 +39,7 @@ Only one recovery can be pending per address at a time. A holder who is unsure w
 ## Burning instead of recovering
 
 The issuer can also use the same time-locked machinery to cancel tokens rather than move them. `initBurn(target)` (issuer only) starts the 184-day clock, and `burn(target)` destroys the balance once it has elapsed. Like a recovery, a pending burn can be vetoed by the affected holder with `cancelRecovery()`. Burning can indicate that the underlying shares were cancelled, or be a preparatory step for re-issuing them in a different form or on a different chain.
+
+## Other chains
+
+The bridged token has the same recovery and burn mechanism for the tokens held on its chain. See [multichain.md](multichain.md) for what a burn there means and for claims against the lockbox.

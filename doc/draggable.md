@@ -20,7 +20,7 @@ Unwrapping is only possible once the agreement is no longer `binding`, which hap
 
 Every terminal event leaves the wrapper waiting for its holders: after a migration the successor tokens sit in the wrapper, after a termination the base tokens, after an acquisition the proceeds. Holders who never act would keep the wrapper in that half-finished state forever. The issuer can therefore propose to complete the unwrap for a holder with `proposeUnwrap` (single or batch), which is only possible once the agreement is no longer binding.
 
-The proposal follows the same pattern as a recovery, with one important difference: it can only ever deliver the holder's full balance to the holder's own address. Nobody is moved to another address or another token without the chance to object. During the 20-day delay (`UNWRAP_PROPOSAL_DELAY`) the holder can cancel with `cancelUnwrap`, a contract holder through its owner with `cancelUnwrapOnOwnedContract`, and the issuer with `cancelUnwrap(address)`. A holder who simply unwraps on their own cancels the proposal by doing so. After the delay anyone can call `executeUnwrap`, which unwraps whatever the holder holds at that moment. A frozen holder cannot be executed, since the unwrap runs through the transfer rules like any other move; the issuer unfreezes the address first. Events: `UnwrapProposed`, `UnwrapProposalCancelled`, `Unwrapped`.
+The proposal follows the same pattern as a recovery, with one important difference: it can only ever deliver the holder's full balance to the holder's own address. Nobody is moved to another address or another token without the chance to object. During the 20-day delay (`UNWRAP_PROPOSAL_DELAY`) the holder can cancel with `cancelUnwrap`, a contract holder through its owner with `cancelUnwrapOnOwnedContract`, and the issuer with `cancelUnwrap(address)`. A holder who simply unwraps on their own cancels the proposal by doing so. After the delay anyone can call `executeUnwrap`, which unwraps whatever the holder holds at that moment. A frozen holder cannot be executed, since the unwrap runs through the transfer rules like any other move; the issuer unfreezes the address first. The CCIP lockbox must never be proposed (see [multichain.md](multichain.md)). Events: `UnwrapProposed`, `UnwrapProposalCancelled`, `Unwrapped`.
 
 ## Drag-Along
 
@@ -38,6 +38,8 @@ The 10% threshold, here and for the drag-along, is measured against the wrapped 
 | `proposeTermination()` | issuer or >10% holder | Lifts the binding without moving anything. Holders can unwrap back into the plain base token. |
 | `proposeCancellation()` | issuer only | Burns the escrowed base tokens, e.g. to re-issue the underlying securities in a different form or on another chain. |
 | `proposeInternalMigration()` | issuer only | Updates the base token to its own successor without terminating the agreement. |
+
+After a migration the old wrapper holds the successor tokens and pays them out as holders unwrap. If the successor is subject to transfer restrictions, its issuer types the old wrapper Admin there, as the wrapper is on its base token (see [allowlist.md](allowlist.md)).
 
 Migrating to a new contract is how the functionality of an SHA token is upgraded: rather than making the existing token mutable, holders consent to the change by being moved (or by unwrapping and re-wrapping) into a new contract whose terms they can inspect.
 

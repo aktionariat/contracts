@@ -10,7 +10,7 @@
 ## CMTAT Function Equivalency Table
 
 ### Metadata
-- Implementation language: Solidity (`>=0.8.0 <0.9.0`)
+- Implementation language: Solidity (`0.8.37`)
 - Version: `Shares` v6 (`VERSION = 6`)
 
 ### Mandatory Attributes
@@ -33,8 +33,8 @@
 | 1.6 | Pause tokens | `pause` | Pause must prevent all transfers until `unpause` is called. | y | `pause()` (onlyOwner) sets a global flag (`GLOBAL_FLAG_INDEX_PAUSED = 100`) on `ERC20Flaggable._settings`. `_beforeTokenTransfer` reverts every transfer (including mints, burns, recoveries, and migrations) with `TransfersPaused` while the flag is set. Emits `Paused`. |
 | 1.7 | Unpause tokens | `unpause` |  | y | `unpause()` (onlyOwner) clears the global pause flag and emits `Unpaused`. Reversible. |
 | 1.8 | Deactivate contract | `deactivateContract` | Must permanently disable the token (except in upgradeability patterns where deactivation behavior is explicitly defined). | n | Upgradeability is given through explicit migration functions. |
-| 1.9 | Freeze | `freeze` or `setAddressFrozen(true)` *(inferred from extracted PDF text)* | Must block transfers to and from a given address. Single-function implementations are acceptable if they set a frozen status. | y | Realized via `ERC20Allowlistable.setType(account, TYPE_RESTRICTED)` (onlyOwner, also accepts an address array). A `RESTRICTED` address cannot receive any tokens and can only send to an `ADMIN` address. Stored as a per-account flag in the upper 32 bits of the balance slot. |
-| 1.10 | Unfreeze | `unfreeze` or `setAddressFrozen(false)` *(inferred from extracted PDF text)* | Single-function implementations are acceptable if they clear a frozen status. | y | `setType(account, TYPE_FREE)` (or `TYPE_ALLOWED`) clears the restricted flag. |
+| 1.9 | Freeze | `freeze` or `setAddressFrozen(true)` *(inferred from extracted PDF text)* | Must block transfers to and from a given address. Single-function implementations are acceptable if they set a frozen status. | y | `ERC20Allowlistable.freeze(account)` (onlyOwner) sets the account to `TYPE_RESTRICTED`; `setType(account, TYPE_RESTRICTED)` does the same and accepts an address array. A `RESTRICTED` address cannot receive any tokens and can only send to the contract owner. Stored as a per-account flag in the upper 32 bits of the balance slot. |
+| 1.10 | Unfreeze | `unfreeze` or `setAddressFrozen(false)` *(inferred from extracted PDF text)* | Single-function implementations are acceptable if they clear a frozen status. | y | `unfreeze(account)` (onlyOwner) restores the account to `defaultType()`: `TYPE_ALLOWED` when the allowlist is applicable, else `TYPE_FREE`. `setType` can also be used. |
 
 ### Optional Functions
 

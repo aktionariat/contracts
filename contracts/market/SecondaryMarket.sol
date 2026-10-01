@@ -319,7 +319,7 @@ contract SecondaryMarket is Ownable, IntentVerifier {
         uint256 totalExecutionPrice = getTotalExecutionPrice(seller, buyer, tradedAmount);
         uint256 totalFee = totalExecutionPrice * tradingFeeBips / ALL;
 
-        // Via the market, so an admin market allowlists the buyer
+        // Via the market: under transfer restrictions it is typed ALLOWED and the buyer must be ALLOWED already
         IERC20(TOKEN).safeTransferFrom(seller.owner, address(this), tradedAmount);
         IERC20(CURRENCY).safeTransferFrom(buyer.owner, address(this), totalExecutionPrice);
         IERC20(TOKEN).safeTransfer(buyer.owner, tradedAmount);

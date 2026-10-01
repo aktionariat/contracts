@@ -21,9 +21,8 @@ describe("Allowlist (ERC20Allowlistable)", function () {
   });
 
   describe("restricted holders", function () {
-    // The wrapper, the secondary market and the token pools are typed ADMIN so that they can forward tokens to
-    // anyone. A restricted holder must not be able to use them as an exit: the only recipient it can
-    // send to is the owner.
+    // No type lets a contract receive from a restricted holder, not even ADMIN, so a wrapper, market or pool
+    // can never serve as an exit: the only recipient a restricted holder can send to is the owner.
 
     it("cannot wrap base shares through the ADMIN wrapper", async () => {
       await shares.connect(owner).mint(signer2, 10n);

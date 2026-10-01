@@ -40,7 +40,7 @@ Only the pause and the Restricted rules apply to moves into a sink. Sending to t
 Contracts that hold tokens on behalf of others need a type under a restricted regime, otherwise Allowed holders cannot send to them. Which type depends on whom they pay out to:
 
 - The `SharesUnderAgreement` wrapper is **Admin on the base token**. After termination it pays base shares back to its own holders, and every one of them passed the wrapper's own gate before, so the wrapper may stamp them Allowed on the base.
-- The `SecondaryMarket` and the `DirectInvestment` are **Allowed on the traded token**, not Admin. They face outside addresses: an Admin market would let anyone buy and become Allowed on the way, which defeats the regime. As Allowed contracts they can only pay out to addresses the issuer has typed, so the allowlist is the gate an investor passes before buying. The same applies to the CCIP token pools and the home-chain lockbox, which pay out to whoever bridges back.
+- The `SecondaryMarket` and the `DirectInvestment` are **Allowed on the traded token**, not Admin. They face outside addresses: an Admin market would let anyone buy and become Allowed on the way, which defeats the regime. As Allowed contracts they can only pay out to addresses the issuer has typed, so the allowlist is the gate an investor passes before buying. The same applies to the CCIP token pools and the home-chain lockbox, which pay out to whoever bridges back (see [multichain.md](multichain.md)).
 
 `AktionariatFactory` sets these types at deployment when a company starts restricted. Contracts added later, or a regime switched on later, are typed by the issuer. No type lets a contract receive from a Restricted address, so a blocked holder cannot wrap, sell or bridge tokens to get around the block. Recovery of a Restricted address with `initRecovery` / `recover` must therefore name the owner as recipient, or the address must be unfrozen first.
 
@@ -51,6 +51,8 @@ The token type is not stored anywhere but implied by the address they reside on.
 ## Limited Free Float
 
 The use-case of having a limited free float is somewhat extraordinary and of special interest. Starting with all shares being restricted, a company could start setting some selected addresses to the 'Free' type, thereby making the tokens on these addresses freely transferrable (at least until they are transferred to an allowlisted address again). For example, a company could declare all its treasury shares free float and then start selling them while keeping transfer restrictions for the existing shareholders in place.
+
+The token supports this, but the factory, the markets and the bridge assume one regime per company: all free or all restricted. Under restrictions they are typed Allowed and only pay out to Allowed addresses, so free-float holders cannot be served by the same market.
 
 ## Usage
 

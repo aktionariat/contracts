@@ -6,13 +6,15 @@ The public repository for all smart contracts used by Aktionariat.
 
 ## Overview
 
-There are five notable smart contracts in this repository:
+The notable smart contracts in this repository:
 1. Our custom [Multisignature Contract](doc/multisig.md), providing the basis for corporate accounts with multiple signers.
-2. The [ERC20Recoverable Contract](doc/recoverable.md), implementing our decentralized claim mechanism for lost tokens.
-3. The [ERC20Draggable Contract](doc/draggable.md), implementing the drag-along clause found in many shareholder agreements.
+2. The [Recoverable Contract](doc/recoverable.md), implementing our decentralized claim mechanism for lost tokens.
+3. The [SharesUnderAgreement Contract](doc/draggable.md), implementing the drag-along clause found in many shareholder agreements.
 4. The [ERC20Allowlistable Contract](doc/allowlist.md), providing a highly efficient and elaborate way to enforce transfer restrictions.
-5. The [Brokerbot Contract](doc/market.md), providing mechanisms for the selling and repurchasing of shares with automated price adjustments.
-6. The [AktionariatFactory](doc/factories.md), deploying a company's contracts with the same address on every chain.
+5. The [DirectInvestment Contract](doc/market.md), selling shares directly to investors at a price set by the issuer.
+6. The [SecondaryMarket Contract](doc/secondarymarket.md), where shareholders trade with each other through signed orders.
+7. The [AktionariatFactory](doc/factories.md), deploying a company's contracts with the same address on every chain.
+8. The [multichain setup](doc/multichain.md), bridging shares to other chains through Chainlink CCIP.
 
 Futhermore, there is a [Shares Contract](doc/shares.md) that can contain all the functions to deploy a token that can represent shares under Swiss law. Also, we'd like to point to our elegant implementation of [infinite allowances](doc/infiniteallowance.md).
 

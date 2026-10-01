@@ -49,7 +49,7 @@ An implementation MAY satisfy the CMTAT standard while still failing to meet the
 ## CMTAT Function Equivalency Table
 
 ### Metadata
-- Implementation language: Solidity (`>=0.8.0 <0.9.0`)
+- Implementation language: Solidity (`0.8.37`)
 - Implementation version: `Shares` v6 (`VERSION = 6`) is the primary subject of this assessment. Where the shareholder-agreement variant `SharesUnderAgreement` v6 (`VERSION = 6`) differs, this is noted inline. Both share the same base contracts (`ERC20Flaggable`, `ERC20Named`, `ERC20Allowlistable`, `Recoverable`, `Ownable`, `DeterrenceFee`).
 
 ### Token Attributes
@@ -115,7 +115,7 @@ For CMTAT reference implementations, `tokenId` SHOULD be included.
 
 | ID   | Requirement | CMTAT Solidity corresponding feature                         | Access Control (CMTAT Solidity)               | Notes                                                        | Present in implementation being approved (`y/n`) | Access Control (implementation being approved) | Implementation details |
 |---|---|---|---|---|---|---|---|
-| 15   | Freeze      | `freeze` or `setAddressFrozen(true)` *(inferred from extracted PDF text)* | Role-restricted (compliance/admin authorized) | Must block transfers to and from a given address. Single-function implementations are acceptable if they set a frozen status. | y | onlyOwner | Dedicated `ERC20Allowlistable.freeze(account)` (onlyOwner), which sets the account to `TYPE_RESTRICTED`. A `RESTRICTED` address cannot receive any tokens and can only send to an `ADMIN` address. Stored as a per-account flag in the upper 32 bits of the balance slot. The general-purpose `setType(account, TYPE_RESTRICTED)` (with a batch/array overload) achieves the same effect. |
+| 15   | Freeze      | `freeze` or `setAddressFrozen(true)` *(inferred from extracted PDF text)* | Role-restricted (compliance/admin authorized) | Must block transfers to and from a given address. Single-function implementations are acceptable if they set a frozen status. | y | onlyOwner | Dedicated `ERC20Allowlistable.freeze(account)` (onlyOwner), which sets the account to `TYPE_RESTRICTED`. A `RESTRICTED` address cannot receive any tokens and can only send to the contract owner. Stored as a per-account flag in the upper 32 bits of the balance slot. The general-purpose `setType(account, TYPE_RESTRICTED)` (with a batch/array overload) achieves the same effect. |
 | 16   | Unfreeze    | `unfreeze` or `setAddressFrozen(false)` *(inferred from extracted PDF text)* | Role-restricted (compliance/admin authorized) | Single-function implementations are acceptable if they clear a frozen status. | y | onlyOwner | Dedicated `ERC20Allowlistable.unfreeze(account)` (onlyOwner), which restores the account to `defaultType()` — `TYPE_ALLOWED` when the allowlist is applicable (so the address can keep transacting within the allowlist), or `TYPE_FREE` when it is not. The general-purpose `setType` can also be used to clear the restricted flag. |
 
 
@@ -321,6 +321,10 @@ The following features go beyond the CMTAT baseline:
 - **Governed migration / termination / cancellation (`Modification`).** The owner or any ≥10% holder can `proposeMigration` (move the underlying to a successor), `proposeTermination` (lift the binding), or — owner only — `proposeCancellation` (burn the escrowed base for reissuance elsewhere) and `proposeInternalMigration`. Each proposal has a 20-day veto delay before `executeMigration`, and can be vetoed via `cancelMigration` by the owner or any ≥10% holder.
 
 - **Base-recovery defense.** `cancelBaseRecovery` lets the wrapper defend against an attempt to recover the base tokens it holds in escrow.
+
+Multichain:
+
+- **Bridged representation (`BridgedSharesUnderAgreement`).** On other chains the wrapper is represented by a token at the same address, minted and burned only by its Chainlink CCIP pool against tokens locked on the home chain. It shares the base contracts of this assessment (`ERC20Named`, `ERC20Allowlistable`, `Recoverable`), so name, symbol, terms, zero decimals, pause, freeze, allowlist and the time-locked recovery and burn apply there as well. The issuer cannot mint it. Pause, freeze and allowlist are enforced per chain and are not synchronised.
 
 
 

@@ -45,4 +45,4 @@ A trading fee is charged to the seller — the buyer pays the full price, the se
 
 The market is operated by the issuer. It can be opened and closed (`open` / `close`), and a trusted `router` can be configured: if set, only that router may call `process`. Pinning a router prevents front-running, since no one else can submit a different matching of the same orders. With no router configured, anyone can act as router.
 
-Under transfer restrictions the market must be typed Admin on the token, like every intermediary (see [allowlist.md](allowlist.md)): sold tokens pass through the market on their way to the buyer, who becomes Allowed on arrival.
+Under transfer restrictions the market is typed Allowed on the token (see [allowlist.md](allowlist.md)): sold tokens pass through the market on their way to the buyer, who must be Allowed already. The allowlist is the gate an investor passes before buying.
