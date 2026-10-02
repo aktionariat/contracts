@@ -52,7 +52,7 @@ The token type is not stored anywhere but implied by the address they reside on.
 
 The use-case of having a limited free float is somewhat extraordinary and of special interest. Starting with all shares being restricted, a company could start setting some selected addresses to the 'Free' type, thereby making the tokens on these addresses freely transferrable (at least until they are transferred to an allowlisted address again). For example, a company could declare all its treasury shares free float and then start selling them while keeping transfer restrictions for the existing shareholders in place.
 
-The token supports this, but the factory, the markets and the bridge assume one regime per company: all free or all restricted. Under restrictions they are typed Allowed and only pay out to Allowed addresses, so free-float holders cannot be served by the same market.
+The token supports this, but the factory, the markets and the bridge assume one regime per company: all free or all restricted. Under restrictions they are typed Allowed and only pay out to Allowed addresses, so free-float holders cannot be served by the same market. A company that does run both regimes would use a second `SecondaryMarket`, left untyped, for its free-float holders.
 
 ## Usage
 

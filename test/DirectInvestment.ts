@@ -139,6 +139,15 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
       expect(await token.balanceOf(signer2)).to.equal(1n);
       expect(await token.balanceOf(signer3)).to.equal(2n);
     });
+
+    it("rejects a batch with arrays of different lengths", async () => {
+      await expect(di.connect(owner).notifyTradesAndTransfer([signer2, signer3], [1n], [0n, 0n], ["0x", "0x"]))
+        .to.be.revertedWithCustomError(di, "DirectInvestment_ArrayLengthMismatch");
+      await expect(di.connect(owner).notifyTradesAndTransfer([signer2], [1n], [0n, 0n], ["0x"]))
+        .to.be.revertedWithCustomError(di, "DirectInvestment_ArrayLengthMismatch");
+      await expect(di.connect(owner).notifyTradesAndTransfer([signer2], [1n], [0n], ["0x", "0x"]))
+        .to.be.revertedWithCustomError(di, "DirectInvestment_ArrayLengthMismatch");
+    });
   });
 
   describe("On-chain buy via PaymentHub", function () {
@@ -234,7 +243,7 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
       const successor = await deployDirectInvestment(token, base, await hub.getAddress());
 
       const tokenBal = await token.balanceOf(di);
-      await di.connect(owner).migrate(successor);
+      await expect(di.connect(owner).migrate(successor)).to.emit(di, "SettingsChange").withArgs(0n);
 
       expect(await token.balanceOf(successor)).to.equal(tokenBal);
       expect(await base.balanceOf(successor)).to.equal(555n);

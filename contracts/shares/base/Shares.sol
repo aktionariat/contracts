@@ -62,6 +62,7 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     event SuccessorDefined(ISuccessorToken successor);
 
     error NoSuccessorDefined();
+    error ArrayLengthMismatch();
 
     constructor(string memory _symbol, string memory _name, string memory _terms, address _owner) ERC20Named(_symbol, _name, 0, _owner) ERC20Allowlistable() DeterrenceFee(0.01 ether) {
         terms = _terms;
@@ -147,8 +148,6 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
      * 
      * See mint for more information.
      */
-    error ArrayLengthMismatch();
-
     function batchMint(address[] calldata target, uint256[] calldata amount) public onlyOwner {
         if (target.length != amount.length) revert ArrayLengthMismatch();
         uint256 len = target.length;
@@ -158,15 +157,15 @@ contract Shares is IERC20, ERC20Named, ERC20Allowlistable, Recoverable {
     }
 
     /**
-     * Mints the amount of tokens to the shareholder and instructs the wrapped contract to fetch and wrap them.
+     * Mints the amount of tokens to the shareholder and instructs the wrapper contract to fetch and wrap them.
      * The necessary allowance is set automatically.
      */
     function mintAndWrap(address shareholder, address wrapper, uint256 amount) public onlyOwner {
         mint(shareholder, amount);
-        uint256 allowance = allowance(shareholder, wrapper);
-        if (allowance < INFINITE_ALLOWANCE){
-            // set allowance of shareholder such that is is not changed in the process of minting and wrapping
-            _approve(shareholder, wrapper, allowance + amount);
+        uint256 currentAllowance = allowance(shareholder, wrapper);
+        if (currentAllowance < INFINITE_ALLOWANCE){
+            // set allowance of shareholder such that it is not changed in the process of minting and wrapping
+            _approve(shareholder, wrapper, currentAllowance + amount);
         }
         IWrapper(wrapper).mintFromBase(shareholder, amount);
     }

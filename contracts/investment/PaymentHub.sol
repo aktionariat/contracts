@@ -10,11 +10,14 @@ import "./IDirectInvestment.sol";
 import "./IUniswap.sol";
 
 /**
- * A hub for payments, to be used with the DirectInvestment contract.
- * Enables a single allowance given to this contract to be used across multiple DirectInvestment contracts.
- * Separates payment process with possible swaps from the DirectInvestment settlement logic.
- * Handles paying with the base currency of the DirectInvestment contract, or any other ERC20 token or ETH, by giving a Uniswap v3 swap path.
- * Swaps run through the Uniswap Universal Router; the hub hands it the payment and it settles into the DirectInvestment contract and returns the change.
+ * @title PaymentHub
+ *
+ * @author Luzius Meisser, luzius@aktionariat.com
+ * @author Murat Ögat, murat@aktionariat.com
+ *
+ * @notice Takes payments for DirectInvestment contracts, so one allowance to the hub works for all of them.
+ * @notice Pays in the base currency directly, or in any other ERC20 token or ETH swapped through the Uniswap Universal Router.
+ * @notice The router settles into the DirectInvestment contract and returns the change; the hub holds no tokens. See doc/market.md.
  */
 
 contract PaymentHub is Ownable {

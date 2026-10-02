@@ -16,7 +16,7 @@ The notable smart contracts in this repository:
 7. The [AktionariatFactory](doc/factories.md), deploying a company's contracts with the same address on every chain.
 8. The [multichain setup](doc/multichain.md), bridging shares to other chains through Chainlink CCIP.
 
-Futhermore, there is a [Shares Contract](doc/shares.md) that can contain all the functions to deploy a token that can represent shares under Swiss law. Also, we'd like to point to our elegant implementation of [infinite allowances](doc/infiniteallowance.md).
+Furthermore, there is a [Shares Contract](doc/shares.md) that can contain all the functions to deploy a token that can represent shares under Swiss law. Also, we'd like to point to our elegant implementation of [infinite allowances](doc/infiniteallowance.md).
 
 ## Full User Control
 

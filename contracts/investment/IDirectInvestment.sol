@@ -17,4 +17,5 @@ interface IDirectInvestment {
   error DirectInvestment_InvalidSettings();
   error DirectInvestment_NotPaymentHub(address sender);
   error DirectInvestment_InsufficientPayment(uint256 required, uint256 provided);
+  error DirectInvestment_ArrayLengthMismatch();
 }

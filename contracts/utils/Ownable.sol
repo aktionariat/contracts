@@ -6,7 +6,7 @@
 // Modifications:
 // - Replaced Context._msgSender() with msg.sender
 // - Made leaner
-// - Extracted interface
+// - No renounceOwnership and no zero address check: ownership is renounced with transferOwnership(address(0))
 
 pragma solidity 0.8.37;
 
@@ -15,7 +15,7 @@ pragma solidity 0.8.37;
  * there is an account (an owner) that can be granted exclusive access to
  * specific functions.
  *
- * By default, the owner account will be the one that deploys the contract. This
+ * The owner account is given to the constructor. This
  * can later be changed with {transferOwnership}.
  *
  * This module is used through inheritance. It will make available the modifier
@@ -31,7 +31,7 @@ contract Ownable {
     error Ownable_NotOwner(address sender);
 
     /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
+     * @dev Initializes the contract setting `initialOwner` as the initial owner.
      */
     constructor (address initialOwner) {
         owner = initialOwner;
@@ -45,7 +45,7 @@ contract Ownable {
 
     /**
      * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
+     * Can only be called by the current owner. The zero address renounces ownership for good.
      */
     function transferOwnership(address newOwner) external onlyOwner {
         emit OwnershipTransferred(owner, newOwner);

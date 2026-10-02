@@ -9,6 +9,16 @@ import "../utils/Ownable.sol";
 import "../ERC20/IERC20.sol";
 import "../utils/SafeERC20.sol";
 
+/**
+ * @title DirectInvestment
+ *
+ * @author Luzius Meisser, luzius@aktionariat.com
+ * @author Murat Ögat, murat@aktionariat.com
+ *
+ * @notice Sells the issuer's shares to investors at a price the issuer sets, with an optional increment per share sold.
+ * @notice Crypto payments arrive through the PaymentHub, bank payments are settled by the issuer. See doc/market.md.
+ */
+
 contract DirectInvestment is IDirectInvestment, Ownable {
 
     using SafeERC20 for IERC20;
@@ -91,6 +101,7 @@ contract DirectInvestment is IDirectInvestment, Ownable {
 
     /// @notice Batch version of `notifyTradeAndTransfer`.
     function notifyTradesAndTransfer(address[] calldata buyers, uint256[] calldata amountShares, uint256[] calldata amountBaseCurrency, bytes[] calldata ref) external onlyOwner {
+        require(buyers.length == amountShares.length && buyers.length == amountBaseCurrency.length && buyers.length == ref.length, DirectInvestment_ArrayLengthMismatch());
         for (uint i = 0; i < buyers.length; i++) {
             deliverShares(buyers[i], amountShares[i], amountBaseCurrency[i], ref[i]);
         }
@@ -128,7 +139,7 @@ contract DirectInvestment is IDirectInvestment, Ownable {
     function migrate(address directInvestmentContract) external onlyOwner() {
         IERC20(token).safeTransfer(directInvestmentContract, token.balanceOf(address(this)));
         IERC20(base).safeTransfer(directInvestmentContract, base.balanceOf(address(this)));
-        cryptoBuyingEnabled = false;
+        setEnabled(false);
     }
 
     /// @dev Restricts access to the configured PaymentHub.
