@@ -68,14 +68,6 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
       expect(await sharesUnderAgreement.totalSupply()).to.equal(40n);
     });
 
-    it("wraps for a different recipient", async () => {
-      await base.connect(owner).mint(signer1, 30n);
-      await base.connect(signer1).approve(sharesUnderAgreement, 30n);
-      await sharesUnderAgreement.connect(signer1)["wrap(address,uint256)"](signer2, 30n);
-      expect(await sharesUnderAgreement.balanceOf(signer2)).to.equal(30n);
-      expect(await sharesUnderAgreement.balanceOf(signer1)).to.equal(0n);
-    });
-
     it("wraps newly minted base via base.mintAndWrap (mintFromBase)", async () => {
       await base.connect(owner).mintAndWrap(signer3, sharesUnderAgreement, 25n);
       expect(await sharesUnderAgreement.balanceOf(signer3)).to.equal(25n);

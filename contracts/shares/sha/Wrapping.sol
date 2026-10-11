@@ -55,22 +55,13 @@ abstract contract Wrapping is ERC20Flaggable, Ownable {
 
     /**
      * Wraps base shares into wrapped shares.
-     * 
-     * Convenience method for wrap(msg.sender, amount)
+     *
+     * Wraps the given amount of base shares from the sender into wrapped shares for the sender.
+     *
+     * Requires the sender to have approved the transfer of the base shares to this contract.
      */
     function wrap(uint256 amount) external returns (uint256) {
         return wrap(msg.sender, msg.sender, amount);
-    }
-
-    /**
-     * Wraps base shares into wrapped shares.
-     * 
-     * Wraps the given amount of base shares from the sender into wrapped shares for the recipient.
-     * 
-     * Requires the sender to have approved the transfer of the base shares to this contract.
-     */
-    function wrap(address recipient, uint256 amount) external returns (uint256) {
-        return wrap(msg.sender, recipient, amount);
     }
 
     function wrap(address sender, address recipient, uint256 amount) requireBinding internal returns(uint256) {
