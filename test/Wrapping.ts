@@ -266,15 +266,15 @@ describe("Wrapping (sha/Wrapping.sol)", function () {
   describe("after an executed drag-along", function () {
     let currency: Contract;
     const buyer = signer3;
-    const PRICE_PER_SHARE_E18 = ethers.parseUnits("2", 18);
-    const TOTAL_PRICE = 200n;
+    const PRICE_PER_SHARE = ethers.parseUnits("2", 18);
+    const TOTAL_PRICE = PRICE_PER_SHARE * 100n;
 
     beforeEach(async () => {
       currency = await ethers.getContractAt("contracts/ERC20/IERC20.sol:IERC20", ZCHF_ADDRESS);
       await setZCHFBalance(await buyer.getAddress(), TOTAL_PRICE);
       await currency.connect(buyer).approve(sua, TOTAL_PRICE);
       await setBalance(await buyer.getAddress(), ethers.parseEther("3"));
-      await sua.connect(buyer).offerAcquisition(currency, PRICE_PER_SHARE_E18, "tender", { value: DRAG_FEE });
+      await sua.connect(buyer).offerAcquisition(currency, PRICE_PER_SHARE, "tender", { value: DRAG_FEE });
       await connection.networkHelpers.time.increase(DRAG_DELAY + 1n);
       await sua.acceptOffer();
       expect(await sua.binding()).to.equal(false);
@@ -284,8 +284,8 @@ describe("Wrapping (sha/Wrapping.sol)", function () {
       const before = await currency.balanceOf(signer2);
       await sua.connect(owner)["proposeUnwrap(address)"](signer2);
       await connection.networkHelpers.time.increase(UNWRAP_DELAY + 1n);
-      await expect(sua.executeUnwrap(signer2)).to.emit(sua, "Unwrapped").withArgs(signer2.address, 40n, 80n);
-      expect(await currency.balanceOf(signer2) - before).to.equal(80n);
+      await expect(sua.executeUnwrap(signer2)).to.emit(sua, "Unwrapped").withArgs(signer2.address, 40n, ethers.parseUnits("80", 18));
+      expect(await currency.balanceOf(signer2) - before).to.equal(ethers.parseUnits("80", 18));
       expect(await sua.balanceOf(signer2)).to.equal(0n);
     });
   });

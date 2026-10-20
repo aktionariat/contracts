@@ -125,9 +125,9 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
   describe("DragAlong (acquisition)", function () {
     let currency: Contract;
     const buyer = signer3;
-    const PRICE_PER_SHARE_E18 = ethers.parseUnits("2", 18); // 2 currency units per wrapped unit
+    const PRICE_PER_SHARE = ethers.parseUnits("2", 18); // 2 currency per wrapped unit
     // 60 + 40 = 100 wrapped total -> totalPrice = 2 * 100 = 200 currency
-    const TOTAL_PRICE = 200n;
+    const TOTAL_PRICE = PRICE_PER_SHARE * 100n;
 
     beforeEach(async () => {
       // Use the real forked ZCHF as the payment currency (a plain ERC20), not a securities token.
@@ -142,7 +142,7 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
     });
 
     async function makeOffer() {
-      await sharesUnderAgreement.connect(buyer).offerAcquisition(currency, PRICE_PER_SHARE_E18, "tender", { value: DRAG_FEE });
+      await sharesUnderAgreement.connect(buyer).offerAcquisition(currency, PRICE_PER_SHARE, "tender", { value: DRAG_FEE });
     }
 
     it("records an offer and cannot be accepted before the delay", async () => {
@@ -179,11 +179,11 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
       // Assert on deltas: forked ZCHF balances can carry over from other suites.
       const signer1Before = await currency.balanceOf(signer1);
       await sharesUnderAgreement.connect(signer1).unwrap(60n);
-      expect(await currency.balanceOf(signer1) - signer1Before).to.equal(120n);
+      expect(await currency.balanceOf(signer1) - signer1Before).to.equal(ethers.parseUnits("120", 18));
 
       const signer2Before = await currency.balanceOf(signer2);
       await sharesUnderAgreement.connect(signer2).unwrap(40n);
-      expect(await currency.balanceOf(signer2) - signer2Before).to.equal(80n);
+      expect(await currency.balanceOf(signer2) - signer2Before).to.equal(ethers.parseUnits("80", 18));
     });
   });
 });

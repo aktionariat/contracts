@@ -14,15 +14,15 @@ The on-chain process is veto-based rather than vote-based. A buyer publishes a b
 
 ### Initiation
 
-Any address can open an offer by calling `offerAcquisition(currency, pricePerShareE18, message)`. The call requires a deterrence fee paid in the chain's native currency (forwarded to the issuer) so that frivolous offers carry a real cost; the issuer themselves is exempt. Only one offer can be active at a time — a second call reverts with `OfferPending` until the existing offer is cancelled or executed.
+Any address can open an offer by calling `offerAcquisition(currency, pricePerShare, message)`. The call requires a deterrence fee paid in the chain's native currency (forwarded to the issuer) so that frivolous offers carry a real cost; the issuer themselves is exempt. Only one offer can be active at a time — a second call reverts with `OfferPending` until the existing offer is cancelled or executed.
 
 The offer specifies:
 
 - `currency` — the ERC-20 token in which the buyer will pay (typically a stablecoin)
-- `pricePerShareE18` — currency units paid per wrapped unit, scaled by 10¹⁸ so fractional prices can be expressed exactly
+- `pricePerShare` — amount of currency paid per wrapped unit, in the currency's smallest unit (2 ZCHF per share is `2e18`)
 - `message` — a free-form description, for example a link to terms or a press release
 
-The total price is **not** fixed at proposal time. It is computed at execution as `pricePerShareE18 * totalSupply() / 10**18`, using the supply at the moment of execution. This means that if new shares are tokenized during the 20-day delay, the buyer pays proportionally more so per-share proceeds are not diluted for existing holders. The buyer must therefore pre-approve enough of the currency on the contract to cover the worst-case total they are willing to pay.
+The total price is **not** fixed at proposal time. It is computed at execution as `pricePerShare * totalSupply()`, using the supply at the moment of execution. This means that if new shares are tokenized during the 20-day delay, the buyer pays proportionally more so per-share proceeds are not diluted for existing holders. The buyer must therefore pre-approve enough of the currency on the contract to cover the worst-case total they are willing to pay.
 
 The proposal emits `OfferMade` and starts a 20-day delay (`DRAG_PROPOSAL_DELAY`).
 

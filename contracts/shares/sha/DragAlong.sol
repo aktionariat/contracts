@@ -26,7 +26,7 @@ abstract contract DragAlong is Wrapping, DeterrenceFee {
         address buyer; // 160 Bits
         uint64 timestamp; // 64 Bits
         IERC20 currency; // 160 Bits
-        uint256 pricePerShareE18; // 256 Bits — currency units paid per wrapped unit at execution
+        uint256 pricePerShare; // 256 Bits — currency units paid per wrapped unit at execution
 	}
 
     uint64 public constant DRAG_PROPOSAL_DELAY = uint64(20 days);
@@ -38,15 +38,15 @@ abstract contract DragAlong is Wrapping, DeterrenceFee {
     error CannotCancel();
     error DragAlongTooEarly(uint256 earliest, uint256 timeNow);
 
-    event OfferMade(address sender, IERC20 currency, uint256 pricePerShareE18, string message);
+    event OfferMade(address sender, IERC20 currency, uint256 pricePerShare, string message);
     event OfferDenied(address sender, string message);
-    event OfferAccepted(address sender, address buyer, uint256 tokens, address currency, uint256 pricePerShareE18, uint256 totalPrice);
+    event OfferAccepted(address sender, address buyer, uint256 tokens, address currency, uint256 pricePerShare, uint256 totalPrice);
 
     /**
      * Make an acquisition offer for the underlying tokens.
      *
-     * The buyer commits to paying 'pricePerShareE18' currency units per wrapped unit. The total price
-     * is computed at execution time as 'pricePerShareE18 * totalSupply() / 10**18'. If new shares are tokenized
+     * The buyer commits to paying 'pricePerShare' currency units per wrapped unit. The total price
+     * is computed at execution time as 'pricePerShare * totalSupply()'. If new shares are tokenized
      * during the proposal delay, the buyer pays proportionally more so existing holders are not
      * diluted in their per-share proceeds. The buyer must approve enough currency to cover the
      * worst-case total they are willing to pay.
@@ -58,10 +58,10 @@ abstract contract DragAlong is Wrapping, DeterrenceFee {
      * It is the responsibility of the caller to ensure that all contractual preconditions for the execution of the acquisition have been met,
      * as typically laid out in a shareholder agreement.
      */
-    function offerAcquisition(IERC20 currency, uint256 pricePerShareE18, string calldata message) external payable deter(100) returns (Offer memory) {
+    function offerAcquisition(IERC20 currency, uint256 pricePerShare, string calldata message) external payable deter(100) returns (Offer memory) {
         if (address(latestOffer.buyer) != address(0)) revert OfferPending();
-        latestOffer = Offer({ buyer: msg.sender, timestamp: uint64(block.timestamp), currency: currency, pricePerShareE18: pricePerShareE18 });
-        emit OfferMade(msg.sender, currency, pricePerShareE18, message);
+        latestOffer = Offer({ buyer: msg.sender, timestamp: uint64(block.timestamp), currency: currency, pricePerShare: pricePerShare });
+        emit OfferMade(msg.sender, currency, pricePerShare, message);
         return latestOffer;
 	}
 
@@ -104,14 +104,14 @@ abstract contract DragAlong is Wrapping, DeterrenceFee {
         delete latestOffer; // clear the offer to prevent reentrancy
 
         uint256 balance = wrappedToken.balanceOf(address(this));
-        uint256 totalPrice = offer.pricePerShareE18 * totalSupply() / 10**18; // priced at execution time so new tokenizations during the delay do not dilute per-share proceeds
+        uint256 totalPrice = offer.pricePerShare * totalSupply(); // priced at execution time so new tokenizations during the delay do not dilute per-share proceeds
         offer.currency.safeTransferFrom(address(offer.buyer), address(this), totalPrice);
         wrappedToken.safeTransfer(address(offer.buyer), balance);
 
         replaceBase(offer.currency);  // make the purchase proceeds the new base
         terminate(); // allow token holders to unwrap and collect proceeds
 
-        emit OfferAccepted(msg.sender, offer.buyer, balance, address(offer.currency), offer.pricePerShareE18, totalPrice);
+        emit OfferAccepted(msg.sender, offer.buyer, balance, address(offer.currency), offer.pricePerShare, totalPrice);
     }
 
 }
