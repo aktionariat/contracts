@@ -32,9 +32,9 @@ Companies that choose Aktionariat as tokenization provider get access to a corpo
 
 This approach reflects how paper certificates are handled, with the paper corresponding to the tokens. Owners of certificated shares are free to hand them over to anyone at any time, but to actually enjoy any shareholder rights, the new owner must register themselves with the company. This enables short-term trading of the token without registration, while at the same time providing a strong incentive for long-term shareholders to actually register themselves in the shareholder registry. See also the [recommendations of the Swiss Blockchain Federation](https://blockchainfederation.ch/wp-content/uploads/2021/10/SBF-2021-01-Ledger_Based_Securities_2021-10-12.pdf).
 
-## Bug Bounty
+## Security and Bug Bounty
 
-If you find a new security-relevant bug in our contracts and tell us, we will reward you with 1 Ether. For bugs that could lead to a loss of funds, the bounty is tripled. The bounty can only be claimed for bugs that we are not aware of and that have not been exploited yet. They must be filed directly to bugs@aktionariat.com without opening a publicly visible issue.
+The contracts on `master` were reviewed by Ge6a Audits in September and October 2026; the report is in [`audits/`](audits/README.md). We pay a bounty for new security bugs in the current contracts: 3 ETH for taking over or draining a contract or permanently locking funds, 1 ETH for bounded theft or manipulated settlement. Scope, the trust model, known behaviour that is not a bug, and what a report must contain are in [SECURITY.md](SECURITY.md). Report to bugs@aktionariat.com, never through a public issue.
 
 ## Development Quick Start
 
