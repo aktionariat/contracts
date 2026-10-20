@@ -185,5 +185,17 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
       await sharesUnderAgreement.connect(signer2).unwrap(40n);
       expect(await currency.balanceOf(signer2) - signer2Before).to.equal(ethers.parseUnits("80", 18));
     });
+
+    it("refuses a second offer once the agreement is no longer binding", async () => {
+      await makeOffer();
+      await connection.networkHelpers.time.increase(DRAG_DELAY + 1n);
+      await sharesUnderAgreement.acceptOffer();
+      expect(await sharesUnderAgreement.binding()).to.equal(false);
+
+      // The proceeds still sit in the wrapper for holders who have not unwrapped; nobody can bid for them.
+      await setZCHFBalance(await buyer.getAddress(), TOTAL_PRICE);
+      await currency.connect(buyer).approve(sharesUnderAgreement, TOTAL_PRICE);
+      await expect(makeOffer()).to.be.revertedWithCustomError(sharesUnderAgreement, "ContractNotBinding");
+    });
   });
 });

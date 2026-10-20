@@ -54,11 +54,14 @@ abstract contract DragAlong is Wrapping, DeterrenceFee {
      * If the acquisition offer is not denied by the issuer or someone with 10% of the outstanding tokens,
      * the offer can be executed.
      *
+     * Offers can only be made while the agreement is binding. The drag-along right stems from the agreement,
+     * so a terminated wrapper, which merely holds the backing for holders who have not unwrapped yet, accepts none.
+     *
      * The ability to execute an acquisition does not necessarily mean that you are also legally allowed to.
      * It is the responsibility of the caller to ensure that all contractual preconditions for the execution of the acquisition have been met,
      * as typically laid out in a shareholder agreement.
      */
-    function offerAcquisition(IERC20 currency, uint256 pricePerShare, string calldata message) external payable deter(100) returns (Offer memory) {
+    function offerAcquisition(IERC20 currency, uint256 pricePerShare, string calldata message) external payable requireBinding deter(100) returns (Offer memory) {
         if (address(latestOffer.buyer) != address(0)) revert OfferPending();
         latestOffer = Offer({ buyer: msg.sender, timestamp: uint64(block.timestamp), currency: currency, pricePerShare: pricePerShare });
         emit OfferMade(msg.sender, currency, pricePerShare, message);
