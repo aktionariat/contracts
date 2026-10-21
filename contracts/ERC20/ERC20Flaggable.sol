@@ -47,8 +47,6 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     // 0x8000000000000000000000000000000000000000000000000000000000000000
     uint256 constant public INFINITE_ALLOWANCE = 2**255;
 
-    uint256 private constant FLAGGING_MASK = 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000;
-
     // Documentation of flags used by subclasses:
     // NOTE: flags denote the bit number that is being used and must be smaller than 32
     // ERC20Draggable: uint8 private constant FLAG_INDEX_VOTED = 1;
@@ -171,6 +169,9 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
         if (currentAllowance < INFINITE_ALLOWANCE){
             // Only decrease the allowance if it was not set to 'infinite'
             // Documented in /doc/infiniteallowance.md
+            if (amount > currentAllowance) {
+                revert ERC20InsufficientAllowance(msg.sender, currentAllowance, amount);
+            }
             _allowances[sender][msg.sender] = currentAllowance - amount;
         }
         return true;
@@ -222,12 +223,11 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
         if (recipient == address(0x0)) {
             revert ERC20InvalidReceiver(recipient); //use burn instead
         }
-        uint256 oldBalance = _balances[recipient];
-        uint256 newBalance = oldBalance + amount;
-        if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
-            revert ERC20BalanceOverflow(recipient, oldBalance, amount);
+        uint256 balance = balanceOf(recipient);
+        if (amount > type(uint224).max - balance) {
+            revert ERC20BalanceOverflow(recipient, balance, amount);
         }
-        _balances[recipient] = newBalance;
+        _balances[recipient] += amount;
     }
 
      /**
@@ -244,18 +244,17 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
     function _burn(address account, uint256 amount) internal virtual {
         _beforeTokenTransfer(account, address(0), amount);
 
-        _totalSupply -= amount;
         decreaseBalance(account, amount);
+        _totalSupply -= amount;
         emit Transfer(account, address(0), amount);
     }
 
     function decreaseBalance(address sender, uint256 amount) private {
-        uint256 oldBalance = _balances[sender];
-        uint256 newBalance = oldBalance - amount;
-        if (oldBalance & FLAGGING_MASK != newBalance & FLAGGING_MASK) {
-            revert ERC20InsufficientBalance(sender, balanceOf(sender), amount);
+        uint256 balance = balanceOf(sender);
+        if (amount > balance) {
+            revert ERC20InsufficientBalance(sender, balance, amount);
         }
-        _balances[sender] = newBalance;
+        _balances[sender] -= amount;
     }
 
     /**

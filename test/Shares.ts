@@ -129,6 +129,19 @@ describe("Shares (base/Shares.sol)", function () {
       expect(await shares.isAllowed(signer3)).to.equal(true);
     });
 
+    it("reverts an overdraw with ERC20InsufficientBalance", async () => {
+      await expect(shares.connect(signer1).transfer(signer2, 101n))
+        .to.be.revertedWithCustomError(shares, "ERC20InsufficientBalance").withArgs(signer1.address, 100n, 101n);
+      await expect(shares.connect(signer1)["burn(uint256)"](101n))
+        .to.be.revertedWithCustomError(shares, "ERC20InsufficientBalance").withArgs(signer1.address, 100n, 101n);
+    });
+
+    it("reverts a transferFrom above the allowance with ERC20InsufficientAllowance", async () => {
+      await shares.connect(signer1).approve(signer2, 10n);
+      await expect(shares.connect(signer2).transferFrom(signer1, signer3, 11n))
+        .to.be.revertedWithCustomError(shares, "ERC20InsufficientAllowance").withArgs(signer2.address, 10n, 11n);
+    });
+
     it("keeps minting to new holders after a burn routed through an admin owner", async () => {
       await shares.connect(owner)["setType(address,uint8)"](owner, await shares.TYPE_ADMIN());
       // burn moves the tokens to the owner and burns them there: hook sees from=owner(ADMIN), to=0
