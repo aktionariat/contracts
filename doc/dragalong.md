@@ -14,7 +14,7 @@ The on-chain process is veto-based rather than vote-based. A buyer publishes a b
 
 ### Initiation
 
-Any address can open an offer by calling `offerAcquisition(currency, pricePerShare, message)`. The call requires a deterrence fee paid in the chain's native currency (forwarded to the issuer) so that frivolous offers carry a real cost; the issuer themselves is exempt. Only one offer can be active at a time — a second call reverts with `OfferPending` until the existing offer is cancelled or executed. Offers require the agreement to be binding: once it has been terminated, by an executed acquisition, a migration or a termination, the wrapper only holds the backing for holders who have not unwrapped yet, and `offerAcquisition` reverts with `ContractNotBinding`.
+Any address can open an offer by calling `offerAcquisition(currency, pricePerShare, message)`. The call requires a deterrence fee paid in the chain's native currency (forwarded to the issuer) so that frivolous offers carry a real cost; the issuer themselves is exempt. Only one offer can be active at a time — a second call reverts with `OfferPending` until the existing offer is cancelled or executed. Offers require the agreement to be binding: once it has been terminated, by an executed acquisition, a migration or a termination, the wrapper only holds the backing for holders who have not unwrapped yet, and `offerAcquisition` reverts with `ContractNotBinding`. The same holds for execution: a termination or migration that completes while an offer is pending clears that offer, and `acceptOffer` itself requires the agreement to be binding.
 
 The offer specifies:
 

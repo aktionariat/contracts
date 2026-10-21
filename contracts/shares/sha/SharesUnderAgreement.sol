@@ -73,6 +73,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      */
     function terminate() internal override {
         binding = false;
+        delete latestOffer; // the drag-along right ends with the agreement, so a pending offer ends with it
         emit Terminated();
     }
 }

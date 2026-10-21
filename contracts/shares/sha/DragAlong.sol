@@ -98,8 +98,11 @@ abstract contract DragAlong is Wrapping, DeterrenceFee {
     
     /**
      * Accepts the current offer once the proposal delay has passed.
+     *
+     * Like making an offer, accepting one requires a binding agreement. A termination executed while an offer
+     * was pending clears the offer, so this check only matters as a second line of defence.
      */
-    function acceptOffer() public offerPresent {
+    function acceptOffer() public offerPresent requireBinding {
         checkExecution(); // reverts if sender is not allowed to execute yet
 
         IERC20 wrappedToken = base;

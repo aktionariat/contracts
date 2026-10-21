@@ -197,5 +197,20 @@ describe("SharesUnderAgreement (sha/SharesUnderAgreement.sol)", function () {
       await currency.connect(buyer).approve(sharesUnderAgreement, TOTAL_PRICE);
       await expect(makeOffer()).to.be.revertedWithCustomError(sharesUnderAgreement, "ContractNotBinding");
     });
+
+    it("clears a pending offer when a termination completes inside its window", async () => {
+      await makeOffer();
+      await sharesUnderAgreement.connect(owner).proposeTermination();
+      await connection.networkHelpers.time.increase(MIGRATION_DELAY + 1n);
+      await sharesUnderAgreement.connect(owner).executeMigration();
+      expect(await sharesUnderAgreement.binding()).to.equal(false);
+
+      const offer = await sharesUnderAgreement.latestOffer();
+      expect(offer.buyer).to.equal(ethers.ZeroAddress);
+      await expect(sharesUnderAgreement.acceptOffer()).to.be.revertedWithCustomError(sharesUnderAgreement, "NoOfferFound");
+      // Holders keep their base shares and unwrap 1:1 instead of being bought out.
+      await sharesUnderAgreement.connect(signer1).unwrap(60n);
+      expect(await base.balanceOf(signer1)).to.equal(60n);
+    });
   });
 });
