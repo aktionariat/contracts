@@ -141,7 +141,7 @@ abstract contract Modification is Wrapping {
 }
 
 interface IMigratableBase {
-    function successor() external returns (IERC20);
+    function successor() external view returns (IERC20);
     function migrate() external;
     function burn(uint256 amount) external;
 }

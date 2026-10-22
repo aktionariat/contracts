@@ -23,7 +23,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
     // 1: pre permit
     // 2: includes permit
     // 3: added permit2 allowance, VERSION field
-    // 5 New token standard, skipping 4 to match base security version number
+    // 5: New token standard, skipping 4 to match base security version number
     // 6: assisted unwrap, wrapping mechanics moved to the Wrapping module
     uint8 public constant VERSION = 6;
 
@@ -57,7 +57,7 @@ contract SharesUnderAgreement is ERC20Named, ERC20Allowlistable, Recoverable, Dr
      */
     function setTerms(string calldata _terms) external onlyOwner {
         terms = _terms;
-        emit ChangeTerms(terms);
+        emit ChangeTerms(_terms);
     }
 
     function isBinding() internal view override returns (bool) {

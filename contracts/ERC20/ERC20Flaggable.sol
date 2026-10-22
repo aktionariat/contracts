@@ -22,23 +22,13 @@ import "./IERC677Receiver.sol";
  *
  * This implementation is agnostic to the way tokens are created. This means
  * that a supply mechanism has to be added in a derived contract using `_mint`.
- * For a generic mechanism see `ERC20Mintable`.
- *
- * *For a detailed writeup see our guide [How to implement supply
- * mechanisms](https://forum.zeppelin.solutions/t/how-to-implement-erc20-supply-mechanisms/226).*
  *
  * We have followed general OpenZeppelin guidelines: functions revert instead
  * of returning `false` on failure. This behavior is nonetheless conventional
  * and does not conflict with the expectations of ERC20 applications.
  *
- * Additionally, an `Approval` event is emitted on calls to `transferFrom`.
- * This allows applications to reconstruct the allowance for all accounts just
- * by listening to said events. Other implementations of the EIP may not emit
- * these events, as it isn't required by the specification.
- *
- * Finally, the non-standard `decreaseAllowance` and `increaseAllowance`
- * functions have been added to mitigate the well-known issues around setting
- * allowances. See `IERC20.approve`.
+ * Allowances of INFINITE_ALLOWANCE and above are not decreased by `transferFrom`.
+ * The upper 32 bits of each balance hold flags for subclasses, see below.
  */
 
 abstract contract ERC20Flaggable is IERC20, ERC20Errors {
@@ -49,13 +39,11 @@ abstract contract ERC20Flaggable is IERC20, ERC20Errors {
 
     // Documentation of flags used by subclasses:
     // NOTE: flags denote the bit number that is being used and must be smaller than 32
-    // ERC20Draggable: uint8 private constant FLAG_INDEX_VOTED = 1;
-    // ERC20Recoverable: uint8 private constant FLAG_INDEX_CLAIM_PRESENT = 10;
-    // ERCAllowlistable: uint8 private constant FLAG_INDEX_ALLOWLIST = 20;
-    // ERCAllowlistable: uint8 private constant FLAG_INDEX_FORBIDDEN = 21;
-    // ERCAllowlistable: uint8 private constant FLAG_INDEX_POWERLIST = 22;
+    // ERC20Allowlistable: uint8 private constant FLAG_INDEX_ALLOWED = 20;
+    // ERC20Allowlistable: uint8 private constant FLAG_INDEX_RESTRICTED = 21;
+    // ERC20Allowlistable: uint8 private constant FLAG_INDEX_ADMIN = 22;
 
-    // ERCAllowlistable: uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
+    // ERC20Allowlistable: uint8 private constant GLOBAL_FLAG_INDEX_PAUSED = 100;
 
     mapping (address => uint256) private _balances; // upper 32 bits reserved for flags
 
