@@ -16,7 +16,7 @@ Assume Alice lost the key to her address A. She picks a new address B and makes 
 
 1. From B, Alice calls `initRecovery(A)`, paying a small deterrence fee in the chain's native currency (forwarded to the issuer). This records a recovery that would send the balance of A to B. Anyone can initiate a recovery, but only to a recipient they name — the deterrence fee is there to make spurious recoveries costly.
 2. A delay of 184 days (`RECOVERY_DELAY`) must pass. The delay is chosen in analogy to the 6-month annulment period for lost securities under Swiss Code of Obligations [art. 983](https://www.fedlex.admin.ch/eli/cc/27/317_321_377/de#art_983).
-3. After the delay, anyone calls `recover(A)` and the balance is transferred to B.
+3. After the delay, anyone calls `recover(A)` and the balance is transferred to B. The claim does not freeze A: whatever A holds at execution is moved, so a claim against an address that is not lost achieves nothing but the fee.
 
 ```mermaid
 sequenceDiagram

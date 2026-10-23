@@ -7,7 +7,7 @@ This policy covers the smart contracts in this repository. Report security bugs 
 If a tool or an agent produced your report, run this checklist before sending. Reports that fail it are discarded without reply, and repeat senders are blocked.
 
 1. The bug is in the code on the `master` branch at its current head. Earlier versions are out of scope (see [Versions](#versions)), even where instances of them are still deployed.
-2. The bug is not an acknowledged finding of the [2026 security review](audits/README.md) and not in the [known behaviour](#known-behaviour-not-a-bug) list below. Those lists are complete; do not resend what is in them.
+2. The bug is not an acknowledged finding of the [2026 security review](audits/README.md) and not on the [not-a-bug list](doc/not-a-bug.md). Those lists are complete; do not resend what is in them.
 3. The attacker is an untrusted party under the [trust model](#trust-model). What the issuer, the market router or Aktionariat can do with their own powers is not a finding.
 4. The report contains a runnable proof of concept: a Hardhat test against `master` that demonstrates the impact (see [What a report must contain](#what-a-report-must-contain)). A description without a proof of concept is not a report.
 5. One bug per report, with an honest severity. Do not pad a report with findings that fail points 1 to 4.
@@ -50,31 +50,7 @@ The contracts are built on the trust model of the [2026 security review](audits/
 
 ## Known behaviour, not a bug
 
-These properties are documented in `doc/` and were reviewed and accepted. They are not findings.
-
-Acknowledged in the 2026 security review:
-
-- **M-05** One `SecondaryMarket` serves one allowlist regime. A company that runs free-float and allowlisted holders at the same time uses two markets. `doc/allowlist.md`.
-- **L-04** Settlement of bank orders reserves no `DirectInvestment` inventory. If on-chain buyers empty it first, the issuer tops up and delivers again. `doc/market.md`.
-- **L-05** The trading fee is not part of the signed intent. It is bound to one market and capped at 5% by the contract. `doc/secondarymarket.md`.
-- **L-06** `initRecovery` takes the deterrence fee without checking whether the recovery will be executable in 184 days.
-- **L-07** A holder who cannot act on-chain, for example during a pending recovery of their address, has no on-chain veto over a drag-along or migration and objects through the issuer. `doc/draggable.md`.
-- **I-01** The `DirectInvestment` constructor does not reject zero addresses; the factory does. `Ownable` accepts the zero address on purpose: `transferOwnership(address(0))` renounces ownership.
-- **CR-1 to CR-3** Centralisation properties of the issuer role: uncapped issuance can dilute the 10% veto, freeze, pause and market closure have no expiry, and the issuer sets the deterrence fees it is itself exempt from.
-
-Further documented properties:
-
-- Allowlist, freeze and pause are per chain and not synchronised across chains. A holder is frozen everywhere only once the issuer has frozen the address on every chain. `doc/multichain.md`.
-- On chains other than the home chain, a receiver of bridged tokens becomes Allowed on arrival, like a mint recipient.
-- An Admin address stamps every recipient Allowed, including the owner. The owner and the zero address are sinks that any non-frozen address can send to.
-- A frozen (Restricted) address can send only to the token owner.
-- The 10% veto threshold counts wrapped supply only and is not snapshotted. `doc/draggable.md`.
-- Recovery claims and pending burns do not freeze the targeted balance; the current balance at execution is moved.
-- The earlier of two matched intents sets the price; the later one can settle at most one currency unit worse than its own limit through rounding. `doc/secondarymarket.md`.
-- Intents that name no router may be submitted by anyone. The submitter decides pairing and amount only; the market computes and keeps the fee.
-- Same-wallet trades on the secondary market are permitted.
-- Changing a market's router invalidates open intents that name the old one.
-- A time-locked burn on another chain destroys the tokens there while their counterpart stays locked in the home-chain lockbox, which matches a cancellation of the shares. `doc/multichain.md`.
+Behaviour that looks like a bug and is accepted is listed in [`doc/not-a-bug.md`](doc/not-a-bug.md): the acknowledged findings of the 2026 security review and the reports we have rejected. Everything else described in [`doc/`](doc/) is the design. Reports about any of it are discarded without reply.
 
 ## Rewards
 
@@ -85,7 +61,7 @@ Further documented properties:
 | Low | Bypassing a transfer restriction, griefing or blocking a flow without profit, or impact limited to unusual configurations | At our discretion |
 | Informational | No impact on funds or rights | None |
 
-Severity follows the impact and likelihood matrix of the 2026 security review. We decide the final classification. The reward goes to the first complete report of a bug; duplicates and bugs we already know of, including everything listed above, earn nothing. We pay in ETH to an address you name, after we have confirmed the bug, and only where the law allows us to pay you.
+Severity follows the impact and likelihood matrix of the 2026 security review. We decide the final classification. The reward goes to the first complete report of a bug; duplicates and bugs we already know of, including everything in [`doc/not-a-bug.md`](doc/not-a-bug.md), earn nothing. We pay in ETH to an address you name, after we have confirmed the bug, and only where the law allows us to pay you.
 
 ## What a report must contain
 

@@ -34,7 +34,7 @@ This approach reflects how paper certificates are handled, with the paper corres
 
 ## Security and Bug Bounty
 
-The contracts on `master` were reviewed by Ge6a Audits in September and October 2026; the report is in [`audits/`](audits/README.md). We pay a bounty for new security bugs in the current contracts: 3 ETH for taking over or draining a contract or permanently locking funds, 1 ETH for bounded theft or manipulated settlement. Scope, the trust model, known behaviour that is not a bug, and what a report must contain are in [SECURITY.md](SECURITY.md). Report to bugs@aktionariat.com, never through a public issue.
+The contracts on `master` were reviewed by Ge6a Audits in September and October 2026; the report is in [`audits/`](audits/README.md). We pay a bounty for new security bugs in the current contracts: 3 ETH for taking over or draining a contract or permanently locking funds, 1 ETH for bounded theft or manipulated settlement. Scope, the trust model and what a report must contain are in [SECURITY.md](SECURITY.md); behaviour that looks like a bug and is not is listed in [`doc/not-a-bug.md`](doc/not-a-bug.md). Report to bugs@aktionariat.com, never through a public issue.
 
 ## Development Quick Start
 
