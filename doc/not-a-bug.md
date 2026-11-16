@@ -1,6 +1,6 @@
 # Not a bug
 
-Behaviour of the contracts on `master` that looks like a bug and is not. Each entry says what a reporter sees and why it is accepted. Behaviour described in the other files of this directory is not a bug either; it is the design. A report about anything in this file or those is discarded without reply. See [SECURITY.md](../SECURITY.md) for the bug bounty.
+Behaviour of the contracts on `master` that looks like a bug and is not. Each entry says what a reporter sees and why it is accepted. Behaviour described in the other files of this directory is not a bug either; it is the design. A report about anything in this file or those is rejected with a standard reply and no further communication. See [SECURITY.md](../SECURITY.md) for the bug bounty.
 
 ## Acknowledged in the 2026 security review
 
@@ -24,13 +24,25 @@ The reasons:
 - **No gain.** The attacker pays fees, gas or capital and ends up with nothing.
 - **Bad dependency.** The attack needs a payment token, CCIP or another external dependency to misbehave, or a trusted party to accept a malicious one.
 - **Issuer configuration.** The attack needs a setup the issuer chose knowingly, such as a market without a router.
+- **Needs the victim's signature.** The attack needs a holder or signer to sign a transaction or message the attacker prepared. Phishing and social engineering are excluded by the rules.
 
 The reports:
 
 - **Multisig factory salt squatting.** Anyone can create a wallet for a salt first, with their own signers. *Not noticed*: Aktionariat sees at deployment that the address is already set up and uses another salt. Nothing is sent to an address before its wallet exists.
 - **Remote wallet trusts its Ethereum address.** A wallet on another chain accepts signers from whoever holds its address on Ethereum. *Against procedure*: the Ethereum wallet is always created first. *Not noticed*: a hijacked Ethereum address is seen before anything is deployed against it.
-- **Stale CCIP sync restores a revoked signer.** A sync message executed late can set a signer power the Ethereum wallet has since changed. *Not noticed* and *recoverable*: the issuer sees the signer set and syncs again. *No gain*: the attacker pays for a message that is overwritten.
+- **Remote signer set differs from Ethereum.** A late or retried sync restores a revoked signer, a sync removes the last signers of a remote wallet, or a signer is set on the remote chain directly. *Not noticed* and *recoverable*: anyone syncs the Ethereum state again. *No gain*: the attacker pays for a message that is overwritten.
 - **Zero-price drag-along offer.** `offerAcquisition` accepts any price, including zero. *Not noticed*: the offer is public for 20 days and the issuer or any holder above 10% cancels it. *No gain*: the offeror loses the deterrence fee on every attempt.
-- **Fee-on-transfer offer currency.** A currency that delivers less than requested settles the buyout short. *Bad dependency*: the issuer and holders accept the currency when they let the offer stand, and cancel an offer in a malicious one.
-- **Migrations on a terminated wrapper.** A migration or cancellation proposed after termination, or left standing through one, would move or burn the proceeds. *Not noticed*: every proposal is public for 20 days and the issuer cancels it.
+- **Malicious offer currency.** A currency that delivers less than requested, changes behaviour at execution or calls back into the wrapper settles the buyout short. *Bad dependency*: the issuer and holders accept the currency when they let the offer stand, and cancel an offer in a malicious one.
+- **Malicious or late migration.** A migration to a successor that keeps the base tokens, to the wrapper itself, or one proposed after termination or left standing through one, would move or burn the backing. *Not noticed*: every proposal is public for 20 days and the issuer cancels it.
 - **Dust fills accumulate rounding.** Splitting a match into many tiny fills rounds each by up to one currency unit against the later intent. *Issuer configuration*: needs a market without a router, since the router decides how a match is split. The holder's allowance caps the exposure.
+- **A 10% holder replaces a pending proposal.** A holder above 10% overwrites a migration or termination with its own and restarts the 20 days, or cancels every offer. *No gain*: that holder can cancel any proposal anyway; this is the veto. `draggable.md`
+- **Base tokens sent to the wrapper without wrapping.** They go to the buyer in a drag-along and pro rata to the holders on unwrap. *No gain*: the sender gave them away.
+- **Freeze is per token and per chain.** A holder frozen on the base token can still move wrapped tokens, and the reverse. *Not noticed*: the issuer freezes the address on every token and chain where it holds. `multichain.md`
+- **Bridged receivers become Allowed on arrival.** A holder bridges to an address the issuer never typed. *Issuer configuration*: the issuer enables a chain knowing that arrival there works like a mint. `multichain.md`
+- **Forward-dated intent.** An intent signed with a future `creation` counts as the later order once that time is reached and takes the spread. *Issuer configuration*: needs a market without a router. Nobody trades worse than their signed limit. `secondarymarket.md`
+- **`executableTrade` overstates.** For fractional prices the view returns an amount whose settlement reverts. *No gain*: nothing settles.
+- **`transferAndCall` returns false.** The transfer stands when the receiver returns false. *No gain*: the sender moved its own tokens and is told so.
+- **A single-signature signer controls the wallet.** A signer with power 1 changes the signer set alone. *Issuer configuration*: power 1 is sole signatory power. `multisig.md`
+- **32-bit contract id.** Signatures for one wallet are valid on another whose address shares the low 32 bits and that has the same signers. *Against procedure*: a company only funds wallets Aktionariat deployed for it. *No gain*: a colliding wallet created by someone else holds nothing.
+- **Signer's own transaction replayed on the wallet.** A legacy transaction a signer signs for their own account, with the wallet's contract id as gas price, is valid for the multisig. *Needs the victim's signature.*
+- **`AuthorizedCall` signatures.** A signed call has no expiry, and its function name is checked by selector only. *Recoverable*: the signer uses the nonce. *Needs the victim's signature.*

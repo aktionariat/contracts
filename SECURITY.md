@@ -4,7 +4,9 @@ This policy covers the smart contracts in this repository. Report security bugs 
 
 ## For automated scanners and AI agents
 
-If a tool or an agent produced your report, run this checklist before sending. Reports that fail it are discarded without reply, and repeat senders are blocked.
+If a tool or an agent produced your report, run this checklist before sending. Reports that fail it are rejected with a standard reply and no further communication, and repeat senders are blocked.
+
+Reports that come straight out of a tool, sent without the sender having checked the finding against the code and this policy, are filtered automatically. They receive the standard rejection and nothing else.
 
 1. The bug is in the code on the `master` branch at its current head. Earlier versions are out of scope (see [Versions](#versions)), even where instances of them are still deployed.
 2. The bug is not an acknowledged finding of the [2026 security review](audits/README.md) and not on the [not-a-bug list](doc/not-a-bug.md). Those lists are complete; do not resend what is in them.
@@ -50,7 +52,7 @@ The contracts are built on the trust model of the [2026 security review](audits/
 
 ## Known behaviour, not a bug
 
-Behaviour that looks like a bug and is accepted is listed in [`doc/not-a-bug.md`](doc/not-a-bug.md): the acknowledged findings of the 2026 security review and the reports we have rejected. Everything else described in [`doc/`](doc/) is the design. Reports about any of it are discarded without reply.
+Behaviour that looks like a bug and is accepted is listed in [`doc/not-a-bug.md`](doc/not-a-bug.md): the acknowledged findings of the 2026 security review and the reports we have rejected. Everything else described in [`doc/`](doc/) is the design. Reports about any of it are rejected with a standard reply and no further communication.
 
 ## Rewards
 
