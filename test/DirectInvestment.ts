@@ -75,6 +75,10 @@ describe("DirectInvestment (investment/DirectInvestment.sol)", function () {
       expect(await di.VERSION()).to.equal(11n);
       expect(await di.cryptoBuyingEnabled()).to.equal(true);
     });
+
+    it("emits PriceSet with the constructor price", async () => {
+      await expect(di.deploymentTransaction()).to.emit(di, "PriceSet").withArgs(PRICE, INCREMENT);
+    });
   });
 
   describe("Pricing (getBuyPrice)", function () {

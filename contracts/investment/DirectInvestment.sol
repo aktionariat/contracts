@@ -66,6 +66,7 @@ contract DirectInvestment is IDirectInvestment, Ownable {
         price = _price;
         increment = _increment;
         paymenthub = _paymentHub;
+        emit PriceSet(_price, _increment);
     }
 
     /// @notice Set the per-share offer price and the linear increment applied per share sold.
